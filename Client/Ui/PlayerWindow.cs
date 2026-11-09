@@ -560,31 +560,93 @@ public sealed class PlayerView : Border
         }
     }
 
+    /// <summary>
+    /// The Stats tab: the combat stats first - Attack, Accuracy, Critical Hit, Defense, HP … as the website sums them from the character's page (9 November 2026, the
+    /// owner: "it's only showing pantheon right now, it should show important stats, such as attack, defense, accuracy/crit") - then the attributes as the page
+    /// lists them (each with what it gives, on a hover), then the bonuses the sheet has no line of its own for.
+    /// </summary>
     private UIElement StatsTab(PlayerPage p)
     {
         var stack = new StackPanel { Margin = new Thickness(0, 2, 0, 6) };
-        if (p.Stats.Count == 0)
+        PlayerSheet? sheet = p.Sheet;
+        if (p.Stats.Count == 0 && sheet is null)
         {
             stack.Children.Add(Muted("The game's character page shows no stats for this character right now."));
             return stack;
         }
 
-        var grid = new UniformGrid { Columns = 2 };
-        foreach (var (name, value) in p.Stats)
+        UniformGrid Grid2(IEnumerable<(string Name, string Value, string? Note, string? Tip)> rows)
         {
-            var row = new Grid { Margin = new Thickness(0, 0, 14, 0) };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Put(row, 0, Text(name, 12, "Brush.TextMuted", margin: new Thickness(0, 3, 0, 3)));
-            var v = Text(value, 12.5, "Brush.OverlayText", margin: new Thickness(8, 3, 0, 3));
-            v.FontWeight = FontWeights.SemiBold;
-            Put(row, 1, v);
-            grid.Children.Add(row);
+            var grid = new UniformGrid { Columns = 2 };
+            foreach (var (name, value, note, tip) in rows)
+            {
+                var row = new Grid { Margin = new Thickness(0, 0, 14, 0), Background = Brushes.Transparent };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                Put(row, 0, Text(name, 12, "Brush.TextMuted", margin: new Thickness(0, 3, 0, 3)));
+                var v = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+                if (note is { Length: > 0 })
+                {
+                    v.Children.Add(Text("(" + note + ")", 10.5, "Brush.TextMuted", margin: new Thickness(8, 3, 0, 3)));
+                }
+
+                TextBlock figure = Text(value, 12.5, "Brush.OverlayText", margin: new Thickness(6, 3, 0, 3));
+                figure.FontWeight = FontWeights.SemiBold;
+                v.Children.Add(figure);
+                Put(row, 1, v);
+                if (tip is { Length: > 0 })
+                {
+                    row.ToolTip = tip;
+                }
+
+                grid.Children.Add(row);
+            }
+
+            return grid;
         }
 
-        stack.Children.Add(grid);
+        if (sheet is not null && sheet.Offense.Count + sheet.Defense.Count > 0)
+        {
+            stack.Children.Add(Heading("Offense"));
+            stack.Children.Add(Grid2(sheet.Offense.Select(x => (x.Name, x.Value, x.Note, x.Note is { Length: > 0 } n ? $"{x.Name}: the gear and the other parts, then +{n.TrimStart('+')} from the increases on them" : null))));
+            stack.Children.Add(Heading("Defense"));
+            stack.Children.Add(Grid2(sheet.Defense.Select(x => (x.Name, x.Value, x.Note, (string?)null))));
+        }
+
+        if (p.Stats.Count > 0)
+        {
+            stack.Children.Add(Heading("Attributes"));
+            stack.Children.Add(Grid2(p.Stats.Select(x => (x.Name, x.Value, (string?)null,
+                sheet is not null && sheet.Effects.TryGetValue(x.Name, out IReadOnlyList<string>? fx) && fx.Count > 0 ? string.Join("\n", fx) : null))));
+        }
+
+        if (sheet is { Other.Count: > 0 })
+        {
+            stack.Children.Add(Heading("Other bonuses"));
+            stack.Children.Add(Grid2(sheet.Other.Select(x => (x.Name, x.Value, (string?)null, (string?)null))));
+        }
+
+        if (sheet is not null && sheet.From.Count > 0)
+        {
+            string from = Words(sheet.From), note = $"Offense and defense: the totals of {from} on the game's character page (the game's base stats aren't on it, so they are left out).";
+            if (sheet.Missing.Count > 0)
+            {
+                note += $" {char.ToUpperInvariant(Words(sheet.Missing)[0])}{Words(sheet.Missing)[1..]} wasn't read this time, so it isn't counted: refresh the page in a minute.";
+            }
+
+            stack.Children.Add(Muted(note, new Thickness(0, 12, 0, 2)));
+        }
+
         return stack;
     }
+
+    /// <summary>"gear, Daevanion and titles".</summary>
+    private static string Words(IReadOnlyList<string> list) => list.Count switch
+    {
+        0 => "",
+        1 => list[0],
+        _ => string.Join(", ", list.Take(list.Count - 1)) + " and " + list[^1],
+    };
 
     private UIElement SkillsTab(PlayerPage p)
     {

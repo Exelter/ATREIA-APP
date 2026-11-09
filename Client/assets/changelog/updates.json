@@ -6,6 +6,26 @@
   ],
   "versions": [
     {
+      "version": "1.21.3",
+      "date": "2026-11-09",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Reports",
+          "title": "Your meter's columns in the fight report",
+          "text": "The columns you picked for the meter in its look settings (crit, back, front, perfect, double, parried, hits, nDPS and Given) now also show in a fight's report from the History: on the Damage tab's player list, and on the line above the skills of the player you click. The report gets wider to fit them.",
+          "example": "With Crit and Back ticked, a Ludra report from yesterday shows each player's crit and back attack share next to their accuracy."
+        },
+        {
+          "kind": "improved",
+          "area": "Find a player",
+          "title": "Attack, defense, accuracy and crit in a character's stats",
+          "text": "A character's Stats tab now starts with their combat stats: Attack, Accuracy, Critical Hit, Penetration and the damage boosts, then Defense, HP, Block, Evasion and Critical Hit Resist. They are added up from the gear, Daevanion, titles and attributes on the game's character page; the game's base stats aren't on that page, so they aren't included. Point at an attribute to see what it gives.",
+          "example": "Look up Dranna: the Stats tab shows her Attack and Critical Hit at the top, with Might, Justice and the other attributes under them."
+        }
+      ]
+    },
+    {
       "version": "1.21.2",
       "date": "2026-11-09",
       "items": [

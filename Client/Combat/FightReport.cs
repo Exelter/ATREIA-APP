@@ -72,7 +72,16 @@ public sealed class ReportPlayerLine
     public double Dps { get; init; }
     public double Share { get; init; }
     public double? Rdps { get; set; }
+
+    /// <summary>Their DPS without the buffs the others put on them (rDPS's own part); null when rDPS couldn't be worked out.</summary>
+    public double? Ndps { get; set; }
+
     public double Given { get; set; }
+
+    /// <summary>How their direct hits landed (crit, back, front, perfect, double, parried and how many): the meter's optional columns, for the same
+    /// columns in the report (9 November 2026, the owner: "what you select in design should also show in the meter on history").</summary>
+    public HitStats Hits { get; init; }
+
     public long Healing { get; init; }
 
     /// <summary>The part of <see cref="Healing"/> that went past the targets' maximum hit points (see <see cref="FightReport.OverhealOf"/>).</summary>
@@ -318,10 +327,17 @@ public sealed class FightReport
             var onMe = effects.Where(kv => kv.Key.Target == p.Id && Named(kv.Key.Name)).Select(kv => kv.Value.ToEffect(kv.Key.Name, seconds, playerIds, onBoss: false)).ToList();
 
             RotationReport? rotation = myUses.Count > 0 || input.Extras.Buffs.Count > 0 ? RotationAnalysis.Build(input.Extras, p.Id, start, end, mine, nameOf) : null;
+            var hitStats = new HitStats();
+            foreach (DamageEvent e in mine)
+            {
+                hitStats.Add(e);
+            }
+
             lines.Add(new ReportPlayerLine
             {
                 Player = p,
                 Damage = mineTotal,
+                Hits = hitStats,
                 Dps = mineTotal / seconds,
                 Share = damage > 0 ? 100.0 * mineTotal / damage : 0,
                 Healing = healTotal,
@@ -387,6 +403,7 @@ public sealed class FightReport
                 if (results.TryGetValue(line.Player.Id, out RaidDpsResult r))
                 {
                     line.Rdps = r.Rdps;
+                    line.Ndps = r.Ndps;
                     line.Given = r.Given;
                 }
             }

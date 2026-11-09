@@ -76,6 +76,12 @@ public sealed class FightReportWindow : Window
 
         _page.Margin = new Thickness(30, 22, 30, 30);
         _page.MaxWidth = 1240;
+        // the columns picked for the meter (Meter look) make the Damage tab's table wider: the window and the page grow with them, up to the screen
+        if (DesignWidth() is > 0 and double more)
+        {
+            Width = Math.Max(MinWidth, Math.Min(SystemParameters.WorkArea.Width - 40, Width + more));
+            _page.MaxWidth += more;
+        }
         _page.Children.Add(Header());
         _page.Children.Add(Stats());
         var tabs = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Margin = new Thickness(0, 18, 0, 0), Child = _tabBar };
@@ -411,12 +417,67 @@ public sealed class FightReportWindow : Window
         return (Math.Floor(r.Percent).ToString("0", En), $"Better than {r.Percent.ToString("0.#", En)}% of {RankTier.Bracket(r.Low, r.High)}{p.Player.ClassName}s on {_r.Title} by rDPS · rank {r.Place} of {r.Of}");
     }
 
+    // ---------- the meter's own columns, as picked in Meter look (9 November 2026, the owner: "what you select in design should also show in the meter on
+    // history"): nDPS and Given beside rDPS, the hit kinds after Accuracy, in the meter's order and with its titles and tips ----------
+
+    /// <summary>The hit kinds of the meter (Meter look → How the hits landed), in its order.</summary>
+    private static readonly string[] HitKindIds = { "crit", "back", "front", "perfect", "double", "parry", "hits" };
+
+    private const double KindWidth = 66, RateWidth = 86;
+
+    /// <summary>With more than this many of the meter's columns, the Damage tab's table is made tighter: narrower standard columns, no "View skills" text
+    /// (the line is still clicked to see the skills).</summary>
+    private const int TightAfter = 2;
+
+    private static string LookText(string key) => LocalizationManager.Instance[key];
+
+    /// <summary>The meter's columns picked in Meter look that the report shows too.</summary>
+    private List<string> DesignIds() => new[] { "ndps", "given" }.Concat(HitKindIds).Where(_look.Has).ToList();
+
+    /// <summary>How much wider the Damage tab's table gets with the meter's columns (the tighter standard columns and the missing link text counted off).</summary>
+    private double DesignWidth()
+    {
+        List<string> ids = DesignIds();
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        double add = ids.Sum(id => id is "ndps" or "given" ? RateWidth : KindWidth);
+        return ids.Count > TightAfter ? Math.Max(0, add - 110 - 66) : add;
+    }
+
+    private static string KindPct(double? v) => v is double d ? d.ToString("0.0", En) + "%" : "–";
+
+    /// <summary>One of the meter's hit kind columns for the report: its title and tip from the meter's own (Meter look).</summary>
+    private Col KindCol(string id)
+    {
+        MeterColumn c = MeterLook.Columns.First(x => x.Id == id);
+        Func<ReportPlayerLine, string> text = id switch
+        {
+            "crit" => p => KindPct(p.Hits.CritPercent),
+            "back" => p => KindPct(p.Hits.BackPercent),
+            "front" => p => KindPct(p.Hits.FrontPercent),
+            "perfect" => p => KindPct(p.Hits.PerfectPercent),
+            "double" => p => KindPct(p.Hits.DoublePercent),
+            "parry" => p => KindPct(p.Hits.ParryPercent),
+            _ => p => p.Hits.Direct > 0 ? N(p.Hits.Direct) : "–",
+        };
+        string tip = LookText(c.TipKey);
+        return new Col(LookText(c.TitleKey), id == "hits" ? KindWidth + 6 : KindWidth, text, Tip: _ => tip);
+    }
+
+    /// <summary>The selected player's figures of the meter's hit kinds, for the line over their skills.</summary>
+    private IEnumerable<(string, string?)> KindSummary(ReportPlayerLine p) =>
+        HitKindIds.Where(_look.Has).Select(id => (LookText(MeterLook.Columns.First(x => x.Id == id).TitleKey), KindCol(id).Text(p) is var t && t != "–" ? t : null));
+
     private FrameworkElement DamageTab()
     {
         var players = _r.Players.Where(p => p.Damage > 0).ToList();
         var root = new StackPanel();
         bool rdps = players.Any(p => p.Rdps is not null);
-        var cols = new List<Col> { new("Damage", 120, p => N(p.Damage), Bold: true), new("DPS", 100, p => N(p.Dps)) };
+        bool tight = DesignIds().Count > TightAfter;
+        var cols = new List<Col> { new("Damage", tight ? 108 : 120, p => N(p.Damage), Bold: true), new("DPS", tight ? 86 : 100, p => N(p.Dps)) };
         if (_shareUrl is not null)
         {
             // in the website's colour for the percentile, as on the fight's page
@@ -427,14 +488,29 @@ public sealed class FightReportWindow : Window
 
         if (rdps)
         {
-            cols.Add(new Col("rDPS", 100, p => p.Rdps is double r ? N(r) : "–",
+            cols.Add(new Col("rDPS", tight ? 86 : 100, p => p.Rdps is double r ? N(r) : "–",
                 Tip: _ => "Raid DPS, an estimate: their damage, less what the others' buffs added to it, plus what their own buffs added to the others. The buffs' values come from the skills' descriptions, not from a measurement in the game."));
         }
 
-        cols.Add(new Col("Share", 80, p => Pct(p.Share)));
-        cols.Add(new Col("Accuracy", 90, p => Acc(p.Accuracy), Tip: p => AccuracyTip(p)));
+        // the meter's rate columns (Meter look), beside rDPS
+        if (_look.Has("ndps"))
+        {
+            string tip = LookText("Look.ColNdpsTip");
+            cols.Add(new Col(LookText("Look.ColNdps"), RateWidth, p => p.Ndps is double v ? N(v) : "–", Tip: _ => tip));
+        }
+
+        if (_look.Has("given"))
+        {
+            string tip = LookText("Look.ColGivenTip");
+            cols.Add(new Col(LookText("Look.ColGiven"), RateWidth, p => p.Rdps is not null && p.Given >= 0.5 ? "+" + N(p.Given) : "–", Tip: _ => tip));
+        }
+
+        cols.Add(new Col("Share", tight ? 68 : 80, p => Pct(p.Share)));
+        cols.Add(new Col("Accuracy", tight ? 82 : 90, p => Acc(p.Accuracy), Tip: p => AccuracyTip(p)));
+        // the meter's hit kinds (Meter look → How the hits landed), after the accuracy
+        cols.AddRange(HitKindIds.Where(_look.Has).Select(KindCol));
         root.Children.Add(Section("Players", "Click a player to see their skills."));
-        root.Children.Add(PlayersTable(players, p => p.Damage, cols.ToArray()));
+        root.Children.Add(PlayersTable(players, p => p.Damage, tight ? 0 : 110, cols.ToArray()));
         if (Selected(players) is not { } sel)
         {
             return Empty(root, "No damage in this fight.");
@@ -442,8 +518,8 @@ public sealed class FightReportWindow : Window
 
         root.Children.Add(PlayerHeading(sel.Player.Name + "'s skills", players));
         var card = new StackPanel();
-        card.Children.Add(Summary(("Damage", N(sel.Damage)), ("DPS", N(sel.Dps)), ("rDPS", sel.Rdps is double r ? N(r) : null), ("Share", Pct(sel.Share)),
-            ("Accuracy", sel.Accuracy is double a ? Acc(a) : null), ("Deaths", sel.Deaths.Count > 0 ? sel.Deaths.Count.ToString(En) : null)));
+        card.Children.Add(Summary(new (string, string?)[] { ("Damage", N(sel.Damage)), ("DPS", N(sel.Dps)), ("rDPS", sel.Rdps is double r ? N(r) : null), ("Share", Pct(sel.Share)),
+            ("Accuracy", sel.Accuracy is double a ? Acc(a) : null) }.Concat(KindSummary(sel)).Append(("Deaths", sel.Deaths.Count > 0 ? sel.Deaths.Count.ToString(En) : null)).ToArray()));
         card.Children.Add(SkillTable(sel.Skills, sel.Player.ClassName, BlueBrush, DamageColumns(full: true), sel.Damage, sel.Dps));
         root.Children.Add(Card(card));
         root.Children.Add(ChartCard(sel.DamageSeries));
@@ -1414,14 +1490,18 @@ public sealed class FightReportWindow : Window
     }
 
     /// <summary>The players of a tab: one line each, a bar under it in the class colour scaled to the biggest, the chosen one marked; a click picks a player.</summary>
-    private FrameworkElement PlayersTable(IReadOnlyList<ReportPlayerLine> players, Func<ReportPlayerLine, double> barValue, params Col[] cols)
+    private FrameworkElement PlayersTable(IReadOnlyList<ReportPlayerLine> players, Func<ReportPlayerLine, double> barValue, params Col[] cols) =>
+        PlayersTable(players, barValue, 110, cols);
+
+    /// <param name="linkWidth">The "View skills →" column; 0 leaves it out (a table with many columns: the line is still clicked).</param>
+    private FrameworkElement PlayersTable(IReadOnlyList<ReportPlayerLine> players, Func<ReportPlayerLine, double> barValue, double linkWidth, params Col[] cols)
     {
         var stack = new StackPanel();
         Grid Layout()
         {
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 220 });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(linkWidth) });
             foreach (Col c in cols)
             {
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(c.Width) });
@@ -1457,7 +1537,10 @@ public sealed class FightReportWindow : Window
                 link.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
             }
 
-            AddAt(grid, link, 1);
+            if (linkWidth > 0)
+            {
+                AddAt(grid, link, 1);
+            }
             for (int i = 0; i < cols.Length; i++)
             {
                 TextBlock cell = Right(cols[i].Text(p), bold: cols[i].Bold, color: cols[i].Color?.Invoke(p), size: cols[i].Bold ? 14.5 : 13.5);
@@ -1476,7 +1559,7 @@ public sealed class FightReportWindow : Window
             // the bar spans the player column and the link column
             var barHost = new Grid();
             barHost.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 220 });
-            barHost.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
+            barHost.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(linkWidth) });
             barHost.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(cols.Sum(c => c.Width) + 16) });
             Grid.SetColumnSpan(bar, 2);
             barHost.Children.Add(bar);

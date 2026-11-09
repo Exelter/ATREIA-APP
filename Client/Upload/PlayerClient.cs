@@ -26,11 +26,23 @@ public sealed record PlayerGenus(int SpeciesId, int Level, IReadOnlyList<(int Pa
 /// <summary>What only the app knows of a character (its player uses Atreia App): Genus Insight and the pets, and when they were sent.</summary>
 public sealed record PlayerAppData(IReadOnlyList<PlayerGenus> Genus, IReadOnlyList<(int PetId, int Level)> Pets, DateTime? Updated);
 
+/// <summary>One line of the combat stats: its name, its value as the website writes it ("12,345", "2.5%"), and the increase in it when there is one ("+12.5%").</summary>
+public sealed record PlayerStat(string Name, string Value, string? Note);
+
+/// <summary>
+/// The combat stats of a character as the website sums them from its official page (9 November 2026, the owner: "it should show important stats, such as attack,
+/// defense, accuracy/crit"): the gear's lines, Daevanion, titles and the attributes. The page has no combat sheet of the game's own, so the base stats aren't in it;
+/// <see cref="From"/> says which parts were summed and <see cref="Missing"/> which ones weren't read this time. <see cref="Effects"/>: each attribute's effects
+/// at its value ("Attack Increase +7.5%").
+/// </summary>
+public sealed record PlayerSheet(IReadOnlyList<PlayerStat> Offense, IReadOnlyList<PlayerStat> Defense, IReadOnlyList<PlayerStat> Other, IReadOnlyList<string> From,
+    IReadOnlyList<string> Missing, IReadOnlyDictionary<string, IReadOnlyList<string>> Effects);
+
 /// <summary>Everything the player window shows of a character.</summary>
 public sealed record PlayerPage(string Name, string ClassName, int? Level, string Server, int ServerId, string Region, string Faction, string Legion, string Title,
     int? CombatPower, int? ItemLevel, IReadOnlyList<PlayerPiece> Gear, IReadOnlyList<(string Name, string Value)> Stats, IReadOnlyList<PlayerSkill> Skills,
     int? TitlesOwned, int? TitlesTotal, (string Name, int? Level)? Pet, (string Name, string Grade)? Wing, IReadOnlyList<PlayerBoard> Daevanion,
-    IReadOnlyList<PlayerParse> Parses, PlayerAppData? App, string? Page, DateTime? ReadAt);
+    IReadOnlyList<PlayerParse> Parses, PlayerAppData? App, string? Page, DateTime? ReadAt, PlayerSheet? Sheet = null);
 
 /// <summary>The answer: the page, or why there is none.</summary>
 public sealed record PlayerAnswer(PlayerPage? Page, string? Error);
@@ -99,13 +111,34 @@ public static class PlayerClient
             app = new PlayerAppData(genus, pets, updated);
         }
 
+        PlayerSheet? sheet = null;
+        if (root.TryGetProperty("sheet", out JsonElement sh) && sh.ValueKind == JsonValueKind.Object)
+        {
+            List<PlayerStat> Rows(string key) => Items(sh, key).Select(x => new PlayerStat(Str(x, "name") ?? "", Str(x, "value") ?? "", Str(x, "note"))).Where(x => x.Name.Length > 0).ToList();
+            List<string> Words(JsonElement e, string key) => Items(e, key).Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToList();
+            var effects = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+            if (sh.TryGetProperty("effects", out JsonElement fx) && fx.ValueKind == JsonValueKind.Object)
+            {
+                foreach (JsonProperty a in fx.EnumerateObject())
+                {
+                    if (a.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        effects[a.Name] = a.Value.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToList();
+                    }
+                }
+            }
+
+            sheet = new PlayerSheet(Rows("offense"), Rows("defense"), Rows("other"), Words(sh, "from"), Words(sh, "missing"), effects);
+        }
+
         string? page = Str(root, "page");
         return new PlayerPage(Str(c, "name") ?? who.Name, Str(c, "className") ?? who.ClassName ?? "", Int(c, "level") ?? who.Level, Str(c, "server") ?? who.Server,
             Int(c, "serverId") ?? who.ServerId, Str(c, "region") ?? who.Region, Str(c, "faction") ?? "", Str(c, "legion") ?? "", Str(c, "title") ?? "",
             Int(c, "combatPower"), Int(c, "itemLevel"), gear, stats, skills, titles.ValueKind == JsonValueKind.Object ? Int(titles, "owned") : null,
             titles.ValueKind == JsonValueKind.Object ? Int(titles, "total") : null, pet, wing, boards, parses, app,
             page is not null && Brand.IsSiteUrl(page) ? page : null,
-            Str(root, "retrievedAt") is { } at && DateTime.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out DateTime read) ? read : null);
+            Str(root, "retrievedAt") is { } at && DateTime.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out DateTime read) ? read : null,
+            sheet);
     }
 
     private static IReadOnlyList<PlayerLine> Lines(JsonElement e, string key) => Items(e, key)
