@@ -726,6 +726,12 @@ public sealed class PetMapController : IDisposable
             }
         }
 
+        // how many keys the character has with it ("· 3 keys")
+        if (MainWindow.CubeKeysShort() is { } keys)
+        {
+            text += " · " + keys;
+        }
+
         return text;
     }
 

@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "1.21.4",
+      "date": "2026-11-09",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Cubes",
+          "title": "Your Hidden Cube keys, and no cube alerts without one",
+          "text": "The Cube finder shows how many Hidden Cube keys your character has in the bag, and how many more are in storage. The meter's cube line and the cube note show it too. A character with no key in the bag now gets no cube alerts (no note, no sounds, no meter line, no map popping up), so you're not sent to cubes you can't open; the cubes still show on the map. This is on for everyone now, and you can switch it off in the Cube finder (Only when I carry a key).",
+          "example": "On your alt with no keys the cube sounds stay quiet; on your main the note reads \"Hidden Cube nearby · 42 m · 3 keys\"."
+        }
+      ]
+    },
+    {
       "version": "1.21.3",
       "date": "2026-11-09",
       "items": [

@@ -157,7 +157,10 @@ public static class SelfCheckBlackCloud
         Aion2Inventories.Put(new CharacterHoldings { Name = "Keyed", ServerId = 2302, SavedAt = DateTime.UtcNow, Bag = new() { [610900001] = 1 } });
         Aion2Inventories.Put(new CharacterHoldings { Name = "Keyless", ServerId = 2302, SavedAt = DateTime.UtcNow, Bag = new() { [503700031] = 3 }, Storage = new() { [600900001] = 2 } });
         bool keys = Aion2Inventories.IsCubeKey(630900003) && !Aion2Inventories.IsCubeKey(503700031) && Aion2Inventories.HoldsCubeKey("Keyed") == true
-            && Aion2Inventories.HoldsCubeKey("Keyless") == false && Aion2Inventories.HoldsCubeKey("Nobody") is null && Aion2Inventories.HoldsCubeKey(null) is null;
+            && Aion2Inventories.HoldsCubeKey("Keyless") == false && Aion2Inventories.HoldsCubeKey("Nobody") is null && Aion2Inventories.HoldsCubeKey(null) is null
+            // how many (9 November 2026): the bag's and the storage's apart, other items not counted, an unknown bag none at all
+            && Aion2Inventories.CubeKeys("Keyed") == (1, 0) && Aion2Inventories.CubeKeys("Keyless") == (0, 2) && Aion2Inventories.CubeKeys("Nobody") is null
+            && new AionDPS.Ui.MeterSettings().CubeNeedsKey;
         Aion2Inventories.Reset();
         Console.WriteLine($"  -> Odyle Energy 40 and Small Odyle Energy 10 each, the 7-day ones marked ({each}); a bag of 3 + 1 in storage, 30 small 7-day and 2 small: 3 kinds, 480 energy ({items}); a Hidden Cube key in the bag ({keys})");
         return read && onlyOk && needs && tabs && renewOk && each && items && keys;

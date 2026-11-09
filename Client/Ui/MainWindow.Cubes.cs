@@ -77,7 +77,53 @@ public partial class MainWindow
     {
         LocalizationManager loc = LocalizationManager.Instance;
         string what = count > 1 ? string.Format(CultureInfo.CurrentCulture, loc["Cubes.LineMany"], count) : loc["Cubes.LineOne"];
-        text.Text = distance is not null ? what + " · " + distance : what;
+        text.Text = (distance is not null ? what + " · " + distance : what) + (CubeKeysShort() is { } keys ? " · " + keys : "");
+    }
+
+    /// <summary>"3 keys", "1 key" for the cube lines (the meter's, the cube note); null while the logged-in character's bag is not known.</summary>
+    internal static string? CubeKeysShort()
+    {
+        if (Aion2Inventories.CubeKeys(Aion2Inventories.CurrentName()) is not { } keys)
+        {
+            return null;
+        }
+
+        LocalizationManager loc = LocalizationManager.Instance;
+        return keys.Bag == 1 ? loc["Cubes.KeyShort"] : string.Format(CultureInfo.CurrentCulture, loc["Cubes.KeysShort"], keys.Bag);
+    }
+
+    /// <summary>
+    /// The logged-in character's Hidden Cube keys, for the Cube finder page: how many in the bag (and in storage), and when there are none in the bag with the
+    /// alerts set to need a key, that they stay quiet for this character. Null text while no character is known.
+    /// </summary>
+    private static (string Text, bool None)? CubeKeysLine(bool needsKey)
+    {
+        LocalizationManager loc = LocalizationManager.Instance;
+        string? name = Aion2Inventories.CurrentName();
+        if (name is null)
+        {
+            return null;
+        }
+
+        if (Aion2Inventories.CubeKeys(name) is not { } keys)
+        {
+            return (string.Format(CultureInfo.CurrentCulture, loc["Cubes.KeysUnknown"], name), false);
+        }
+
+        string text = keys.Bag == 0 ? string.Format(CultureInfo.CurrentCulture, loc["Cubes.KeysNone"], name)
+            : keys.Bag == 1 ? string.Format(CultureInfo.CurrentCulture, loc["Cubes.KeysOne"], name)
+            : string.Format(CultureInfo.CurrentCulture, loc["Cubes.KeysMany"], name, keys.Bag);
+        if (keys.Storage > 0)
+        {
+            text += string.Format(CultureInfo.CurrentCulture, loc[keys.Bag == 0 ? "Cubes.KeysStorageOnly" : "Cubes.KeysStorage"], keys.Storage);
+        }
+
+        if (keys.Bag == 0)
+        {
+            text += " " + loc[needsKey ? "Cubes.KeysQuiet" : "Cubes.KeysLoud"];
+        }
+
+        return (text, keys.Bag == 0);
     }
 
     /// <summary>Tools → Cube finder: what the game announces now, and the switches of the line, the sound and the map.</summary>
@@ -103,10 +149,22 @@ public partial class MainWindow
         nowHead.Children.Add(nowLine);
         nowStack.Children.Add(nowHead);
         nowStack.Children.Add(nowSub);
+        // the character's keys (9 November 2026, the owner: "show how many keys the char has")
+        var keysLine = Wrapped("", "Brush.Text", 13);
+        keysLine.Margin = new Thickness(0, 10, 0, 0);
+        nowStack.Children.Add(keysLine);
+        void ShowKeys()
+        {
+            (string Text, bool None)? keys = CubeKeysLine(MeterSettings.Load().CubeNeedsKey);
+            keysLine.Visibility = keys is null ? Visibility.Collapsed : Visibility.Visible;
+            keysLine.Text = keys is { } k ? "🔑 " + k.Text : "";
+            keysLine.SetResourceReference(TextBlock.ForegroundProperty, keys is { None: true } ? "Brush.Warning" : "Brush.Text");
+        }
         column.Children.Add(HomeCard(loc["Cubes.Now"], nowStack, null, 0));
 
         void ShowNow()
         {
+            ShowKeys();
             if (PrivacyConsent.Restricted || _source?.Entities is not Aion2EntityDirectory directory)
             {
                 nowLine.Text = loc["Cubes.NoGame"];
@@ -127,6 +185,7 @@ public partial class MainWindow
         {
             nowLine.Text = loc["Cubes.LineOne"] + " · " + string.Format(CultureInfo.CurrentCulture, loc["Cubes.Metres"], 42);
             nowSub.Text = string.Format(CultureInfo.CurrentCulture, loc["Cubes.Seen"], 3);
+            keysLine.Text = "🔑 " + string.Format(CultureInfo.CurrentCulture, loc["Cubes.KeysMany"], "Seraphyne", 3);
         }
         else
         {
@@ -170,7 +229,7 @@ public partial class MainWindow
         Switch(loc["Cubes.Popup"], loc["Cubes.PopupTip"], s0.CubePopup, (s, v) => s.CubePopup = v);
         CheckBox sound = Switch(loc["Cubes.Chime"], loc["Cubes.ChimeTip"], s0.CubeArrivalSound, (s, v) => s.CubeArrivalSound = v);
         Switch(loc["Cubes.Beeps"], loc["Cubes.BeepsTip"], s0.CubeBeeps, (s, v) => s.CubeBeeps = v);
-        Switch(loc["Cubes.OnlyKey"], loc["Cubes.OnlyKeyTip"], s0.CubeOnlyWithKey, (s, v) => s.CubeOnlyWithKey = v);
+        Switch(loc["Cubes.OnlyKey"], loc["Cubes.OnlyKeyTip"], s0.CubeNeedsKey, (s, v) => s.CubeNeedsKey = v);
         var volumeRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(26, -4, 0, 14) };
         volumeRow.Children.Add(ShellText(loc["Cubes.Volume"], "Brush.TextMuted", 12));
         var volume = new Slider { Minimum = 0, Maximum = 100, Value = Math.Clamp(s0.CubeSoundVolume, 0, 100), Width = 180, Margin = new Thickness(10, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center, IsSnapToTickEnabled = true, TickFrequency = 5 };

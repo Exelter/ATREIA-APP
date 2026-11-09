@@ -22817,8 +22817,58 @@
     "de": "Nur wenn ich einen Schlüssel dabeihabe"
   },
   "Cubes.OnlyKeyTip": {
-    "en": "The note, the sounds, the meter's line and the map coming up only while your character has a Hidden Cube key in its bag. The cube still shows on the map. Until the app has seen your bag (at your login), the alerts come as usual.",
-    "de": "Hinweis, Töne, die Zeile des Meters und die aufklappende Karte nur, solange dein Charakter einen Schlüssel für Versteckte Kuben im Inventar hat. Der Kubus bleibt auf der Karte. Bis die App dein Inventar gesehen hat (beim Login), kommen die Hinweise wie gewohnt."
+    "en": "The note, the sounds, the meter's line and the map coming up only while your character has a Hidden Cube key in its bag, so a character without keys isn't sent to cubes it can't open. The cube still shows on the map. Until the app has seen your bag (at your login), the alerts come as usual. On by default.",
+    "de": "Hinweis, Töne, die Zeile des Meters und die aufklappende Karte nur, solange dein Charakter einen Schlüssel für Versteckte Würfel im Inventar hat, damit ein Charakter ohne Schlüssel nicht zu Würfeln geschickt wird, die er nicht öffnen kann. Der Würfel bleibt auf der Karte. Bis die App dein Inventar gesehen hat (beim Login), kommen die Hinweise wie gewohnt. Standardmäßig an."
+  },
+  "Cubes.KeyShort": {
+    "en": "1 key",
+    "de": "1 Schlüssel",
+    "fr": "1 clé"
+  },
+  "Cubes.KeysShort": {
+    "en": "{0} keys",
+    "de": "{0} Schlüssel",
+    "fr": "{0} clés"
+  },
+  "Cubes.KeysOne": {
+    "en": "{0} has 1 Hidden Cube key in the bag.",
+    "de": "{0} hat 1 Schlüssel für Versteckte Würfel im Inventar.",
+    "fr": "{0} a 1 clé de cube caché dans son sac."
+  },
+  "Cubes.KeysMany": {
+    "en": "{0} has {1} Hidden Cube keys in the bag.",
+    "de": "{0} hat {1} Schlüssel für Versteckte Würfel im Inventar.",
+    "fr": "{0} a {1} clés de cube caché dans son sac."
+  },
+  "Cubes.KeysNone": {
+    "en": "{0} has no Hidden Cube key in the bag.",
+    "de": "{0} hat keinen Schlüssel für Versteckte Würfel im Inventar.",
+    "fr": "{0} n’a aucune clé de cube caché dans son sac."
+  },
+  "Cubes.KeysStorage": {
+    "en": " {0} more in storage.",
+    "de": " {0} weitere im Lager.",
+    "fr": " {0} de plus dans l’entrepôt."
+  },
+  "Cubes.KeysStorageOnly": {
+    "en": " {0} in storage: take one into the bag to open a cube.",
+    "de": " {0} im Lager: nimm einen ins Inventar, um einen Würfel zu öffnen.",
+    "fr": " {0} dans l’entrepôt : mettez-en une dans le sac pour ouvrir un cube."
+  },
+  "Cubes.KeysQuiet": {
+    "en": "The cube alerts stay quiet for this character; the cubes still show on the map.",
+    "de": "Die Würfel-Hinweise bleiben für diesen Charakter still; die Würfel stehen weiter auf der Karte.",
+    "fr": "Les alertes de cube restent muettes pour ce personnage ; les cubes restent sur la carte."
+  },
+  "Cubes.KeysLoud": {
+    "en": "The alerts still come: switch on “Only when I carry a key” to keep them quiet without a key.",
+    "de": "Die Hinweise kommen trotzdem: schalte „Nur wenn ich einen Schlüssel dabeihabe“ ein, damit sie ohne Schlüssel still bleiben.",
+    "fr": "Les alertes arrivent quand même : activez « Seulement si j’ai une clé » pour les faire taire sans clé."
+  },
+  "Cubes.KeysUnknown": {
+    "en": "{0}’s keys show once the app has seen the bag (at login).",
+    "de": "Die Schlüssel von {0} erscheinen, sobald die App das Inventar gesehen hat (beim Login).",
+    "fr": "Les clés de {0} s’affichent dès que l’application a vu le sac (à la connexion)."
   },
   "Images.Fetching": {
     "en": "Downloading the game's pictures (icons and maps). This happens only once.",

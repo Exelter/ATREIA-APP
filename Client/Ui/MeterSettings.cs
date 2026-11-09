@@ -755,11 +755,13 @@ public sealed class MeterSettings
     public bool ShowMapOnCube { get; set; }
 
     /// <summary>The cube alerts (the note, the chime and beeps, the meter's line, the map coming up) only while the character carries a Hidden Cube key in its
-    /// bag (a tester, 7 November 2026: "so it doesn't take you to a cube and you have no keys"); while the bag is not known they come as before. Off by default.</summary>
-    public bool CubeOnlyWithKey { get; set; }
+    /// bag (a tester, 7 November 2026: "so it doesn't take you to a cube and you have no keys"); while the bag is not known they come as before. On by default
+    /// since 9 November 2026 (the owner: "disable it for chars with no cube keys automatically"); it was CubeOnlyWithKey, off by default, so the new name
+    /// switches it on once for everyone, and what they choose after is kept.</summary>
+    public bool CubeNeedsKey { get; set; } = true;
 
-    /// <summary>Whether the cube alerts may come now (<see cref="CubeOnlyWithKey"/>).</summary>
-    public bool CubeAlertsNow() => !CubeOnlyWithKey || Aion2.Aion2Inventories.HoldsCubeKey(Aion2.Aion2Inventories.CurrentName()) != false;
+    /// <summary>Whether the cube alerts may come now (<see cref="CubeNeedsKey"/>).</summary>
+    public bool CubeAlertsNow() => !CubeNeedsKey || Aion2.Aion2Inventories.HoldsCubeKey(Aion2.Aion2Inventories.CurrentName()) != false;
 
     /// <summary>The cards of the ticked pets the Black Cloud Merchant offers that the character still needs are marked on the shop's page (ShopMarks; it was a
     /// pop-up at the top until 7 November 2026). On by default.</summary>

@@ -100,7 +100,13 @@ public static class Aion2Inventories
     public static bool IsCubeKey(int item) => Aion2ItemNames.NameOf(item, "en") is { } name && name.StartsWith("Key: Hidden Cube", StringComparison.Ordinal);
 
     /// <summary>Whether the character carries a Hidden Cube key in its bag (where it opens a cube from); null while its bag is not known.</summary>
-    public static bool? HoldsCubeKey(string? name)
+    public static bool? HoldsCubeKey(string? name) => CubeKeys(name) is { } keys ? keys.Bag > 0 : null;
+
+    /// <summary>
+    /// How many Hidden Cube keys the character has (9 November 2026, the owner: "show how many keys the char has"): in its bag, where a cube is opened from,
+    /// and in its own storage; null while its bag is not known.
+    /// </summary>
+    public static (long Bag, long Storage)? CubeKeys(string? name)
     {
         if (name is null)
         {
@@ -109,7 +115,13 @@ public static class Aion2Inventories
 
         lock (Gate)
         {
-            return _characters.TryGetValue(name, out CharacterHoldings? held) ? held.Bag.Any(kv => kv.Value > 0 && IsCubeKey(kv.Key)) : null;
+            if (!_characters.TryGetValue(name, out CharacterHoldings? held))
+            {
+                return null;
+            }
+
+            static long Count(Dictionary<int, long> items) => items.Where(kv => kv.Value > 0 && IsCubeKey(kv.Key)).Sum(kv => kv.Value);
+            return (Count(held.Bag), Count(held.Storage));
         }
     }
 
