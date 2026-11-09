@@ -21,8 +21,9 @@ namespace AionDPS.Update;
 /// <list type="bullet">
 /// <item>First start (no pack yet): before the meter's window, a small window shows the download; Skip leaves the app without pictures until the next
 /// start (<see cref="FirstStart"/>).</item>
-/// <item>Every later start, in the background: a newer pack is fetched into images.next and takes over at the start after (<see cref="ApplyWaiting"/>),
-/// before any picture is open.</item>
+/// <item>Every later start, in the background: a newer pack is fetched into images.next and its pictures are used right away (9 November 2026, the owner:
+/// two restarts before a new picture showed would only confuse players). At the next start, before any picture is open, it moves into the place of the
+/// old one (<see cref="ApplyWaiting"/>).</item>
 /// </list>
 /// The pack's SHA-256 is checked before anything is unpacked, and only pictures (.png, .jpg, .webp) inside the folder are taken from it.
 /// </summary>
@@ -51,11 +52,11 @@ public static class ImagePack
         [property: JsonPropertyName("sha256")] string? Sha256,
         [property: JsonPropertyName("installed")] DateTime At);
 
-    private static string Current => GameArt.PackFolder;
+    private static string Current => GameArt.PackBase;
 
-    private static string Next => GameArt.PackFolder + ".next";
+    private static string Next => GameArt.PackBase + ".next";
 
-    private static string Old => GameArt.PackFolder + ".old";
+    private static string Old => GameArt.PackBase + ".old";
 
     private static HttpClient CreateClient()
     {
@@ -64,6 +65,9 @@ public static class ImagePack
         client.DefaultRequestHeaders.UserAgent.TryParseAdd($"AtreiaApp/{AppVersion.Text}");
         return client;
     }
+
+    /// <summary>A newer pack came in while the app runs and is in use now (raised on a worker thread): windows drawn from now on show its pictures.</summary>
+    public static event Action? Arrived;
 
     /// <summary>The version of the pack in use, null when there is none.</summary>
     public static string? InstalledVersion => ReadMarker(Current)?.Version;
@@ -231,14 +235,25 @@ public static class ImagePack
             }
 
             using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(30));
-            if (await LatestAsync(timeout.Token) is not { } index || index.Version == installed.Version || ReadMarker(Next)?.Version == index.Version)
+            if (await LatestAsync(timeout.Token) is not { } index || index.Version == installed.Version)
             {
+                return;
+            }
+
+            if (ReadMarker(Next)?.Version == index.Version)
+            {
+                // fetched before and still waiting (it could not move into place at this start): in use now
+                GameArt.Use(Next);
+                Arrived?.Invoke();
                 return;
             }
 
             if (await FetchAsync(index, null, timeout.Token))
             {
-                Log($"pack {index.Version} is ready and takes over at the next start");
+                // its pictures right away; the old pack's files stay where they are (some may be open), and the new one moves into their place at the next start
+                GameArt.Use(Next);
+                Log($"pack {index.Version} is in use now, and moves into place at the next start");
+                Arrived?.Invoke();
             }
         }
         catch (Exception ex)

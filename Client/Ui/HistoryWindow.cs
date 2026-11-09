@@ -106,10 +106,20 @@ public sealed class HistoryWindow : Window
             rankWait.Start();
         }));
         FightRanks.Changed += onRank;
+        // a newer pack of the game's pictures came in while the app runs (a boss picture added): the list is drawn again with it
+        Action onPictures = () => Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (_reportView is null)
+            {
+                Draw();
+            }
+        }));
+        AionDPS.Update.ImagePack.Arrived += onPictures;
         Closed += (_, _) =>
         {
             FightLog.Changed -= onChanged;
             FightRanks.Changed -= onRank;
+            AionDPS.Update.ImagePack.Arrived -= onPictures;
             rankWait.Stop();
             CloseReport();
         };

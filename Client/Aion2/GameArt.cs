@@ -14,8 +14,19 @@ public static class GameArt
 {
     private static readonly string AppAssets = Path.Combine(AppContext.BaseDirectory, "assets");
 
-    /// <summary>The unpacked image pack: %APPDATA%\AtreiaApp\images (or in the data folder the tests set).</summary>
-    public static string PackFolder => Path.Combine(global::AionDPS.Ui.MeterSettings.DataDirectory, "images");
+    /// <summary>Where the image pack is kept: %APPDATA%\AtreiaApp\images (or in the data folder the tests set).</summary>
+    public static string PackBase => Path.Combine(global::AionDPS.Ui.MeterSettings.DataDirectory, "images");
+
+    private static volatile string? _inUse;
+
+    /// <summary>
+    /// The pack the pictures are read from: <see cref="PackBase"/>, or a newer pack fetched while the app runs (images.next), from the moment it is
+    /// complete (<see cref="Use"/>), so its pictures show without a restart.
+    /// </summary>
+    public static string PackFolder => _inUse ?? PackBase;
+
+    /// <summary>The pictures are read from this folder from now on (a newer pack that just came in).</summary>
+    public static void Use(string folder) => _inUse = folder;
 
     /// <summary>The pictures came with this build (unpacked into its assets folder: a developer's build, the checks): nothing to download.</summary>
     public static bool Bundled => Directory.Exists(Path.Combine(AppAssets, "aion2", "skills", "icons"))
