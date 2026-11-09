@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "1.21.6",
+      "date": "2026-11-09",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Find a player",
+          "title": "A player's page is up to date when you open it",
+          "text": "Opening a player's page shows what the website has right away, then reads the character's game page again when the website's copy is more than 10 minutes old, the same as pressing refresh. Combat Power and Item Level always show the newest numbers the website has, for example from that player's last login with the app. Before, a copy up to two days old could show last week's numbers.",
+          "example": "You open YIELD's page: it shows 183,235 Combat Power and Item Level 2,914 from this evening's login, not the 180,972 from two days ago."
+        }
+      ]
+    },
+    {
       "version": "1.21.5",
       "date": "2026-11-09",
       "items": [
@@ -15,13 +28,6 @@
           "title": "Exact combat stats, or none",
           "text": "The Stats tab of a player's page shows Attack, Accuracy, Critical Hit, HP, MP, Defense, Evasion and Critical Hit Resist with the exact numbers of the game's own character window, and when they were sent. These come from that player's own Atreia App, because the game sends them to nobody else. The rough totals from the character page are gone, since they never matched the game. A player without the app now gets a note saying their stats show once they use Atreia App, instead of numbers that were wrong.",
           "example": "You look up Mirelle, who plays with the app: Attack 3,254, Defense 17,314, HP 31,402, the same as in her own window 12 minutes ago."
-        },
-        {
-          "kind": "fixed",
-          "area": "Find a player",
-          "title": "A player's page is up to date when you open it",
-          "text": "Opening a player's page shows what the website has right away, then reads the character's game page again when the website's copy is more than 10 minutes old, the same as pressing refresh. Combat Power and Item Level always show the newest numbers the website has, for example from that player's last login with the app. Before, a copy up to two days old could show last week's numbers.",
-          "example": "You open YIELD's page: it shows 183,235 Combat Power and Item Level 2,914 from this evening's login, not the 180,972 from two days ago."
         },
         {
           "kind": "new",
