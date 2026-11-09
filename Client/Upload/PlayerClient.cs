@@ -143,7 +143,9 @@ public static class PlayerClient
             Int(c, "combatPower"), Int(c, "itemLevel"), gear, stats, skills, titles.ValueKind == JsonValueKind.Object ? Int(titles, "owned") : null,
             titles.ValueKind == JsonValueKind.Object ? Int(titles, "total") : null, pet, wing, boards, parses, app,
             page is not null && Brand.IsSiteUrl(page) ? page : null,
-            Str(root, "retrievedAt") is { } at && DateTime.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out DateTime read) ? read : null,
+            // when the website last read the game's page (checkedAt; retrievedAt moves only when something on it changed, from websites before 1.21.5)
+            (Str(root, "checkedAt") ?? Str(root, "retrievedAt")) is { } at
+                && DateTime.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out DateTime read) ? read : null,
             sheet);
     }
 

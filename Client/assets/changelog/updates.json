@@ -17,6 +17,13 @@
           "example": "You look up Mirelle, who plays with the app: Attack 3,254, Defense 17,314, HP 31,402, the same as in her own window 12 minutes ago."
         },
         {
+          "kind": "fixed",
+          "area": "Find a player",
+          "title": "A player's page is up to date when you open it",
+          "text": "Opening a player's page shows what the website has right away, then reads the character's game page again when the website's copy is more than 10 minutes old, the same as pressing refresh. Combat Power and Item Level always show the newest numbers the website has, for example from that player's last login with the app. Before, a copy up to two days old could show last week's numbers.",
+          "example": "You open YIELD's page: it shows 183,235 Combat Power and Item Level 2,914 from this evening's login, not the 180,972 from two days ago."
+        },
+        {
           "kind": "new",
           "area": "Account",
           "title": "Your stats go with your Genus and pets",

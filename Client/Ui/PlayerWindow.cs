@@ -44,7 +44,7 @@ public sealed class PlayerWindow : Window
                 Close();
             }
         };
-        Loaded += async (_, _) => await _view.LoadAsync(false);
+        Loaded += async (_, _) => await _view.OpenAsync();
     }
 
     /// <summary>Another character in the same window.</summary>
@@ -151,6 +151,23 @@ public sealed class PlayerView : Border
         Show(answer.Page);
     }
 
+    /// <summary>
+    /// Opened (from a search, a click on a name): what the website has at once, then the game's page read again when the website's copy of it is older than
+    /// <see cref="ReadAgainAfter"/>, as the refresh button does (9 November 2026, the owner: "it should update once searched and clicked on"; the copy was two
+    /// days old and showed last week's Combat Power). The website reads a character at most once in ten minutes, so this never reads it more often.
+    /// </summary>
+    public async Task OpenAsync()
+    {
+        await LoadAsync(false);
+        if (_page is { } page && (page.ReadAt is not DateTime read || DateTime.UtcNow - read > ReadAgainAfter))
+        {
+            await LoadAsync(true);
+        }
+    }
+
+    /// <summary>A copy of the game's page older than this is read again when the window opens.</summary>
+    public static readonly TimeSpan ReadAgainAfter = TimeSpan.FromMinutes(10);
+
     public async Task SwitchAsync(FoundPlayer who)
     {
         _who = who;
@@ -158,7 +175,7 @@ public sealed class PlayerView : Border
         _tab = "Overview";
         DrawHeader();
         DrawTabs();
-        await LoadAsync(false);
+        await OpenAsync();
     }
 
     /// <summary>A page read (or made up, for the pictures).</summary>
