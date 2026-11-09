@@ -1,0 +1,65 @@
+name: Backup
+
+# A copy of this repository away from GitHub (9 November 2026, the owner: "a backup of everything, so if GitHub gets banned I can still update the app"):
+# on every change to main, its whole history as a git bundle and its files as a zip go into the website's file storage (Cloudflare R2, bucket
+# "atreia-app", under source/), which the site never serves to visitors (src/gate.js serves only download/ and updates/). The website's APP-SOURCE.bat
+# fetches them onto the owner's PC, and APP-BUILD.bat builds and publishes a release from there, without GitHub (Tools/release/build-release.ps1).
+#
+#   source/ATREIA-APP.bundle          the whole history: git clone ATREIA-APP.bundle ATREIA-APP
+#   source/ATREIA-APP-source.zip      the files of main as they are now
+#   source/daily/ATREIA-APP-<date>.bundle   one a day, the last 14 days kept (in case a change has to be undone after a while)
+#
+# Needs the repository secrets of the release workflow: R2_ENDPOINT, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: true
+
+jobs:
+  backup:
+    name: Copy to atreia.app's storage
+    runs-on: ubuntu-latest
+    env:
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Bundle and zip
+        run: |
+          git bundle create ATREIA-APP.bundle --all
+          git bundle verify ATREIA-APP.bundle
+          git archive --format=zip --prefix=ATREIA-APP/ -o ATREIA-APP-source.zip HEAD
+          ls -la ATREIA-APP.bundle ATREIA-APP-source.zip
+
+      - name: Put them in atreia.app's storage
+        run: |
+          if [ -z "$R2_ENDPOINT" ]; then echo "The R2 secrets are not set: nothing copied."; exit 0; fi
+          command -v aws > /dev/null || pip install --quiet --user awscli || { echo "::error::The AWS CLI (for R2) could not be installed."; exit 1; }
+          export PATH="$HOME/.local/bin:$PATH"
+          put() { aws s3 cp "$1" "s3://atreia-app/$2" --endpoint-url "$R2_ENDPOINT" --content-type application/octet-stream --only-show-errors && echo "  $2"; }
+          put ATREIA-APP.bundle source/ATREIA-APP.bundle
+          put ATREIA-APP-source.zip source/ATREIA-APP-source.zip
+          put ATREIA-APP.bundle "source/daily/ATREIA-APP-$(date -u +%F).bundle"
+          # the daily copies older than 14 days
+          cutoff=$(date -u -d '14 days ago' +%F)
+          aws s3 ls s3://atreia-app/source/daily/ --endpoint-url "$R2_ENDPOINT" | awk '{print $NF}' | while read -r f; do
+            day=${f#ATREIA-APP-}; day=${day%.bundle}
+            if [[ "$day" < "$cutoff" ]]; then aws s3 rm "s3://atreia-app/source/daily/$f" --endpoint-url "$R2_ENDPOINT" --only-show-errors && echo "  removed source/daily/$f"; fi
+          done
+          echo "The repository is copied to atreia.app's storage (source/): $(git rev-parse --short HEAD), $(git log -1 --format=%cd --date=iso)."

@@ -103,73 +103,24 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      # The release's layout (Tools/release/publish.ps1): the app and its libraries, assets\, licenses\, and the .NET runtime in runtime\.
-      - name: Publish Atreia App (win-x64)
+      # Everything up to the files for atreia.app, by the same script the owner's PC runs without GitHub (Tools/release/build-release.ps1, from the
+      # website's APP-BUILD.bat): the app published in its installed layout, its self-checks with the game's pictures from atreia.app (a failed check
+      # stops the release: nothing is packed, each failed line an error on the run's page), the release before it from atreia.app for a small delta
+      # package, Velopack (the installer, the packages, releases.<channel>.json, the index the installed app reads), the installer named after the
+      # app (Atreia-App-Setup.exe; a test release Atreia-App-test-Setup.exe), the update notes (updates.json) and SHA256SUMS.txt beside them.
+      - name: Build the release
         shell: pwsh
-        run: pwsh Tools/release/publish.ps1 -Version ${{ steps.version.outputs.number }} -Out publish
+        timeout-minutes: 45
+        run: pwsh Tools/release/build-release.ps1 -Version ${{ steps.version.outputs.pack }} -Out releases
 
-      # The app's own checks (recorded game frames, no game or Npcap needed), on a copy of the published folder with the game's pictures in it (the image
-      # pack from atreia.app: the release itself never carries them), and that it ran on the .NET in its runtime folder. A failed check fails the run:
-      # nothing is packed; each failed line becomes an error on the run's page, so a red run says which check broke.
-      - name: Self-checks
-        shell: pwsh
-        timeout-minutes: 20
-        run: |
-          Copy-Item publish checked -Recurse
-          pwsh Tools/release/images.ps1 -Dir checked
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          pwsh Tools/release/selftest.ps1 -Dir checked -Runtime
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Remove-Item checked -Recurse -Force
-
-      - name: Install the Velopack CLI
-        run: dotnet tool install --global vpk --version 1.2.0
-
-      # Delta packages are built by diffing against the previous release, so the previous release has to be on disk before packing (from the website,
-      # where the installed copies take their updates); without it every update is the full download. Allowed to fail: the first release on the
-      # website has nothing to fetch, and a missed delta only costs bandwidth, never correctness.
-      - name: Fetch the previous release (for delta packages)
-        shell: pwsh
-        run: |
-          vpk download http --url https://atreia.app/app/updates/ --channel ${{ steps.version.outputs.channel }} --outputDir releases
-          if ($LASTEXITCODE -ne 0) {
-            "::notice title=No earlier release::atreia.app has no earlier release on the ${{ steps.version.outputs.channel }} channel yet: this one is a full download only."
-            exit 0
-          }
-
-      # Produces, in "releases": the installer (AtreiaApp-<channel>-Setup.exe, renamed below), a full .nupkg, a delta .nupkg when a previous release was
-      # fetched above, and releases.<channel>.json, the index the installed app reads to discover updates. The package id is the folder the app installs
-      # into: %LOCALAPPDATA%\AtreiaApp.
-      - name: Build the Velopack release
-        run: >
-          vpk pack
-          --packId AtreiaApp
-          --packTitle "Atreia App"
-          --packAuthors "Atreia"
-          --packVersion ${{ steps.version.outputs.pack }}
-          --packDir publish
-          --mainExe "AtreiaApp.exe"
-          --icon Client/assets/app/aiondps.ico
-          --channel ${{ steps.version.outputs.channel }}
-          --outputDir releases
-
-      # The installer is named after the app (Atreia-App-Setup.exe; a test release: Atreia-App-test-Setup.exe). The portable zip is left out: it is
-      # another full copy of what the installer carries. The update notes (updates.json) go with the release, for the site's tools/app-release.mjs.
-      # SHA256SUMS.txt lists the installer and the packages, so a download can be checked (Get-FileHash on Windows, sha256sum elsewhere).
-      - name: Name the installer after the app
+      - name: The installer
         id: installer
         shell: pwsh
         run: |
           $ch = '${{ steps.version.outputs.channel }}'
           $name = if ($ch -eq 'stable') { 'Atreia-App-Setup.exe' } else { "Atreia-App-$ch-Setup.exe" }
-          Move-Item "releases/AtreiaApp-$ch-Setup.exe" "releases/$name"
-          Get-ChildItem releases -File -Filter '*-Portable.zip' | Remove-Item
-          Copy-Item Client/assets/changelog/updates.json releases/updates.json
-          $sums = Get-ChildItem releases -File | Where-Object { $_.Name -like '*.exe' -or $_.Name -like '*.nupkg' } | Sort-Object Name |
-            ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" }
-          [System.IO.File]::WriteAllText((Join-Path (Resolve-Path releases).Path 'SHA256SUMS.txt'), (($sums -join "`n") + "`n"))
+          if (-not (Test-Path "releases/$name")) { throw "releases/$name is missing." }
           "path=releases/$name" >> $env:GITHUB_OUTPUT
-          Get-ChildItem releases -File | ForEach-Object { "  $($_.Name)  $([math]::Round($_.Length / 1MB, 1)) MB" }
 
       # Scans the installer with VirusTotal. Skipped when the VT_API_KEY secret is not set. An unreachable VirusTotal never blocks a release (warning
       # only); a verdict does: 5 or more malicious/suspicious engines, or any of the big vendors listed below, fails the run so the release is never

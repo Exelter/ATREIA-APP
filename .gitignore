@@ -11,6 +11,9 @@ captures/
 # Build output of the release flow (dotnet publish -o publish, then the MSI into dist/).
 publish/
 dist/
+# Tools/release/build-release.ps1: its working folder and the release it builds
+release-work/
+releases/
 
 node_modules/
 .claude/settings.local.json

@@ -39,15 +39,10 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
-      # Published the way a release is (the .NET runtime in its own folder, no language folders of .NET's), then the same checks run in it, and that it
-      # ran on its own runtime and not the one installed on the machine.
-      - name: Publish like a release
+      # A whole release built the way a real one is, by the same script (Tools/release/build-release.ps1) the release workflow and the owner's PC run:
+      # published with the .NET runtime in its own folder, the self-checks in it (and that it ran on its own runtime, not the one installed on the
+      # machine), then packed with Velopack. Nothing is put anywhere; no delta (it would fetch the last release from atreia.app every time).
+      - name: Build a release like a real one
         shell: pwsh
-        run: pwsh Tools/release/publish.ps1 -Version 1.0.0 -Out publish
-      - name: Game pictures
-        shell: pwsh
-        run: pwsh Tools/release/images.ps1 -Dir publish
-      - name: Self-checks in the release layout
-        shell: pwsh
-        timeout-minutes: 20
-        run: pwsh Tools/release/selftest.ps1 -Dir publish -Runtime
+        timeout-minutes: 40
+        run: pwsh Tools/release/build-release.ps1 -Version 1.0.0 -Out releases -NoDelta
