@@ -45,6 +45,22 @@ public sealed class HistoryWindow : Window
     /// <summary>The character picked on the chips ("" = all), kept while the app runs so the page opens on the same one.</summary>
     private static string _character = AllCharacters;
 
+    // ---------- the player search (9 November 2026, the owner: "a search bar here: type some dude's name, to see if you have them in any of your logs") ----------
+    private readonly TextBox _searchBox = new()
+    {
+        FontSize = 13.5, BorderThickness = new Thickness(0), Background = Brushes.Transparent, VerticalContentAlignment = VerticalAlignment.Center, MaxLength = 40,
+        Padding = new Thickness(0, 6, 0, 6),
+    };
+    private readonly StackPanel _found = new() { Margin = new Thickness(0, 8, 0, 0) };
+    private readonly System.Windows.Threading.DispatcherTimer _searchWait = new() { Interval = TimeSpan.FromMilliseconds(250) };
+
+    /// <summary>What the search box holds (trimmed); a search from 2 letters on.</summary>
+    private string Query => _searchBox.Text.Trim();
+
+    private bool Searching => Query.Length >= 2;
+
+    private bool Matches(FightLogEntry e) => e.Players?.Any(n => n.Contains(Query, StringComparison.OrdinalIgnoreCase)) == true;
+
     public HistoryWindow()
     {
         Title = "History · " + Brand.AppName;
@@ -61,6 +77,8 @@ public sealed class HistoryWindow : Window
         ThemeManager.UseTitleFont(title);
         page.Children.Add(title);
         page.Children.Add(Muted("Boss fights, Nightmare, training dummy parses and PvP are saved on this PC as they end, each on its own, with every number the meter showed. Click one for its report.", 13.5, new Thickness(0, 4, 0, 0)));
+        page.Children.Add(SearchBar());
+        page.Children.Add(_found);
         page.Children.Add(_characters);
         page.Children.Add(_board);
         var tabLine = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Margin = new Thickness(0, 18, 0, 0), Child = _tabs };
@@ -115,8 +133,17 @@ public sealed class HistoryWindow : Window
             }
         }));
         AionDPS.Update.ImagePack.Arrived += onPictures;
+        _searchWait.Tick += (_, _) =>
+        {
+            _searchWait.Stop();
+            CloseReport();
+            Draw();
+        };
+        // the fights saved before the names were kept: read for them in the background (the page is drawn again when done)
+        FightLog.FillPlayerNames();
         Closed += (_, _) =>
         {
+            _searchWait.Stop();
             FightLog.Changed -= onChanged;
             FightRanks.Changed -= onRank;
             AionDPS.Update.ImagePack.Arrived -= onPictures;
@@ -143,6 +170,13 @@ public sealed class HistoryWindow : Window
         IReadOnlyList<FightLogEntry> all = _character == AllCharacters ? everything : everything.Where(e => e.You == _character).ToList();
         _bests = all.Where(e => e.Kind == FightLogKind.Boss && e.Killed == true && e.YourDps > 0).GroupBy(TitleOf).ToDictionary(g => g.Key, g => g.Max(e => e.YourDps));
         DrawBoard(all);
+        DrawFound(all);
+        // a name in the search box: the tabs and the list show only the fights with a player of that name (the last 7 days above stay as they are)
+        IReadOnlyList<FightLogEntry> runsAll = all.Where(e => e.Kind == FightLogKind.Run).ToList();
+        if (Searching)
+        {
+            all = all.Where(Matches).ToList();
+        }
 
         _tabs.Children.Clear();
         foreach (string name in Tabs)
@@ -178,6 +212,13 @@ public sealed class HistoryWindow : Window
         if (entries.Count == 0)
         {
             string who = _character == AllCharacters ? "" : " for " + _character;
+            if (Searching)
+            {
+                _list.Children.Add(Card(Muted($"No {_tab.ToLowerInvariant()}{who} with a player called “{Query}”." + (FightLog.FillingNames ? " Older fights are still being read for their players: this fills in by itself in a moment." : ""),
+                    13.5, new Thickness(18, 16, 18, 16))));
+                return;
+            }
+
             _list.Children.Add(Card(Muted(_tab switch
             {
                 "Boss fights" => $"No boss fights{who} yet. Every boss you fight, in a dungeon or in the open world, is saved here when the fight ends.",
@@ -190,8 +231,7 @@ public sealed class HistoryWindow : Window
 
         if (_tab is "Boss fights" or "Nightmare")
         {
-            DrawVisits(entries.Where(e => e.Kind == FightLogKind.Boss).ToList(), all.Where(e => e.Kind == FightLogKind.Run).ToList(),
-                entries.Where(e => e.Kind == FightLogKind.Run).ToList());
+            DrawVisits(entries.Where(e => e.Kind == FightLogKind.Boss).ToList(), runsAll.ToList(), entries.Where(e => e.Kind == FightLogKind.Run).ToList());
             return;
         }
 
@@ -208,6 +248,129 @@ public sealed class HistoryWindow : Window
 
             _list.Children.Add(Card(card));
         }
+    }
+
+    /// <summary>The search box: a glass, the box with its hint while empty, and × to clear it.</summary>
+    private FrameworkElement SearchBar()
+    {
+        _searchBox.SetResourceReference(TextBox.ForegroundProperty, "Brush.Text");
+        _searchBox.SetResourceReference(TextBox.CaretBrushProperty, "Brush.Text");
+        var hint = new TextBlock { Text = "Find a player in your fights: type a name", FontSize = 13.5, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false, Margin = new Thickness(2, 0, 0, 0) };
+        hint.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        var clear = new TextBlock { Text = "×", FontSize = 16, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 2, 0), Cursor = Cursors.Hand, Visibility = Visibility.Collapsed,
+            ToolTip = "Clear the search" };
+        clear.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        clear.MouseLeftButtonUp += (_, _) =>
+        {
+            _searchBox.Text = "";
+            _searchBox.Focus();
+        };
+        _searchBox.TextChanged += (_, _) =>
+        {
+            hint.Visibility = _searchBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+            clear.Visibility = _searchBox.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+            _searchWait.Stop();
+            _searchWait.Start();
+        };
+        _searchBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Escape && _searchBox.Text.Length > 0)
+            {
+                _searchBox.Text = "";
+                e.Handled = true;
+            }
+        };
+        var glass = new TextBlock { Text = "\uE721", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 13, VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 10, 0) };
+        glass.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        var field = new Grid();
+        field.Children.Add(hint);
+        field.Children.Add(_searchBox);
+        var row = new DockPanel();
+        DockPanel.SetDock(glass, Dock.Left);
+        DockPanel.SetDock(clear, Dock.Right);
+        row.Children.Add(glass);
+        row.Children.Add(clear);
+        row.Children.Add(field);
+        var box = new Border
+        {
+            Child = row, CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), Padding = new Thickness(12, 2, 10, 2), Margin = new Thickness(0, 16, 0, 0),
+            MaxWidth = 460, HorizontalAlignment = HorizontalAlignment.Left, Cursor = Cursors.IBeam,
+        };
+        box.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+        box.SetResourceReference(Border.BorderBrushProperty, "Brush.Border");
+        box.MouseLeftButtonDown += (_, _) => _searchBox.Focus();
+        _searchBox.GotKeyboardFocus += (_, _) => box.BorderBrush = Frozen(Color.FromRgb(0xDC, 0xB8, 0x77));
+        _searchBox.LostKeyboardFocus += (_, _) => box.SetResourceReference(Border.BorderBrushProperty, "Brush.Border");
+        box.Width = 460;
+        return box;
+    }
+
+    /// <summary>
+    /// Under the search box: the players whose name has what's typed, each with the fights you had them in and when last (a click searches that name alone),
+    /// or that nobody of that name is in your fights.
+    /// </summary>
+    private void DrawFound(IReadOnlyList<FightLogEntry> all)
+    {
+        _found.Children.Clear();
+        if (!Searching)
+        {
+            _found.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        _found.Visibility = Visibility.Visible;
+        string q = Query;
+        var people = all.Where(e => e.Players is not null)
+            .SelectMany(e => e.Players!.Where(n => n.Contains(q, StringComparison.OrdinalIgnoreCase)).Select(n => (Name: n, Entry: e)))
+            .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => (Name: g.Key, Fights: g.Select(x => x.Entry).Where(e => e.Kind != FightLogKind.Run).Select(e => e.Id).Distinct().Count(), Last: g.Max(x => x.Entry.Start)))
+            .OrderByDescending(x => x.Fights).ThenByDescending(x => x.Last).ToList();
+        string reading = FightLog.FillingNames ? " Older fights are still being read for their players: this fills in by itself in a moment." : "";
+        string where = _character == AllCharacters ? "your fights" : _character + "'s fights";
+        if (people.Count == 0)
+        {
+            _found.Children.Add(Muted($"Nobody called “{q}” in {where}." + reading, 13, new Thickness(2, 0, 0, 0)));
+            return;
+        }
+
+        int fights = all.Count(e => e.Kind != FightLogKind.Run && Matches(e));
+        _found.Children.Add(Muted($"{Plural(people.Count, "player")} with “{q}” in the name, in {Plural(fights, "fight")} of {where}. The tabs below show only those fights." + reading,
+            13, new Thickness(2, 0, 0, 8)));
+        var chips = new WrapPanel();
+        foreach (var person in people.Take(12))
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            var name = new TextBlock { Text = person.Name, FontSize = 13, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
+            name.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Text");
+            row.Children.Add(name);
+            TextBlock n = Muted($"{Plural(person.Fights, "fight")} · last {person.Last.ToString("MMM d", En)}", 11.5, new Thickness(8, 0, 0, 0));
+            n.VerticalAlignment = VerticalAlignment.Center;
+            row.Children.Add(n);
+            var chip = new Border
+            {
+                Child = row, CornerRadius = new CornerRadius(15), Padding = new Thickness(12, 5, 12, 5), Margin = new Thickness(0, 0, 8, 8), BorderThickness = new Thickness(1),
+                Cursor = Cursors.Hand, ToolTip = "Only " + person.Name,
+            };
+            chip.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+            chip.SetResourceReference(Border.BorderBrushProperty, "Brush.Border");
+            chip.MouseEnter += (_, _) => chip.SetResourceReference(Border.BackgroundProperty, "Brush.ControlHover");
+            chip.MouseLeave += (_, _) => chip.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+            string exact = person.Name;
+            chip.MouseLeftButtonUp += (_, _) =>
+            {
+                _searchBox.Text = exact;
+                _searchBox.CaretIndex = exact.Length;
+            };
+            chips.Children.Add(chip);
+        }
+
+        if (people.Count > 12)
+        {
+            chips.Children.Add(Muted($"and {people.Count - 12} more: type more of the name", 11.5, new Thickness(4, 6, 0, 0)));
+        }
+
+        _found.Children.Add(chips);
     }
 
     /// <summary>Nightmare: the Nightmare zone itself and its altars.</summary>

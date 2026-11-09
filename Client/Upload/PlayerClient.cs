@@ -119,11 +119,11 @@ public static class PlayerClient
             var effects = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
             if (sh.TryGetProperty("effects", out JsonElement fx) && fx.ValueKind == JsonValueKind.Object)
             {
-                foreach (JsonProperty a in fx.EnumerateObject())
+                foreach (JsonProperty attribute in fx.EnumerateObject())
                 {
-                    if (a.Value.ValueKind == JsonValueKind.Array)
+                    if (attribute.Value.ValueKind == JsonValueKind.Array)
                     {
-                        effects[a.Name] = a.Value.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToList();
+                        effects[attribute.Name] = attribute.Value.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToList();
                     }
                 }
             }

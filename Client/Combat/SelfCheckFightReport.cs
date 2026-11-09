@@ -53,6 +53,10 @@ public static class SelfCheckFightReport
             History.FightLogEntry? run = History.FightLog.Save(History.FightLogKind.Run, input with { Start = input.Start.AddMinutes(-1), Targets = null }, "Normal", 600001, 3);
             bool saved = boss is { Killed: true } && run is { BossFights: 3, Killed: null } && History.FightLog.Entries().Count == 2 && History.FightLog.Entries()[0].Id == boss.Id
                 && Math.Abs(boss.PartyDps - r.PartyDps) < 0.5 && boss.You == "Seraphyne" && Math.Abs(boss.YourDps - r.PlayerOf(3)!.Dps) < 0.5;
+            // the players' names in the index (the History's player search), and the same read back from the fight's file (an entry saved before they were kept)
+            bool names = boss!.Players is { } ps && ps.Contains("Seraphyne") && ps.Count == input.Players.Select(p => p.Name).Distinct().Count()
+                && History.FightLog.NamesIn(Path.Combine(folder, boss.File)) is { } read && read.SequenceEqual(ps) && r.PlayerOf(3)!.Hits.Direct > 0;
+            Console.WriteLine($"  -> the players' names kept with each fight and read back from its file, the hit kinds in the report: {names}");
             ReportInput? back = History.FightLog.Open(boss!);
             FightReport again = FightReport.Build(back!);
             bool same = again.Damage == r.Damage && again.Players.Count == r.Players.Count && again.PlayerOf(3)!.Skills.Count == r.PlayerOf(3)!.Skills.Count
@@ -71,7 +75,7 @@ public static class SelfCheckFightReport
             History.FightLog.Reload();
             bool deleted = History.FightLog.Entries().Count == 1 && History.FightLog.Open(boss!) is null;
             Console.WriteLine($"  -> the history: saved on its own, listed newest first, opened again to the same report (skill ids, levels, casts), deleted with its file: {saved && same && deleted}");
-            return saved && same && upload && deleted;
+            return saved && same && upload && deleted && names;
         }
         finally
         {

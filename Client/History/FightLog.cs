@@ -17,11 +17,13 @@ public enum FightLogKind
 
 /// <summary>
 /// One entry of the history, for the list: what, when, how long, killed or not, how many boss fights, your DPS and the group's, and the file with the
-/// fight itself (every hit, heal, shield, avoided attack and the capture's extras), from which the fight report is made again.
+/// fight itself (every hit, heal, shield, avoided attack and the capture's extras), from which the fight report is made again. <see cref="Players"/>: the names
+/// of everyone in the fight, for the History's player search (null for an entry saved before they were kept: <see cref="FightLog.FillPlayerNames"/> reads them).
 /// </summary>
 public sealed record FightLogEntry(
     string Id, FightLogKind Kind, string Title, string? Detail, DateTime Start, double Seconds, bool? Killed, int BossFights,
-    double YourDps, double PartyDps, int? BossNpcId, int ZoneId, string File, string? You = null, string? YourClass = null, string? Url = null, int? ServerId = null);
+    double YourDps, double PartyDps, int? BossNpcId, int ZoneId, string File, string? You = null, string? YourClass = null, string? Url = null, int? ServerId = null,
+    IReadOnlyList<string>? Players = null);
 
 /// <summary>
 /// The history on this PC (%APPDATA%\AtreiaApp\History): every dungeon run, boss fight, dummy parse and arena stay is saved as a file of its own
@@ -127,7 +129,8 @@ public static class FightLog
             input.Avoids.Select(a => new AvoidDto(a.Timestamp.Ticks, a.SourceObjectId, a.TargetObjectId, (int)a.Kind, a.Skill)).ToList(),
             Convert.ToBase64String(ExtrasBlob.Pack(input.Extras with { Tracks = null, Hp = null })), input.Targets?.ToList());
         var entry = new FightLogEntry(id, kind, input.Title, detail, input.Start, seconds, kind == FightLogKind.Boss ? input.Killed : null, bossFights,
-            you is not null ? yours / seconds : 0, party / seconds, input.BossNpcId, zoneId, relative, you?.Name, you?.ClassName, ServerId: serverId > 0 ? serverId : null);
+            you is not null ? yours / seconds : 0, party / seconds, input.BossNpcId, zoneId, relative, you?.Name, you?.ClassName, ServerId: serverId > 0 ? serverId : null,
+            Players: NamesOf(input.Players.Select(p => p.Name)));
 
         lock (Gate)
         {
@@ -271,6 +274,159 @@ public static class FightLog
         }
 
         Changed?.Invoke();
+    }
+
+    // ---------- the names in each fight, for the History's player search (9 November 2026, the owner: "a search bar: type some dude's name, to see if you
+    // have them in any of your logs") ----------
+
+    private static List<string> NamesOf(IEnumerable<string?> names) =>
+        names.Where(n => n is { Length: > 0 }).Select(n => n!.Trim()).Where(n => n.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Take(64).ToList();
+
+    private static int _filling;
+
+    /// <summary>True while older entries are being read for their names (<see cref="FillPlayerNames"/>).</summary>
+    public static bool FillingNames => Volatile.Read(ref _filling) == 1;
+
+    /// <summary>
+    /// The entries saved before the names were kept in the index: each one's file read for its players (only the start of the file, where they are),
+    /// in the background, once a run of the app; the index saved every 200 and at the end, and <see cref="Changed"/> raised. An unreadable file gets an empty list,
+    /// so it isn't tried again.
+    /// </summary>
+    public static void FillPlayerNames()
+    {
+        if (Interlocked.Exchange(ref _filling, 1) == 1)
+        {
+            return;
+        }
+
+        List<FightLogEntry> todo;
+        lock (Gate)
+        {
+            todo = LoadIndex().Where(e => e.Players is null).ToList();
+        }
+
+        if (todo.Count == 0)
+        {
+            Volatile.Write(ref _filling, 0);
+            return;
+        }
+
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                var found = new Dictionary<string, List<string>>();
+                void Flush()
+                {
+                    if (found.Count == 0)
+                    {
+                        return;
+                    }
+
+                    lock (Gate)
+                    {
+                        List<FightLogEntry> index = LoadIndex();
+                        for (int i = 0; i < index.Count; i++)
+                        {
+                            if (index[i].Players is null && found.TryGetValue(index[i].Id, out List<string>? names))
+                            {
+                                index[i] = index[i] with { Players = names };
+                            }
+                        }
+
+                        try
+                        {
+                            SaveIndex(index);
+                        }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                        {
+                            // kept in memory; saved with the next change
+                        }
+                    }
+
+                    found.Clear();
+                }
+
+                for (int k = 0; k < todo.Count; k++)
+                {
+                    found[todo[k].Id] = NamesIn(Path.Combine(Folder, todo[k].File)) ?? new List<string>();
+                    if (found.Count >= 200)
+                    {
+                        Flush();
+                    }
+                }
+
+                Flush();
+            }
+            finally
+            {
+                Volatile.Write(ref _filling, 0);
+                Changed?.Invoke();
+            }
+        });
+    }
+
+    /// <summary>The players' names in a fight's file: read from its start (they come before the hits), not the whole file. Null when it can't be read.</summary>
+    internal static List<string>? NamesIn(string path)
+    {
+        try
+        {
+            using FileStream file = File.OpenRead(path);
+            using var gzip = new GZipStream(file, CompressionMode.Decompress);
+            byte[] buffer = new byte[1 << 18];
+            int length = 0, read;
+            while (length < buffer.Length && (read = gzip.Read(buffer, length, buffer.Length - length)) > 0)
+            {
+                length += read;
+            }
+
+            ReadOnlySpan<byte> data = buffer.AsSpan(0, length);
+            ReadOnlySpan<byte> key = "\"Players\":"u8;
+            int at = data.IndexOf(key);
+            if (at < 0)
+            {
+                return null;
+            }
+
+            var reader = new Utf8JsonReader(data[(at + key.Length)..], isFinalBlock: false, state: default);
+            if (!reader.Read() || reader.TokenType != JsonTokenType.StartArray)
+            {
+                return null;
+            }
+
+            var names = new List<string?>();
+            int depth = 0;
+            string? property = null;
+            while (reader.Read())
+            {
+                switch (reader.TokenType)
+                {
+                    case JsonTokenType.StartObject or JsonTokenType.StartArray:
+                        depth++;
+                        break;
+                    case JsonTokenType.EndObject:
+                        depth--;
+                        break;
+                    case JsonTokenType.EndArray when depth == 0:
+                        return NamesOf(names);
+                    case JsonTokenType.EndArray:
+                        depth--;
+                        break;
+                    case JsonTokenType.PropertyName:
+                        property = reader.GetString();
+                        break;
+                    case JsonTokenType.String when depth == 1 && property == "Name":
+                        names.Add(reader.GetString());
+                        break;
+                }
+            }
+
+            return null;   // (the list went past what was read: not a fight file as saved)
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Forgets the index read before (a test that changed <see cref="Folder"/>).</summary>

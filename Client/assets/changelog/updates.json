@@ -22,6 +22,13 @@
           "title": "Attack, defense, accuracy and crit in a character's stats",
           "text": "A character's Stats tab now starts with their combat stats: Attack, Accuracy, Critical Hit, Penetration and the damage boosts, then Defense, HP, Block, Evasion and Critical Hit Resist. They are added up from the gear, Daevanion, titles and attributes on the game's character page; the game's base stats aren't on that page, so they aren't included. Point at an attribute to see what it gives.",
           "example": "Look up Dranna: the Stats tab shows her Attack and Critical Hit at the top, with Might, Justice and the other attributes under them."
+        },
+        {
+          "kind": "new",
+          "area": "History",
+          "title": "Find a player in your fights",
+          "text": "The History has a search box: type part of a name and it shows everyone with it in the name who was in your fights, with how many fights and when last. The tabs below then list only the fights with them; click a name to look for that player alone. Fights saved before this update are read for their players once, in the background, the first time you open the History.",
+          "example": "Type \"kash\": Kashlyn shows up in 14 of your fights, last on Nov 8, and the Boss fights tab lists those 14."
         }
       ]
     },
