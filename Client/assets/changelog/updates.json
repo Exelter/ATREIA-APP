@@ -37,6 +37,27 @@
           "title": "The game's pictures, downloaded once",
           "text": "The game's icons and maps (items, skills, pets, bosses, wings, classes) come as one download of about 40 MB on the first start, with the progress shown, instead of inside the app. They are kept on your PC; a newer set comes by itself in the background.",
           "example": "First start: a small window shows \"12 of 40 MB\", then the meter opens with every icon."
+        },
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "Monsters named right after a dungeon",
+          "text": "After a dungeon, ordinary monsters in the open world could be named after its boss on the meter: Kerubars as Mutated Gerod, Kerubiel as Zikel's Apparition. The game gives a boss's number to the next monster once the boss is gone, and the meter kept the boss's name for it. Now each monster keeps its own name.",
+          "example": "Killing Kerubars on the beach after Blades Hideout: the meter's title names the fight right, not Mutated Gerod."
+        },
+        {
+          "kind": "improved",
+          "area": "History",
+          "title": "Bosses show their own picture",
+          "text": "Boss fights without a picture of their boss showed your class icon in the history. Field bosses now show their portraits, Nightmare and Conquest bosses the picture of their boss, and Eternal Ludra has one. A boss without any picture shows its first letter.",
+          "example": "Rahu and Ketu show \"R\" and \"K\" instead of your class icon."
+        },
+        {
+          "kind": "improved",
+          "area": "Characters",
+          "title": "Combat Power on every character",
+          "text": "The characters list said \"Level 45\" for every character at the top. It now shows each character's Combat Power, as last seen when it logged in, else its Item Level.",
+          "example": "\"124.1K CP · Fafnir · seen 1 m ago\""
         }
       ]
     },
