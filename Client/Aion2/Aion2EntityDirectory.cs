@@ -2458,24 +2458,25 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
     // Entity id -> NPC id, kept only for monsters that are bosses (see Aion2BossCatalog).
     private readonly Dictionary<int, int> _bossNpcs = new();
 
-    /// <summary>Remembers that the monster with this entity id is the boss with this NPC id. Called
-    /// when the game announces a monster; ids that are no boss are ignored.</summary>
+    /// <summary>Remembers which monster has this entity id (called when the game announces a monster), and whether it is a boss.
+    /// The game gives an id to the next monster once the last one is gone. A monster that is no boss takes the id's boss name with it:
+    /// 9 November 2026, a player killing Kerubars and Kerubiel on a beach saw the meter name the fight after Mutated Gerod and Zikel's Apparition,
+    /// the bosses of Blades Hideout and Impetusium that had had those ids earlier in the session (the health bar named the right monster).</summary>
     public void RegisterNpc(int entityId, int npcId)
     {
+        bool boss = Protocol.Aion2BossCatalog.Find(npcId) is not null;
         lock (_gate)
         {
             _npcIds[entityId] = npcId;
             _npcLevels.Remove(entityId); // the id is reused: the level of its earlier life no longer applies
-        }
-
-        if (Protocol.Aion2BossCatalog.Find(npcId) is null)
-        {
-            return;
-        }
-
-        lock (_gate)
-        {
-            _bossNpcs[entityId] = npcId;
+            if (boss)
+            {
+                _bossNpcs[entityId] = npcId;
+            }
+            else
+            {
+                _bossNpcs.Remove(entityId);
+            }
         }
     }
 
@@ -3327,7 +3328,11 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
 
             foreach ((int entityId, int npcId) in snapshot.BossNpcs)
             {
-                _bossNpcs.TryAdd(entityId, npcId);
+                // not over a monster the live stream already announced under that id since (the id was given to another one)
+                if (!_npcIds.TryGetValue(entityId, out int live) || live == npcId)
+                {
+                    _bossNpcs.TryAdd(entityId, npcId);
+                }
             }
 
             if (_explicitLocalId < 0 && snapshot.LocalPlayerId >= 0)

@@ -2092,7 +2092,19 @@ public static class SelfCheckAion2
             Console.WriteLine($"  -> names, classes and legion come back: {named}");
             Console.WriteLine($"  -> a recognised boss keeps its name: {boss}");
             Console.WriteLine($"  -> what the live stream already knows wins: {liveWins}");
-            return eventsBack && named && boss && liveWins;
+
+            // The game gives a boss's entity id to an ordinary monster later (Kerubiel, no boss): it is no boss under the boss's name any more,
+            // neither live nor when the snapshot of the boss comes back after the monster was announced.
+            var reused = new Aion2EntityDirectory();
+            reused.RegisterNpc(30410, 2300104);
+            reused.RegisterNpc(30410, 2400803);
+            var restoredOver = new Aion2EntityDirectory();
+            restoredOver.RegisterNpc(30410, 2400803);
+            restoredOver.RestoreFrom(loaded.Directory!);
+            bool reusedId = reused.BossNpcIdOf(30410) is null && reused.NameFor(30410) != "Enhanced Harcon" && reused.KnownBosses().Count == 0
+                && restoredOver.BossNpcIdOf(30410) is null && restoredOver.NameFor(30410) != "Enhanced Harcon";
+            Console.WriteLine($"  -> a boss's id given to an ordinary monster is no boss any more, live or restored: {reusedId}");
+            return eventsBack && named && boss && liveWins && reusedId;
         }
         finally
         {
