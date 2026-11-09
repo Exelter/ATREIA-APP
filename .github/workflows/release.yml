@@ -6,7 +6,8 @@ name: Build a release for atreia.app
 # - Pushing a tag "vX.Y.Z" (or "X.Y.Z"): the release of that tag.
 #
 # The app's own version number is set from the version given, so the title bar always shows the version that was released, whatever the project file
-# said. A version with a suffix ("1.21.0-alpha.1") is a test release.
+# said. A version with a suffix ("1.21.0-alpha.1") is a test release. Test versions are compared letter by letter, capitals before small letters: after
+# "1.21.0-Beta" comes "1.21.0-Beta.2" (not "1.21.0-alpha.2", which counts as older, so an installed test copy would never be offered it).
 #
 # Releases are not published on GitHub (9 November 2026): the installer and the updates are on the website. This builds the release, runs the checks,
 # and keeps the result as the run's artifact ("Atreia-App-v<version>"). To put it on the site, download the artifact, unzip it, and in the site's folder:
