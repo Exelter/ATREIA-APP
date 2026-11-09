@@ -1,12 +1,15 @@
 name: Build a release for atreia.app
 
-# Runs on every "vX.Y.Z" tag push and can also be started by hand for a tag that already exists (workflow_dispatch).
+# Two ways to start it:
+# - Actions > "Build a release for atreia.app" > Run workflow: type the version ("1.21.0", or "1.21.0-alpha.1" for a test release) and pick the branch
+#   (main). The release is built from that branch; when it passed its checks, the tag "v<version>" is put on the commit it was built from.
+# - Pushing a tag "vX.Y.Z" (or "X.Y.Z"): the release of that tag.
 #
-# The tag may be written with or without the "v" ("v1.21.0" or "1.21.0"). The app's own version number is set from the tag, so the title bar always
-# shows the version that was released, whatever the project file said. A tag with a suffix ("v1.21.0-alpha.1") is a test release.
+# The app's own version number is set from the version given, so the title bar always shows the version that was released, whatever the project file
+# said. A version with a suffix ("1.21.0-alpha.1") is a test release.
 #
 # Releases are not published on GitHub (9 November 2026): the installer and the updates are on the website. This builds the release, runs the checks,
-# and keeps the result as the run's artifact ("Atreia-App-<tag>"). To put it on the site, download the artifact, unzip it, and in the site's folder:
+# and keeps the result as the run's artifact ("Atreia-App-v<version>"). To put it on the site, download the artifact, unzip it, and in the site's folder:
 #
 #   node tools/app-release.mjs <the unzipped folder>
 #   DEPLOY
@@ -20,12 +23,12 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+*"
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Existing tag to build a release of (e.g. v1.21.0)"
+      version:
+        description: "Version to release: 1.21.0, or 1.21.0-alpha.1 for a test release"
         required: true
 
 permissions:
-  contents: read
+  contents: write # only to put the tag on the commit of a release started by hand
 
 jobs:
   release:
@@ -34,17 +37,28 @@ jobs:
       - name: Determine tag
         id: tag
         shell: bash
+        env:
+          INPUT: ${{ github.event.inputs.version }}
         run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            version="${INPUT#v}"
+            if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error::\"$INPUT\" is no version: write it like 1.21.0, or 1.21.0-alpha.1 for a test release."
+              exit 1
+            fi
+            echo "name=v$version" >> "$GITHUB_OUTPUT"
+            echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo "tagit=true" >> "$GITHUB_OUTPUT"
           else
             echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "ref=$GITHUB_REF" >> "$GITHUB_OUTPUT"
+            echo "tagit=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Checkout tag
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.tag.outputs.name }}
+          ref: ${{ steps.tag.outputs.ref }}
 
       # The assembly version is plain major.minor.build: everything from the first "-" goes ("v1.21.0-alpha.1" builds as 1.21.0).
       #
@@ -209,3 +223,17 @@ jobs:
             echo 'DEPLOY'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # A release started by hand: its tag on the commit it was built from, so the release can be found in the history. (A tag pushed with the workflow's
+      # own token starts no further run.) An existing tag of that name is left as it is.
+      - name: Tag the commit
+        if: steps.tag.outputs.tagit == 'true'
+        shell: bash
+        run: |
+          tag="${{ steps.tag.outputs.name }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "The tag $tag exists already: left as it is."
+          else
+            git tag "$tag" "${{ steps.tag.outputs.ref }}"
+            git push origin "refs/tags/$tag"
+          fi
