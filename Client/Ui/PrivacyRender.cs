@@ -52,13 +52,13 @@ public static class PrivacyRender
         var styled = new SettingsWindow(settings);
         // "wizard" draws page 1, "wizard:2" page 2 ... (1 language, 2 policy, 3 uploads, 4 ready); "wizard:3" is drawn with the policy accepted
         var wizard = kind.StartsWith("wizard", StringComparison.Ordinal) ? new WizardWindow(new MeterSettings()) : null;
-        bool small = false;
+        bool smallScreen = false;
         if (wizard is not null)
         {
             // "wizard:4w" is the last page while no character is recognised yet, "wizard:4n" the same with Npcap missing
             string tail = kind.Contains(':') ? kind[(kind.IndexOf(':') + 1)..] : "1";
             // "s" at the end: on a laptop screen (the window at most 560 high; 10 November 2026, the Back and Next buttons were out of sight there)
-            small = tail.EndsWith('s');
+            smallScreen = tail.EndsWith('s');
             tail = tail.TrimEnd('s');
             int page = int.Parse(tail.TrimEnd('w', 'n')) - 1;
             bool waiting = tail.EndsWith('w') || tail.EndsWith('n');
@@ -87,7 +87,7 @@ public static class PrivacyRender
         double width = wizard is not null ? 680 : 660;
         content.Measure(new Size(width, double.PositiveInfinity));
         int w = (int)Math.Ceiling(width), h = (int)Math.Ceiling(content.DesiredSize.Height);
-        if (small)
+        if (smallScreen)
         {
             h = Math.Min(h, 560);
         }
