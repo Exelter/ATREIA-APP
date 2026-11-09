@@ -2313,6 +2313,16 @@ internal static class Program
         grid.Children.Add(View(page, "Genus & Pets"));
         grid.Children.Add(View(page, "Skills"));
         grid.Children.Add(View(page with { App = null }, "Overview"));
+        // the Stats tab with the combat stats the website sums from the character's page (9 November 2026)
+        var sheet = new Upload.PlayerSheet(
+            new List<Upload.PlayerStat> { new("Attack", "2,527", "+15.2%"), new("Accuracy", "1,496", "+8.7%"), new("Critical Hit", "715", "+9%"), new("Penetration", "1,350", null),
+                new("Combat Speed", "34.1%", null), new("Weapon Damage Boost", "125.4%", null), new("Boss Damage Boost", "12.5%", null) },
+            new List<Upload.PlayerStat> { new("HP", "48,230", null), new("Defense", "3,180", "+5.1%"), new("Block", "1,480", null), new("Evasion", "1,204", null),
+                new("Critical Hit Resist", "742", null) },
+            new List<Upload.PlayerStat> { new("Shield Block Rate", "+3%", null) },
+            new[] { "gear", "titles", "attributes" }, new[] { "Daevanion" },
+            new Dictionary<string, IReadOnlyList<string>> { ["Attack"] = new[] { "Attack Increase +7.5%", "Combat Speed +7.5%" } });
+        grid.Children.Add(View(page with { Sheet = sheet }, "Stats"));
         var strip = new System.Windows.Controls.Border { Padding = new System.Windows.Thickness(20, 20, 2, 2), Child = grid,
             Background = new System.Windows.Media.LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x4a, 0x56, 0x3a), System.Windows.Media.Color.FromRgb(0x22, 0x2c, 0x30), 60) };
         strip.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
