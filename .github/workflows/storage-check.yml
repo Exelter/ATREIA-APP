@@ -1,0 +1,36 @@
+name: Site storage check
+
+# Checks that the release workflow can reach the site's file storage (Cloudflare R2, bucket "atreia-app") with the repository secrets R2_ENDPOINT,
+# R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY: it lists the bucket, writes a small file into it and removes it again. Start it by hand (Run workflow)
+# after changing the secrets.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/storage-check.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - name: Check the storage
+        run: |
+          for name in R2_ENDPOINT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::A secret is missing (${name/AWS_/R2_})."; exit 1; fi
+          done
+          echo "Endpoint host: $(echo "$R2_ENDPOINT" | sed -E 's#^https://([^.]{6})[^.]*#https://\1…#')"
+          aws s3 ls s3://atreia-app/ --endpoint-url "$R2_ENDPOINT" || { echo "::error::The bucket atreia-app cannot be listed: wrong endpoint, key, or no bucket of that name."; exit 1; }
+          echo "checked $(date -u +%FT%TZ)" > check.txt
+          aws s3 cp check.txt s3://atreia-app/check/ci.txt --endpoint-url "$R2_ENDPOINT" --only-show-errors || { echo "::error::The key cannot write into the bucket (it needs Object Read & Write)."; exit 1; }
+          aws s3 rm s3://atreia-app/check/ci.txt --endpoint-url "$R2_ENDPOINT" --only-show-errors || { echo "::error::The key cannot remove files from the bucket."; exit 1; }
+          echo "The release workflow can list, write and remove files in atreia-app."
