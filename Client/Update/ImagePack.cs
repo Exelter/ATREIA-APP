@@ -204,6 +204,20 @@ public static class ImagePack
             Close();
         };
         window.ShowDialog();
+
+        // This was the app's first window, so WPF made it the app's main window: the meter's window, created next, has to take that place itself (the
+        // other windows take their styles from it, and closing it ends the app).
+        try
+        {
+            if (Application.Current is { } app && ReferenceEquals(app.MainWindow, window))
+            {
+                app.MainWindow = null;
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Program sets the meter's window as the main window right after creating it anyway
+        }
     }
 
     /// <summary>Every later start, in the background: a newer pack on the website is fetched, and takes over at the next start. Never throws.</summary>
