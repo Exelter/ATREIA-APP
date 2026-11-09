@@ -33,7 +33,7 @@ public sealed class AccountWindow : Window
     public AccountWindow()
     {
         Title = Brand.AppName + " account";
-        Width = 460;
+        Width = 480;
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -78,7 +78,7 @@ public sealed class AccountWindow : Window
         LegionShare.Changed += OnAccountChanged;
         Closed += (_, _) => LegionShare.Changed -= OnAccountChanged;
         _legion.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
-        _shareLegion.Content = new TextBlock { Text = LocalizationManager.Instance["Legion.Share"], TextWrapping = TextWrapping.Wrap };
+        _shareLegion.Content = Wrapped(LocalizationManager.Instance["Legion.Share"]);
         _shareLegion.IsChecked = MeterSettings.Load().ShareLegionList;
         _shareLegion.Click += (_, _) =>
         {
@@ -86,7 +86,7 @@ public sealed class AccountWindow : Window
             settings.ShareLegionList = _shareLegion.IsChecked == true;
             settings.Save();
         };
-        _shareProfile.Content = new TextBlock { Text = LocalizationManager.Instance["Profile.Share"], TextWrapping = TextWrapping.Wrap };
+        _shareProfile.Content = Wrapped(LocalizationManager.Instance["Profile.Share"]);
         _shareProfile.IsChecked = MeterSettings.Load().ShareProfile;
         _shareProfile.Click += async (_, _) =>
         {
@@ -106,6 +106,25 @@ public sealed class AccountWindow : Window
         };
     }
 
+    /// <summary>
+    /// A check box's words. The check box style puts them next to the box in a row without a width, so a long text never wrapped and was cut off at the
+    /// window's edge, in the system's dim text colour (9 November 2026, the owner: "i cant read" the account window). They wrap now, in the text colour.
+    /// </summary>
+    private static TextBlock Wrapped(string text)
+    {
+        var block = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, MaxWidth = 410, FontSize = 12.5, LineHeight = 18 };
+        block.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Text");
+        return block;
+    }
+
+    /// <summary>The window as a signed-in player sees it, for the pictures of the checks (render-tool account).</summary>
+    internal static AccountWindow Sample()
+    {
+        var window = new AccountWindow();
+        window.DrawSignedIn("Exelt");
+        return window;
+    }
+
     private void OnAccountChanged() => Dispatcher.BeginInvoke(new Action(() => Draw(null)));
 
     /// <summary>Draws the state: signed in, waiting for the approval, or signed out (with an optional message).</summary>
@@ -113,21 +132,7 @@ public sealed class AccountWindow : Window
     {
         if (Account.SignedIn)
         {
-            _pending = null;
-            _timer.Stop();
-            _status.Text = "Signed in" + (Account.Name is { Length: > 0 } name ? " as " + name : "") + ".";
-            _hint.Text = "Fights you upload go to your Atreia account. You choose who sees each one on the site: only you, anyone with the link, or everyone. New fights get the choice set on the Discord page (Meter).";
-            _code.Visibility = Visibility.Collapsed;
-            _signIn.Visibility = Visibility.Collapsed;
-            _openAgain.Visibility = Visibility.Collapsed;
-            _signOut.Visibility = Visibility.Visible;
-            _myFights.Visibility = Visibility.Visible;
-            _verify.Text = VerifyText(CharacterVerify.Last);
-            _verify.Visibility = Visibility.Visible;
-            _shareLegion.Visibility = Visibility.Visible;
-            _shareProfile.Visibility = Visibility.Visible;
-            _legion.Text = LegionText(LegionShare.Last);
-            _legion.Visibility = Visibility.Visible;
+            DrawSignedIn(Account.Name);
             return;
         }
 
@@ -154,6 +159,26 @@ public sealed class AccountWindow : Window
         _signIn.Visibility = Visibility.Visible;
         _signIn.IsEnabled = true;
         _openAgain.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>The signed-in state: the account's name, the character check, the legion list and the profile switches.</summary>
+    private void DrawSignedIn(string? name)
+    {
+        _pending = null;
+        _timer.Stop();
+        _status.Text = "Signed in" + (name is { Length: > 0 } ? " as " + name : "") + ".";
+        _hint.Text = "Fights you upload go to your Atreia account. You choose who sees each one on the site: only you, anyone with the link, or everyone. New fights get the choice set on the Discord page (Meter).";
+        _code.Visibility = Visibility.Collapsed;
+        _signIn.Visibility = Visibility.Collapsed;
+        _openAgain.Visibility = Visibility.Collapsed;
+        _signOut.Visibility = Visibility.Visible;
+        _myFights.Visibility = Visibility.Visible;
+        _verify.Text = VerifyText(CharacterVerify.Last);
+        _verify.Visibility = Visibility.Visible;
+        _shareLegion.Visibility = Visibility.Visible;
+        _shareProfile.Visibility = Visibility.Visible;
+        _legion.Text = LegionText(LegionShare.Last);
+        _legion.Visibility = Visibility.Visible;
     }
 
     /// <summary>The meter's check of the character played, in the window's words: how the last one went, or how it works before the first one.</summary>

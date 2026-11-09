@@ -177,6 +177,18 @@ public static class ToolRender
                 break;
             }
 
+            case "account":
+            {
+                // the Atreia account window, signed in (9 November 2026: its switches' texts were cut off and dim)
+                AccountWindow window = AccountWindow.Sample();
+                shown = (FrameworkElement)window.Content;
+                window.Content = null;
+                shown.Width = window.Width;
+                width = 0;
+                height = 0;
+                break;
+            }
+
             case "placement":
             {
                 // the question when a saved window place was on a monitor that is not there
