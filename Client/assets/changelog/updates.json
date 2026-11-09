@@ -6,6 +6,18 @@
   ],
   "versions": [
     {
+      "version": "1.21.7",
+      "date": "2026-11-10",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Setup",
+          "title": "The welcome window's buttons on smaller screens",
+          "text": "On a laptop or another smaller screen, the welcome window you see the first time was taller than the screen, so its Back and Next buttons were out of sight and you could only close it. Now the privacy text scrolls in its own box and the buttons always stay at the bottom of the window."
+        }
+      ]
+    },
+    {
       "version": "1.21.6",
       "date": "2026-11-09",
       "items": [

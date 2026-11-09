@@ -261,7 +261,13 @@ public partial class WizardWindow : Window
     private bool _finished;
 
     /// <summary>The policy in the chosen language, as paragraphs and bullet items (the rest of the wizard changes language by itself).</summary>
-    private void ShowPolicyText() => PolicyHost.Content = PolicyTextView.Build(LocalizationManager.Instance["Privacy.Text"]);
+    /// <summary>The privacy text in a box of its own that scrolls (10 November 2026: on a laptop screen the whole text made the window taller than the screen, and
+    /// the Back and Next buttons were out of sight on every page, so the welcome window could only be closed).</summary>
+    private void ShowPolicyText() => PolicyHost.Content = new ScrollViewer
+    {
+        MaxHeight = Math.Max(160, SystemParameters.WorkArea.Height - 330), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(0, 0, 10, 0),
+        Content = PolicyTextView.Build(LocalizationManager.Instance["Privacy.Text"]),
+    };
 
     /// <summary>Takes effect at once, like in Settings: the wizard's own texts change language with it.</summary>
     private void OnLanguageChanged(object sender, SelectionChangedEventArgs e)

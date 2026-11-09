@@ -78,15 +78,17 @@
         </Style>
     </Window.Resources>
     <Grid Margin="24,16,24,16">
+        <!-- the pages' row takes what is left: on a small screen (the window is at most the screen's height) the buttons below stay in sight -->
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock x:Name="StepText" Style="{StaticResource Hint}" Margin="0,0,0,10" FontSize="11"/>
 
         <!-- One question per page. Every page sits in the same cell and the others are only Hidden, so the window is as big as the biggest page needs. -->
-        <Grid Grid.Row="1">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+        <Grid>
             <StackPanel x:Name="PageLanguage">
                 <TextBlock Style="{StaticResource Heading}" Text="{local:Loc Wizard.LanguageHeading}"/>
                 <ComboBox x:Name="LanguageBox" HorizontalAlignment="Left" MinWidth="240" SelectionChanged="OnLanguageChanged"/>
@@ -169,6 +171,7 @@
                 </Border>
             </StackPanel>
         </Grid>
+        </ScrollViewer>
 
         <Separator Grid.Row="2" Margin="0,16,0,12" VerticalAlignment="Top"/>
         <DockPanel Grid.Row="2" Margin="0,30,0,0">
