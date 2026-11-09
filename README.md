@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><img src="docs/landing/download.webp" alt="Download for Windows" width="300"></a>
+  <a href="https://atreia.app/download/Atreia-App-Setup.exe"><img src="docs/landing/download.webp" alt="Download for Windows" width="300"></a>
 </p>
 
 <p align="center">
@@ -12,8 +12,6 @@
   <a href="#install">Install</a>
   &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a>
-  &nbsp;·&nbsp;
-  <a href="../../releases">What's new</a>
 </p>
 
 <br>
@@ -111,9 +109,10 @@ NCSOFT has not approved this or any other damage meter. Use it at your own respo
 ## Install
 
 1. Install [Npcap](https://npcap.com) (keep its default options).
-2. Download the installer from the [latest release](../../releases/latest) and run it.
+2. Download the installer from [atreia.app](https://atreia.app/download/Atreia-App-Setup.exe) and run it.
 
-Updates install themselves from this repository's releases.
+Updates install themselves from atreia.app. The game's pictures (icons, maps) are not part of this repository: the app downloads them
+once from atreia.app on its first start.
 
 ## License
 

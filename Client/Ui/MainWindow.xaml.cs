@@ -6437,7 +6437,7 @@ public partial class MainWindow : Window
         {
             if (announceResult)
             {
-                ThemedMessageBox.Show(this, $"Could not reach GitHub to check for updates.\n\n{ex.Message}",
+                ThemedMessageBox.Show(this, $"Could not reach atreia.app to check for updates.\n\n{ex.Message}",
                     "Check for updates", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
 

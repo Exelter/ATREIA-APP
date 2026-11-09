@@ -960,7 +960,7 @@
                             <StackPanel>
                                 <TextBlock Style="{StaticResource CardTitle}" Text="{local:Loc Settings.Updates}"/>
                                 <CheckBox x:Name="CheckForUpdatesBox" Content="{local:Loc Settings.CheckForUpdates}"
-                                          ToolTip="Asks GitHub whether a newer version exists and sends nothing but the request itself. 'Check for updates' in the App menu still works when you ask for it."/>
+                                          ToolTip="Asks atreia.app whether a newer version exists and sends nothing but the request itself. 'Check for updates' in the App menu still works when you ask for it."/>
                             </StackPanel>
                         </Border>
 <Border Style="{StaticResource SettingsCard}">

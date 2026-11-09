@@ -29,6 +29,7 @@ public static class Brand
     /// Linked from nowhere on the site; the installer itself is at <see cref="Site"/>/download/Atreia-App-Setup.exe.</summary>
     public const string UpdatesUrl = Site + "/app/updates/";
 
-    /// <summary>The source code's repository (the old install's move fetched its installer from its releases, Update/InstallMove).</summary>
-    public const string RepositoryUrl = "https://github.com/kurteymc-ui/Atreia-App";
+    /// <summary>The source code's repository (9 November 2026: moved here from kurteymc-ui/Atreia-App, which is gone). Releases are not published there
+    /// any more: the installer and the updates are on the website (<see cref="UpdatesUrl"/>).</summary>
+    public const string RepositoryUrl = "https://github.com/Exelter/ATREIA-APP";
 }
