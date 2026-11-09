@@ -2261,10 +2261,11 @@ internal static class Program
             new("Arcana1", "Arcana of Valor", "Unique", 4, 0, 80, I("Icon_Arcana_Card_Bell_u_DefenceSet2"), true, none, none, none, none, none),
             new("Arcana2", "Arcana of the Wall", "Legend", 3, 0, 60, I("Icon_Arcana_Card_Compass_u_DefenceSet2"), true, none, none, none, none, none),
         };
+        // the attributes as the game's character page lists them (the combat stats come from the player's own app: the Stats tab below)
         var stats = new List<(string, string)>
         {
-            ("Attack", "2,412"), ("Defense", "3,180"), ("Accuracy", "1,955"), ("Evasion", "1,204"), ("Critical Strike", "1,066"), ("Critical resist", "742"),
-            ("HP", "48,230"), ("MP", "6,400"), ("Boss damage", "8.5%"), ("PvE damage", "6.0%"), ("Block", "1,480"), ("Parry", "960"),
+            ("Might", "54"), ("Agility", "48"), ("Vitality", "20"), ("Precision", "42"), ("Willpower", "14"), ("Justice [Nezekan]", "51"),
+            ("Freedom [Zikel]", "36"), ("Illusion [Vaizel]", "25"), ("Life [Triniel]", "54"), ("Time [Lumiel]", "76"),
         };
         var skills = new List<Upload.PlayerSkill>
         {
@@ -2315,7 +2316,7 @@ internal static class Program
         grid.Children.Add(View(page with { App = null }, "Overview"));
         // the Stats tab: the numbers of the game's character window from the player's own Atreia App, and the same tab for a player without the app (none,
         // never guessed) and for one whose app hasn't sent them (9 November 2026)
-        var effects = new Dictionary<string, IReadOnlyList<string>> { ["Attack"] = new[] { "Attack Increase +7.5%", "Combat Speed +7.5%" } };
+        var effects = new Dictionary<string, IReadOnlyList<string>> { ["Might"] = new[] { "Attack Increase +5.4%", "Combat Speed +5.4%" } };
         var sheet = new Upload.PlayerSheet(
             new List<Upload.PlayerStat> { new("Attack", "3,254", null), new("Accuracy", "833", null), new("Critical Hit", "1,143", null) },
             new List<Upload.PlayerStat> { new("HP", "31,402", null), new("MP", "3,356", null), new("Defense", "17,314", null), new("Evasion", "115", null), new("Critical Hit Resist", "227", null) },
