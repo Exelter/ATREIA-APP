@@ -1,0 +1,569 @@
+{
+  "_readme": [
+    "What changed in each version of the app, written for players. The app shows the entries between the installed version and the update it offers (fetched from main, so a version that is already out can read the notes of the next one), and once after an update.",
+    "One entry per released version, newest first. Each item: kind (new, improved, fixed), area (a short word: Meter, Reports, History...), title (one line), text (what it does, in plain words) and, when it helps, example (a short real situation, with made-up player names).",
+    "The release workflow puts the same items in the GitHub release notes (Tools/changelog/release-notes.mjs)."
+  ],
+  "versions": [
+    {
+      "version": "1.20.66",
+      "date": "2026-11-08",
+      "headline": "Eternal Ludra: its attacks named in the callouts, and no stagger checks the game broke by itself",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Boss timers",
+          "title": "Ludra's attacks named",
+          "text": "The game calls most of Eternal Ludra's attacks just \"Attack\". The ones with a clear effect now carry a name in the callouts and the fight report: Hits everyone, Stun, Knockdown, Airborne, Watch, and Despairing Aura / Chaos Aura. Purple Bolt, Ludra's Trial, Ure's Area and Supply Eldritch Energy keep the game's own names.",
+          "example": "At 70 % the line reads \"Hits everyone in 4 s\" instead of \"Attack in 4 s\"."
+        },
+        {
+          "kind": "fixed",
+          "area": "Stagger",
+          "title": "Ludra's bar is no stagger check",
+          "text": "Eternal Ludra's stagger bar never goes down from hits; the game breaks it by itself after Purple Bolt and after Ludra's Trial. The meter showed those as checks of three minutes that nobody had a part in. A bar that broke or ended with next to nothing taken off is no check any more. Abyssal Wings Ketu's checks are unchanged: its bar does go down from your hits.",
+          "example": "After a Ludra pull the Stagger view shows no checks instead of a three-minute \"broken\" one."
+        }
+      ]
+    },
+    {
+      "version": "1.20.65",
+      "date": "2026-11-07",
+      "headline": "All your characters, a meter that grows with the players, and PvP in the Abyss",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Characters",
+          "title": "Every character of your server on the page",
+          "text": "A character made on another server and moved, or on a server that was merged, came with its old server, and the page left it out. The server you log in on now counts for every character on your list. Log in once to bring them back.",
+          "example": "Five characters on Beritra: all five show, whichever one you log in with."
+        },
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "The meter grows with the players, up to ten lines",
+          "text": "The meter's lines take as much room as there are players, up to ten, and shrink back when they go. A height you dragged is now the most it takes, so it no longer opens as a tall empty box. It also no longer opens by itself with nothing to show.",
+          "example": "Three players: three lines. Twelve in a siege: ten lines, the best on top."
+        },
+        {
+          "kind": "new",
+          "area": "Meter",
+          "title": "PvP counted in the Abyss and the open world",
+          "text": "When you hit another player or one hits you, the fight is counted and shown wherever you are, the Abyss too, without switching on the open world.",
+          "example": "A fight against the other side in Lower Reshanta shows your damage and theirs."
+        }
+      ]
+    },
+    {
+      "version": "1.20.64",
+      "date": "2026-11-07",
+      "headline": "Skill cooldowns that keep running while your buffs tick",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Skill Assist",
+          "title": "Buffs and channels no longer restart their cooldown",
+          "text": "Some skills keep sending hits after you use them: Flame Blessing's flames while the blessing is on, a channel's hits, an aura's or a mantra's pulses. The Skill Assist took each one for a new use, so Flame Blessing showed about 1 second the whole time and other buffs showed a few seconds more than the game. Now only the use starts the cooldown, and short lengths learnt from those hits are thrown away.",
+          "example": "Flame Blessing used: 60 s counts down from the cast, whatever its flames do meanwhile."
+        }
+      ]
+    },
+    {
+      "version": "1.20.63",
+      "date": "2026-11-07",
+      "headline": "Cooldowns no longer reset when a party member buffs you, and cube alerts only with a key",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Skill Assist",
+          "title": "Cooldowns no longer reset at every buff",
+          "text": "Since 1.20.61 a buff from a party member of another class (a Chanter's or Cleric's) could make the Skill Assist think you had switched class, and every cooldown jumped back to ready. Buffs no longer touch your cooldowns; only your own skills switch the class.",
+          "example": "A Chanter buffs your Ranger in the middle of a fight: your cooldowns keep counting down."
+        },
+        {
+          "kind": "new",
+          "area": "Cubes",
+          "title": "Cube alerts only when you carry a key",
+          "text": "A new switch on the Cube finder page: the note, the sounds, the meter's line and the map coming up only while your character has a Hidden Cube key in its bag. The cube still shows on the map.",
+          "example": "Out of keys, you farm in peace; pick one up and the next cube calls you again."
+        }
+      ]
+    },
+    {
+      "version": "1.20.62",
+      "date": "2026-11-07",
+      "headline": "Abyss Corridors on the Characters page, and only your server",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Characters",
+          "title": "Abyss Corridors on the Characters page",
+          "text": "A new column shows how many Abyss Corridors each character still has to enter since the last Artifact Siege. The game hands them out when a character first enters the Abyss after the siege; a character that has not been there yet shows the number your other character got, marked with ~.",
+          "example": "Your side holds two artifacts: Draegor shows 1 after one corridor, Nyxelle shows ~2 until she enters the Abyss."
+        },
+        {
+          "kind": "fixed",
+          "area": "Characters",
+          "title": "Only the server you play on",
+          "text": "Characters from a server you no longer play on no longer show on the Characters page and the home page. It follows the server of the character you are logged in with, or the one you played last."
+        }
+      ]
+    },
+    {
+      "version": "1.20.61",
+      "date": "2026-11-07",
+      "headline": "Each class its own Skill Assist, a compass that fades, one clean font",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Skill Assist",
+          "title": "The right class's skills on every character",
+          "text": "After switching characters, the Skill Assist could still list the skills of the class you played before until the game sent a cooldown. It now follows your character's class from the login, and from the first skill you use if the app was started later.",
+          "example": "You log out of your Assassin and into your Ranger: the other skills listed are the Ranger's right away."
+        },
+        {
+          "kind": "new",
+          "area": "Skill Assist",
+          "title": "Each class keeps its own layout and presets",
+          "text": "Every class now has its own look (bars or squares, size, see-through), its own places and its own three presets, and the app switches to them by itself when you play that class. You can also pick the class by hand, and copy another class's layout onto this one: its bars or squares go to the same spots, first skill of the bar to first skill of the bar.",
+          "example": "Your Templar's cooldowns sit just how you like them: on your Cleric, pick Copy the layout of Templar and they line up the same way."
+        },
+        {
+          "kind": "new",
+          "area": "Map",
+          "title": "The compass only for a moment",
+          "text": "A new switch next to Compass on the Interactive map page: the N, NE, E ... letters around the map show for 3 seconds when it comes up, zooms, changes map or your mouse rests on it, then fade, so they don't sit over the map the whole time. The Compass switch still turns them off completely.",
+          "example": "The map pops up for a Hidden Cube: the letters show you which way is north, then get out of the way."
+        },
+        {
+          "kind": "improved",
+          "area": "Look",
+          "title": "One clean font everywhere",
+          "text": "Titles, character names and the charts now use the same font as the buttons and the rest of the app, instead of the old decorative capitals and a second font in the charts."
+        }
+      ]
+    },
+    {
+      "version": "1.20.60",
+      "date": "2026-11-07",
+      "headline": "Just the frames on the Black Cloud shop, and updates straight to the newest",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Black Cloud",
+          "title": "Only the frames on the shop, no pop-up",
+          "text": "The pop-up at the top of the screen is gone: the pets you still need are just framed on the shop's page, with their genus and level. A pet you buy loses its frame at once and isn't marked again until the merchant's offers renew, and finished pets are never marked.",
+          "example": "You buy Furious Feruk: its frame goes away right there, and the next time you open the shop this hour it stays unmarked."
+        },
+        {
+          "kind": "fixed",
+          "area": "Black Cloud",
+          "title": "Frames that stayed when you clicked",
+          "text": "Clicking a card opened the purchase window, but the frame stayed where the card had been. Now any click or key takes the frames away at once, and they come back only on cards that are still there once the screen has settled.",
+          "example": "Click Furious Feruk, the purchase window opens: no frame floating over it. Cancel it, and the frame is back on the card."
+        },
+        {
+          "kind": "improved",
+          "area": "Pets",
+          "title": "The genera named as the game names them",
+          "text": "Cogni, Fera, Natura, Varian and Special, as in the game (in your game's language), on the Pets page, the shop frames, the map note and the pet route."
+        },
+        {
+          "kind": "improved",
+          "area": "Updates",
+          "title": "Straight to the newest version",
+          "text": "An update now always goes to the newest version, in one restart, however many you skipped. One that was downloaded earlier isn't put in on its own any more when a newer one is out, and \"What's new\" lists every change from all the versions you missed.",
+          "example": "You were on 1.20.55: one update takes you to the newest, and What's new shows 1.20.56 to today in one list."
+        }
+      ]
+    },
+    {
+      "version": "1.20.59",
+      "date": "2026-11-07",
+      "headline": "The Black Cloud pop-up redone, its pets marked on the shop, and pet alerts your way",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Black Cloud",
+          "title": "A clearer pop-up, and the card marked on the shop",
+          "text": "The pop-up when the Black Cloud Merchant sells a pet you still need is redone: each pet's picture in a ring of its genus's colour, its genus (Cognia, Fera, Natura, Varia, Specia), where it comes from, how far your character has it and the price. On the shop's page the pet's card gets a frame in the same colour, with its genus and level on top, so you don't have to look for it. The card is found in the game window's own picture; nothing is read from the game.",
+          "example": "You open the shop on your alt: \"Urugugu Brawler, Cognia, level 1 of 3, 90,000 Kinah\", and its card on the page lights up blue."
+        },
+        {
+          "kind": "improved",
+          "area": "Black Cloud",
+          "title": "No pop-up for pets you've finished",
+          "text": "A pet the character already has at the top level never brings the pop-up or the renewal note any more. Only what that character still needs is shown.",
+          "example": "White Bunny is maxed on your main: opening the shop there stays quiet about it, on your alt it still tells you."
+        },
+        {
+          "kind": "new",
+          "area": "Pets",
+          "title": "Pick which genera you get alerts for",
+          "text": "A new Pet alerts card on the Pets page: tick the genera you care about. The Black Cloud pop-up, its renewal note and the map below follow it.",
+          "example": "You only farm Cognia and Natura: untick the others and the merchant's Fera pets stop popping up."
+        },
+        {
+          "kind": "new",
+          "area": "Map",
+          "title": "The map comes up when a pet you need is near",
+          "text": "Switch it on in Pet alerts and pick how near (100 m to 1 km). When your character comes that close to a monster of a pet you still need, of the genera you picked, the interactive map comes up over the game with a note of which pet and how far, like it does for a Hidden Cube. It goes again 10 seconds after none is that near, and works with the map switched off.",
+          "example": "Within 300 m of a Vivel spawn you still need: the map pops up with \"Fera · Vivel nearby · 240 m\"."
+        }
+      ]
+    },
+    {
+      "version": "1.20.58",
+      "date": "2026-11-07",
+      "headline": "An overlay menu in the game, hotkeys your way, and a sharper stagger split",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Overlays",
+          "title": "An overlay menu at the top of the game's screen",
+          "text": "A small Atreia button now sits at the top of the screen while you play. Click it for every overlay with its switch and its hotkey, and to move or hide them all, change the hotkeys or open the app, without leaving the game. If it is in the way, move it with the other overlays (Move overlays), or switch it off on the Overlays page.",
+          "example": "Halfway through a dungeon you want the loot overlay but forgot its key: show the cursor, click Atreia, click Loot."
+        },
+        {
+          "kind": "improved",
+          "area": "Hotkeys",
+          "title": "Hotkeys your way, and you can see the ones that don't work",
+          "text": "F keys, the number pad and Insert, Home, End, Page Up and Page Down now work on their own, without Ctrl or Alt. A hotkey another program already uses (graphics drivers and recording tools like to take Ctrl+Alt keys) is shown in red in the hotkey overlay and in Settings > Hotkeys, with what to do about it. Giving a combination another hotkey had moves it over instead of quietly breaking one of them, and \"Back to the default keys\" sets them all back. Each press now says at the top of the screen what it switched. Your keys are kept in your own settings, so an update never changes them.",
+          "example": "Ctrl+Alt+C did nothing because your graphics driver had it. The hotkey list shows it in red, and you give the Boss fight overlay F7 instead."
+        },
+        {
+          "kind": "fixed",
+          "area": "Network",
+          "title": "No addresses on the network overlay",
+          "text": "The Server line showed the game server's address and the Local network line your router's. Neither is shown any more, so nothing on stream gives an address away: the Server line just says you're connected."
+        },
+        {
+          "kind": "improved",
+          "area": "Stagger",
+          "title": "The stagger split checked on 211 boss fights",
+          "text": "A skill takes the same off the stagger bar at every level, but the game gives each level its own id, so the app used to miss many skills and had to guess. It now knows each skill's amount at any level, for all eight classes, checked on 211 real boss fights against 21 bosses with a stagger bar (Krao Cave, Draupnir, Urugugu Canyon, Vakron Sky Island, Ferocious Horn Den, Shattered Arkanis, Nightmare and more). 94% of all the stagger in those fights now matches the exact skill that did it, up from about 70%."
+        },
+        {
+          "kind": "fixed",
+          "area": "Stagger",
+          "title": "Ludra: Rahu's long cast is no failed check",
+          "text": "Isolation Specialist Rahu in Abyssal Forge: Ludra has a 15 second cast during which the bar can't be staggered at all. The app showed it as a check your group failed with nothing taken off. It doesn't any more; Rahu's real checks are still shown.",
+          "example": "Two minutes in, Rahu starts the long cast with a full bar. Before, that read \"Failed, 0 of 4,500\". Now it isn't listed as a check."
+        }
+      ]
+    },
+    {
+      "version": "1.20.57",
+      "date": "2026-11-07",
+      "headline": "A sharper stagger split, and update notes",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Stagger",
+          "title": "Who took what off the bar, far more precisely",
+          "text": "A skill takes the same off the stagger bar at every level, but the game gives each level its own id, so the app used to miss many skills and had to guess. It now knows each skill's amount at any level, for all eight classes, worked out from real boss fights.",
+          "example": "Judgment, Chain of Torment, the Spiritmaster's spirits: all counted by what they really take off, instead of the nearest hit."
+        },
+        {
+          "kind": "fixed",
+          "area": "Stagger",
+          "title": "No phantom 240 when Berk's bar changes size",
+          "text": "When a boss's stagger bar switches size (Berk goes from 720 to 480), the difference was counted as stagger nobody did. It isn't any more. Only the Gladiator's and Assassin's hits are marked as boosted now, as only they have the stagger buff."
+        },
+        {
+          "kind": "new",
+          "area": "Updates",
+          "title": "What's new, right in the update prompt",
+          "text": "When a new version is ready, open \"What's new\" under the prompt to read every change since the version you have, with examples. After the update the app shows them once, so nothing slips by.",
+          "example": "You skipped a few days. The prompt lists everything since your version, newest first, so you can read it all in one place."
+        }
+      ]
+    },
+    {
+      "version": "1.20.56",
+      "date": "2026-11-07",
+      "headline": "Stagger on the meter, and accuracy in reports",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Meter",
+          "title": "A Stagger button next to Group",
+          "text": "Click Stagger on the meter and the lines make room for the boss's stagger check: the mechanic, the time left, and exactly how much each player took off the bar, with the skills they used. Players who took nothing off show a red 0. Click Group (or any other scope) to get the lines back.",
+          "example": "Berk starts Extinction for Eternity. The meter shows 2.8 s left, 336 to go, and Kaivhan 50, Nyxelle 45, Seraphyne 35, Draegor 14, Lumiael 0."
+        },
+        {
+          "kind": "new",
+          "area": "Meter",
+          "title": "Earlier checks one click away",
+          "text": "Under the current check, every earlier check of the same boss sits as a small chip: green with the time it broke in, red with what was left. Click one to look at it again; a new check takes over as soon as it starts.",
+          "example": "Checks: 1 ✗ 222 left · 2 ✓ 6.4 s · 3 ✗ 66 left"
+        },
+        {
+          "kind": "new",
+          "area": "Reports",
+          "title": "A new Stagger tab",
+          "text": "The boss's stagger bar over the whole fight. Each check is a band from the cast that starts it to the end of that cast: green when the bar broke in time, red when it didn't, with what was left. Hover anywhere for the bar's exact value. Click a check, or drag across any stretch, to see who took how much off it.",
+          "example": "Drag from 0:30 to 0:41 and you see that Draegor took 49 off the bar in those eleven seconds and Lumiael none."
+        },
+        {
+          "kind": "new",
+          "area": "Reports",
+          "title": "Accuracy on the Damage tab",
+          "text": "Every skill, every player and the total now have an Accuracy figure. Against a boss, low accuracy doesn't show as a miss: the boss parries or blocks, and the hit lands for a third to half of its damage. Accuracy is the share of your hits that landed in full (a dodged attack counts as a miss too).",
+          "example": "Seraphyne 97.7%: about 2 hits in every 100 were parried or blocked."
+        },
+        {
+          "kind": "improved",
+          "area": "History",
+          "title": "Only the real bosses in the fights list",
+          "text": "In a dungeon whose bosses the app knows, side fights like Urugugu Patrol and Urugugu Shaman are no longer listed, and they no longer count in the day's kills and wipes or in your personal bests. They are still in the report of the whole run.",
+          "example": "Urugugu Canyon now lists Guardian Captain Raur, Judge Urahum and Divine Auldor, and nothing else."
+        }
+      ]
+    },
+    {
+      "version": "1.20.55",
+      "date": "2026-11-07",
+      "headline": "Stagger checks: who really used theirs",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Stagger",
+          "title": "Every stagger check, player by player",
+          "text": "The app finds each stagger check of a boss (the bar fills when a mechanic starts and has to break before the cast ends) and works out exactly how much each player took off it. The Assassin's and Gladiator's stagger buff is counted: those hits take half as much again.",
+          "example": "Wave of Death, not broken: 245 of 736 left. Kaivhan 195, Seraphyne 146, Draegor 65, Lumiael 55, Nyxelle 30."
+        },
+        {
+          "kind": "new",
+          "area": "Stagger",
+          "title": "Hover a skill to see each hit",
+          "text": "Every player's line has the icons of the skills that took something off the bar. Hover one for what each hit did, which ones had the stagger buff, and when they landed. Skills that hit the boss but took nothing off show faded, so \"I used mine\" can be checked.",
+          "example": "Shadowstrike: 85 off the bar in 7 hits. Each hit 4 × 10, 3 × 15 (3 with a stagger buff)."
+        }
+      ]
+    },
+    {
+      "version": "1.20.54",
+      "date": "2026-11-07",
+      "headline": "CP calculator: the game's own level tables",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "CP calculator",
+          "title": "Skill and Stigma levels as the game counts them",
+          "text": "Skills and Stigmas now go up by the game's own tables, so the CP of each next level is what you'll actually get. Daevanion steps stay within the points the game lets you spend.",
+          "example": "The suggested skill order is now levels 8, 12, 16 and 20: the levels where a skill gains the most CP."
+        }
+      ]
+    },
+    {
+      "version": "1.20.53",
+      "date": "2026-11-06",
+      "headline": "Boss timers that know the pattern",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Boss timers",
+          "title": "Next casts from the boss's pattern",
+          "text": "The boss timers now learn when a cast comes from what happened before it: the attack before, the boss's health and the time into the fight. Every version of a boss counts, and so do the fights on your own PC. Hover a timer to see what it was learned from.",
+          "example": "Flame Breath 12 s, Enrage 0:48, right over your meter's lines."
+        },
+        {
+          "kind": "improved",
+          "area": "Ranks",
+          "title": "No rank pop-up over the game",
+          "text": "After an upload your rank shows in History and on the fight's page, but no longer pops up over the game in the middle of the next pull."
+        }
+      ]
+    },
+    {
+      "version": "1.20.51",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Black Cloud",
+          "title": "The shop's clock on the pet list",
+          "text": "The Black Cloud Merchants' pet list shows when the shop changes next, and a reminder comes every hour, so a pet you still need never goes by unseen.",
+          "example": "Black Cloud Merchants · Ashveil: ticked pets on offer. Swift Lugi, 1,200,000 Kinah."
+        }
+      ]
+    },
+    {
+      "version": "1.20.50",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "CP calculator",
+          "title": "Cheapest upgrades first, in your build's order",
+          "text": "The next steps are sorted by CP for the Kinah they cost, and Stigmas and skills follow your class build's order. Every Stigma or skill step says whether it's part of your build."
+        }
+      ]
+    },
+    {
+      "version": "1.20.49",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "A wipe never leaks into the next pull",
+          "text": "The next attempt starts when the boss is pulled again, not on a stray hit after the wipe. Each attempt is saved in History the moment it ends, killed or wiped."
+        }
+      ]
+    },
+    {
+      "version": "1.20.48",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Reports",
+          "title": "Bursts, drops and deaths",
+          "text": "The fight report points out the fight's best and worst moments: where the group's damage peaked, where it dropped and why (the boss staggered, the boss casting, a death). Deaths also show on the meter, after the player's name.",
+          "example": "0:14 to 0:20: burst, 1.9× the usual while the boss was staggered. Lumiael ☠ 1:12."
+        }
+      ]
+    },
+    {
+      "version": "1.20.47",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "new",
+          "area": "World bosses",
+          "title": "A world boss page with faces",
+          "text": "Every region's field bosses on one page, at the game's times to the minute, each with its portrait, here and on the overlay.",
+          "example": "Sharp Shylok, Watcher Kaira, Advisor Resana... and when each one is up next."
+        }
+      ]
+    },
+    {
+      "version": "1.20.46",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Streaming",
+          "title": "OBS widgets with links that keep working",
+          "text": "The Streaming page has three widgets for OBS: the meter, your character card and the boss bar. Each has its own link to paste as a browser source, and the link stays the same after a restart."
+        }
+      ]
+    },
+    {
+      "version": "1.20.45",
+      "date": "2026-11-06",
+      "headline": "Ranks, smoother play and Kinah-smart upgrades",
+      "items": [
+        {
+          "kind": "new",
+          "area": "History",
+          "title": "Your rank on every uploaded boss",
+          "text": "Upload a boss fight and History shows where your DPS ranks among everyone's fights on that boss.",
+          "example": "Talisra of the Void, 96: better than 96% of the uploaded fights."
+        },
+        {
+          "kind": "new",
+          "area": "CP calculator",
+          "title": "Upgrades priced at your server's market",
+          "text": "Every suggested step shows what it costs at your own server's market prices, so \"best value\" means best value for you."
+        },
+        {
+          "kind": "improved",
+          "area": "Performance",
+          "title": "Less lag while you play",
+          "text": "The app now takes one picture of the game window for both the menu check and the minimap, and reads the minimap less often. A new Status page shows what the app is doing, with a report you can copy when asking for help."
+        },
+        {
+          "kind": "fixed",
+          "area": "Cube finder",
+          "title": "No more wrong cube arrow",
+          "text": "The beam over a Hidden Cube and the arrow at the screen's edge are gone for now: the camera direction they relied on was never right. The distance on the meter and the map are unchanged."
+        }
+      ]
+    },
+    {
+      "version": "1.20.44",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Characters",
+          "title": "Characters as a table again",
+          "text": "Each character is one line of a table with its counters in small boxes, and the totals sit in one low strip on top. A narrow window shows a character's whole line when you hover it."
+        }
+      ]
+    },
+    {
+      "version": "1.20.43",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Legion",
+          "title": "Send your legion's member list to the website",
+          "text": "From the Legion page, send the member list to atreia.app in one click. The site tells you if it can't take it (only a verified member, or a leader of a following server, may send it)."
+        }
+      ]
+    },
+    {
+      "version": "1.20.42",
+      "date": "2026-11-06",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Legion",
+          "title": "Names with accents no longer break the list",
+          "text": "One accented name used to throw the whole member list off. Every member now shows on the legion's own server."
+        }
+      ]
+    },
+    {
+      "version": "1.20.41",
+      "date": "2026-11-06",
+      "headline": "A cleaner look everywhere",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "History",
+          "title": "Your last 7 days at a glance",
+          "text": "History opens on a board of your last week: each fight against your best on that boss, and your personal bests as cards."
+        },
+        {
+          "kind": "improved",
+          "area": "Design",
+          "title": "Characters, tools and maps in the new look",
+          "text": "Clearer titles, controls together on one bar, sections under a gold line. Characters shows when your Odyle energy will be full.",
+          "example": "Odyle energy 520 / 840: full in ~4 d."
+        },
+        {
+          "kind": "improved",
+          "area": "Meter",
+          "title": "Boss health lives on the meter",
+          "text": "The boss's health is now the boss line over the meter's lines, so the separate boss health overlay is gone. Find a player has its own button on the meter."
+        }
+      ]
+    },
+    {
+      "version": "1.20.39",
+      "date": "2026-11-06",
+      "headline": "Your legion, and OBS widgets",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Legion",
+          "title": "A Legion page",
+          "text": "Your legion's members, read from the game when you log in, with search and sorting, and your legion on Discord through the Atreia bot.",
+          "example": "Dawnbreakers: 24 members, average combat power 196.0K."
+        },
+        {
+          "kind": "new",
+          "area": "Streaming",
+          "title": "Three OBS widgets",
+          "text": "The meter, your character card and the boss bar, each with its own link for OBS."
+        }
+      ]
+    }
+  ]
+}

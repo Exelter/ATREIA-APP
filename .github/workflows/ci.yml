@@ -1,0 +1,46 @@
+name: Tests
+
+# Runs on every push to main and on every pull request: the Windows app must build, and its self-checks must pass.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  client:
+    name: Client build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Build
+        run: dotnet build Client/AionDPS.csproj -c Release --nologo -o out
+      # The app's own checks (recorded game frames, no game or Npcap needed). A failed check fails this job; each failed line becomes an
+      # error on the run's page, so a red run says which check broke.
+      - name: Self-checks
+        shell: pwsh
+        timeout-minutes: 20
+        run: pwsh Tools/release/selftest.ps1 -Dir out
+
+  release-layout:
+    name: Release layout
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      # Published the way a release is (the .NET runtime in its own folder, no language folders of .NET's), then the same checks run in it, and that it
+      # ran on its own runtime and not the one installed on the machine.
+      - name: Publish like a release
+        shell: pwsh
+        run: pwsh Tools/release/publish.ps1 -Version 1.0.0 -Out publish
+      - name: Self-checks in the release layout
+        shell: pwsh
+        timeout-minutes: 20
+        run: pwsh Tools/release/selftest.ps1 -Dir publish -Runtime
