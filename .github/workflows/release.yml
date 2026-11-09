@@ -244,7 +244,7 @@ jobs:
           $installer = Get-Item '${{ steps.installer.outputs.path }}'
           Put $installer.FullName "download/$($installer.Name)" 'application/vnd.microsoft.portable-executable'
           foreach ($f in $files | Where-Object { $_.Name -match '^(releases|assets)\..+\.json$' }) { Put $f.FullName "updates/$($f.Name)" 'application/json' }
-          foreach ($f in $files | Where-Object { $_.Name -like 'RELEASES*' }) { Put $f.FullName "updates/$($f.Name)" 'text/plain' }
+          foreach ($f in $files | Where-Object { $_.Name -clike 'RELEASES*' }) { Put $f.FullName "updates/$($f.Name)" 'text/plain' }
           Put (Join-Path releases 'updates.json') 'updates/updates.json' 'application/json'
           "Version ${{ steps.version.outputs.pack }} is on atreia.app now: installed apps find it at their next check."
           # the packages of this channel the new index no longer names (the releases before the previous one): nothing reads them any more

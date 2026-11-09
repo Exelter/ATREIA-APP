@@ -34,3 +34,10 @@ jobs:
           aws s3 cp check.txt s3://atreia-app/check/ci.txt --endpoint-url "$R2_ENDPOINT" --only-show-errors || { echo "::error::The key cannot write into the bucket (it needs Object Read & Write)."; exit 1; }
           aws s3 rm s3://atreia-app/check/ci.txt --endpoint-url "$R2_ENDPOINT" --only-show-errors || { echo "::error::The key cannot remove files from the bucket."; exit 1; }
           echo "The release workflow can list, write and remove files in atreia-app."
+          echo "In the bucket:"
+          aws s3 ls s3://atreia-app/ --recursive --endpoint-url "$R2_ENDPOINT" | sed 's/^/  /'
+      # What players get: the version the site's update index names, and the size of the download button's installer.
+      - name: What atreia.app serves
+        run: |
+          echo "Update index: $(curl -fsS -A AtreiaApp-checks https://atreia.app/app/updates/releases.stable.json | jq -r '[.Assets[] | select(.Type == "Full") | .Version] | join(", ")')"
+          echo "Installer: $(curl -fsSI -A AtreiaApp-checks https://atreia.app/download/Atreia-App-Setup.exe | grep -i '^content-length' | tr -d '\r')"
