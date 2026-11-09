@@ -39,6 +39,8 @@ public sealed class AccountWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         SetResourceReference(BackgroundProperty, "Brush.Window");
         SetResourceReference(ForegroundProperty, "Brush.Text");
+        _status.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Text");
+        _verify.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Text");
         _hint.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
         _code.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Accent");
 
