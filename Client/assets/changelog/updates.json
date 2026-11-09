@@ -6,6 +6,26 @@
   ],
   "versions": [
     {
+      "version": "1.21.2",
+      "date": "2026-11-09",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Look",
+          "title": "The account window is readable",
+          "text": "In the Atreia account window, the two switches (sending your legion's member list, showing your Genus Insight and pets) were cut off at the edge and drawn in a dim grey. Their text wraps now, in the normal text colour.",
+          "example": "Open your account from the menu: both switches read in full."
+        },
+        {
+          "kind": "improved",
+          "area": "Updates",
+          "title": "New boss pictures without a restart",
+          "text": "When new boss pictures come out, the app uses them as soon as they have downloaded in the background, and the Fights page shows them right away. Before, they only showed after restarting the app twice.",
+          "example": "Zikel's Apparition gets its picture while the app is open."
+        }
+      ]
+    },
+    {
       "version": "1.21.0",
       "date": "2026-11-09",
       "headline": "Atreia App moves into its own name: fits every screen, installs and updates from atreia.app",
