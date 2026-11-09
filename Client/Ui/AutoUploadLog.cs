@@ -8,8 +8,7 @@ public static class AutoUploadLog
 {
     private static readonly object Gate = new();
 
-    private static string Path_ => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder, "auto-upload.log");
+    private static string Path_ => Path.Combine(Brand.DataPath, "auto-upload.log");
 
     public static void Write(string message)
     {

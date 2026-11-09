@@ -25,7 +25,7 @@ public static class LegionStore
     private static Dictionary<string, LegionSnapshot>? _all;
 
     private static string DataFolder => Environment.GetEnvironmentVariable("AIONDPS_DATA_DIR") is { Length: > 0 } testDir
-        ? testDir : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder);
+        ? testDir : Brand.DataPath;
 
     private static string FilePath => Path.Combine(DataFolder, "legion.json");
 

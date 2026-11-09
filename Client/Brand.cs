@@ -21,8 +21,39 @@ public static class Brand
     /// (/api/uploads, /api/players/…, /api/schedule …), here under /meter.</summary>
     public const string Api = Site + "/meter";
 
-    /// <summary>The folder under %APPDATA% for settings, sessions and logs (its own, so it can sit next to the upstream meter).</summary>
-    public const string DataFolder = "A2HMeter";
+    /// <summary>The folder under %APPDATA% for settings, characters, history, logs and the game's pictures (its own, so it can sit next to the upstream
+    /// meter). Named after the app since 9 November 2026 (the owner: the files carry the app's name); it was <see cref="OldDataFolder"/> before, and the
+    /// app moves that one here on its first start (Update/InstallMove.MoveDataFolder).</summary>
+    public const string DataFolder = "AtreiaApp";
+
+    /// <summary>The data folder's name until 9 November 2026.</summary>
+    public const string OldDataFolder = "A2HMeter";
+
+    private static string? _dataPath;
+
+    /// <summary>
+    /// %APPDATA%\AtreiaApp. While the old %APPDATA%\A2HMeter has not been moved yet (an old meter was still running at the start), that one, so nothing
+    /// is split between the two; the move is tried again at the next start.
+    /// </summary>
+    public static string DataPath
+    {
+        get
+        {
+            if (_dataPath is { } known)
+            {
+                return known;
+            }
+
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string now = Path.Combine(appData, DataFolder), old = Path.Combine(appData, OldDataFolder);
+            if (!Directory.Exists(now) && Directory.Exists(old))
+            {
+                return old;
+            }
+
+            return _dataPath = now;
+        }
+    }
 
     /// <summary>Where the app's updates and their notes come from (8 November 2026, the owner: "have the updates posted on the website"): the update
     /// index (releases.&lt;channel&gt;.json), the packages and updates.json, under the site's /app/updates/ (the site's tools/big-file.mjs puts them there).

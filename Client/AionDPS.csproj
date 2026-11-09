@@ -42,7 +42,7 @@
          runtime (see MainWindow's constructor) and the installer takes it from the git tag the release
          workflow was triggered by, so a build can always be identified from a screenshot. Keep in
          step with the release tag. -->
-    <Version>1.20.1</Version>
+    <Version>1.21.0</Version>
     <!-- Only the app's own languages (assets/i18n): without this, .NET's own message translations come as thirteen folders (cs, de, es, fr, it, ja, ko,
          pl, pt-BR, ru, tr, zh-Hans, zh-Hant) next to the exe, which read like the app's languages but are not. -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>

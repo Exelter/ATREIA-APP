@@ -16,7 +16,7 @@ public static class ScheduleClient
 
     public static string CachePath => Path.Combine(
         Environment.GetEnvironmentVariable("AIONDPS_DATA_DIR") is { Length: > 0 } testDir
-            ? testDir : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder),
+            ? testDir : Brand.DataPath,
         "schedule-cache.json");
 
     /// <summary>Asks the server for the table and takes it in use when it reads as a whole one. True when the table in use is now the server's.

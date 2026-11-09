@@ -1385,7 +1385,7 @@ public partial class MainWindow : Window
     /// <summary>The old per-fight history (fights.db) is gone for good - sessions replaced it - so a file left by an earlier version is removed.</summary>
     private static void DeleteLegacyFightHistory()
     {
-        string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder);
+        string folder = Brand.DataPath;
         foreach (string name in new[] { "fights.db", "fights.db-wal", "fights.db-shm" })
         {
             try

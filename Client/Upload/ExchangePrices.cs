@@ -35,7 +35,7 @@ public static class ExchangePrices
     private static int _version;
 
     private static string DataFolder => Environment.GetEnvironmentVariable("AIONDPS_DATA_DIR") is { Length: > 0 } testDir
-        ? testDir : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder);
+        ? testDir : Brand.DataPath;
 
     private static string FileOf(int serverId) => Path.Combine(DataFolder, $"exchange-prices-{serverId}.json");
 

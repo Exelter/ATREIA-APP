@@ -17,7 +17,7 @@ namespace AionDPS.Update;
 /// downloads one image pack on its first start and keeps it under %APPDATA%). The website says which pack is current in
 /// <see cref="IndexUrl"/>: <c>{"version", "file" (or "url"), "size", "sha256", "files"}</c>; the site's tools/app-images.mjs writes it with the pack.
 /// The pack is a plain zip of the pictures, laid out like the app's assets folder (aion2/items/icons/…, classes/icons/…), unpacked into
-/// %APPDATA%\A2HMeter\images (<see cref="GameArt.PackFolder"/>).
+/// %APPDATA%\AtreiaApp\images (<see cref="GameArt.PackFolder"/>).
 /// <list type="bullet">
 /// <item>First start (no pack yet): before the meter's window, a small window shows the download; Skip leaves the app without pictures until the next
 /// start (<see cref="FirstStart"/>).</item>

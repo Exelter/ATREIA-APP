@@ -1106,7 +1106,7 @@ public sealed class MeterSettings
 
     private static string SettingsPath => Path.Combine(
         Environment.GetEnvironmentVariable("AIONDPS_DATA_DIR") is { Length: > 0 } testDir // tests only: a throw-away data folder
-            ? testDir : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder),
+            ? testDir : Brand.DataPath,
         "meter-settings.json");
 
     /// <summary>Where older, elevated builds kept the file. Read once, on first launch after the

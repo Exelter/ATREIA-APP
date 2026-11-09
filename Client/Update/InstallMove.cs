@@ -13,7 +13,8 @@ namespace AionDPS.Update;
 /// once from atreia.app (Brand.Site/download/Atreia-App-Setup.exe).
 /// The new install then tidies up after the old one on its first start (<see cref="CleanUpOldInstall"/>): shortcuts and the "start with Windows" entry
 /// that still point into the old folder are pointed at the new one, the old entry in Windows' installed apps goes, and the old folder is deleted.
-/// Settings, characters and history are in %APPDATA%\A2HMeter (<see cref="Brand.DataFolder"/>) and stay where they are: both installs read them there.
+/// Settings, characters, history and the game's pictures move too, from %APPDATA%\A2HMeter to %APPDATA%\AtreiaApp (9 November 2026, the owner: the
+/// files carry the app's name), on the new install's first start (<see cref="MoveDataFolder"/>).
 /// </summary>
 public static class InstallMove
 {
@@ -42,6 +43,64 @@ public static class InstallMove
     }
 
     private static bool IsNamed(string root, string id) => string.Equals(Path.GetFileName(root), id, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// At the start of the meter's window, before anything reads or writes its files: %APPDATA%\A2HMeter becomes %APPDATA%\AtreiaApp (<see cref="Brand.DataFolder"/>),
+    /// moved as a whole. It is one rename on the same drive: nothing is copied, nothing can be half-moved, and a failed one changes nothing. Only when the
+    /// new folder isn't there yet and no other copy of the meter runs (the old one would go on writing into the old folder). A file still open leaves it
+    /// for the next start; until then the old folder stays in use (<see cref="Brand.DataPath"/>). Tests with a data folder of their own never move anything.
+    /// </summary>
+    public static void MoveDataFolder()
+    {
+        if (Environment.GetEnvironmentVariable("AIONDPS_DATA_DIR") is { Length: > 0 })
+        {
+            return;
+        }
+
+        try
+        {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string old = Path.Combine(appData, Brand.OldDataFolder), now = Path.Combine(appData, Brand.DataFolder);
+            if (!Directory.Exists(old) || Directory.Exists(now) || OtherMeterRunning())
+            {
+                return;
+            }
+
+            Directory.Move(old, now);
+            Log($"moved the data folder {old} to {now}");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // a file of it still open: the next start tries again
+        }
+    }
+
+    /// <summary>A meter other than this one: the old exe, or this one started a second time (a command-line run).</summary>
+    private static bool OtherMeterRunning()
+    {
+        int self = Environment.ProcessId;
+        bool found = false;
+        foreach (Process p in Process.GetProcesses())
+        {
+            try
+            {
+                if (p.Id != self && (p.ProcessName.Equals(OldId, StringComparison.OrdinalIgnoreCase) || p.ProcessName.Equals(NewId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    found = true;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // ended meanwhile
+            }
+            finally
+            {
+                p.Dispose();
+            }
+        }
+
+        return found;
+    }
 
     /// <summary>
     /// In the new install, on every start until it is done (in the background): when the old folder is still there next to this one, the shortcuts and

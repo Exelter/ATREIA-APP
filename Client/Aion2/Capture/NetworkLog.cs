@@ -14,8 +14,7 @@ public static class NetworkLog
     /// <summary>A test writes to its own file instead of the real log.</summary>
     public static string? PathOverride { get; set; }
 
-    public static string Path_ => PathOverride ?? Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder, "network.log");
+    public static string Path_ => PathOverride ?? Path.Combine(Brand.DataPath, "network.log");
 
     public static void Write(string message, DateTime? at = null)
     {

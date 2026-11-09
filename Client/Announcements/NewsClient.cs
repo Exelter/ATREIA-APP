@@ -46,7 +46,7 @@ public static class NewsClient
     public static event Action? Changed;
 
     private static string DataFolder => Environment.GetEnvironmentVariable("AIONDPS_DATA_DIR") is { Length: > 0 } testDir
-        ? testDir : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder);
+        ? testDir : Brand.DataPath;
 
     public static string CachePath => Path.Combine(DataFolder, "news-cache.json");
 

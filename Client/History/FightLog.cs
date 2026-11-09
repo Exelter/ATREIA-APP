@@ -24,7 +24,7 @@ public sealed record FightLogEntry(
     double YourDps, double PartyDps, int? BossNpcId, int ZoneId, string File, string? You = null, string? YourClass = null, string? Url = null, int? ServerId = null);
 
 /// <summary>
-/// The history on this PC (%APPDATA%\A2HMeter\History): every dungeon run, boss fight, dummy parse and arena stay is saved as a file of its own
+/// The history on this PC (%APPDATA%\AtreiaApp\History): every dungeon run, boss fight, dummy parse and arena stay is saved as a file of its own
 /// the moment it ends, and listed in an index. Nothing is ever one endless session: an hour in the open world with three world bosses is three
 /// boss fights. Opening an entry reads its file back into a <see cref="ReportInput"/> for the report window. Pure file work: no window, no capture.
 /// </summary>
@@ -38,7 +38,7 @@ public static class FightLog
     private static readonly JsonSerializerOptions Json = new() { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };
 
     /// <summary>Where the history lives; a test points it elsewhere.</summary>
-    public static string Folder { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder, "History");
+    public static string Folder { get; set; } = Path.Combine(Brand.DataPath, "History");
 
     private static string IndexPath => Path.Combine(Folder, "index.json");
 

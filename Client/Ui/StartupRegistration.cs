@@ -12,7 +12,33 @@ namespace AionDPS.Ui;
 internal static class StartupRegistration
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "A2HMeter";
+    private const string ValueName = "AtreiaApp";
+
+    /// <summary>The entry's name until 9 November 2026 (the owner: the app's files carry its name).</summary>
+    private const string OldValueName = "A2HMeter";
+
+    /// <summary>An entry under the old name goes on under the app's name, pointing where it pointed (an old install's entry is pointed at this one by
+    /// <see cref="Repoint"/>).</summary>
+    public static void RenameOldEntry()
+    {
+        try
+        {
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
+            if (key?.GetValue(OldValueName) is string value)
+            {
+                if (value.Length > 0 && key.GetValue(ValueName) is null)
+                {
+                    key.SetValue(ValueName, value);
+                }
+
+                key.DeleteValue(OldValueName, throwOnMissingValue: false);
+            }
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException)
+        {
+            // left as it is: it still starts the meter
+        }
+    }
 
     /// <summary>Whether SOME value is registered under this app's name - not an exact path match,
     /// so a Run-key entry written by an older/different install of this same app still reads as
@@ -47,5 +73,7 @@ internal static class StartupRegistration
         {
             key.DeleteValue(ValueName, throwOnMissingValue: false);
         }
+
+        key.DeleteValue(OldValueName, throwOnMissingValue: false);
     }
 }

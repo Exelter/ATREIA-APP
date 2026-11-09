@@ -548,6 +548,11 @@ internal static class Program
                 return;
             }
 
+            // The data folder carries the app's name (Update/InstallMove): %APPDATA%\A2HMeter becomes %APPDATA%\AtreiaApp, before anything opens a file
+            // in it. The "start with Windows" entry takes the app's name too.
+            AionDPS.Update.InstallMove.MoveDataFolder();
+            Ui.StartupRegistration.RenameOldEntry();
+
             // No App.xaml on purpose: an ApplicationDefinition item would generate its own Main
             // and collide with this one. Building System.Windows.Application by hand keeps the
             // console entry points and the GUI in the same exe without fighting over program entry.
@@ -610,7 +615,7 @@ internal static class Program
                 CrashLog.Write(started ? "the meter stopped with an error" : "the meter could not start", ex);
                 System.Windows.MessageBox.Show(
                     (started ? $"{Brand.AppName} stopped because of an error." : $"{Brand.AppName} could not start.")
-                    + " Start it again; if this keeps happening, send the text below (also saved in crash.log in %APPDATA%\\" + Brand.DataFolder + ").\n\n" + ex,
+                    + " Start it again; if this keeps happening, send the text below (also saved in crash.log in " + Brand.DataPath + ").\n\n" + ex,
                     started ? $"{Brand.AppName} stopped" : $"{Brand.AppName} could not start",
                     System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }

@@ -19,8 +19,7 @@ public static class PetFarmLog
     /// <summary>A replay or a test writes to its own file instead of the real log.</summary>
     public static string? PathOverride { get; set; }
 
-    private static string Path_ => PathOverride ?? Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder, "pet-farm.log");
+    private static string Path_ => PathOverride ?? Path.Combine(Brand.DataPath, "pet-farm.log");
 
     public static void Write(string message)
     {

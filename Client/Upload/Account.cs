@@ -16,8 +16,7 @@ namespace AionDPS.Upload;
 /// </summary>
 public static class Account
 {
-    private static readonly string FilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder, "account.dat");
+    private static readonly string FilePath = Path.Combine(Brand.DataPath, "account.dat");
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
 

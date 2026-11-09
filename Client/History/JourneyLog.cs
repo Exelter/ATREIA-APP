@@ -39,7 +39,7 @@ public static class JourneyLog
     private static readonly TimeSpan SessionGap = TimeSpan.FromMinutes(15);
 
     private static string DataFolder => Environment.GetEnvironmentVariable("AIONDPS_DATA_DIR") is { Length: > 0 } testDir
-        ? testDir : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder);
+        ? testDir : Brand.DataPath;
 
     public static string FilePath => Path.Combine(DataFolder, "journey.json");
 

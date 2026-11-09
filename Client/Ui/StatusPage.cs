@@ -96,7 +96,7 @@ internal sealed class StatusPage : Grid
     public void Stop() => _timer.Stop();
 
     private static string DataFolder => Environment.GetEnvironmentVariable("AIONDPS_DATA_DIR") is { Length: > 0 } dir
-        ? dir : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Brand.DataFolder);
+        ? dir : Brand.DataPath;
 
     private static void Open(string path)
     {

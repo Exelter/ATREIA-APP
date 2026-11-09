@@ -12,6 +12,7 @@ namespace AionDPS;
 /// </summary>
 internal static class SingleInstance
 {
+    // Still the meter's first name on purpose: the installs of the old name use the same one, so an old and a new meter never capture side by side.
     private const string MutexName = @"Local\A2HMeter.SingleInstance";
     private const string ShowEventName = @"Local\AionDPS.ShowWindow";
     private const uint AsfwAny = 0xFFFFFFFF;
