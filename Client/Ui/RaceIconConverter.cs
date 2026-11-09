@@ -20,7 +20,7 @@ public sealed class RaceIconConverter : IValueConverter
             return null;
         }
 
-        string path = Path.Combine(AppContext.BaseDirectory, "assets", "races", "icons", $"{faction}.png");
+        string path = Aion2.GameArt.PathOf("races", "icons", $"{faction}.png");
         return File.Exists(path) ? new BitmapImage(new Uri(path, UriKind.Absolute)) : null;
     }
 

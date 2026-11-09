@@ -843,7 +843,7 @@ public sealed class PlayerView : Border
 
         foreach (string folder in LocalFolders)
         {
-            string path = System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "aion2", folder.Replace('/', System.IO.Path.DirectorySeparatorChar), name + ".png");
+            string path = Aion2.GameArt.PathOf("aion2", folder, name + ".png");
             if (System.IO.File.Exists(path) && Decode(System.IO.File.ReadAllBytes(path)) is { } local)
             {
                 return local;

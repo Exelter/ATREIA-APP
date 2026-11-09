@@ -12,7 +12,8 @@ namespace AionDPS.Aion2.Protocol;
 /// </summary>
 public static class Aion2SkillIcons
 {
-    private static readonly string Folder = Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "skills", "icons");
+    // the pictures are in the image pack the app downloads (GameArt), the table next to the app
+    private static string Folder => GameArt.FolderOf("aion2", "skills", "icons");
     private static readonly string TokensPath = Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "skills", "skill_icon_tokens.json");
     private static IReadOnlyDictionary<int, string>? _tokens;
 

@@ -398,7 +398,7 @@ public sealed class CharacterWindow : Window
         string? faction = _directory.FactionOf(character.CombatId) ?? Aion2.Protocol.Aion2SkillNames.FactionOfCode(character.ClassCode);
         if (faction is not null)
         {
-            if (Picture(Path.Combine(AppContext.BaseDirectory, "assets", "races", "icons", faction + ".png")) is { } flag)
+            if (Picture(Aion2.GameArt.PathOf("races", "icons", faction + ".png")) is { } flag)
             {
                 meta.Children.Add(new Image { Source = flag, Width = 16, Height = 16, Margin = new Thickness(0, 0, 5, 0), VerticalAlignment = VerticalAlignment.Center });
             }
@@ -739,7 +739,7 @@ public sealed class CharacterWindow : Window
         string? faction = (basics.ServerId / 1000) switch { 1 => "Elyos", 2 => "Asmodian", _ => remote?.Faction };
         if (faction is not null)
         {
-            if (Picture(Path.Combine(AppContext.BaseDirectory, "assets", "races", "icons", faction + ".png")) is { } flag)
+            if (Picture(Aion2.GameArt.PathOf("races", "icons", faction + ".png")) is { } flag)
             {
                 meta.Children.Add(new Image { Source = flag, Width = 16, Height = 16, Margin = new Thickness(0, 0, 5, 0), VerticalAlignment = VerticalAlignment.Center });
             }
@@ -997,7 +997,7 @@ public sealed class CharacterWindow : Window
         var disc = new RadialGradientBrush(Color.FromRgb(0x2B, 0x47, 0x62), Color.FromRgb(0x11, 0x1F, 0x2D));
         var grid = new Grid { Width = size, Height = size };
         grid.Children.Add(new System.Windows.Shapes.Ellipse { Fill = disc, Stroke = Res("Brush.Border"), StrokeThickness = 1 });
-        if (Picture(Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "stats", file)) is { } image)
+        if (Picture(Aion2.GameArt.PathOf("aion2", "stats", file)) is { } image)
         {
             grid.Children.Add(new Image { Source = image, Stretch = Stretch.Uniform, Margin = new Thickness(size * 0.12) });
         }

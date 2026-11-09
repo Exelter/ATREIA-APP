@@ -374,7 +374,7 @@ public sealed class StreamOverlayServer : IDisposable
                 if (parts.Length == 3 && parts[1] == "c" && parts[2].EndsWith(".png", StringComparison.Ordinal)
                     && Aion2Artwork.ClassEmblemPath(parts[2][..^4]) is string emblem)
                 {
-                    string own = Path.Combine(AppContext.BaseDirectory, "assets", "classes", "icons", parts[2][..^4] + ".png");
+                    string own = Aion2.GameArt.PathOf("classes", "icons", parts[2][..^4] + ".png");
                     string icon = File.Exists(own) ? own : emblem;
                     if (File.Exists(icon))
                     {

@@ -24,6 +24,10 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Build
         run: dotnet build Client/AionDPS.csproj -c Release --nologo -o out
+      # The game's pictures are not in the repository: the image pack the app downloads, from atreia.app.
+      - name: Game pictures
+        shell: pwsh
+        run: pwsh Tools/release/images.ps1 -Dir out
       - name: Draw the windows
         shell: pwsh
         run: |

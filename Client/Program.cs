@@ -580,7 +580,19 @@ internal static class Program
                 Ui.ThemeManager.Apply(app, startupSettings);
                 // Every window fits on the screen it opens on, from 1280 x 720 to 4K and ultrawide, and again when the screens change (Ui/ScreenFit).
                 Ui.ScreenFit.Install(app.Dispatcher);
+                // The game's pictures (Aion2/GameArt, Update/ImagePack): a pack fetched during the last run takes over now; on the first start they are
+                // downloaded before the meter's window opens, with the progress in a small window of its own. That window closing does not end the app.
+                if (!string.IsNullOrEmpty(startupSettings.Language))
+                {
+                    Ui.LocalizationManager.Instance.Language = startupSettings.Language;
+                }
+
+                AionDPS.Update.ImagePack.ApplyWaiting();
+                app.ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+                AionDPS.Update.ImagePack.FirstStart();
                 var mainWindow = new Ui.MainWindow();
+                app.MainWindow = mainWindow;
+                _ = Task.Run(AionDPS.Update.ImagePack.CheckInBackgroundAsync);
                 // The install moved to %LOCALAPPDATA%\AtreiaApp (Update/InstallMove): the new install removes what is left of the old one.
                 _ = Task.Run(AionDPS.Update.InstallMove.CleanUpOldInstall);
                 // Closing the meter's window ends the meter, even while an overlay or another window of it is still open; otherwise it kept running

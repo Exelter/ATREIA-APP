@@ -222,7 +222,7 @@ public partial class MainWindow
         }
 
         ImageSource? icon = null;
-        string path = System.IO.Path.Combine(AppContext.BaseDirectory, "assets", relative);
+        string path = Aion2.GameArt.PathOf(relative);
         if (System.IO.File.Exists(path))
         {
             try

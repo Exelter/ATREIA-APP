@@ -74,7 +74,7 @@ public static class Aion2Pets
             return null;
         }
 
-        string path = Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "pets", "icons", key + ".png");
+        string path = GameArt.PathOf("aion2", "pets", "icons", key + ".png");
         return File.Exists(path) ? path : null;
     }
 

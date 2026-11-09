@@ -76,7 +76,7 @@ internal static class TimerLook
         // the look comes from the server's table: only a plain name is taken as a file name
         if (look.Length is > 0 and <= 40 && look.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-'))
         {
-            string path = System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "schedule", "icons", look + ".png");
+            string path = Aion2.GameArt.PathOf("aion2", "schedule", "icons", look + ".png");
             try
             {
                 if (File.Exists(path))

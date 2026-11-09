@@ -1867,7 +1867,7 @@ public sealed class FightReportWindow : Window
     private static ImageSource? Picture(string? path) => path is not null && File.Exists(path) ? OverlayPictures.Load(path) : null;
 
     private static ImageSource? ClassIcon(string className) =>
-        Picture(System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "classes", "icons", className + ".png"));
+        Picture(Aion2.GameArt.PathOf("classes", "icons", className + ".png"));
 
     private static ImageSource? SkillIcon(int skillId, string name, string? className) =>
         Picture((skillId != 0 ? Aion2SkillIcons.PathFor(skillId) : null) ?? Aion2SkillIcons.PathForName(name, className));

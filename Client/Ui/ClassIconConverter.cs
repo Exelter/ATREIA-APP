@@ -29,7 +29,7 @@ public sealed class ClassIconConverter : IValueConverter
                 return known;
             }
 
-            string path = Path.Combine(AppContext.BaseDirectory, "assets", "classes", "icons", $"{className}.png");
+            string path = Aion2.GameArt.PathOf("classes", "icons", $"{className}.png");
             BitmapSource? icon = null;
             if (File.Exists(path))
             {

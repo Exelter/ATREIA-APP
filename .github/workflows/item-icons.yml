@@ -1,7 +1,8 @@
 name: Item icons
 
-# Fetches the icons of the items the other icon sets leave out (souls, soulstones, materials …) from NCSOFT's public item data
-# and puts them on the item-icons branch, to be taken into main after a look.
+# Fetches the icons of the items the other icon sets leave out (souls, soulstones, materials …) from NCSOFT's public item data. The pictures are not kept
+# in this repository: the run's "item-icons" artifact holds items/more and items/more_icons.json. The pictures go into the image pack on atreia.app (the
+# site's tools/app-images.mjs), more_icons.json into Client/assets/aion2/items.
 on:
   workflow_dispatch:
   push:
@@ -9,7 +10,7 @@ on:
     paths: [".github/workflows/item-icons.yml", "Tools/item-icons/fetch_item_icons.py"]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: item-icons
@@ -23,20 +24,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # The icons the image pack already has are not fetched again: the pack is unpacked first.
+      - name: Unpack the image pack
+        run: |
+          index=https://atreia.app/app/updates/images.json
+          curl -fsSL -A AtreiaApp-checks -o images.json "$index"
+          url=$(jq -r 'if .url then .url else "https://atreia.app/app/updates/" + .file end' images.json)
+          curl -fsSL -A AtreiaApp-checks -o images.zip "$url"
+          echo "$(jq -r .sha256 images.json)  images.zip" | sha256sum -c -
+          unzip -q -o images.zip -d Client/assets
       - name: Fetch the icons
         run: |
           pip install -q pillow
           python3 Tools/item-icons/fetch_item_icons.py Client/assets/aion2
           du -sh Client/assets/aion2/items/more
           ls Client/assets/aion2/items/more | wc -l
-      - name: Put them on the item-icons branch
-        run: |
-          mkdir out && cp -r Client/assets/aion2/items/more out/more && cp Client/assets/aion2/items/more_icons.json out/
-          cd out
-          git init -q
-          git checkout -q -b item-icons
-          git add .
-          git -c user.name="item-icons" -c user.email="item-icons@users.noreply.github.com" commit -q -m "Item icons for $GITHUB_SHA"
-          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" item-icons
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Keep them as the run's artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: item-icons
+          retention-days: 7
+          path: |
+            Client/assets/aion2/items/more
+            Client/assets/aion2/items/more_icons.json

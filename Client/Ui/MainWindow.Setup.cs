@@ -1443,10 +1443,10 @@ public partial class MainWindow
 
         private static readonly Dictionary<string, ImageSource?> Assets = new();
 
-        /// <summary>A picture the app ships (assets/aion2/...), null when it isn't there.</summary>
+        /// <summary>A game picture (assets/aion2/..., from the image pack: Aion2/GameArt), null when it isn't there.</summary>
         private static ImageSource? Asset(params string[] parts)
         {
-            string path = System.IO.Path.Combine(new[] { AppContext.BaseDirectory, "assets", "aion2" }.Concat(parts).ToArray());
+            string path = Aion2.GameArt.PathOf(new[] { "aion2" }.Concat(parts).ToArray());
             if (Assets.TryGetValue(path, out ImageSource? had))
             {
                 return had;
@@ -1484,7 +1484,7 @@ public partial class MainWindow
             {
                 try
                 {
-                    string folder = System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "skills", "icons");
+                    string folder = Aion2.GameArt.FolderOf("aion2", "skills", "icons");
                     _skillIcons = Directory.Exists(folder) ? Directory.GetFiles(folder, "ICON_TE_SKILL_0*.png").Order(StringComparer.Ordinal).Select(System.IO.Path.GetFileName).Select(n => n!).ToArray() : Array.Empty<string>();
                 }
                 catch (IOException)

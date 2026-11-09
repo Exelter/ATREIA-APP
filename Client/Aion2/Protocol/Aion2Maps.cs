@@ -100,7 +100,7 @@ public static class Aion2Maps
         return bestKey is null ? null : All.First(m => m.Key == bestKey);
     }
 
-    public static string TileFolder(Aion2MapInfo map) => Path.Combine(Folder, "maps", map.Key);
+    public static string TileFolder(Aion2MapInfo map) => GameArt.FolderOf("aion2", "maps", map.Key);
 
     public static (double X, double Y) ToNative(Aion2MapInfo map, double worldX, double worldY) =>
         (map.OffsetX + map.Scale * worldX, map.OffsetY + map.Scale * worldY);

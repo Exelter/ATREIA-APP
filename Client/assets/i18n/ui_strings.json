@@ -22819,5 +22819,41 @@
   "Cubes.OnlyKeyTip": {
     "en": "The note, the sounds, the meter's line and the map coming up only while your character has a Hidden Cube key in its bag. The cube still shows on the map. Until the app has seen your bag (at your login), the alerts come as usual.",
     "de": "Hinweis, Töne, die Zeile des Meters und die aufklappende Karte nur, solange dein Charakter einen Schlüssel für Versteckte Kuben im Inventar hat. Der Kubus bleibt auf der Karte. Bis die App dein Inventar gesehen hat (beim Login), kommen die Hinweise wie gewohnt."
+  },
+  "Images.Fetching": {
+    "en": "Downloading the game's pictures (icons and maps). This happens only once.",
+    "de": "Die Bilder des Spiels werden heruntergeladen (Symbole und Karten). Das passiert nur einmal.",
+    "fr": "Téléchargement des images du jeu (icônes et cartes). Cela n'arrive qu'une seule fois.",
+    "es": "Descargando las imágenes del juego (iconos y mapas). Solo ocurre una vez.",
+    "ru": "Загружаются изображения игры (значки и карты). Это происходит только один раз.",
+    "zh": "正在下载游戏图片（图标和地图），只需下载一次。",
+    "zh-TW": "正在下載遊戲圖片（圖示和地圖），只需下載一次。",
+    "pt": "Baixando as imagens do jogo (ícones e mapas). Isso acontece só uma vez.",
+    "ja": "ゲームの画像（アイコンとマップ）をダウンロードしています。これは最初の一度だけです。",
+    "ko": "게임 이미지(아이콘과 지도)를 다운로드하는 중입니다. 처음 한 번만 진행됩니다."
+  },
+  "Images.Progress": {
+    "en": "{0:0} of {1:0} MB",
+    "de": "{0:0} von {1:0} MB",
+    "fr": "{0:0} sur {1:0} Mo",
+    "es": "{0:0} de {1:0} MB",
+    "ru": "{0:0} из {1:0} МБ",
+    "zh": "{0:0} / {1:0} MB",
+    "zh-TW": "{0:0} / {1:0} MB",
+    "pt": "{0:0} de {1:0} MB",
+    "ja": "{0:0} / {1:0} MB",
+    "ko": "{0:0} / {1:0} MB"
+  },
+  "Images.Skip": {
+    "en": "Skip",
+    "de": "Überspringen",
+    "fr": "Passer",
+    "es": "Omitir",
+    "ru": "Пропустить",
+    "zh": "跳过",
+    "zh-TW": "略過",
+    "pt": "Pular",
+    "ja": "スキップ",
+    "ko": "건너뛰기"
   }
 }

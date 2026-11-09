@@ -243,7 +243,7 @@ public sealed class HistoryWindow : Window
     {
         bool on = value == _character;
         var row = new StackPanel { Orientation = Orientation.Horizontal };
-        if (className is { Length: > 0 } && Picture(Path.Combine(AppContext.BaseDirectory, "assets", "classes", "icons", className + ".png")) is { } icon)
+        if (className is { Length: > 0 } && Picture(Aion2.GameArt.PathOf("classes", "icons", className + ".png")) is { } icon)
         {
             row.Children.Add(new Image { Source = icon, Width = 18, Height = 18, Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center });
         }
@@ -440,7 +440,7 @@ public sealed class HistoryWindow : Window
     private FrameworkElement Medal(FightLogEntry entry)
     {
         ImageSource? icon = entry.BossNpcId is int npc ? Picture(Aion2Artwork.BossThumbPath(npc)) : null;
-        icon ??= entry.YourClass is { Length: > 0 } cls ? Picture(Path.Combine(AppContext.BaseDirectory, "assets", "classes", "icons", cls + ".png")) : null;
+        icon ??= entry.YourClass is { Length: > 0 } cls ? Picture(Aion2.GameArt.PathOf("classes", "icons", cls + ".png")) : null;
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -568,7 +568,7 @@ public sealed class HistoryWindow : Window
         }
 
         ImageSource? icon = entry.BossNpcId is int npc ? Picture(Aion2Artwork.BossThumbPath(npc)) : null;
-        icon ??= entry.YourClass is { Length: > 0 } cls ? Picture(Path.Combine(AppContext.BaseDirectory, "assets", "classes", "icons", cls + ".png")) : null;
+        icon ??= entry.YourClass is { Length: > 0 } cls ? Picture(Aion2.GameArt.PathOf("classes", "icons", cls + ".png")) : null;
         var box = new Border { Width = 40, Height = 40, CornerRadius = new CornerRadius(8), ClipToBounds = true, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
         box.Background = icon is not null ? new ImageBrush(icon) { Stretch = Stretch.UniformToFill } : Frozen(Color.FromArgb(0x10, 0xFF, 0xFF, 0xFF));
         Grid.SetColumn(box, 0);

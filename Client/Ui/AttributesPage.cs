@@ -168,7 +168,7 @@ public sealed class AttributesPage : Grid
         BitmapImage? image = null;
         try
         {
-            string path = System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "stats", file);
+            string path = Aion2.GameArt.PathOf("aion2", "stats", file);
             if (File.Exists(path))
             {
                 image = new BitmapImage();

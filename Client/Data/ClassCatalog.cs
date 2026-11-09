@@ -39,7 +39,7 @@ public static class ClassCatalog
 
     /// <summary>Whether assets/classes/icons/{name}.png exists for this class.</summary>
     public static bool HasIcon(string className) =>
-        File.Exists(Path.Combine(AppContext.BaseDirectory, "assets", "classes", "icons", className + ".png"));
+        File.Exists(Aion2.GameArt.PathOf("classes", "icons", className + ".png"));
 
     // Deliberately its own small table (assets/classes/class_names_i18n.json), not
     // assets/classes/class_names_multilang.json - that older file only covers 4 of the 8 UI

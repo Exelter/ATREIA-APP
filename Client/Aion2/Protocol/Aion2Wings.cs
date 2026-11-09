@@ -29,7 +29,7 @@ public static class Aion2Wings
         string? icon = null;
         if (entry.Icon is { Length: > 0 })
         {
-            string path = Path.Combine(Root, "icons", entry.Icon + ".png");
+            string path = GameArt.PathOf("aion2", "wings", "icons", entry.Icon + ".png");
             icon = File.Exists(path) ? path : null;
         }
 

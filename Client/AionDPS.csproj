@@ -90,6 +90,12 @@
     <None Include="assets/**/*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- The game's pictures are not in the repository and never in a release: the app downloads them as an image pack from atreia.app (Aion2/GameArt.cs,
+       Update/ImagePack.cs). A copy unpacked into assets/ for a local build is left out of a release built here too. -->
+  <ItemGroup Condition="'$(ReleaseLayout)' == 'true'">
+    <None Remove="assets/aion2/**/*.png;assets/aion2/**/*.jpg;assets/aion2/**/*.webp;assets/classes/icons/**;assets/races/icons/**" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- The faces of atreia.app (see Fonts/OFL.txt), compiled in: A2H Sans for all text, Cinzel for titles (ThemeManager.SetFonts). -->
     <Resource Include="Fonts\*.ttf" />

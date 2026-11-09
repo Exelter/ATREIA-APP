@@ -21,14 +21,14 @@ public static class Aion2Artwork
     public static string? ItemIconPath(int itemId)
     {
         _itemIcons ??= ReadMap(Path.Combine(Root, "items", "item_icons.json"));
-        if (_itemIcons.TryGetValue(itemId, out string? name) && Path.Combine(Root, "items", "icons", name + ".png") is string path && File.Exists(path))
+        if (_itemIcons.TryGetValue(itemId, out string? name) && Art("items", "icons", name + ".png") is string path && File.Exists(path))
         {
             return path;
         }
 
         // the materials, potions and the like of the crafting tool (assets/aion2/craft)
         _craftIcons ??= ReadMap(Path.Combine(Root, "craft", "item_icons.json"));
-        if (_craftIcons.TryGetValue(itemId, out string? craftName) && Path.Combine(Root, "craft", "icons", craftName + ".png") is string craftPath && File.Exists(craftPath))
+        if (_craftIcons.TryGetValue(itemId, out string? craftName) && Art("craft", "icons", craftName + ".png") is string craftPath && File.Exists(craftPath))
         {
             return craftPath;
         }
@@ -36,7 +36,7 @@ public static class Aion2Artwork
         // everything else - souls (the creature's portrait), soulstones, Odyle, materials, quest items: the icons NCSOFT's item data names
         // (assets/aion2/items/more)
         _moreIcons ??= ReadMap(Path.Combine(Root, "items", "more_icons.json"));
-        if (_moreIcons.TryGetValue(itemId, out string? moreName) && Path.Combine(Root, "items", "more", moreName + ".png") is string morePath && File.Exists(morePath))
+        if (_moreIcons.TryGetValue(itemId, out string? moreName) && Art("items", "more", moreName + ".png") is string morePath && File.Exists(morePath))
         {
             return morePath;
         }
@@ -64,7 +64,7 @@ public static class Aion2Artwork
         _effectIcons ??= ReadMap(Path.Combine(Root, "items", "effect_icons.json"));
         foreach (int id in new[] { effectId, effectId / 10, effectId / 100 })
         {
-            if (id > 0 && _effectIcons.TryGetValue(id, out string? name) && Path.Combine(Root, "items", "icons", name + ".png") is string path && File.Exists(path))
+            if (id > 0 && _effectIcons.TryGetValue(id, out string? name) && Art("items", "icons", name + ".png") is string path && File.Exists(path))
             {
                 return path;
             }
@@ -237,7 +237,7 @@ public static class Aion2Artwork
             _bossThumbs = map;
         }
 
-        return _bossThumbs.TryGetValue(npcId, out string? name) && Existing(Path.Combine(Root, "bosses", "thumbs", name)) is { } path ? path : null;
+        return _bossThumbs.TryGetValue(npcId, out string? name) && Existing(Art("bosses", "thumbs", name)) is { } path ? path : null;
     }
 
     private static IReadOnlyDictionary<int, string>? _fieldBossPortraits;
@@ -274,15 +274,15 @@ public static class Aion2Artwork
             _fieldBossPortraits = map;
         }
 
-        return _fieldBossPortraits.TryGetValue(npcId, out string? name) && Existing(Path.Combine(Root, "bosses", "field", name)) is { } path ? path : null;
+        return _fieldBossPortraits.TryGetValue(npcId, out string? name) && Existing(Art("bosses", "field", name)) is { } path ? path : null;
     }
 
     public static string? ClassEmblemPath(string className) =>
-        ClassFiles.TryGetValue(className, out string? file) && Existing(Path.Combine(Root, "classes", file + ".png")) is { } path ? path : null;
+        ClassFiles.TryGetValue(className, out string? file) && Existing(Art("classes", file + ".png")) is { } path ? path : null;
 
     /// <summary>A Daevanion board tile: "common", "rare", "legend", "unique" (plus "-off" when locked) or the start tile
     /// of a class ("start-gladiator", "start").</summary>
-    public static string? BoardTilePath(string name) => Existing(Path.Combine(Root, "daevanion", "art", name + ".png"));
+    public static string? BoardTilePath(string name) => Existing(Art("daevanion", "art", name + ".png"));
 
     public static string BoardStartTile(string className) => className switch
     {
@@ -292,6 +292,9 @@ public static class Aion2Artwork
     };
 
     private static string? Existing(string path) => File.Exists(path) ? path : null;
+
+    /// <summary>A picture under assets/aion2: in the image pack the app downloads, or next to the app (<see cref="GameArt"/>). The tables (.json) stay at <see cref="Root"/>.</summary>
+    private static string Art(params string[] parts) => GameArt.PathOf(new[] { "aion2" }.Concat(parts).ToArray());
 
     private static IReadOnlyDictionary<int, string> ReadMap(string path)
     {

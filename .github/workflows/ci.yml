@@ -20,6 +20,10 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Build
         run: dotnet build Client/AionDPS.csproj -c Release --nologo -o out
+      # The game's pictures are not in the repository: the image pack the app downloads, from atreia.app, unpacked into the build for the checks.
+      - name: Game pictures
+        shell: pwsh
+        run: pwsh Tools/release/images.ps1 -Dir out
       # The app's own checks (recorded game frames, no game or Npcap needed). A failed check fails this job; each failed line becomes an
       # error on the run's page, so a red run says which check broke.
       - name: Self-checks
@@ -40,6 +44,9 @@ jobs:
       - name: Publish like a release
         shell: pwsh
         run: pwsh Tools/release/publish.ps1 -Version 1.0.0 -Out publish
+      - name: Game pictures
+        shell: pwsh
+        run: pwsh Tools/release/images.ps1 -Dir publish
       - name: Self-checks in the release layout
         shell: pwsh
         timeout-minutes: 20
