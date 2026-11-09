@@ -1,0 +1,40 @@
+name: Discord
+
+# Posts every change that lands on main to a Discord channel: one message per push, each commit's title with a link to it. Only main: the pushes of the
+# Screens, Voice and Item icons workflows to their own branches are not posted.
+#
+# The channel's webhook address is the repository secret DISCORD_WEBHOOK (in Discord: the channel's settings > Integrations > Webhooks > New Webhook >
+# Copy Webhook URL; on GitHub: Settings > Secrets and variables > Actions > New repository secret). Without it nothing is sent. A commit with
+# "[skip discord]" in its message is left out.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post the changes
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          COMMITS: ${{ toJSON(github.event.commits) }}
+          COMPARE: ${{ github.event.compare }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then echo "The DISCORD_WEBHOOK secret is not set: nothing posted."; exit 0; fi
+          payload=$(jq -cn --argjson commits "$COMMITS" --arg compare "$COMPARE" --arg repo "$REPO" '
+            [$commits[] | select(.message | test("\\[skip discord\\]") | not)] as $c
+            | if ($c | length) == 0 then empty else
+              {username: "Atreia App", embeds: [{
+                title: (if ($c | length) == 1 then "1 change" else "\($c | length) changes" end),
+                url: $compare,
+                color: 15253314,
+                description: ([$c[] | "[`\(.id[0:7])`](\(.url)) \(.message | split("\n")[0] | .[0:200])"] | join("\n") | .[0:4000]),
+                footer: {text: $repo}
+              }]} end')
+          if [ -z "$payload" ]; then echo "Nothing to post."; exit 0; fi
+          curl -fsS -H "Content-Type: application/json" -d "$payload" "$WEBHOOK"
+          echo "Posted $(jq '.embeds[0].title' <<< "$payload")."
