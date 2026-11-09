@@ -217,6 +217,32 @@ public sealed partial class ChecklistWindow : Window
     /// One character of the column on the left: the class icon, the name in the class colour (a dot when it is the one logged in), the class, level and server below and, in
     /// small type, when it was last online. The form is Stacy's (her fork, 17 October 2026: alts with close names were hard to tell apart); smaller type than hers.
     /// </summary>
+    /// <summary>
+    /// What a character's line says of its strength: its Combat Power as last seen (the CP checks' last reading, else its character page), else its
+    /// Item Level, else its level. 9 November 2026, the owner: show the characters' Combat Power over the level (every character at the top is
+    /// level 45, so the level told nothing apart).
+    /// </summary>
+    internal static string? Strength(TicketCharacter c, LocalizationManager loc)
+    {
+        int cp = AionDPS.Combat.CpChecks.State(c.Name, c.ServerId)?.Points is { Count: > 0 } points ? points[^1].Cp : 0;
+        if (cp <= 0 && AionDPS.Combat.CpChecks.OfficialOf(c.Name, c.ServerId)?.Cp is int page)
+        {
+            cp = page;
+        }
+
+        if (cp > 0)
+        {
+            return PlayerRow.Compact(cp) + " CP";
+        }
+
+        if (c.ItemLevel > 0)
+        {
+            return string.Format(CultureInfo.CurrentCulture, loc["Checklist.ItemLevel"], c.ItemLevel.ToString("N0", CultureInfo.CurrentCulture));
+        }
+
+        return c.Level > 0 ? string.Format(CultureInfo.CurrentCulture, loc["Checklist.Level"], c.Level) : null;
+    }
+
     private static UIElement CharacterCard(TicketCharacter c, bool active, bool online, Action choose)
     {
         LocalizationManager loc = LocalizationManager.Instance;
@@ -250,9 +276,9 @@ public sealed partial class ChecklistWindow : Window
 
         words.Children.Add(title);
         var parts = new List<string>();
-        if (c.Level > 0)
+        if (Strength(c, loc) is { } strength)
         {
-            parts.Add(string.Format(CultureInfo.CurrentCulture, loc["Checklist.Level"], c.Level));
+            parts.Add(strength);
         }
 
         if (c.ServerId > 0)

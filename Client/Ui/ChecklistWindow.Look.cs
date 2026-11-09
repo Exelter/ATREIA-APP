@@ -332,9 +332,9 @@ public sealed partial class ChecklistWindow
 
             names.Children.Add(top);
             var parts = new List<string>();
-            if (c.Level > 0)
+            if (Strength(c, loc) is { } strength)
             {
-                parts.Add(string.Format(CultureInfo.CurrentCulture, loc["Checklist.Level"], c.Level));
+                parts.Add(strength);
             }
 
             if (c.ServerId > 0)
@@ -525,9 +525,9 @@ public sealed partial class ChecklistWindow
             parts.Add(ClassCatalog.DisplayName(className, language));
         }
 
-        if (c.Level > 0)
+        if (Strength(c, loc) is { } strength)
         {
-            parts.Add(string.Format(CultureInfo.CurrentCulture, loc["Checklist.Level"], c.Level));
+            parts.Add(strength);
         }
 
         if (c.ServerId > 0)
