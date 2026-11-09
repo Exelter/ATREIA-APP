@@ -26,8 +26,8 @@
          any of the three things above), but per the user that leftover had to go too - every
          `namespace AionSniffer.*`/`using AionSniffer.*` in the project was renamed to AionDPS to
          match. -->
-    <!-- 8 November 2026, the owner: the app installs under its own name, so the exe is AtreiaApp.exe (it was A2HMeter.exe). The copy packed for the old
-         install folder gets the exe under its old name (release.yml), so that install's shortcuts keep working until it has moved (Update/InstallMove.cs). -->
+    <!-- 8 November 2026, the owner: the app installs under its own name, so the exe is AtreiaApp.exe (it was A2HMeter.exe), in %LOCALAPPDATA%\AtreiaApp.
+         A new install points the old install's shortcuts at itself and removes the old folder (Update/InstallMove.cs). -->
     <AssemblyName>AtreiaApp</AssemblyName>
     <Product>Atreia App</Product>
     <AssemblyTitle>Atreia App</AssemblyTitle>
