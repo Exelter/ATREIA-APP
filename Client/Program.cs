@@ -3596,7 +3596,11 @@ internal static class Program
         var visual = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2a, 0x36, 0x2c)) };
         foreach (var overlay in new System.Windows.Window[] { window, list })
         {
-            var content = (System.Windows.UIElement)overlay.Content;
+            if (overlay.Content is not System.Windows.UIElement content)
+            {
+                continue;
+            }
+
             overlay.Content = null;
             visual.Children.Add(content);
         }

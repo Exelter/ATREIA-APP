@@ -53,7 +53,7 @@ public sealed class CraftOverlayWindow : MovableOverlay
         s.Save();
     }
 
-    public bool HasContent => _rows.Children.Count > 0;
+    public new bool HasContent => _rows.Children.Count > 0;
 
     /// <summary>The lines: name, colour, "have / need"; a last line (text only) sums up what does not fit.</summary>
     public void Render(string caption, IReadOnlyList<(string Name, Color Color, string Count)> lines, string? more)

@@ -57,7 +57,7 @@ internal sealed class WorldBossPage : Grid
         }
     }
 
-    private static string Language => LocalizationManager.Instance.Language;
+    private static string UiLanguage => LocalizationManager.Instance.Language;
 
     private sealed record Row(FieldBossMap Map, FieldBoss Boss, BossStatus Status, string Name);
 
@@ -75,7 +75,7 @@ internal sealed class WorldBossPage : Grid
             return;
         }
 
-        var rows = maps.SelectMany(m => m.Bosses.Select(b => new Row(m, b, Aion2FieldBosses.StatusOf(b, now), Aion2FieldBosses.DisplayName(m, b, Language)))).ToList();
+        var rows = maps.SelectMany(m => m.Bosses.Select(b => new Row(m, b, Aion2FieldBosses.StatusOf(b, now), Aion2FieldBosses.DisplayName(m, b, UiLanguage)))).ToList();
         MeterSettings settings = MeterSettings.Load();
         _region ??= maps.FirstOrDefault(m => Aion2FieldBosses.ReadAt(m) is not null)?.Key ?? maps[0].Key;
 
@@ -186,7 +186,7 @@ internal sealed class WorldBossPage : Grid
         var line = new StackPanel { Orientation = Orientation.Horizontal };
         Color dot = at is null ? Grey : now - at < TimeSpan.FromHours(1) ? Green : Amber;
         line.Children.Add(new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Fill = new SolidColorBrush(dot), Margin = new Thickness(0, 1, 8, 0), VerticalAlignment = VerticalAlignment.Center });
-        line.Children.Add(Text(map.NameIn(Language), on ? "Brush.Text" : "Brush.TextMuted", 12.5, bold: on));
+        line.Children.Add(Text(map.NameIn(UiLanguage), on ? "Brush.Text" : "Brush.TextMuted", 12.5, bold: on));
         if (upHere > 0)
         {
             var count = new Border { CornerRadius = new CornerRadius(6), Padding = new Thickness(6, 0, 6, 1), Margin = new Thickness(8, 0, 0, 0), Background = new SolidColorBrush(Color.FromArgb(0x30, Green.R, Green.G, Green.B)),
@@ -197,7 +197,7 @@ internal sealed class WorldBossPage : Grid
         var chip = new Border
         {
             Child = line, Padding = new Thickness(12, 6, 12, 7), Margin = new Thickness(0, 0, 6, 6), CornerRadius = new CornerRadius(9), Cursor = Cursors.Hand, BorderThickness = new Thickness(1),
-            ToolTip = at is DateTime t ? "Read " + Ago(now - t) : "Not read yet: go into " + map.NameIn(Language) + " once",
+            ToolTip = at is DateTime t ? "Read " + Ago(now - t) : "Not read yet: go into " + map.NameIn(UiLanguage) + " once",
         };
         if (on)
         {
@@ -229,14 +229,14 @@ internal sealed class WorldBossPage : Grid
         TextBlock when = Text(at is DateTime t ? "Read " + Ago(now - t) + " (" + t.ToString("HH:mm", En) + ")" : "Not read yet", at is null ? "Brush.TextSubtle" : "Brush.TextMuted", 12);
         DockPanel.SetDock(when, Dock.Right);
         head.Children.Add(when);
-        TextBlock title = Text(map.NameIn(Language), "Brush.Text", 17, bold: true);
+        TextBlock title = Text(map.NameIn(UiLanguage), "Brush.Text", 17, bold: true);
         ThemeManager.UseTitleFont(title);
         head.Children.Add(title);
         stack.Children.Add(head);
         if (at is null)
         {
             var hint = new Border { CornerRadius = new CornerRadius(8), Padding = new Thickness(12, 9, 12, 10), Margin = new Thickness(0, 0, 0, 10), Background = new SolidColorBrush(Color.FromArgb(0x1C, Amber.R, Amber.G, Amber.B)),
-                Child = Wrapped($"Go into {map.NameIn(Language)} once with the app running: the game sends the times of all {rows.Count} bosses here by itself, and they're kept.", "Brush.Text", 12.5) };
+                Child = Wrapped($"Go into {map.NameIn(UiLanguage)} once with the app running: the game sends the times of all {rows.Count} bosses here by itself, and they're kept.", "Brush.Text", 12.5) };
             stack.Children.Add(hint);
         }
 
@@ -372,7 +372,7 @@ internal sealed class WorldBossPage : Grid
         words.Children.Add(title);
         if (showRegion)
         {
-            words.Children.Add(Text(r.Map.NameIn(Language), "Brush.TextSubtle", 11));
+            words.Children.Add(Text(r.Map.NameIn(UiLanguage), "Brush.TextSubtle", 11));
         }
 
         AddCell(grid, words, 1);

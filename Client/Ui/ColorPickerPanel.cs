@@ -12,13 +12,13 @@ namespace AionDPS.Ui;
 /// </summary>
 public sealed class ColorPickerPanel : StackPanel
 {
-    private const double Width = 230, SquareHeight = 150, BarHeight = 18;
+    private const double PanelWidth = 230, SquareHeight = 150, BarHeight = 18;
 
     private readonly GradientStop _hueEnd = new(Colors.Red, 1);
     private readonly Ellipse _squareMarker = new() { Width = 14, Height = 14, Stroke = Brushes.White, StrokeThickness = 2, Fill = Brushes.Transparent, IsHitTestVisible = false };
     private readonly Rectangle _barMarker = new() { Width = 4, Height = BarHeight + 4, Stroke = Brushes.Black, StrokeThickness = 1, Fill = Brushes.White, IsHitTestVisible = false };
-    private readonly Canvas _squareCanvas = new() { Width = Width, Height = SquareHeight, Background = Brushes.Transparent, Cursor = Cursors.Cross };
-    private readonly Canvas _barCanvas = new() { Width = Width, Height = BarHeight, Background = Brushes.Transparent, Cursor = Cursors.Hand };
+    private readonly Canvas _squareCanvas = new() { Width = PanelWidth, Height = SquareHeight, Background = Brushes.Transparent, Cursor = Cursors.Cross };
+    private readonly Canvas _barCanvas = new() { Width = PanelWidth, Height = BarHeight, Background = Brushes.Transparent, Cursor = Cursors.Hand };
     private double _hue, _saturation, _value = 1;
     private bool _setting;
 
@@ -32,7 +32,7 @@ public sealed class ColorPickerPanel : StackPanel
         var down = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
         down.GradientStops.Add(new GradientStop(Colors.Transparent, 0));
         down.GradientStops.Add(new GradientStop(Colors.Black, 1));
-        var square = new Grid { Width = Width, Height = SquareHeight };
+        var square = new Grid { Width = PanelWidth, Height = SquareHeight };
         square.Children.Add(new Rectangle { Fill = across });
         square.Children.Add(new Rectangle { Fill = down });
         _squareCanvas.Children.Add(_squareMarker);
@@ -44,7 +44,7 @@ public sealed class ColorPickerPanel : StackPanel
             hues.GradientStops.Add(new GradientStop(FromHsv(i * 60, 1, 1), i / 6.0));
         }
 
-        var bar = new Grid { Width = Width, Height = BarHeight, Margin = new Thickness(0, 8, 0, 0) };
+        var bar = new Grid { Width = PanelWidth, Height = BarHeight, Margin = new Thickness(0, 8, 0, 0) };
         bar.Children.Add(new Rectangle { Fill = hues, RadiusX = 3, RadiusY = 3 });
         _barCanvas.Children.Add(_barMarker);
         bar.Children.Add(_barCanvas);
@@ -53,10 +53,10 @@ public sealed class ColorPickerPanel : StackPanel
         Children.Add(bar);
         Drag(_squareCanvas, point =>
         {
-            _saturation = Math.Clamp(point.X / Width, 0, 1);
+            _saturation = Math.Clamp(point.X / PanelWidth, 0, 1);
             _value = 1 - Math.Clamp(point.Y / SquareHeight, 0, 1);
         });
-        Drag(_barCanvas, point => _hue = Math.Clamp(point.X / Width, 0, 1) * 360);
+        Drag(_barCanvas, point => _hue = Math.Clamp(point.X / PanelWidth, 0, 1) * 360);
         Place();
     }
 
@@ -96,9 +96,9 @@ public sealed class ColorPickerPanel : StackPanel
     private void Place()
     {
         _hueEnd.Color = FromHsv(_hue, 1, 1);
-        Canvas.SetLeft(_squareMarker, _saturation * Width - _squareMarker.Width / 2);
+        Canvas.SetLeft(_squareMarker, _saturation * PanelWidth - _squareMarker.Width / 2);
         Canvas.SetTop(_squareMarker, (1 - _value) * SquareHeight - _squareMarker.Height / 2);
-        Canvas.SetLeft(_barMarker, _hue / 360 * Width - _barMarker.Width / 2);
+        Canvas.SetLeft(_barMarker, _hue / 360 * PanelWidth - _barMarker.Width / 2);
         Canvas.SetTop(_barMarker, -2);
     }
 

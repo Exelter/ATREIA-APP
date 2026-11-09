@@ -72,7 +72,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ steps.tag.outputs.ref }}
 
@@ -99,7 +99,7 @@ jobs:
           TAG: ${{ steps.tag.outputs.name }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
 
@@ -260,7 +260,7 @@ jobs:
       # The whole release for the website, as the run's artifact: download it from the run's page, unzip it, and run the site's tools/app-release.mjs on
       # the folder (see the top of this file).
       - name: Keep the release as the run's artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Atreia-App-${{ steps.tag.outputs.name }}
           path: releases/*

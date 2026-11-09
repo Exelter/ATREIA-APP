@@ -2042,7 +2042,7 @@ public sealed partial class CpCalcPage : Grid
         var head = new Grid { Margin = new Thickness(0, 10, 0, 4) };
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        string title = ideal is { Count: > 0 } ? F("CpCalc.Ideal.Title", cls, SlotOf(piece.ItemId)) : Loc("CpCalc.Ideal.ByCp");
+        string title = ideal is { Count: > 0 } ? F("CpCalc.Ideal.Title", cls ?? "", SlotOf(piece.ItemId)) : Loc("CpCalc.Ideal.ByCp");
         Add(head, 0, new TextBlock
         {
             Text = title.ToUpper(CultureInfo.CurrentCulture), FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = Res("Brush.TextMuted"), VerticalAlignment = VerticalAlignment.Center,

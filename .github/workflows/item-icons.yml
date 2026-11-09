@@ -20,8 +20,8 @@ jobs:
   icons:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       # The icons the image pack already has are not fetched again: the pack is unpacked first.
@@ -40,7 +40,7 @@ jobs:
           du -sh Client/assets/aion2/items/more
           ls Client/assets/aion2/items/more | wc -l
       - name: Keep them as the run's artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: item-icons
           retention-days: 7

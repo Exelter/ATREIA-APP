@@ -17,7 +17,7 @@ public static class Brand
     public const string OldSite = "https://aion2helper.com";
 
     /// <summary>A page of the website, at its address or the old one.</summary>
-    public static bool IsSiteUrl(string? url) => url is not null && (url.StartsWith(Site + "/", StringComparison.Ordinal) || url.StartsWith(OldSite + "/", StringComparison.Ordinal));
+    public static bool IsSiteUrl([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? url) => url is not null && (url.StartsWith(Site + "/", StringComparison.Ordinal) || url.StartsWith(OldSite + "/", StringComparison.Ordinal));
 
     /// <summary>The meter's API on the site. The client calls the same paths as the upstream client did on its own site
     /// (/api/uploads, /api/players/…, /api/schedule …), here under /meter.</summary>

@@ -14,7 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  post:
+  notify:
+    name: Post to Discord
     runs-on: ubuntu-latest
     steps:
       - name: Post the changes

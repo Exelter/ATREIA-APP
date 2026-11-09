@@ -20,7 +20,7 @@ public sealed record BuffLine(string Name, ImageSource? Icon, string Uptime, str
 /// </summary>
 public sealed class RotationTimelineView : FrameworkElement
 {
-    private const double Margin = 16, AxisHeight = 18, SupportLane = 30, RowHeight = 24, IconSize = 21;
+    private const double SideMargin = 16, AxisHeight = 18, SupportLane = 30, RowHeight = 24, IconSize = 21;
 
     private RotationReport? _report;
     private double[] _dps = Array.Empty<double>();
@@ -64,11 +64,11 @@ public sealed class RotationTimelineView : FrameworkElement
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        double width = _report is null ? 200 : Margin * 2 + _report.DurationSeconds * _pixelsPerSecond;
+        double width = _report is null ? 200 : SideMargin * 2 + _report.DurationSeconds * _pixelsPerSecond;
         return new Size(Math.Max(width, 200), AxisHeight + SupportLane + RowHeight * 4 + 14);
     }
 
-    private double X(double seconds) => Margin + seconds * _pixelsPerSecond;
+    private double X(double seconds) => SideMargin + seconds * _pixelsPerSecond;
 
     protected override void OnRender(DrawingContext dc)
     {
@@ -293,11 +293,11 @@ public sealed class RotationTimelineView : FrameworkElement
         if (_selecting && Math.Abs(_selNowX - _selStartX) > 8)
         {
             _selecting = false;
-            double from = (Math.Min(_selStartX, _selNowX) - Margin) / _pixelsPerSecond, to = (Math.Max(_selStartX, _selNowX) - Margin) / _pixelsPerSecond;
+            double from = (Math.Min(_selStartX, _selNowX) - SideMargin) / _pixelsPerSecond, to = (Math.Max(_selStartX, _selNowX) - SideMargin) / _pixelsPerSecond;
             from = Math.Max(0, from);
             to = Math.Max(from + 2, to);
             ScrollViewer? scroll = FindScroll();
-            double view = (scroll is { ViewportWidth: > 0 } sv ? sv.ViewportWidth : ActualWidth) - 2 * Margin;
+            double view = (scroll is { ViewportWidth: > 0 } sv ? sv.ViewportWidth : ActualWidth) - 2 * SideMargin;
             _pixelsPerSecond = Math.Clamp(view / (to - from), 3, 400);
             InvalidateMeasure();
             InvalidateVisual();
@@ -328,14 +328,14 @@ public sealed class RotationTimelineView : FrameworkElement
         // the wheel over the timeline zooms (as on the website); the page scrolls everywhere else
         double factor = e.Delta > 0 ? 1.25 : 0.8;
         double before = e.GetPosition(this).X;
-        double seconds = (before - Margin) / _pixelsPerSecond;
+        double seconds = (before - SideMargin) / _pixelsPerSecond;
         _pixelsPerSecond = Math.Clamp(_pixelsPerSecond * factor, 3, 80);
         InvalidateMeasure();
         InvalidateVisual();
         if (FindScroll() is ScrollViewer scroll)
         {
             // keep the second under the mouse where it is
-            Dispatcher.BeginInvoke(() => scroll.ScrollToHorizontalOffset(Math.Max(0, Margin + seconds * _pixelsPerSecond - (before - scroll.HorizontalOffset))), System.Windows.Threading.DispatcherPriority.Loaded);
+            Dispatcher.BeginInvoke(() => scroll.ScrollToHorizontalOffset(Math.Max(0, SideMargin + seconds * _pixelsPerSecond - (before - scroll.HorizontalOffset))), System.Windows.Threading.DispatcherPriority.Loaded);
         }
 
         e.Handled = true;

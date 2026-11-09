@@ -335,7 +335,7 @@ public sealed class LootOverlayWindow : MovableOverlay
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.Children.Add(Icon(b.IconPath, b.Color, 30, glow: true));
+        grid.Children.Add(ItemIcon(b.IconPath, b.Color, 30, glow: true));
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 8, 0) };
         text.Children.Add(new TextBlock { Text = b.Name.ToUpper(System.Globalization.CultureInfo.CurrentCulture), FontSize = 11.5, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(b.Color) });
         text.Children.Add(new TextBlock { Text = b.Pieces, FontSize = 10.5, Foreground = Soft, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 1, 0, 0) });
@@ -364,7 +364,7 @@ public sealed class LootOverlayWindow : MovableOverlay
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.Children.Add(Icon(line.IconPath, line.Color, 26, glow: line.Grade >= LootStats.Gold));
+        grid.Children.Add(ItemIcon(line.IconPath, line.Color, 26, glow: line.Grade >= LootStats.Gold));
 
         var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(9, 0, 8, 0) };
         names.Children.Add(new TextBlock
@@ -422,7 +422,7 @@ public sealed class LootOverlayWindow : MovableOverlay
     }
 
     /// <summary>An item's icon in a rounded frame of its grade's colour (a soft glow for gold and better); a diamond of that colour without a picture.</summary>
-    private static FrameworkElement Icon(string? path, Color color, double size, bool glow)
+    private static FrameworkElement ItemIcon(string? path, Color color, double size, bool glow)
     {
         var frame = new Border
         {
