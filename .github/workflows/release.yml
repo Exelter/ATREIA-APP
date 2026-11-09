@@ -114,9 +114,13 @@ jobs:
       # where the installed copies take their updates); without it every update is the full download. Allowed to fail: the first release on the
       # website has nothing to fetch, and a missed delta only costs bandwidth, never correctness.
       - name: Fetch the previous release (for delta packages)
-        continue-on-error: true
         shell: pwsh
-        run: vpk download http --url https://atreia.app/app/updates/ --channel ${{ steps.version.outputs.channel }} --outputDir releases
+        run: |
+          vpk download http --url https://atreia.app/app/updates/ --channel ${{ steps.version.outputs.channel }} --outputDir releases
+          if ($LASTEXITCODE -ne 0) {
+            "::notice title=No earlier release::atreia.app has no earlier release on the ${{ steps.version.outputs.channel }} channel yet: this one is a full download only."
+            exit 0
+          }
 
       # Produces, in "releases": the installer (AtreiaApp-<channel>-Setup.exe, renamed below), a full .nupkg, a delta .nupkg when a previous release was
       # fetched above, and releases.<channel>.json, the index the installed app reads to discover updates. The package id is the folder the app installs
