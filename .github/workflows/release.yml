@@ -1,8 +1,9 @@
 name: Build a release for atreia.app
 
 # Two ways to start it:
-# - Actions > "Build a release for atreia.app" > Run workflow: type the version ("1.21.0", or "1.21.0-alpha.1" for a test release) and pick the branch
-#   (main). The release is built from that branch; when it passed its checks, the tag "v<version>" is put on the commit it was built from.
+# - Actions > "Build a release for atreia.app" > Run workflow. Leave the version empty for the next one (1.21.0 -> 1.21.1), or type it ("1.22.0", or
+#   "1.22.0-Beta" for a test release). The release is built from the branch picked (main); when it passed its checks, the tag "v<version>" is put on
+#   the commit it was built from.
 # - Pushing a tag "vX.Y.Z" (or "X.Y.Z"): the release of that tag.
 #
 # The app's own version number is set from the version given, so the title bar always shows the version that was released, whatever the project file
@@ -10,10 +11,10 @@ name: Build a release for atreia.app
 # "1.21.0-Beta" comes "1.21.0-Beta.2" (not "1.21.0-alpha.2", which counts as older, so an installed test copy would never be offered it).
 #
 # Releases are not published on GitHub (9 November 2026): the installer and the updates are on the website. This builds the release, runs the checks,
-# and keeps the result as the run's artifact ("Atreia-App-v<version>"). To put it on the site, download the artifact, unzip it, and in the site's folder:
-#
-#   node tools/app-release.mjs <the unzipped folder>
-#   DEPLOY
+# and puts it straight on atreia.app: into the site's file storage (Cloudflare R2, bucket "atreia-app"), which the site serves its downloads and the
+# app's updates from (the site's src/gate.js, appFile). It needs the repository secrets R2_ENDPOINT, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY.
+# Without them, the result is only kept as the run's artifact ("Atreia-App-v<version>"), to put on the site by hand: drag it onto the site folder's
+# APP-RELEASE.bat (node tools/app-release.mjs <folder>), then DEPLOY.
 #
 # The installer becomes https://atreia.app/download/Atreia-App-Setup.exe (a test release: Atreia-App-test-Setup.exe), the update index and packages
 # go to https://atreia.app/app/updates/ (Client/Brand.cs UpdatesUrl), together with the update notes (updates.json).
@@ -25,15 +26,22 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release: 1.21.0, or 1.21.0-alpha.1 for a test release"
-        required: true
+        description: "Version (empty: the next one, e.g. 1.21.0 -> 1.21.1; with a suffix like 1.22.0-Beta: a test release)"
+        required: false
 
 permissions:
   contents: write # only to put the tag on the commit of a release started by hand
 
+# a release is never built twice at once (two would both write the update index)
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
     steps:
       - name: Determine tag
         id: tag
@@ -43,6 +51,13 @@ jobs:
         run: |
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             version="${INPUT#v}"
+            if [ -z "$version" ]; then
+              # the next one after the newest released version (its tag, with or without the "v"): 1.21.0 -> 1.21.1
+              last=$(git ls-remote --tags "https://github.com/$GITHUB_REPOSITORY" | sed -E 's#.*refs/tags/v?##' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+              IFS=. read -r major minor patch <<< "${last:-1.21.0}"
+              version="$major.$minor.$((patch + 1))"
+              echo "No version given: releasing $version (the newest so far: ${last:-none})."
+            fi
             if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
               echo "::error::\"$INPUT\" is no version: write it like 1.21.0, or 1.21.0-alpha.1 for a test release."
               exit 1
@@ -206,6 +221,42 @@ jobs:
             exit 1
           fi
 
+      # Straight onto atreia.app: the packages first, then the installer, the update index and the notes last, so an installed app never reads an index
+      # that names a file not there yet. The site serves these from its file storage before its own files (src/gate.js, appFile).
+      - name: Put the release on atreia.app
+        if: env.R2_ENDPOINT != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        shell: pwsh
+        run: |
+          $bucket = 's3://atreia-app'
+          function Put([string]$file, [string]$key, [string]$type) {
+            aws s3 cp $file "$bucket/$key" --endpoint-url $env:R2_ENDPOINT --content-type $type --only-show-errors
+            if ($LASTEXITCODE -ne 0) { throw "The upload of $key failed ($LASTEXITCODE)." }
+            "  $key"
+          }
+          $files = Get-ChildItem releases -File
+          foreach ($f in $files | Where-Object { $_.Extension -eq '.nupkg' }) { Put $f.FullName "updates/$($f.Name)" 'application/octet-stream' }
+          $installer = Get-Item '${{ steps.installer.outputs.path }}'
+          Put $installer.FullName "download/$($installer.Name)" 'application/vnd.microsoft.portable-executable'
+          foreach ($f in $files | Where-Object { $_.Name -match '^(releases|assets)\..+\.json$' }) { Put $f.FullName "updates/$($f.Name)" 'application/json' }
+          foreach ($f in $files | Where-Object { $_.Name -like 'RELEASES*' }) { Put $f.FullName "updates/$($f.Name)" 'text/plain' }
+          Put (Join-Path releases 'updates.json') 'updates/updates.json' 'application/json'
+          "Version ${{ steps.version.outputs.pack }} is on atreia.app now: installed apps find it at their next check."
+          # the packages of this channel the new index no longer names (the releases before the previous one): nothing reads them any more
+          $channel = '${{ steps.version.outputs.channel }}'
+          $named = @((Get-Content (Join-Path releases "releases.$channel.json") -Raw | ConvertFrom-Json).Assets | ForEach-Object { $_.FileName })
+          $stored = @(aws s3 ls "$bucket/updates/" --endpoint-url $env:R2_ENDPOINT | ForEach-Object { ($_ -split '\s+')[-1] } |
+            Where-Object { $_ -like "*-$channel-*.nupkg" })
+          foreach ($old in $stored | Where-Object { $named -notcontains $_ }) {
+            aws s3 rm "$bucket/updates/$old" --endpoint-url $env:R2_ENDPOINT --only-show-errors
+            "  removed updates/$old"
+          }
+
       # The whole release for the website, as the run's artifact: download it from the run's page, unzip it, and run the site's tools/app-release.mjs on
       # the folder (see the top of this file).
       - name: Keep the release as the run's artifact
@@ -222,11 +273,11 @@ jobs:
         run: |
           {
             echo "### Atreia App ${{ steps.tag.outputs.name }} (channel ${{ steps.version.outputs.channel }})"
-            echo "Download the artifact **Atreia-App-${{ steps.tag.outputs.name }}** below, unzip it, then in the website's folder:"
-            echo '```'
-            echo 'node tools/app-release.mjs <the unzipped folder>'
-            echo 'DEPLOY'
-            echo '```'
+            if [ -n "$R2_ENDPOINT" ]; then
+              echo "It is on atreia.app already: installed apps find it at their next update check, and the download button gives it."
+            else
+              echo "Download the artifact **Atreia-App-${{ steps.tag.outputs.name }}** below and drag it onto APP-RELEASE.bat in the website's folder, then run DEPLOY."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       # A release started by hand: its tag on the commit it was built from, so the release can be found in the history. (A tag pushed with the workflow's
