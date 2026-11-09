@@ -6,6 +6,25 @@
   ],
   "versions": [
     {
+      "version": "1.21.5",
+      "date": "2026-11-09",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Find a player",
+          "title": "Exact combat stats, or none",
+          "text": "The Stats tab of a player's page shows Attack, Accuracy, Critical Hit, HP, MP, Defense, Evasion and Critical Hit Resist with the exact numbers of the game's own character window, and when they were sent. These come from that player's own Atreia App, because the game sends them to nobody else. The rough totals from the character page are gone, since they never matched the game. A player without the app now gets a note saying their stats show once they use Atreia App, instead of numbers that were wrong.",
+          "example": "You look up Mirelle, who plays with the app: Attack 3,254, Defense 17,314, HP 31,402, the same as in her own window 12 minutes ago."
+        },
+        {
+          "kind": "new",
+          "area": "Account",
+          "title": "Your stats go with your Genus and pets",
+          "text": "While you're signed in, your character's combat stats are shared along with your Genus Insight and pets, so other app users who look you up see your real numbers. They go a minute after a login, and again at most every few minutes when they change (buffs included). The switch in the Atreia account window is now called \"Show my Genus Insight, pets and combat stats\", and switching it off deletes what was sent."
+        }
+      ]
+    },
+    {
       "version": "1.21.4",
       "date": "2026-11-09",
       "items": [

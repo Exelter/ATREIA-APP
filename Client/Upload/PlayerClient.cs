@@ -30,13 +30,16 @@ public sealed record PlayerAppData(IReadOnlyList<PlayerGenus> Genus, IReadOnlyLi
 public sealed record PlayerStat(string Name, string Value, string? Note);
 
 /// <summary>
-/// The combat stats of a character as the website sums them from its official page (9 November 2026, the owner: "it should show important stats, such as attack,
-/// defense, accuracy/crit"): the gear's lines, Daevanion, titles and the attributes. The page has no combat sheet of the game's own, so the base stats aren't in it;
-/// <see cref="From"/> says which parts were summed and <see cref="Missing"/> which ones weren't read this time. <see cref="Effects"/>: each attribute's effects
-/// at its value ("Attack Increase +7.5%").
+/// The combat stats of a character (9 November 2026, the owner: "if someone is using the app then give exact numbers, and if someone isn't don't give fake
+/// numbers, say they need to install the app"): the numbers of the game's own character window - Attack, Accuracy, Critical Hit, HP, MP, Defense, Evasion,
+/// Critical Hit Resist - worked out by the website from the stat values the character's own Atreia App sent (<see cref="Exact"/>, sent at <see cref="At"/>);
+/// for a character whose player doesn't use the app (or doesn't share them) there are none: the game's character pages don't have them. <see cref="Effects"/>:
+/// each attribute's effects at its value ("Attack Increase +7.5%"), from the character page.
 /// </summary>
+/// <remarks>1.21.3 and 1.21.4 read the same object, when the website still summed the page's parts: <see cref="From"/> named the parts summed and
+/// <see cref="Missing"/> the ones not read; the website sends both empty now.</remarks>
 public sealed record PlayerSheet(IReadOnlyList<PlayerStat> Offense, IReadOnlyList<PlayerStat> Defense, IReadOnlyList<PlayerStat> Other, IReadOnlyList<string> From,
-    IReadOnlyList<string> Missing, IReadOnlyDictionary<string, IReadOnlyList<string>> Effects);
+    IReadOnlyList<string> Missing, IReadOnlyDictionary<string, IReadOnlyList<string>> Effects, bool Exact = false, DateTime? At = null);
 
 /// <summary>Everything the player window shows of a character.</summary>
 public sealed record PlayerPage(string Name, string ClassName, int? Level, string Server, int ServerId, string Region, string Faction, string Legion, string Title,
@@ -128,7 +131,10 @@ public static class PlayerClient
                 }
             }
 
-            sheet = new PlayerSheet(Rows("offense"), Rows("defense"), Rows("other"), Words(sh, "from"), Words(sh, "missing"), effects);
+            bool exact = Bool(sh, "exact");
+            DateTime? statsAt = Dbl(sh, "at") is double sent && sent > 0 ? DateTimeOffset.FromUnixTimeMilliseconds((long)sent).UtcDateTime : null;
+            sheet = new PlayerSheet(exact ? Rows("offense") : new List<PlayerStat>(), exact ? Rows("defense") : new List<PlayerStat>(), exact ? Rows("other") : new List<PlayerStat>(),
+                Words(sh, "from"), Words(sh, "missing"), effects, exact, exact ? statsAt : null);
         }
 
         string? page = Str(root, "page");

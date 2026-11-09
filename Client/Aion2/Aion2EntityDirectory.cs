@@ -238,6 +238,7 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
                 _pantheon = null;
                 _attributes = null;
                 _stats = null;
+                _statsOwn = false;
                 _wing = null;
                 _activePet = null;
                 _ownedTitles = null;
@@ -1808,6 +1809,8 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
 
     private Dictionary<int, int>? _attributes;
     private Dictionary<int, int>? _stats;
+    private DateTime _statsAt;
+    private bool _statsOwn;
     private Aion2Wing? _wing;
     private int? _activePet;
 
@@ -1864,15 +1867,44 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
         }
     }
 
-    /// <summary>Merges the ids of a stat frame into the stat table (a later frame lists only what changed).</summary>
+    /// <summary>
+    /// The ids of a stat frame into the stat table. The game sends its whole list every time, with the buffs of the moment in it (9 November 2026, three
+    /// recordings of two characters: 107 to 141 ids a frame at the login and at every buff that came or went, the base attributes always among them, but
+    /// one at 0 is left out), so a frame with the base attributes replaces the table: a buff's stat that ended goes with it. A frame without them is merged; one was seen, 67 ids of
+    /// round fixed values and none of the character's own (a transformation), so the table is not the character's own build until the next full frame
+    /// (<see cref="OwnStats"/>).
+    /// </summary>
     public void SetLocalStats(IReadOnlyDictionary<int, int> values)
     {
+        bool full = Enumerable.Range(Aion2Attributes.FirstId, 6).Count(values.ContainsKey) >= 3; // (an attribute at 0 is not sent: Intelligence often)
         lock (_gate)
         {
-            _stats ??= new Dictionary<int, int>();
-            foreach (var pair in values)
+            if (full || _stats is null)
             {
-                _stats[pair.Key] = pair.Value;
+                _stats = new Dictionary<int, int>(values);
+            }
+            else
+            {
+                foreach (var pair in values)
+                {
+                    _stats[pair.Key] = pair.Value;
+                }
+            }
+
+            _statsOwn = full;
+            _statsAt = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>The stat table as the game's character window counts with it - the character played's own build with the buffs of the moment - and when the
+    /// game sent it; null before a full frame arrived and after a frame that was not the character's own (see <see cref="SetLocalStats"/>).</summary>
+    public (IReadOnlyDictionary<int, int> Values, DateTime At)? OwnStats
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _stats is not null && _statsOwn ? (new Dictionary<int, int>(_stats), _statsAt) : null;
             }
         }
     }

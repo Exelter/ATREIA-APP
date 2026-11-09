@@ -561,20 +561,14 @@ public sealed class PlayerView : Border
     }
 
     /// <summary>
-    /// The Stats tab: the combat stats first - Attack, Accuracy, Critical Hit, Defense, HP … as the website sums them from the character's page (9 November 2026, the
-    /// owner: "it's only showing pantheon right now, it should show important stats, such as attack, defense, accuracy/crit") - then the attributes as the page
-    /// lists them (each with what it gives, on a hover), then the bonuses the sheet has no line of its own for.
+    /// The Stats tab: the combat stats first - Attack, Accuracy, Critical Hit, HP, MP, Defense, Evasion, Critical Hit Resist, the numbers of the game's own character
+    /// window, from the character's own Atreia App (9 November 2026, the owner: "if someone is using the app then give exact numbers, and if someone isn't don't
+    /// give fake numbers, say they need to install the app for accuracy") - then the attributes as the page lists them (each with what it gives, on a hover).
     /// </summary>
     private UIElement StatsTab(PlayerPage p)
     {
         var stack = new StackPanel { Margin = new Thickness(0, 2, 0, 6) };
         PlayerSheet? sheet = p.Sheet;
-        if (p.Stats.Count == 0 && sheet is null)
-        {
-            stack.Children.Add(Muted("The game's character page shows no stats for this character right now."));
-            return stack;
-        }
-
         UniformGrid Grid2(IEnumerable<(string Name, string Value, string? Note, string? Tip)> rows)
         {
             var grid = new UniformGrid { Columns = 2 };
@@ -605,12 +599,24 @@ public sealed class PlayerView : Border
             return grid;
         }
 
-        if (sheet is not null && sheet.Offense.Count + sheet.Defense.Count > 0)
+        if (sheet is { Exact: true } && sheet.Offense.Count + sheet.Defense.Count > 0)
         {
             stack.Children.Add(Heading("Offense"));
-            stack.Children.Add(Grid2(sheet.Offense.Select(x => (x.Name, x.Value, x.Note, x.Note is { Length: > 0 } n ? $"{x.Name}: the gear and the other parts, then +{n.TrimStart('+')} from the increases on them" : null))));
+            stack.Children.Add(Grid2(sheet.Offense.Select(x => (x.Name, x.Value, x.Note, (string?)null))));
             stack.Children.Add(Heading("Defense"));
             stack.Children.Add(Grid2(sheet.Defense.Select(x => (x.Name, x.Value, x.Note, (string?)null))));
+            if (sheet.Other.Count > 0)
+            {
+                stack.Children.Add(Heading("More"));
+                stack.Children.Add(Grid2(sheet.Other.Select(x => (x.Name, x.Value, x.Note, (string?)null))));
+            }
+
+            stack.Children.Add(Muted($"The numbers of the game's own character window, from {p.Name}'s Atreia App" + (sheet.At is DateTime sent ? " " + Ago(sent) : "")
+                + ", with the buffs they had at that moment.", new Thickness(0, 8, 0, 2)));
+        }
+        else
+        {
+            stack.Children.Add(NoExactStats(p));
         }
 
         if (p.Stats.Count > 0)
@@ -620,33 +626,36 @@ public sealed class PlayerView : Border
                 sheet is not null && sheet.Effects.TryGetValue(x.Name, out IReadOnlyList<string>? fx) && fx.Count > 0 ? string.Join("\n", fx) : null))));
         }
 
-        if (sheet is { Other.Count: > 0 })
-        {
-            stack.Children.Add(Heading("Other bonuses"));
-            stack.Children.Add(Grid2(sheet.Other.Select(x => (x.Name, x.Value, (string?)null, (string?)null))));
-        }
-
-        if (sheet is not null && sheet.From.Count > 0)
-        {
-            string from = Words(sheet.From), note = $"Offense and defense: the totals of {from} on the game's character page (the game's base stats aren't on it, so they are left out).";
-            if (sheet.Missing.Count > 0)
-            {
-                note += $" {char.ToUpperInvariant(Words(sheet.Missing)[0])}{Words(sheet.Missing)[1..]} wasn't read this time, so it isn't counted: refresh the page in a minute.";
-            }
-
-            stack.Children.Add(Muted(note, new Thickness(0, 12, 0, 2)));
-        }
-
         return stack;
     }
 
-    /// <summary>"gear, Daevanion and titles".</summary>
-    private static string Words(IReadOnlyList<string> list) => list.Count switch
+    /// <summary>
+    /// No combat stats for this character: no made-up ones either. The game sends a character's Attack, Defense, Accuracy … only to its own player's PC, and its
+    /// character page doesn't have them, so they are known only when that player uses Atreia App and shares them; the box says so, with the app's page.
+    /// </summary>
+    private static Border NoExactStats(PlayerPage p)
     {
-        0 => "",
-        1 => list[0],
-        _ => string.Join(", ", list.Take(list.Count - 1)) + " and " + list[^1],
-    };
+        var box = new Border
+        {
+            CornerRadius = new CornerRadius(8), Padding = new Thickness(12, 9, 12, 10), Margin = new Thickness(0, 4, 0, 6), BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0xDC, 0xB8, 0x77)), Background = new SolidColorBrush(Color.FromArgb(0x1A, 0xDC, 0xB8, 0x77)),
+        };
+        var inner = new StackPanel();
+        TextBlock title = Text("Attack, Defense, Accuracy, Critical Hit, HP …: not known", 12.5, "Brush.OverlayText", wrap: true);
+        title.FontWeight = FontWeights.SemiBold;
+        inner.Children.Add(title);
+        inner.Children.Add(Muted(p.App is null
+            ? "Only known for players who use Atreia App: the game sends them to the player's own PC and nowhere else, and the character page doesn't have them, "
+              + $"so they're never guessed here. They show with the exact numbers of the game's window once {p.Name} plays with Atreia App installed."
+            : $"{p.Name} uses Atreia App, but it hasn't sent combat stats yet. It does from version 1.21.5, a minute after logging in, while \"Show my Genus Insight, "
+              + "pets and combat stats\" is on in its Atreia account window.", new Thickness(0, 4, 0, 6)));
+        Border link = ActionButton("Atreia App on atreia.app", () => OpenInBrowser(Brand.Site + "/app/"));
+        link.HorizontalAlignment = HorizontalAlignment.Left;
+        link.ToolTip = Brand.Site + "/app/";
+        inner.Children.Add(link);
+        box.Child = inner;
+        return box;
+    }
 
     private UIElement SkillsTab(PlayerPage p)
     {

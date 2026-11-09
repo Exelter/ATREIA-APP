@@ -77,6 +77,7 @@ public static class SelfCheck
         ok &= SelfCheckReplay.Run();
         ok &= SelfCheckIdentity.Run();
         ok &= SelfCheckStatCalc.Run();
+        ok &= SelfCheckProfileStats.Run();
         ok &= SelfCheckEstimateRescale.Run();
         ok &= SelfCheckPlacement.Run();
         return ok;

@@ -99,6 +99,10 @@ public sealed class AccountWindow : Window
             {
                 await ProfileShare.ForgetAsync(); // switched off: the website forgets what was sent
             }
+            else
+            {
+                ProfileShare.Resend(); // on again: sent at once, not only after the next login
+            }
         };
         Draw(null);
         Loaded += async (_, _) =>
