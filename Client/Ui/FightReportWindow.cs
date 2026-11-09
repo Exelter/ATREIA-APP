@@ -240,7 +240,7 @@ public sealed class FightReportWindow : Window
         dock.Children.Add(right);
 
         var row = new StackPanel { Orientation = Orientation.Horizontal };
-        if (_r.BossNpcId is int npc && Picture(Aion2Artwork.BossThumbPath(npc)) is { } thumb)
+        if (_r.BossNpcId is int npc && Picture(Aion2Artwork.BossPicturePath(npc, _r.Title)) is { } thumb)
         {
             row.Children.Add(new Border
             {

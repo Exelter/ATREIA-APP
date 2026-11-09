@@ -128,7 +128,7 @@ public static class CombatOverlayData
             string skill = shape is not null ? loc["Combat.Shape." + shape] : Aion2SkillNames.DisplayOf(cast.SkillId);
             string english = shape is not null ? loc.In("Combat.Shape." + shape, "en") : Aion2SkillNames.EnglishOf(cast.SkillId); // what the recorded voice says
             string caster = Name(dir, cast.Actor, language);
-            var row = new CastRowData(skill, caster, target, atYou, view.IsArea, lethal, (now - cast.Start).TotalMilliseconds, cast.DurationMs, view.LandMs, Aion2SkillIcons.PathFor(cast.SkillId) ?? (dir.BossNpcIdOf(cast.Actor) is int bossNpc ? Aion2Artwork.BossThumbPath(bossNpc) : null), generic,
+            var row = new CastRowData(skill, caster, target, atYou, view.IsArea, lethal, (now - cast.Start).TotalMilliseconds, cast.DurationMs, view.LandMs, Aion2SkillIcons.PathFor(cast.SkillId) ?? (dir.BossNpcIdOf(cast.Actor) is int bossNpc ? Aion2Artwork.BossPicturePath(bossNpc, Aion2Npcs.NameOf(bossNpc, "en")) : null), generic,
                 $"{cast.Actor}:{cast.SkillId}:{cast.Start.Ticks}", !atYou && (view.IsArea || cast.Target <= 0 || cast.Target == cast.Actor), english);
             double score = (atYou ? 200 : 0) + (lethal ? 100 : 0) + (view.IsArea ? 50 : 0) + (boss ? 40 : 0);
             scored.Add((score, cast.End, row));
@@ -209,7 +209,7 @@ public static class CombatOverlayData
         int? npc = dir.NpcIdOf(id);
         bool boss = dir.BossNpcIdOf(id) is not null;
         string name = (npc is int n ? Aion2Npcs.NameOf(n, language) : null) ?? dir.MonsterNameFor(id) ?? "#" + id;
-        return (name, boss && npc is int b ? Aion2Artwork.BossThumbPath(b) : null, boss);
+        return (name, boss && npc is int b ? Aion2Artwork.BossPicturePath(b, Aion2Npcs.NameOf(b, "en")) : null, boss);
     }
 }
 

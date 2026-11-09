@@ -277,6 +277,29 @@ public static class Aion2Artwork
         return _fieldBossPortraits.TryGetValue(npcId, out string? name) && Existing(Art("bosses", "field", name)) is { } path ? path : null;
     }
 
+    /// <summary>
+    /// Any picture of a boss, for the places that show one (the history, the fight report, the callouts): its own card picture, else its field boss
+    /// portrait, else one of its other versions (Conquest, Nightmare ...: <see cref="Aion2BossCatalog.VersionsOf"/>), else the card picture of a boss of
+    /// its name. Null when there is none: the caller draws the boss's initial, never the player's class emblem (9 November 2026, the owner: the
+    /// Abyssal Forge bosses, field bosses and Nightmare bosses showed the class icon in place of the boss).
+    /// </summary>
+    public static string? BossPicturePath(int? npcId, string? name = null)
+    {
+        if (npcId is int npc)
+        {
+            foreach (int version in Aion2BossCatalog.VersionsOf(npc))
+            {
+                if ((BossThumbPath(version) ?? FieldBossPortraitPath(version)) is { } found)
+                {
+                    return found;
+                }
+            }
+        }
+
+        string slug = name is null ? "" : System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+        return slug.Length > 0 ? Existing(Art("bosses", "thumbs", slug + ".png")) : null;
+    }
+
     public static string? ClassEmblemPath(string className) =>
         ClassFiles.TryGetValue(className, out string? file) && Existing(Art("classes", file + ".png")) is { } path ? path : null;
 

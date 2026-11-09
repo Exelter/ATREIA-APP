@@ -439,13 +439,13 @@ public sealed class HistoryWindow : Window
     /// <summary>One personal best as a card; a click opens its report.</summary>
     private FrameworkElement Medal(FightLogEntry entry)
     {
-        ImageSource? icon = entry.BossNpcId is int npc ? Picture(Aion2Artwork.BossThumbPath(npc)) : null;
-        icon ??= entry.YourClass is { Length: > 0 } cls ? Picture(Aion2.GameArt.PathOf("classes", "icons", cls + ".png")) : null;
+        ImageSource? icon = FightIcon(entry);
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var ring = new Border { Width = 56, Height = 56, CornerRadius = new CornerRadius(28), BorderThickness = new Thickness(2), BorderBrush = Gold, Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center,
-            Background = icon is not null ? new ImageBrush(icon) { Stretch = Stretch.UniformToFill } : Frozen(Color.FromArgb(0x10, 0xFF, 0xFF, 0xFF)) };
+            Background = icon is not null ? new ImageBrush(icon) { Stretch = Stretch.UniformToFill } : Frozen(Color.FromArgb(0x10, 0xFF, 0xFF, 0xFF)),
+            Child = icon is null ? Initial(entry, 22) : null };
         grid.Children.Add(ring);
         var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         string name = TitleOf(entry) + (entry.Kind == FightLogKind.Dummy && entry.Detail is { Length: > 0 } d ? " · " + d : "");
@@ -567,10 +567,10 @@ public sealed class HistoryWindow : Window
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = w });
         }
 
-        ImageSource? icon = entry.BossNpcId is int npc ? Picture(Aion2Artwork.BossThumbPath(npc)) : null;
-        icon ??= entry.YourClass is { Length: > 0 } cls ? Picture(Aion2.GameArt.PathOf("classes", "icons", cls + ".png")) : null;
+        ImageSource? icon = FightIcon(entry);
         var box = new Border { Width = 40, Height = 40, CornerRadius = new CornerRadius(8), ClipToBounds = true, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
         box.Background = icon is not null ? new ImageBrush(icon) { Stretch = Stretch.UniformToFill } : Frozen(Color.FromArgb(0x10, 0xFF, 0xFF, 0xFF));
+        box.Child = icon is null ? Initial(entry, 17) : null;
         Grid.SetColumn(box, 0);
         grid.Children.Add(box);
 
@@ -901,6 +901,40 @@ public sealed class HistoryWindow : Window
     private static string Short(double v) => v >= 1_000_000 ? (v / 1_000_000).ToString("0.0#", En) + "M" : v >= 1000 ? (v / 1000).ToString("0.0", En) + "K" : v.ToString("0", En);
 
     private static ImageSource? Picture(string? path) => path is not null && File.Exists(path) ? OverlayPictures.Load(path) : null;
+
+    /// <summary>
+    /// A fight's picture: the boss's for a boss fight, your class's emblem for anything else (a dungeon run, the dummy). A boss without a picture of its
+    /// own gets none here, and the box shows the boss's initial (<see cref="Initial"/>): 9 November 2026, the owner: the bosses of the Abyssal Forge
+    /// (Rahu, Ketu, Eternal Ludra) showed the class icon in place of the boss icon.
+    /// </summary>
+    private static ImageSource? FightIcon(FightLogEntry entry)
+    {
+        if (IsBossFight(entry))
+        {
+            return Picture(Aion2Artwork.BossPicturePath(entry.BossNpcId, TitleOf(entry)));
+        }
+
+        return entry.YourClass is { Length: > 0 } cls ? Picture(Aion2.GameArt.PathOf("classes", "icons", cls + ".png")) : null;
+    }
+
+    private static bool IsBossFight(FightLogEntry entry) => entry.Kind == FightLogKind.Boss || entry.BossNpcId is not null;
+
+    /// <summary>The first letter of a fight's title, for a boss without a picture (null for anything else, which keeps the empty box).</summary>
+    private static TextBlock? Initial(FightLogEntry entry, double size)
+    {
+        if (!IsBossFight(entry) || TitleOf(entry) is not { Length: > 0 } title)
+        {
+            return null;
+        }
+
+        var letter = new TextBlock
+        {
+            Text = title.TrimStart()[..1].ToUpperInvariant(), FontSize = size, FontWeight = FontWeights.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+        };
+        letter.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        return letter;
+    }
 
     private static SolidColorBrush Frozen(Color c)
     {
