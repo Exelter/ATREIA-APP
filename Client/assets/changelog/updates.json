@@ -91,7 +91,7 @@
           "area": "Abyss",
           "title": "Rivals",
           "text": "The app remembers the enemy players you fight: how often you met, how many times you killed them and how many times they killed you. The record shows on their enemy card and on the radar the next time you run into them.",
-          "example": "Met Vorrin 6 times: you won 4, lost 2."
+          "example": "Vorrin: fought 6×, 4 kills, 2 deaths."
         },
         {
           "kind": "new",
