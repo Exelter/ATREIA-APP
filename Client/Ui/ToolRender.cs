@@ -113,7 +113,7 @@ public static class ToolRender
                     stripes.Children.Add(new Border { Height = 180, Background = new SolidColorBrush(c) });
                 }
 
-                var stage = new Grid { Width = 460 };
+                var stage = new Grid { Width = 480 };
                 stage.Children.Add(stripes);
                 stage.Children.Add(new Border { Child = hostWindow.OverlayEditorPicture(on), Margin = new Thickness(40, 24, 40, 24), VerticalAlignment = VerticalAlignment.Top });
                 shown = stage;

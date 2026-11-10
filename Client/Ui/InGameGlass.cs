@@ -15,18 +15,25 @@ internal static class InGameGlass
     /// <summary>The lowest opacity a window of pages gets, whatever the overlays' setting says.</summary>
     public const double Floor = 0.5;
 
-    /// <summary>The window's background: the meter's panel colour (Meter look → Panel) at the overlays' opacity, at least <see cref="Floor"/>.</summary>
+    /// <summary>The most a window of pages covers the game, whatever the setting says (it is an overlay: the game always shows a little).</summary>
+    public const double Ceiling = 0.9;
+
+    /// <summary>
+    /// The window's background: the meter's own panel (Meter look → Panel) as see-through as the meter is at the overlays' opacity (the "Clear" glass
+    /// at a little over half of it, as the meter has it), between <see cref="Floor"/> and <see cref="Ceiling"/>.
+    /// </summary>
     public static Brush Background(MeterSettings s)
     {
-        double opacity = Math.Clamp(double.IsFinite(s.OverlayOpacity) ? s.OverlayOpacity : 0.6, Floor, 1.0);
+        double opacity = Math.Clamp(double.IsFinite(s.OverlayOpacity) ? s.OverlayOpacity : 0.6, 0.2, 1.0);
+        string panel = MeterLook.PanelOf(s.OverlayLook);
+        byte alpha = (byte)Math.Round(Math.Clamp(panel == "Clear" ? opacity * 0.55 : opacity, Floor, Ceiling) * 255);
         Color themed = Application.Current?.TryFindResource("Color.OverlayBg") is Color c ? c : Color.FromRgb(0x14, 0x12, 0x18);
-        Color back = MeterLook.PanelOf(s.OverlayLook) switch
+        Color back = panel switch
         {
-            // the meter's "Clear" panel is a light glass over the game rows; a window of pages needs more under its text
-            "Clear" => Color.FromArgb((byte)Math.Round(opacity * 255), 0x0C, 0x0C, 0x10),
-            "Graphite" => Color.FromArgb((byte)Math.Round(opacity * 255), 0x1F, 0x20, 0x24),
-            "Black" => Color.FromArgb((byte)Math.Round(opacity * 255), 0x11, 0x11, 0x13),
-            _ => Color.FromArgb((byte)Math.Round(opacity * 255), themed.R, themed.G, themed.B),
+            "Clear" => Color.FromArgb(alpha, 0x08, 0x08, 0x0A),
+            "Graphite" => Color.FromArgb(alpha, 0x1F, 0x20, 0x24),
+            "Black" => Color.FromArgb(alpha, 0x11, 0x11, 0x13),
+            _ => Color.FromArgb(alpha, themed.R, themed.G, themed.B),
         };
         return Frozen(new SolidColorBrush(back));
     }

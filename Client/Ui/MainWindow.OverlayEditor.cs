@@ -240,11 +240,11 @@ public partial class MainWindow
         label.Width = 70;
         DockPanel.SetDock(label, Dock.Left);
         opacityLine.Children.Add(label);
-        var slider = new Slider { Minimum = 20, Maximum = 100, Value = opacity, SmallChange = 5, LargeChange = 10, IsSnapToTickEnabled = true, TickFrequency = 5, VerticalAlignment = VerticalAlignment.Center };
-        slider.ValueChanged += (_, e) =>
+        var slider = new GoldSlider(20, 100, 5, opacity);
+        slider.Changed += value =>
         {
-            percent.Text = $"{e.NewValue:0} %";
-            _editorOpacity = e.NewValue / 100.0;
+            percent.Text = $"{value:0} %";
+            _editorOpacity = value / 100.0;
             _editorOpacitySave.Stop();
             _editorOpacitySave.Start(); // saved once the slider rests
         };
@@ -321,7 +321,7 @@ public partial class MainWindow
         grid.Children.Add(glyph);
         var name = new TextBlock
         {
-            Text = def.Name, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis,
+            Text = EditorNameOf(def), FontSize = 12, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis,
             Foreground = on ? MenuBrush(0xFF, 0xF4, 0xF6, 0xF8) : MenuBrush(0xFF, 0xA8, 0xB0, 0xB8), FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal,
         };
         Grid.SetColumn(name, 1);
@@ -372,6 +372,97 @@ public partial class MainWindow
             FillOverlayEditor();
         };
         return tile;
+    }
+
+    /// <summary>An overlay's name on its tile: short in English (a tile is half the editor wide, with its key beside the name), else the app's own.</summary>
+    private static string EditorNameOf(OverlayDef def) => LocalizationManager.Instance.Language != "en" ? def.Name : def.Id switch
+    {
+        "combat" => "Boss fight",
+        "cooldowns" => "Skill assist",
+        "effects" => "Buffs on you",
+        "boss" => "World bosses",
+        "petmap" => "Map",
+        "craft" => "Crafting",
+        "network" => "Network",
+        "season" => "Season missions",
+        "hotkeys" => "Hotkey sheet",
+        _ => def.Name,
+    };
+
+    /// <summary>
+    /// A slider in the overlays' look: a thin track, gold up to the value, a round gold knob; dragged or clicked, in steps. <see cref="Changed"/> hears every new
+    /// value. The editor never takes the keyboard, so there are no keys for it.
+    /// </summary>
+    private sealed class GoldSlider : Grid
+    {
+        private readonly double _min, _max, _step;
+        private readonly Border _fill = new() { Height = 4, CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Left, Background = new SolidColorBrush(MenuGold) };
+        private readonly Border _knob = new()
+        {
+            Width = 14, Height = 14, CornerRadius = new CornerRadius(7), HorizontalAlignment = HorizontalAlignment.Left, BorderThickness = new Thickness(2),
+            Background = new SolidColorBrush(MenuGold), BorderBrush = MenuBrush(0xFF, 0x1A, 0x12, 0x05),
+        };
+        private double _value;
+
+        public event Action<double>? Changed;
+
+        public GoldSlider(double min, double max, double step, double value)
+        {
+            (_min, _max, _step) = (min, max, step);
+            _value = Math.Clamp(value, min, max);
+            Height = 20;
+            Margin = new Thickness(0, 0, 4, 0);
+            Background = Brushes.Transparent; // the whole strip takes the mouse
+            Cursor = Cursors.Hand;
+            VerticalAlignment = VerticalAlignment.Center;
+            Children.Add(new Border { Height = 4, CornerRadius = new CornerRadius(2), Background = MenuBrush(0x26, 0xFF, 0xFF, 0xFF), VerticalAlignment = VerticalAlignment.Center });
+            _fill.VerticalAlignment = VerticalAlignment.Center;
+            _knob.VerticalAlignment = VerticalAlignment.Center;
+            Children.Add(_fill);
+            Children.Add(_knob);
+            SizeChanged += (_, _) => Lay();
+            MouseLeftButtonDown += (_, e) =>
+            {
+                e.Handled = true;
+                CaptureMouse();
+                Follow(e.GetPosition(this).X);
+            };
+            MouseMove += (_, e) =>
+            {
+                if (IsMouseCaptured)
+                {
+                    Follow(e.GetPosition(this).X);
+                }
+            };
+            MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                ReleaseMouseCapture();
+            };
+        }
+
+        private void Follow(double x)
+        {
+            double usable = Math.Max(1, ActualWidth - _knob.Width);
+            double raw = _min + Math.Clamp((x - _knob.Width / 2) / usable, 0, 1) * (_max - _min);
+            double value = Math.Clamp(Math.Round(raw / _step) * _step, _min, _max);
+            if (Math.Abs(value - _value) < 1e-9)
+            {
+                return;
+            }
+
+            _value = value;
+            Lay();
+            Changed?.Invoke(value);
+        }
+
+        private void Lay()
+        {
+            double usable = Math.Max(0, ActualWidth - _knob.Width);
+            double at = (_value - _min) / Math.Max(1e-9, _max - _min) * usable;
+            _knob.Margin = new Thickness(at, 0, 0, 0);
+            _fill.Width = at + _knob.Width / 2;
+        }
     }
 
     /// <summary>
@@ -511,7 +602,7 @@ public partial class MainWindow
     {
         var frame = new Border
         {
-            CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(1), Width = 380,
+            CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(1), Width = OverlayEditorWindow.EditorWidth,
             BorderBrush = InGameGlass.Edge(s), Background = InGameGlass.Background(s), Child = BuildOverlayEditor(() => { }, s, null),
         };
         InGameGlass.Apply(frame);

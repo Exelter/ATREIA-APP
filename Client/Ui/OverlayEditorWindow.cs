@@ -18,6 +18,9 @@ public sealed class OverlayEditorWindow : Window
     private readonly Border _host = new();
     private Action<HotkeyBinding?>? _reading;
 
+    /// <summary>How wide the editor is (two tiles side by side with their keys).</summary>
+    public const double EditorWidth = 400;
+
     public OverlayEditorWindow(MeterSettings settings)
     {
         Title = "Overlay editor · " + Brand.AppName;
@@ -36,7 +39,7 @@ public sealed class OverlayEditorWindow : Window
         AltTabHidden.Apply(this);
         _frame = new Border
         {
-            CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(1), Child = _host, Width = 380,
+            CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(1), Child = _host, Width = EditorWidth,
             BorderBrush = InGameGlass.Edge(settings), Background = InGameGlass.Background(settings),
         };
         InGameGlass.Apply(_frame);
@@ -77,7 +80,7 @@ public sealed class OverlayEditorWindow : Window
     {
         MeterSettings s = MeterSettings.Load();
         UpdateLayout();
-        double w = _frame.ActualWidth > 0 ? _frame.ActualWidth : 380, h = _frame.ActualHeight > 0 ? _frame.ActualHeight : 560;
+        double w = _frame.ActualWidth > 0 ? _frame.ActualWidth : EditorWidth, h = _frame.ActualHeight > 0 ? _frame.ActualHeight : 560;
         Rect place = s.OverlayEditorLeft is double left && s.OverlayEditorTop is double top
             ? WindowPlacement.Resolve(new Rect(left, top, w, h), out _)
             : new Rect(area.Right - w - 24, area.Top + 72, w, h);
