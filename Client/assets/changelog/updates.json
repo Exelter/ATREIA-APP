@@ -13,7 +13,7 @@
           "kind": "new",
           "area": "Find a player",
           "title": "Your group, one click each",
-          "text": "Open Find a player while you're in a group and the other players of your group are listed under the box, with their class and server. Click one to see their card, Combat Power, Item Level and best parse, without typing the name. Clear the box to get the list back.",
+          "text": "Open Find a player while you're in a group and the other players of your group are listed under the box, with their class and server. Click one to see their card, Combat Power, Item Level and best parse, without typing the name. The list keeps up while it's open: players who join show up and players who leave go, within a couple of seconds. Clear the box to get the list back.",
           "example": "Your Nightmare group has a Cleric you don't know: open Find a player, click Lunessa, and her card comes up."
         },
         {
