@@ -152,6 +152,149 @@ public sealed class NetworkOverlayWindow : MovableOverlay
     public NetworkOverlayWindow() : base("Aion DPS Network", new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Left + 40, 520, LoadSize, SaveSize, OverlayEdgeMode.Uniform)
     {
         Body = OverlaySkin.Panel(_rows, new Thickness(10, 9, 10, 8));
+        // with Alt held over it (the game shows the cursor) the small overlay opens to every line
+        _hover.Tick += (_, _) =>
+        {
+            bool open = IsVisible && AltHeld() && NativeCursor.Showing() && Under(this);
+            if (open != _altOpen)
+            {
+                _altOpen = open;
+                if (_last is { } last)
+                {
+                    RenderLive(last.Rows, last.Snapshot, last.Compact);
+                }
+            }
+        };
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible)
+            {
+                _hover.Start();
+            }
+            else
+            {
+                _hover.Stop();
+            }
+        };
+        Closed += (_, _) => _hover.Stop();
+    }
+
+    private readonly System.Windows.Threading.DispatcherTimer _hover = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private readonly Queue<double> _pings = new();
+    private bool _altOpen;
+    private (IReadOnlyList<(string Label, string Value, Color Color)> Rows, NetworkSnapshot Snapshot, bool Compact)? _last;
+    private DateTime _pingAt = DateTime.MinValue;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int key);
+
+    private static bool AltHeld() => (GetAsyncKeyState(0x12) & 0x8000) != 0;
+
+    private static bool Under(Window window)
+    {
+        if (!NativeCursor.TryGet(out int x, out int y) || window.Content is not FrameworkElement content || PresentationSource.FromVisual(content) is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            Point p = content.PointFromScreen(new Point(x, y));
+            return p.X >= 0 && p.Y >= 0 && p.X <= content.ActualWidth && p.Y <= content.ActualHeight;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// The overlay over the game (10 November 2026, the owner: "way nicer"): small by default - a dot in the colour of the worst line, the ping big, a little graph
+    /// of the last minute's ping and the word for how it goes - and every line while Alt is held over it (or always, with the small one switched off).
+    /// </summary>
+    public void RenderLive(IReadOnlyList<(string Label, string Value, Color Color)> rows, NetworkSnapshot snapshot, bool compact)
+    {
+        _last = (rows, snapshot, compact);
+        if (DateTime.UtcNow - _pingAt >= TimeSpan.FromSeconds(0.9) && snapshot.PingMs is double ping)
+        {
+            _pingAt = DateTime.UtcNow;
+            _pings.Enqueue(ping);
+            while (_pings.Count > 60)
+            {
+                _pings.Dequeue();
+            }
+        }
+
+        if (!compact || _altOpen)
+        {
+            Render(rows);
+            return;
+        }
+
+        _rows.Children.Clear();
+        int worst = rows.Count == 0 ? 0 : rows.Max(r => Severity(r.Color));
+        Color colour = worst == 2 ? NetworkOverlayRows.Bad : worst == 1 ? NetworkOverlayRows.Warn : NetworkOverlayRows.Good;
+        var line = new StackPanel { Orientation = Orientation.Horizontal };
+        line.Children.Add(new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Fill = new SolidColorBrush(colour), Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
+        var value = new TextBlock
+        {
+            Text = snapshot.Connected && snapshot.PingMs is double p ? p.ToString("0", CultureInfo.CurrentCulture) : "–", FontSize = 18, FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(snapshot.PingMs is double pc ? (pc < 60 ? NetworkOverlayRows.Good : pc < 120 ? NetworkOverlayRows.Warn : NetworkOverlayRows.Bad) : Color.FromRgb(0x9A, 0x9A, 0xA4)),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        value.SetValue(System.Windows.Documents.Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);
+        line.Children.Add(value);
+        line.Children.Add(new TextBlock { Text = "ms", FontSize = 10, Margin = new Thickness(3, 5, 10, 0), VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(OverlaySkin.Gold) });
+        line.Children.Add(Sparkline(_pings.ToArray(), colour, 76, 20));
+        var word = new TextBlock
+        {
+            Text = worst == 2 ? "Trouble" : worst == 1 ? "Unsteady" : "All good", FontSize = 10.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(10, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(colour),
+        };
+        line.Children.Add(word);
+        _rows.Children.Add(line);
+        var hint = new TextBlock { Text = "Hold Alt over it for every line", FontSize = 9, Margin = new Thickness(16, 2, 0, 0), Opacity = 0.75 };
+        hint.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
+        _rows.Children.Add(hint);
+    }
+
+    /// <summary>A minute of ping as if measured (the pictures).</summary>
+    internal void SeedPings(IEnumerable<double> pings)
+    {
+        foreach (double ping in pings)
+        {
+            _pings.Enqueue(ping);
+        }
+
+        _pingAt = DateTime.UtcNow;
+    }
+
+    /// <summary>The ping of the last minute as a thin line over a soft fill, scaled between its lowest and highest (at least 20 ms apart).</summary>
+    private static FrameworkElement Sparkline(double[] pings, Color colour, double width, double height)
+    {
+        var canvas = new Canvas { Width = width, Height = height, VerticalAlignment = VerticalAlignment.Center, ClipToBounds = true };
+        if (pings.Length < 2)
+        {
+            canvas.Children.Add(new System.Windows.Shapes.Line { X1 = 0, X2 = width, Y1 = height - 1, Y2 = height - 1, Stroke = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), StrokeThickness = 1 });
+            return canvas;
+        }
+
+        double low = pings.Min(), high = Math.Max(pings.Max(), low + 20);
+        var points = new PointCollection();
+        for (int i = 0; i < pings.Length; i++)
+        {
+            double x = width * i / (pings.Length - 1);
+            double y = height - 2 - (height - 4) * (pings[i] - low) / (high - low);
+            points.Add(new Point(x, y));
+        }
+
+        var fill = new PointCollection(points) { new Point(width, height), new Point(0, height) };
+        canvas.Children.Add(new System.Windows.Shapes.Polygon
+        {
+            Points = fill, Fill = new LinearGradientBrush(Color.FromArgb(0x55, colour.R, colour.G, colour.B), Color.FromArgb(0x00, colour.R, colour.G, colour.B), 90),
+        });
+        canvas.Children.Add(new System.Windows.Shapes.Polyline { Points = points, Stroke = new SolidColorBrush(colour), StrokeThickness = 1.4, StrokeLineJoin = PenLineJoin.Round });
+        return canvas;
     }
 
     private static (double?, double?) LoadSize()
@@ -300,8 +443,9 @@ public sealed class NetworkOverlayController : IDisposable
             return;
         }
 
-        // while it is positioned and nothing is connected, sample values fill it in its real size
-        _overlay.Render(NetworkOverlayRows.Of(!snapshot.Connected && !locked ? NetworkOverlayRows.Sample() : snapshot, settings.NetworkOverlayHidden));
+        // while it is positioned and nothing is connected, sample values fill it in its real size; small (ping only) unless switched off or Alt is held over it
+        NetworkSnapshot shown = !snapshot.Connected && !locked ? NetworkOverlayRows.Sample() : snapshot;
+        _overlay.RenderLive(NetworkOverlayRows.Of(shown, settings.NetworkOverlayHidden), shown, settings.NetworkOverlayCompact && locked);
         _overlay.ShowOverlay(true);
     }
 }

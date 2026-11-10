@@ -30,10 +30,13 @@ public static class CooldownArt
 
     public static readonly Brush Text = Frozen(Colors.White);
     public static readonly Brush Soon = Frozen(Color.FromRgb(0xFF, 0xC8, 0x57));
-    public static readonly Brush ReadyText = Frozen(Color.FromRgb(0xD8, 0xFF, 0xD0));
-    public static readonly Brush ReadyBack = Frozen(Color.FromArgb(0xC0, 0x2C, 0x6E, 0x36));
-    public static readonly Brush CoolBack = Frozen(Color.FromArgb(0xB0, 0x0C, 0x0E, 0x12));
-    public static readonly Brush CoolFill = Frozen(Color.FromArgb(0x2E, 0xFF, 0xFF, 0xFF));
+    // the meter's look (10 November 2026): ready is a soft green fade from the left with green words, not a solid green block; the time still to go is a gold
+    // tinted fill over the meter's dark
+    public static readonly Brush ReadyText = Frozen(Color.FromRgb(0x8E, 0xE6, 0x9E));
+    public static readonly Brush ReadyBack = FrozenGradient(Color.FromArgb(0xC8, 0x1F, 0x4E, 0x2E), Color.FromArgb(0xB0, 0x14, 0x17, 0x1B));
+    public static readonly Brush CoolBack = Frozen(Color.FromArgb(0xC0, 0x14, 0x15, 0x1A));
+    public static readonly Brush CoolFill = FrozenGradient(Color.FromArgb(0x52, 0xDC, 0xB8, 0x77), Color.FromArgb(0x24, 0xDC, 0xB8, 0x77));
+    public static readonly Color ReadyGlow = Color.FromRgb(0x7C, 0xE0, 0x8E);
     public static readonly Brush EffectBack = Frozen(Color.FromArgb(0xB0, 0x0C, 0x0E, 0x12));
     public static readonly Brush EffectFill = Frozen(Color.FromArgb(0x55, 0x3E, 0x7C, 0xC9));
     public static readonly Brush Shade = Frozen(Color.FromArgb(0x5A, 0x00, 0x00, 0x00));
@@ -129,6 +132,13 @@ public static class CooldownArt
         return geometry;
     }
 
+    private static Brush FrozenGradient(Color from, Color to)
+    {
+        var brush = new LinearGradientBrush(from, to, 0);
+        brush.Freeze();
+        return brush;
+    }
+
     private static SolidColorBrush Frozen(Color color)
     {
         var brush = new SolidColorBrush(color);
@@ -152,7 +162,7 @@ public sealed class CooldownBar : Border, ICooldownLook
 {
     private readonly Border _back;
     private readonly Border _fill;
-    private readonly RectangleGeometry _fillClip = new(new Rect(0, 0, 0, CooldownArt.BarHeight), 3, 3);
+    private readonly RectangleGeometry _fillClip = new(new Rect(0, 0, 0, CooldownArt.BarHeight), 5, 5);
     private readonly TextBlock _time;
     private readonly double _width;
     private bool? _running;
@@ -164,11 +174,11 @@ public sealed class CooldownBar : Border, ICooldownLook
         _width = width;
         Width = width;
         Height = CooldownArt.BarHeight;
-        CornerRadius = new CornerRadius(3);
+        CornerRadius = new CornerRadius(5);
         ClipToBounds = true;
         var grid = new Grid();
         // the dark (or green, when ready) background on its own, so it can be made see-through without the picture and the time
-        _back = new Border { CornerRadius = new CornerRadius(3), Background = CooldownArt.CoolBack };
+        _back = new Border { CornerRadius = new CornerRadius(5), Background = CooldownArt.CoolBack };
         Grid.SetColumnSpan(_back, 3);
         grid.Children.Add(_back);
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -198,8 +208,14 @@ public sealed class CooldownBar : Border, ICooldownLook
     {
         if (_running != view.Running)
         {
+            bool back = _running == true && !view.Running; // just came back: it glows a moment
             _running = view.Running;
             _back.Background = view.Running ? CooldownArt.CoolBack : CooldownArt.ReadyBack;
+            if (back)
+            {
+                OverlayMotion.Pulse(this, CooldownArt.ReadyGlow);
+            }
+
             if (!view.Running)
             {
                 FillTo(0);
@@ -289,8 +305,14 @@ public sealed class CooldownTile : Grid, ICooldownLook
     {
         if (_running != view.Running)
         {
+            bool back = _running == true && !view.Running; // just came back: it glows a moment
             _running = view.Running;
             _shade.Visibility = _time.Visibility = view.Running ? Visibility.Visible : Visibility.Collapsed;
+            if (back)
+            {
+                OverlayMotion.Pulse(this, CooldownArt.ReadyGlow);
+            }
+
             if (!view.Running)
             {
                 _sweep.Visibility = Visibility.Collapsed;

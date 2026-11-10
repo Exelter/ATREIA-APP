@@ -77,7 +77,10 @@ public static class GatherIcons
 /// </summary>
 public sealed class GatherOverlayWindow : MovableOverlay
 {
-    private const double IconBox = 32, Cell = 48, CellGap = 4;
+    private const double IconBox = 30, Cell = 48, CellGap = 4;
+
+    /// <summary>How many Pure and Radiant each resource had when last drawn: one more glows a moment.</summary>
+    private static readonly Dictionary<string, long> RareSeen = new(StringComparer.Ordinal);
     private static readonly Color Muted = Color.FromRgb(0x8F, 0xA3, 0xB0), Gold = Color.FromRgb(0xE8, 0xC9, 0x8A), Failed = Color.FromRgb(0xE6, 0xA2, 0x6B);
     private readonly StackPanel _rows = new() { MinWidth = IconBox + 10 + (4 * Cell) + (3 * CellGap), MinHeight = 30 };
     private string _shown = "";
@@ -215,8 +218,8 @@ public sealed class GatherOverlayWindow : MovableOverlay
     // One resource: its icon in a small tile, the name and total, a cell per grade it comes in, and the tries with how many failed.
     private static FrameworkElement Row(GatherTally tally, LocalizationManager loc, CultureInfo culture)
     {
-        var row = new Grid { Margin = new Thickness(0, 5, 0, 0) };
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(IconBox + 10) });
+        var row = new Grid { Margin = new Thickness(0, 6, 0, 0) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(IconBox + 9) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         FrameworkElement picture = GatherIcons.Picture(tally.Key, IconBox - 6);
@@ -244,42 +247,78 @@ public sealed class GatherOverlayWindow : MovableOverlay
         });
         text.Children.Add(title);
 
-        // a cell per grade, in its colour; a grade the resource does not come in (herbs: Pure, Radiant) keeps its place empty so the columns line up
-        bool[] tiers = Aion2GatherLog.TiersOf(tally.Key);
-        var cells = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 3, 0, 0) };
+        // one bar split into the grades it came in, each in its colour as wide as its share (10 November 2026: the four boxes of numbers took a lot of room for
+        // little), then the counts by grade and the tries on one line; a new Pure or Radiant glows a moment
+        var bar = new Grid { Height = 5, Margin = new Thickness(0, 4, 0, 0) };
+        long total = Math.Max(1, tally.ByTier.Sum());
         for (int tier = 0; tier < 4; tier++)
         {
-            var cell = new Border { Width = Cell, Height = 18, CornerRadius = new CornerRadius(4), Margin = new Thickness(0, 0, tier < 3 ? CellGap : 0, 0) };
-            if (tiers[tier] || tally.ByTier[tier] > 0)
+            if (tally.ByTier[tier] <= 0)
             {
-                long count = tally.ByTier[tier];
-                Color color = GatherIcons.TierColor(tier);
-                cell.Background = new SolidColorBrush(count > 0 ? Color.FromArgb(0x33, color.R, color.G, color.B) : Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF));
-                cell.BorderBrush = new SolidColorBrush(count > 0 ? Color.FromArgb(0x66, color.R, color.G, color.B) : Color.FromArgb(0x1C, 0xFF, 0xFF, 0xFF));
-                cell.BorderThickness = new Thickness(1);
-                cell.Child = new TextBlock
-                {
-                    Text = count.ToString("N0", culture), FontSize = 11, FontWeight = count > 0 ? FontWeights.SemiBold : FontWeights.Normal,
-                    Foreground = count > 0 ? Paint(color) : new SolidColorBrush(Color.FromArgb(0x80, Muted.R, Muted.G, Muted.B)),
-                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
-                };
+                continue;
             }
 
-            cells.Children.Add(cell);
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(tally.ByTier[tier] / (double)total, 0.035), GridUnitType.Star) });
+            var piece = new Border { Background = Paint(GatherIcons.TierColor(tier)), CornerRadius = new CornerRadius(2.5), Margin = new Thickness(0, 0, 1.5, 0) };
+            Grid.SetColumn(piece, bar.ColumnDefinitions.Count - 1);
+            bar.Children.Add(piece);
         }
 
-        text.Children.Add(cells);
+        if (bar.Children.Count == 0)
+        {
+            bar.Children.Add(new Border { Background = new SolidColorBrush(Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)), CornerRadius = new CornerRadius(2.5) });
+        }
 
-        // how often it was tried, and how often that brought nothing
+        text.Children.Add(bar);
+        var info = new DockPanel { Margin = new Thickness(0, 3, 0, 0), LastChildFill = true };
         if (tally.Tries > 0)
         {
-            text.Children.Add(new TextBlock
+            var tries = new TextBlock
             {
                 Text = string.Format(culture, loc["Gather.Overlay.Tries"], tally.Tries.ToString("N0", culture), tally.Fails.ToString("N0", culture)),
-                FontSize = 10.5, Foreground = Paint(tally.Fails > 0 ? Failed : Muted), Margin = new Thickness(0, 2, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis,
+                FontSize = 10, Foreground = Paint(tally.Fails > 0 ? Failed : Muted), Margin = new Thickness(10, 0, 0, 0),
+            };
+            DockPanel.SetDock(tries, Dock.Right);
+            info.Children.Add(tries);
+        }
+
+        var counts = new TextBlock { FontSize = 10.5, TextTrimming = TextTrimming.CharacterEllipsis };
+        bool first = true;
+        for (int tier = 0; tier < 4; tier++)
+        {
+            if (tally.ByTier[tier] <= 0)
+            {
+                continue;
+            }
+
+            if (!first)
+            {
+                counts.Inlines.Add(new System.Windows.Documents.Run("  ·  ") { Foreground = new SolidColorBrush(Color.FromArgb(0x60, 0xFF, 0xFF, 0xFF)) });
+            }
+
+            first = false;
+            string grade = tier switch
+            {
+                0 => "",
+                1 => " " + (Aion2GatherLog.IsFresh(tally.Key) ? loc["Gather.Tally.Fresh"] : loc["Gather.Tally.Fine"]),
+                2 => " " + loc["Gather.Tally.Pure"],
+                _ => " " + loc["Gather.Tally.Radiant"],
+            };
+            counts.Inlines.Add(new System.Windows.Documents.Run(tally.ByTier[tier].ToString("N0", culture) + grade)
+            {
+                Foreground = Paint(tier == 0 ? Color.FromRgb(0xD8, 0xDD, 0xE3) : GatherIcons.TierColor(tier)), FontWeight = tier > 0 ? FontWeights.SemiBold : FontWeights.Normal,
             });
         }
 
+        info.Children.Add(counts);
+        text.Children.Add(info);
+        long rare = tally.ByTier[2] + tally.ByTier[3];
+        if (RareSeen.TryGetValue(tally.Key, out long before) && rare > before)
+        {
+            OverlayMotion.Pulse(tile, GatherIcons.TierColor(tally.ByTier[3] > 0 ? 3 : 2));
+        }
+
+        RareSeen[tally.Key] = rare;
         return row;
     }
 

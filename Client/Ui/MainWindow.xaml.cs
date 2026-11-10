@@ -187,6 +187,8 @@ public partial class MainWindow : Window
     private MeterOverlayWindow? _meterOverlay;
     private bool _meterOverlayOn = true;
     private bool _meterOverlayAutoHide = true;
+    private bool _meterStayInGroup = true;
+    private bool _meterAutoGroup = true;
     private TimeSpan _meterOverlayHideAfter = TimeSpan.FromSeconds(30);
 
     /// <summary>The last moment the own character hit something or was hit (local time): the overlay stays up a while after it.</summary>
@@ -746,6 +748,8 @@ public partial class MainWindow : Window
         _meterOverlayOn = settings.MeterOverlayOn;
         _meterOverlayAutoHide = settings.MeterOverlayAutoHide;
         _meterPopUpForBoss = settings.MeterPopUpForBoss;
+        _meterStayInGroup = settings.MeterStayInGroup;
+        _meterAutoGroup = settings.MeterAutoGroup;
         _trackOpenWorld = settings.TrackOpenWorld;
         UpdateOpenWorldButton();
         _meterOverlayHideAfter = TimeSpan.FromSeconds(Math.Clamp(settings.MeterOverlayHideSeconds, 10, 600));
@@ -1637,8 +1641,11 @@ public partial class MainWindow : Window
         }
 
         DateTime now = DateTime.Now;
+        AutoShowGroup(now);
         bool kept = now < _overlayPeekUntil || _meterOverlay.IsMouseOver || _overlayMenuOpen || OverlayFind.Visibility == Visibility.Visible || OverlayApps.Visibility == Visibility.Visible
-            || _dummy?.Model.State is DummyState.Armed or DummyState.Running or DummyState.Finished;
+            || _dummy?.Model.State is DummyState.Armed or DummyState.Running or DummyState.Finished
+            // in a dungeon or a group the meter stays up, so the group can be looked up (an option, on by default: 10 November 2026)
+            || (_meterStayInGroup && (_scopeContext == ScopeContext.Instance || _groupSeen));
         bool inFight = MeterOverlayRule.Shown(_meterOverlayAutoHide, _meterPopUpForBoss, _meterOverlayHideAfter, now - _lastOwnBossFight, now - _lastBossFight,
             now - _lastOwnCombat, _meterOverlay.Wanted, kept);
         _meterOverlay.ShowOverlay(MeterOverlayActive && _gameGateOpen && inFight);
@@ -2930,6 +2937,8 @@ public partial class MainWindow : Window
     private double _rdpsSeconds;
 
     private string _barLegendKey = "";
+    private bool _barLegendCounted;
+    private int _barLegendSessions = MeterSettings.Load().BarLegendSessions;
 
     /// <summary>The pictures of the build: a meter the player made narrower, its lines ranked (and capped) as a fight's are.</summary>
     internal void ShowSampleCrowd(double width)
@@ -2950,6 +2959,17 @@ public partial class MainWindow : Window
     internal void UpdateBarLegend()
     {
         bool show = BarPartsOn && CompactOverlayRowsArea.Visibility == Visibility.Visible && _rows.Any(r => r.HealFillPercent - r.FillPercent >= 0.3);
+        // the colours are learnt after a few days of play (10 November 2026): the line shows in the first five sessions it was needed in, then gives its row back
+        if (show && !Headless && !_barLegendCounted)
+        {
+            _barLegendCounted = true;
+            MeterSettings counted = MeterSettings.Load();
+            counted.BarLegendSessions++;
+            counted.Save();
+            _barLegendSessions = counted.BarLegendSessions;
+        }
+
+        show &= Headless || _barLegendSessions <= 5;
         OverlayBarLegend.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (!show)
         {
@@ -8216,8 +8236,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        _hotkeyOverlay.ApplyLockedIfChanged(s.HotkeyOverlayLocked ?? s.PetFarmLocked);
-        _hotkeyOverlay.ShowOverlay(s.ShowHotkeyOverlay && GameWindow.OverlayMayShow());
+        bool hotkeysLocked = s.HotkeyOverlayLocked ?? s.PetFarmLocked;
+        _hotkeyOverlay.ApplyLockedIfChanged(hotkeysLocked);
+        // a cheat sheet to peek at (10 November 2026): only while Ctrl+Alt are held, the keys every hotkey starts with (an option, on by default; always while placed)
+        bool peeked = !s.HotkeyOverlayPeek || !hotkeysLocked || HotkeyOverlayWindow.PeekKeysHeld();
+        _hotkeyOverlay.ShowOverlay(s.ShowHotkeyOverlay && peeked && GameWindow.OverlayMayShow());
     }
 
     /// <summary>Shows or hides the timetable overlay as Settings say (startup, after Settings, hotkey).</summary>

@@ -1726,6 +1726,13 @@ internal static class Program
                 window.OverlayBody.Visibility = System.Windows.Visibility.Collapsed;
                 window.OverlayTimeText.Visibility = System.Windows.Visibility.Collapsed;
                 window.OverlayFind.Visibility = System.Windows.Visibility.Visible;
+                // the party looked up by itself (the group shown when a party forms): their Combat Power on their lines
+                window.SeedMateLookups(new[]
+                {
+                    new Upload.FoundPlayer("Valtheris", "Templar", 45, "Zikel", 2302, "eu", 182_730, 2968, null, null, null),
+                    new Upload.FoundPlayer("Lunessa", "Cleric", 45, "Zikel", 2302, "eu", 171_204, 2911, null, null, null),
+                    new Upload.FoundPlayer("Korrin", "Sorcerer", 45, "Marchutan", 2305, "eu", 189_455, 3002, null, null, null),
+                });
                 window.ShowGroupMates(new[]
                 {
                     new Ui.MainWindow.GroupMate("Valtheris", "Templar", 2302),
@@ -2908,7 +2915,16 @@ internal static class Program
         var sample = new Aion2.Capture.NetworkSnapshot(true, "203.0.113.24:13328", TimeSpan.FromSeconds(642), 1, 0, 7, 16, 6, 49, 4.2, 8.6, 0.2, 26, 31, 0, 0, TimeSpan.FromSeconds(0.4), 0, 0,
             0, 0, null, null, null, new Aion2.Capture.NetworkProbeSnapshot(true, "192.168.2.1", 1, 0, 60, 12, 0, 60));
         var window = new Ui.NetworkOverlayWindow();
-        window.Render(Ui.NetworkOverlayRows.Of(sample, Array.Empty<string>()));
+        if (path.Contains("small", StringComparison.OrdinalIgnoreCase))
+        {
+            // the small overlay over the game: the ping, a minute of it as a graph, the word for how it goes
+            window.SeedPings(new double[] { 9, 8, 7, 8, 12, 9, 7, 7, 8, 21, 14, 9, 8, 7, 7, 9, 11, 8, 7, 7, 8, 9, 7, 6, 7, 8, 16, 10, 8, 7 });
+            window.RenderLive(Ui.NetworkOverlayRows.Of(sample, Array.Empty<string>()), sample, compact: true);
+        }
+        else
+        {
+            window.Render(Ui.NetworkOverlayRows.Of(sample, Array.Empty<string>()));
+        }
         var content = (System.Windows.UIElement)window.Content;
         content.Measure(new System.Windows.Size(600, 600));
         int w = (int)Math.Ceiling(content.DesiredSize.Width), h = (int)Math.Ceiling(content.DesiredSize.Height);

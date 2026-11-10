@@ -380,13 +380,11 @@ public sealed class LootOverlayWindow : MovableOverlay
             rate.Children.Add(text);
             // the share of the kills it dropped in (square root, so a rare drop still shows)
             double share = Math.Clamp(Math.Sqrt(line.Share), 0.04, 1.0);
-            var bar = new Grid { Height = 3, MaxWidth = 70, Margin = new Thickness(8, 1, 0, 0), VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Stretch };
-            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(share, GridUnitType.Star) });
-            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1 - share + 1e-6, GridUnitType.Star) });
-            var track = new Border { CornerRadius = new CornerRadius(1.5), Background = Track };
-            Grid.SetColumnSpan(track, 2);
-            bar.Children.Add(track);
-            bar.Children.Add(new Border { CornerRadius = new CornerRadius(1.5), Background = new SolidColorBrush(Alpha(line.Color, 0xD0)) });
+            // eases to its new share from the one it showed last (10 November 2026)
+            Grid bar = OverlayMotion.Bar("loot|" + line.Key, share, new SolidColorBrush(Alpha(line.Color, 0xD0)), Track);
+            bar.MaxWidth = 70;
+            bar.Margin = new Thickness(8, 1, 0, 0);
+            bar.HorizontalAlignment = HorizontalAlignment.Stretch;
             rate.Children.Add(bar);
             names.Children.Add(rate);
         }

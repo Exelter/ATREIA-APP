@@ -337,6 +337,15 @@ public sealed class MeterSettings
 
     public bool FpsOverlayLocked { get; set; } = true;
 
+    /// <summary>The network overlay small: the ping, a graph of the last minute and a word for how it goes; every line while Alt is held over it. On by default.</summary>
+    public bool NetworkOverlayCompact { get; set; } = true;
+
+    /// <summary>The hotkey overlay only while Ctrl+Alt are held (a cheat sheet to peek at). On by default.</summary>
+    public bool HotkeyOverlayPeek { get; set; } = true;
+
+    /// <summary>In how many sessions the meter's line naming the bar's colours was shown: after five it gives its row back.</summary>
+    public int BarLegendSessions { get; set; }
+
     public List<string> NetworkOverlayHidden { get; set; } = new();
 
     /// <summary>The loot overlay (see LootOverlayWindow): what the player picked up in the running session, kept in the Loot tool. Off until switched on. Locked (default): click-through; unlocked: it can be moved and scaled.</summary>
@@ -635,6 +644,14 @@ public sealed class MeterSettings
     /// <see cref="MeterOverlayHideSeconds"/> after the last fight (a dungeon or a dummy alone no longer brings it up: see MeterOverlayRule). Off: it stays
     /// up while the game is in front.</summary>
     public bool MeterOverlayAutoHide { get; set; } = true;
+
+    /// <summary>With <see cref="MeterOverlayAutoHide"/>: the meter stays up in a dungeon (any instance: exploration, Conquest, Ludra …) and while in a group,
+    /// so the group can be looked up at any time (10 November 2026, the owner). On by default.</summary>
+    public bool MeterStayInGroup { get; set; } = true;
+
+    /// <summary>Find a player opens by itself with the group (and looks the party members up) when a party forms or goes into a dungeon (10 November 2026,
+    /// the owner: "make the meter auto search and show the party members once in any party"). On by default; it never takes the keyboard from the game.</summary>
+    public bool MeterAutoGroup { get; set; } = true;
 
     /// <summary>The meter folds to its bar (the own class, name and Combat Power, the clock, the nearest cube, the counters at the foot) while no boss fight,
     /// dummy parse or Grind view is on, and opens by itself for them (5 November 2026, the owner). Off: the whole meter shows all the time.</summary>

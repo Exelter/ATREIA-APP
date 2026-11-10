@@ -614,6 +614,24 @@ public partial class MainWindow
             s.Save();
         };
         bar.Children.Add(altDrag);
+        CheckBox Option(string text, string tip, Func<MeterSettings, bool> get, Action<MeterSettings, bool> set)
+        {
+            var box = new CheckBox { IsChecked = get(MeterSettings.Load()), Content = ShellText(text, "Brush.Text", 12.5), VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 18, 6), ToolTip = tip };
+            box.Click += (_, _) =>
+            {
+                var s = MeterSettings.Load();
+                set(s, box.IsChecked == true);
+                s.Save();
+                ApplySettingsEverywhere(s);
+            };
+            return box;
+        }
+
+        bar.Children.Add(Option("Small network overlay (Alt for every line)", "The ping, a graph of the last minute and how it goes; hold Alt over it for every line",
+            s => s.NetworkOverlayCompact, (s, v) => s.NetworkOverlayCompact = v));
+        bar.Children.Add(Option("Hotkeys overlay only while Ctrl+Alt are held", "A cheat sheet to peek at: it shows while you hold Ctrl+Alt, the keys every hotkey starts with",
+            s => s.HotkeyOverlayPeek, (s, v) => s.HotkeyOverlayPeek = v));
         Button LayoutButton(string text, string tip, Action click)
         {
             var b = new Button { Content = text, ToolTip = tip, Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 6) };

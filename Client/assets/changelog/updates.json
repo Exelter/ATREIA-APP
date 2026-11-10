@@ -11,6 +11,25 @@
       "items": [
         {
           "kind": "new",
+          "area": "Meter",
+          "title": "Your group, the moment you join it",
+          "text": "Join a party or go into a dungeon with one (exploration, Conquest, Ludra …) and the meter opens Find a player with your group by itself, each member with their class, server and Combat Power, looked up for you in the background. A click shows their card at once. It never takes the keyboard from the game, and it folds away when a boss fight starts. The meter also stays up in dungeons and while you're in a group, so you can look someone up any time. Both are on by default and can be switched off in Settings, under the meter.",
+          "example": "Your exploration group fills up: the meter shows Lunessa 171,204, Korrin 189,455 and Valtheris 182,730 before you've even entered."
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "Smoother overlays",
+          "text": "The overlays fade in when they come up, their bars glide to new values instead of jumping, and the moments that matter glow briefly: a season mission done, an event going live, a skill coming off cooldown, a Pure or Radiant resource gathered. Upcoming events on the timers overlay have a thin bar that fills as they come closer."
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "Network, hotkeys, gathering and cooldowns redone",
+          "text": "The network overlay is a small pill now: your ping, a graph of the last minute and a word for how it's going; hold Alt over it for every line. The hotkey overlay is a two-column cheat sheet that shows while you hold Ctrl+Alt. Gathering shows one bar per resource split into its grades, with the counts on one line. Cooldown bars are softer, with a gold fill while they run and a green fade when ready. The overlay menu is grouped into Combat, World, Tools and System, with icons and a tip on each overlay. The meter's colour legend hides itself after your first five sessions. The small network overlay and the hotkeys peek can be switched off on the Overlays page."
+        },
+        {
+          "kind": "new",
           "area": "Overlays",
           "title": "Hold Alt and drag any overlay",
           "text": "Every overlay now moves with the mouse in the game: hold Alt (the game shows the cursor), the overlay under it glows gold, and you drag it where you want it. Let go of Alt and your clicks go to the game again. The meter moves the same way unless you locked it with its padlock. \"Move overlays\" (Ctrl+Alt+V) still unlocks them all at once, with the handles to size them. You can switch Alt + drag off on the Overlays page.",

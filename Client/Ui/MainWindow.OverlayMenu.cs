@@ -64,9 +64,22 @@ public partial class MainWindow
         head.Children.Add(titles);
         root.Children.Add(head);
 
+        // the overlays in four groups with a small heading each (10 November 2026: fifteen switches in one list were hard to scan)
         var problems = HotkeyProblems;
-        foreach (OverlayDef def in OverlayDefs().Where(d => d.Id != "menu"))
+        string? group = null;
+        foreach (OverlayDef def in OverlayDefs().Where(d => d.Id != "menu").OrderBy(d => Array.IndexOf(MenuGroups, MenuGroupOf(d.Id))))
         {
+            string now = MenuGroupOf(def.Id);
+            if (now != group)
+            {
+                group = now;
+                root.Children.Add(new TextBlock
+                {
+                    Text = now.ToUpper(CultureInfo.CurrentCulture), FontSize = 9.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(8, root.Children.Count > 1 ? 8 : 0, 0, 2),
+                    Foreground = MenuBrush(0xB0, MenuGold.R, MenuGold.G, MenuGold.B),
+                });
+            }
+
             root.Children.Add(MenuRow(def, s, problems));
         }
 
@@ -111,15 +124,40 @@ public partial class MainWindow
         static string? Keys(string text) => HotkeyBinding.Parse(text) is { IsEmpty: false } b ? b.ToString() : null;
     }
 
-    /// <summary>One overlay of the menu: the name (bright while on), its hotkey and a switch; a click anywhere on the row flips it.</summary>
+    private static readonly string[] MenuGroups = { "Combat", "World", "Tools", "System" };
+
+    private static string MenuGroupOf(string id) => id switch
+    {
+        "meter" or "combat" or "cooldowns" or "effects" => "Combat",
+        "timetable" or "boss" or "petmap" or "petfarm" => "World",
+        "loot" or "gather" or "season" or "craft" => "Tools",
+        _ => "System",
+    };
+
+    private static string MenuGlyphOf(string id) => id switch
+    {
+        "meter" => "\uE9D2", "combat" => "\uE7C1", "cooldowns" => "\uE945", "effects" => "\uE9F9", "timetable" => "\uE787", "boss" => "\uE7BA", "petmap" => "\uE707",
+        "petfarm" => "\uE8D4", "loot" => "\uE7B8", "gather" => "\uE8D4", "season" => "\uE734", "craft" => "\uE90F", "network" => "\uE701", "fps" => "\uE9D9",
+        "hotkeys" => "\uE765", _ => "\uE8B7",
+    };
+
+    /// <summary>One overlay of the menu: its picture, the name (bright while on), its hotkey and a switch; a click anywhere on the row flips it, resting on it says
+    /// what the overlay shows.</summary>
     private FrameworkElement MenuRow(OverlayDef def, MeterSettings s, IReadOnlyDictionary<HotkeyAction, HotkeyProblem> problems)
     {
         bool on = def.Get(s);
         var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var glyph = new TextBlock
+        {
+            Text = MenuGlyphOf(def.Id), FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 12, Width = 22, VerticalAlignment = VerticalAlignment.Center,
+        };
+        grid.Children.Add(glyph);
         var name = new TextBlock { Text = def.Name, FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+        Grid.SetColumn(name, 1);
         grid.Children.Add(name);
         if (def.Keys?.Invoke(s) is { } text && HotkeyBinding.Parse(text) is { IsEmpty: false } binding)
         {
@@ -136,19 +174,21 @@ public partial class MainWindow
                 },
                 ToolTip = broken ? LocalizationManager.Instance[problems[action!.Value] == HotkeyProblem.Twice ? "Hotkeys.Problem.Twice" : "Hotkeys.Problem.Taken"] : null,
             };
-            Grid.SetColumn(cap, 1);
+            Grid.SetColumn(cap, 2);
             grid.Children.Add(cap);
         }
 
         var knob = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(6), VerticalAlignment = VerticalAlignment.Center };
         var track = new Border { Width = 32, Height = 18, CornerRadius = new CornerRadius(9), BorderThickness = new Thickness(1), Child = knob, VerticalAlignment = VerticalAlignment.Center };
-        Grid.SetColumn(track, 2);
+        Grid.SetColumn(track, 3);
         grid.Children.Add(track);
-        var row = new Border { Child = grid, Padding = new Thickness(8, 5, 6, 5), CornerRadius = new CornerRadius(6), Background = Brushes.Transparent, Cursor = Cursors.Hand };
+        var row = new Border { Child = grid, Padding = new Thickness(8, 4, 6, 4), CornerRadius = new CornerRadius(6), Background = Brushes.Transparent, Cursor = Cursors.Hand,
+            ToolTip = def.What };
 
         void Paint()
         {
             name.Foreground = on ? MenuBrush(0xFF, 0xF1, 0xF4, 0xF7) : MenuBrush(0xFF, 0x9A, 0xA4, 0xAE);
+            glyph.Foreground = on ? new SolidColorBrush(MenuGold) : MenuBrush(0xFF, 0x6A, 0x72, 0x7C);
             name.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
             track.Background = on ? new SolidColorBrush(MenuGold) : MenuBrush(0xFF, 0x22, 0x26, 0x2E);
             track.BorderBrush = on ? new SolidColorBrush(MenuGold) : MenuBrush(0xFF, 0x3A, 0x40, 0x4A);

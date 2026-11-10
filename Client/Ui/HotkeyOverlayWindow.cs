@@ -13,6 +13,12 @@ public sealed class HotkeyOverlayWindow : MovableOverlay
     private readonly StackPanel _rows = new() { MinWidth = 200, MinHeight = 40 };
     private string _shown = "";
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int key);
+
+    /// <summary>Ctrl and Alt held (the keys every hotkey of the meter starts with): the hotkey overlay shows while they are, with "peek" on.</summary>
+    public static bool PeekKeysHeld() => (GetAsyncKeyState(0x11) & 0x8000) != 0 && (GetAsyncKeyState(0x12) & 0x8000) != 0;
+
     public HotkeyOverlayWindow() : base("Aion DPS Hotkeys", new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Left + 40, 120, LoadSize, SaveSize, OverlayEdgeMode.Uniform)
     {
         Body = OverlaySkin.Panel(_rows, new Thickness(10, 9, 10, 8));
@@ -89,48 +95,77 @@ public sealed class HotkeyOverlayWindow : MovableOverlay
         _shown = key;
         _rows.Children.Clear();
         var loc = LocalizationManager.Instance;
-        // the meter's look (10 November 2026): each group under a small gold heading, its hotkeys as names and keycaps, every other line on a faint band; a hotkey
-        // that does nothing says so in red (another program has it, or another of the meter's hotkeys: Settings > Hotkeys to pick another)
-        bool band = false;
-        foreach (var (name, keys, problem) in rows)
+        // the meter's look (10 November 2026): a heading, then the groups in two columns, each group under a small gold heading with its hotkeys as names and
+        // keycaps, every other line on a faint band; a hotkey that does nothing says so in red (another program has it, or another of the meter's hotkeys)
+        var groups = new List<(string Name, List<(string Name, string Keys, HotkeyProblem? Problem)> Rows)>();
+        foreach (var row in rows)
         {
-            if (keys.Length == 0)
+            if (row.Keys.Length == 0 || groups.Count == 0)
             {
-                if (_rows.Children.Count > 0)
+                groups.Add((row.Keys.Length == 0 ? row.Name : "", new()));
+                if (row.Keys.Length == 0)
                 {
-                    _rows.Children.Add(OverlaySkin.Divider(4, 4));
+                    continue;
+                }
+            }
+
+            groups[^1].Rows.Add(row);
+        }
+
+        _rows.Children.Add(OverlaySkin.Heading(loc["Shell.OvHotkeys"], "Ctrl+Alt held", null));
+        var columns = new Grid();
+        columns.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        columns.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
+        columns.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var left = new StackPanel();
+        var right = new StackPanel();
+        Grid.SetColumn(right, 2);
+        columns.Children.Add(left);
+        columns.Children.Add(right);
+        int all = groups.Sum(g => g.Rows.Count + 2), done = 0;
+        foreach (var group in groups)
+        {
+            StackPanel column = done < all / 2 ? left : right;
+            done += group.Rows.Count + 2;
+            if (group.Name.Length > 0)
+            {
+                var title = new TextBlock { Text = group.Name.ToUpperInvariant(), FontSize = 9.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(7, column.Children.Count == 0 ? 0 : 8, 0, 3),
+                    Foreground = new SolidColorBrush(Color.FromArgb(0xB0, OverlaySkin.Gold.R, OverlaySkin.Gold.G, OverlaySkin.Gold.B)) };
+                column.Children.Add(title);
+            }
+
+            bool band = false;
+            foreach (var (name, keys, problem) in group.Rows)
+            {
+                var grid = new Grid();
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                var n = new TextBlock { Text = name, FontSize = 11, Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center, MaxWidth = 230,
+                    TextTrimming = TextTrimming.CharacterEllipsis };
+                n.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
+                grid.Children.Add(n);
+                var keysLine = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+                keysLine.Children.Add(OverlaySkin.Keys(keys, problem is null ? null : OverlaySkin.Bad));
+                if (problem is { } why)
+                {
+                    keysLine.Children.Add(new TextBlock
+                    {
+                        Text = loc[why == HotkeyProblem.Twice ? "Hotkeys.Problem.TwiceShort" : "Hotkeys.Problem.TakenShort"], FontSize = 10, Margin = new Thickness(6, 0, 0, 0),
+                        VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(OverlaySkin.Bad),
+                    });
                 }
 
-                _rows.Children.Add(OverlaySkin.Heading(name));
-                band = false;
-                continue;
-            }
-
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var n = new TextBlock { Text = name, FontSize = 11.5, Margin = new Thickness(0, 0, 18, 0), VerticalAlignment = VerticalAlignment.Center };
-            n.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
-            grid.Children.Add(n);
-            var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            right.Children.Add(OverlaySkin.Keys(keys, problem is null ? null : OverlaySkin.Bad));
-            if (problem is { } why)
-            {
-                right.Children.Add(new TextBlock
+                Grid.SetColumn(keysLine, 1);
+                grid.Children.Add(keysLine);
+                column.Children.Add(new Border
                 {
-                    Text = loc[why == HotkeyProblem.Twice ? "Hotkeys.Problem.TwiceShort" : "Hotkeys.Problem.TakenShort"], FontSize = 10.5, Margin = new Thickness(6, 0, 0, 0),
-                    VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(OverlaySkin.Bad),
+                    Child = grid, Padding = new Thickness(7, 2, 7, 2), CornerRadius = new CornerRadius(5),
+                    Background = band ? new SolidColorBrush(Color.FromArgb(0x0B, 0xFF, 0xFF, 0xFF)) : Brushes.Transparent,
                 });
+                band = !band;
             }
-
-            Grid.SetColumn(right, 1);
-            grid.Children.Add(right);
-            _rows.Children.Add(new Border
-            {
-                Child = grid, Padding = new Thickness(7, 3, 7, 3), CornerRadius = new CornerRadius(5),
-                Background = band ? new SolidColorBrush(Color.FromArgb(0x0B, 0xFF, 0xFF, 0xFF)) : Brushes.Transparent,
-            });
-            band = !band;
         }
+
+        _rows.Children.Add(columns);
     }
 }

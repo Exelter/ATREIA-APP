@@ -364,6 +364,7 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         {
             Show();
             ApplyClickThrough();
+            OverlayMotion.Appear(_frame); // fades in and settles (10 November 2026)
         }
     }
 
@@ -2365,11 +2366,7 @@ public sealed class PetListWindow : MovableOverlay
         stack.Children.Add(_head);
         stack.Children.Add(_rows);
         stack.Children.Add(_shop);
-        var panel = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(0x99, 0x0E, 0x18, 0x20)), BorderBrush = new SolidColorBrush(Color.FromArgb(0x99, 0x29, 0x45, 0x57)),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(10, 6, 10, 6), Child = stack,
-        };
+        Border panel = OverlaySkin.Panel(stack, new Thickness(10, 8, 10, 8)); // the meter's look (10 November 2026)
         Body = panel;
     }
 
