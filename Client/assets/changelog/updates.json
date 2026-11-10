@@ -11,6 +11,25 @@
       "items": [
         {
           "kind": "new",
+          "area": "Meter",
+          "title": "Everything from the meter",
+          "text": "A new button on the meter's bar opens a launcher with a tile for each tool: Characters, CP calculator, Journey, Legion, Items, Gathering, Season missions, Timers, Map and History. A tile opens that page right over the game, in a panel that looks like the meter, so you never have to leave the game for the app. Drag it by its top, size it at its edges, close it with Esc; it comes back where you left it. Pages that belong together are tabs of one panel.",
+          "example": "Mid-dungeon you want your CP upgrades: open the launcher, click CP calculator, check them, press Esc and carry on."
+        },
+        {
+          "kind": "new",
+          "area": "Overlays",
+          "title": "Overlay switches on the launcher",
+          "text": "Items, Gathering, Season missions, Timers and Map have their overlay's switch right on their tile, and the tile itself opens the numbers behind it: your drops and drop rates, everything you gathered, or the season missions of the character you're on, where you pick which ones the overlay shows."
+        },
+        {
+          "kind": "improved",
+          "area": "Look",
+          "title": "The overlays look like the meter",
+          "text": "The network, hotkey, world boss, crafting, training dummy, season missions and gathering overlays now share the meter's look: its background and soft edge, round corners and a small gold heading. The network overlay says at a glance whether your connection is all good, unsteady or in trouble, and the hotkey overlay shows its keys as keycaps. The meter's Tools and … menus have icons, and Characters there now opens over the game."
+        },
+        {
+          "kind": "new",
           "area": "Find a player",
           "title": "Your group, one click each",
           "text": "Open Find a player while you're in a group and the other players of your group are listed under the box, with their class and server. Click one to see their card, Combat Power, Item Level and best parse, without typing the name. The list keeps up while it's open: players who join show up and players who leave go, within a couple of seconds. Clear the box to get the list back.",
