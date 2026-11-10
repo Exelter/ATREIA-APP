@@ -320,6 +320,7 @@ public static class ToolRender
     {
         DateTime now = DateTime.Now;
         GrindPage.Picture = (GrindSample.Current(now), GrindSample.Earlier(now), GrindSample.Book(), now);
+        GrindPage.PictureMobs = (GrindSample.Mobs(), GrindSample.Yields());
         var lootPage = new LootPage();
         var grind = new GrindPage(lootPage, () => null);
         grind.ShowTab(loot ? "loot" : "grind");

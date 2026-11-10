@@ -553,7 +553,7 @@ public static class Aion2Loot
         }
 
         CountedKills[entity] = (at, new HashSet<int>());
-        Aion2Grind.NoteKill(_zone, at); // the grind tracker counts the same kills (its own lock, never back in here)
+        Aion2Grind.NoteKill(_zone, at, npc); // the grind tracker counts the same kills (its own lock, never back in here)
         KillOrder.Enqueue(entity);
         while (KillOrder.Count > MaxKillsKept)
         {

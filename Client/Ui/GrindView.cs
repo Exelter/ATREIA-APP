@@ -164,6 +164,23 @@ internal static class GrindSample
         },
     };
 
+    /// <summary>Four monsters of two maps with their drops and the Kinah after their kills.</summary>
+    public static IReadOnlyList<LootMob> Mobs() => new[]
+    {
+        new LootMob { NpcId = 2090168, Kills = 120, Zones = new() { 22 }, Items = new() { new LootMobItem { ItemId = 511351001, Count = 30, Kills = 28 }, new LootMobItem { ItemId = 511900001, Count = 3, Kills = 3 } } },
+        new LootMob { NpcId = 2000053, Kills = 94, Zones = new() { 22 }, Items = new() { new LootMobItem { ItemId = 510116011, Count = 40, Kills = 31 }, new LootMobItem { ItemId = 511351002, Count = 6, Kills = 6 } } },
+        new LootMob { NpcId = 2100217, Kills = 260, Zones = new() { 103 }, Items = new() { new LootMobItem { ItemId = 610620013, Count = 210, Kills = 150 }, new LootMobItem { ItemId = 511360003, Count = 22, Kills = 22 } } },
+        new LootMob { NpcId = 2100066, Kills = 310, Zones = new() { 103 }, Items = new() { new LootMobItem { ItemId = 610620013, Count = 95, Kills = 80 } } },
+    };
+
+    public static IReadOnlyList<MobYield> Yields() => new[]
+    {
+        new MobYield { NpcId = 2090168, Kills = 120, Kinah = 410_000, AbyssPoints = 11_400 },
+        new MobYield { NpcId = 2000053, Kills = 94, Kinah = 352_000, AbyssPoints = 7_900 },
+        new MobYield { NpcId = 2100217, Kills = 260, Kinah = 1_010_000 },
+        new MobYield { NpcId = 2100066, Kills = 310, Kinah = 690_000 },
+    };
+
     public static MarketBook Book()
     {
         var prices = new Dictionary<int, MarketPrice>();
