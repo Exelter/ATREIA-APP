@@ -15,6 +15,13 @@
           "title": "Your group, one click each",
           "text": "Open Find a player while you're in a group and the other players of your group are listed under the box, with their class and server. Click one to see their card, Combat Power, Item Level and best parse, without typing the name. Clear the box to get the list back.",
           "example": "Your Nightmare group has a Cleric you don't know: open Find a player, click Lunessa, and her card comes up."
+        },
+        {
+          "kind": "new",
+          "area": "Find a player",
+          "title": "The other party in a raid, too",
+          "text": "In a fight with two parties together, like Ludra, the game only tells you who is in your own party. Under your group, Find a player now also lists the players fighting with you: everyone who hit the same monsters as your group or healed it in the last 10 minutes, most damage first. In a raid that is the other party; at an open-world boss it can include strangers at the same boss. Each one is a click away from their card.",
+          "example": "At Ludra, open Find a player: your three party members, then under Fighting with you the four players of the other party."
         }
       ]
     },

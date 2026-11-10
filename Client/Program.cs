@@ -1689,7 +1689,7 @@ internal static class Program
             }
             else if (kind == "findgroup")
             {
-                // Find a player opened in a group: the box empty, the other three players of the group a click each
+                // Find a player opened in a corps fight: the box empty, the other three players of the group, then the other party fighting with it, a click each
                 window.OverlayBody.Visibility = System.Windows.Visibility.Collapsed;
                 window.OverlayTimeText.Visibility = System.Windows.Visibility.Collapsed;
                 window.OverlayFind.Visibility = System.Windows.Visibility.Visible;
@@ -1698,6 +1698,12 @@ internal static class Program
                     new Ui.MainWindow.GroupMate("Valtheris", "Templar", 2302),
                     new Ui.MainWindow.GroupMate("Lunessa", "Cleric", 2302),
                     new Ui.MainWindow.GroupMate("Korrin", "Sorcerer", 2305),
+                }, new[]
+                {
+                    new Ui.MainWindow.GroupMate("Morwyth", "Gladiator", 2302),
+                    new Ui.MainWindow.GroupMate("Seraphel", "Chanter", 2311),
+                    new Ui.MainWindow.GroupMate("Dakkon", "Ranger", 2302),
+                    new Ui.MainWindow.GroupMate("Ilvane", null, null),
                 });
             }
             else if (kind == "findservers")
