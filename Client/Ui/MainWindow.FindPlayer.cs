@@ -1005,14 +1005,21 @@ public partial class MainWindow
         _groupSeen = mates.Count > 0;
         bool entered = _scopeContext == ScopeContext.Instance && _autoGroupContext != ScopeContext.Instance;
         _autoGroupContext = _scopeContext;
-        if (!_meterAutoGroup || _meterOverlay is not { IsVisible: true })
-        {
-            return;
-        }
-
         if (mates.Count == 0)
         {
             _autoGroupKey = "";
+            // out of the group (left the room, the room closed): the search it opened goes, the meter as it was (10 November 2026, the owner: "when leaving
+            // a group, the meter should not still show them, instead return to original state"); one the player is using stays
+            if (_findAuto && OverlayFind.Visibility == Visibility.Visible && OverlayFindBox.Text.Length == 0 && _findShown is null)
+            {
+                CloseFindPlayer();
+            }
+
+            return;
+        }
+
+        if (!_meterAutoGroup || _meterOverlay is not { IsVisible: true })
+        {
             return;
         }
 

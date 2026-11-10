@@ -214,7 +214,7 @@ public sealed class GamePanelWindow : Window
             top.Children.Add(_tabStrip);
         }
 
-        top.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Color.FromArgb(0x16, 0xFF, 0xFF, 0xFF)) });
+        top.Children.Add(new Border { Height = 1, Margin = new Thickness(14, 0, 14, 0), Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)) });
         var dock = new DockPanel { LastChildFill = true };
         DockPanel.SetDock(top, Dock.Top);
         dock.Children.Add(top);
@@ -231,13 +231,16 @@ public sealed class GamePanelWindow : Window
         var layers = new Grid();
         layers.Children.Add(dock);
         layers.Children.Add(grip);
-        return new Border
+        // see-through like the meter, its faint edge, the pages' cards as tints of the glass (InGameGlass; 10 November 2026, the owner: "the window should be
+        // transparent ... it's an in-game overlay", and the light line along the top was ugly)
+        MeterSettings settings = MeterSettings.Load();
+        var frame = new Border
         {
             CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(1), Margin = new Thickness(0), Child = layers,
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF)),
-            // never see-through: every part takes the mouse over the game
-            Background = new SolidColorBrush(Color.FromArgb(0xF5, 0x14, 0x12, 0x18)),
+            BorderBrush = InGameGlass.Edge(settings), Background = InGameGlass.Background(settings),
         };
+        InGameGlass.Apply(frame);
+        return frame;
     }
 
     private void DrawTabs()

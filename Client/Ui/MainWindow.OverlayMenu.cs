@@ -83,16 +83,15 @@ public partial class MainWindow
             root.Children.Add(MenuRow(def, s, problems));
         }
 
-        root.Children.Add(new Border { Height = 1, Background = MenuBrush(0xFF, 0x2C, 0x31, 0x3A), Margin = new Thickness(0, 8, 0, 10) });
+        root.Children.Add(new Border { Height = 1, Background = MenuBrush(0x1C, 0xFF, 0xFF, 0xFF), Margin = new Thickness(0, 8, 0, 10) });
 
-        // the four buttons, two by two
-        bool movable = OverlaysMovable(s) && !_meterOverlayLocked;
-        bool hidden = _overlaysSwitchedOff is not null;
+        // the four buttons, two by two: the overlay editor first (10 November 2026, the owner: the button "shouldn't be to lock overlays")
+        bool hidden = OverlaysSwitchedOff(s);
         var buttons = new UniformGrid2();
-        buttons.Add(MenuAction(movable ? "" : "", loc[movable ? "OverlayMenu.Lock" : "OverlayMenu.Move"], Keys(s.HotkeyMoveOverlays), () =>
+        buttons.Add(MenuAction("\uE70F", "Overlay editor", Keys(s.HotkeyMoveOverlays), () =>
         {
             close();
-            ToggleOverlaysMovable();
+            OpenOverlayEditor();
         }));
         buttons.Add(MenuAction(hidden ? "" : "", loc[hidden ? "OverlayMenu.ShowAll" : "OverlayMenu.HideAll"], Keys(s.HotkeyAllOverlays), () =>
         {
@@ -116,7 +115,8 @@ public partial class MainWindow
         return new Border
         {
             Child = root, Padding = new Thickness(12, 10, 12, 12), CornerRadius = new CornerRadius(10), BorderThickness = new Thickness(1),
-            Background = MenuBrush(0xF2, 0x11, 0x13, 0x18), BorderBrush = MenuBrush(0x70, MenuGold.R, MenuGold.G, MenuGold.B),
+            // see-through like the meter (InGameGlass; 10 November 2026, the owner: the windows over the game "should be transparent")
+            Background = InGameGlass.Background(s), BorderBrush = MenuBrush(0x55, MenuGold.R, MenuGold.G, MenuGold.B),
             Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 18, ShadowDepth = 3, Opacity = 0.55, Color = Colors.Black },
             Margin = new Thickness(10, 4, 10, 14), // room for the shadow
         };
@@ -167,13 +167,26 @@ public partial class MainWindow
             {
                 CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(5, 0, 5, 1), Margin = new Thickness(8, 0, 10, 0),
                 VerticalAlignment = VerticalAlignment.Center, BorderBrush = broken ? MenuBrush(0xFF, 0x8A, 0x3A, 0x34) : MenuBrush(0xFF, 0x34, 0x39, 0x43),
-                Background = MenuBrush(0xFF, 0x1A, 0x1D, 0x24),
+                Background = MenuBrush(0x12, 0xFF, 0xFF, 0xFF), Cursor = Cursors.Hand,
                 Child = new TextBlock
                 {
                     Text = binding.ToString(), FontSize = 10.5, Foreground = broken ? MenuBrush(0xFF, 0xFF, 0x7A, 0x6E) : MenuBrush(0xFF, 0xB8, 0x9A, 0x63),
                 },
-                ToolTip = broken ? LocalizationManager.Instance[problems[action!.Value] == HotkeyProblem.Twice ? "Hotkeys.Problem.Twice" : "Hotkeys.Problem.Taken"] : null,
+                ToolTip = (broken ? LocalizationManager.Instance[problems[action!.Value] == HotkeyProblem.Twice ? "Hotkeys.Problem.Twice" : "Hotkeys.Problem.Taken"] + " " : "")
+                    + "Click the key to change it (the overlay editor opens for it)",
             };
+            // a click on the key edits it (10 November 2026, the owner: the hotkeys "should open the menu to edit them when they click keys"), the rest of the row
+            // switches the overlay
+            if (EditorHotkeyOf(def.Id) is { } editAction)
+            {
+                cap.MouseLeftButtonDown += (_, e) => e.Handled = true;
+                cap.MouseLeftButtonUp += (_, e) =>
+                {
+                    e.Handled = true;
+                    OpenOverlayEditor(editAction);
+                };
+            }
+
             Grid.SetColumn(cap, 2);
             grid.Children.Add(cap);
         }
@@ -190,8 +203,8 @@ public partial class MainWindow
             name.Foreground = on ? MenuBrush(0xFF, 0xF1, 0xF4, 0xF7) : MenuBrush(0xFF, 0x9A, 0xA4, 0xAE);
             glyph.Foreground = on ? new SolidColorBrush(MenuGold) : MenuBrush(0xFF, 0x6A, 0x72, 0x7C);
             name.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
-            track.Background = on ? new SolidColorBrush(MenuGold) : MenuBrush(0xFF, 0x22, 0x26, 0x2E);
-            track.BorderBrush = on ? new SolidColorBrush(MenuGold) : MenuBrush(0xFF, 0x3A, 0x40, 0x4A);
+            track.Background = on ? new SolidColorBrush(MenuGold) : MenuBrush(0x18, 0xFF, 0xFF, 0xFF);
+            track.BorderBrush = on ? new SolidColorBrush(MenuGold) : MenuBrush(0x30, 0xFF, 0xFF, 0xFF);
             knob.Background = on ? MenuBrush(0xFF, 0x1A, 0x12, 0x05) : MenuBrush(0xFF, 0x8A, 0x93, 0x9D);
             knob.HorizontalAlignment = on ? HorizontalAlignment.Right : HorizontalAlignment.Left;
             knob.Margin = new Thickness(2, 0, 2, 0);
@@ -310,17 +323,17 @@ public partial class MainWindow
         var b = new Border
         {
             Child = row, Padding = new Thickness(10, 7, 8, 7), CornerRadius = new CornerRadius(7), BorderThickness = new Thickness(1), Cursor = Cursors.Hand, MinHeight = 44,
-            Background = MenuBrush(0xFF, 0x1C, 0x1F, 0x27), BorderBrush = MenuBrush(0xFF, 0x2F, 0x34, 0x3E),
+            Background = MenuBrush(0x10, 0xFF, 0xFF, 0xFF), BorderBrush = MenuBrush(0x22, 0xFF, 0xFF, 0xFF),
         };
         b.MouseEnter += (_, _) =>
         {
-            b.Background = MenuBrush(0xFF, 0x25, 0x29, 0x33);
+            b.Background = MenuBrush(0x1E, 0xFF, 0xFF, 0xFF);
             b.BorderBrush = MenuBrush(0xB0, MenuGold.R, MenuGold.G, MenuGold.B);
         };
         b.MouseLeave += (_, _) =>
         {
-            b.Background = MenuBrush(0xFF, 0x1C, 0x1F, 0x27);
-            b.BorderBrush = MenuBrush(0xFF, 0x2F, 0x34, 0x3E);
+            b.Background = MenuBrush(0x10, 0xFF, 0xFF, 0xFF);
+            b.BorderBrush = MenuBrush(0x22, 0xFF, 0xFF, 0xFF);
         };
         b.MouseLeftButtonUp += (_, e) =>
         {

@@ -226,8 +226,26 @@ public sealed class MeterSettings
     /// switched on.</summary>
     public bool ShowFpsOverlay { get; set; }
 
-    /// <summary>Every overlay moves with the mouse while Alt is held (OverlayAltDrag.cs). On by default; off, they only move in "Move overlays".</summary>
-    public bool AltDragOverlays { get; set; } = true;
+    /// <summary>Every overlay moves with the mouse while Alt is held (OverlayAltDrag.cs). Off by default (10 November 2026, a tester: "these move if I drag them,
+    /// they're not locked now" - Alt is the game's own key for the cursor, so clicks in the game with it held took the overlays along); they are placed in the
+    /// overlay editor. Whoever wants it switches it on (Overlays page).</summary>
+    public bool AltDragOverlays { get; set; }
+
+    /// <summary>Where the overlay editor was left over the game (OverlayEditorWindow); null: at the right of the screen.</summary>
+    public double? OverlayEditorLeft { get; set; }
+
+    public double? OverlayEditorTop { get; set; }
+
+    /// <summary>Alt + drag was switched off once for everyone (it came on by default in 1.21.9).</summary>
+    public bool AltDragDefaultedOff { get; set; }
+
+    /// <summary>What the Skill Assist hotkey hid, so its next press brings back exactly that ([cooldowns, buffs]; buffs 0 off, 1 on, 2 following the cooldowns),
+    /// also after a restart. Null: nothing hidden by the hotkey.</summary>
+    public int[]? AssistHotkeyBack { get; set; }
+
+    /// <summary>The overlays the "all overlays" hotkey switched off (their ids), so the next press brings back exactly those, also after a restart.
+    /// Null: nothing switched off by it.</summary>
+    public List<string>? AllOverlaysBack { get; set; }
 
     /// <summary>The assist overlay (see AssistOverlayWindow): own cooldowns and effects, switched in the Tools > Assist window. Locked (default): click-through; unlocked: it can be moved and scaled.</summary>
     public bool ShowAssistOverlay { get; set; }

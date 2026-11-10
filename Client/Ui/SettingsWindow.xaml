@@ -604,7 +604,7 @@
                                           ToolTip="Exploration, Conquest, Ludra, any dungeon or party: the meter stays on screen so you can look up your group at any time"
                                           IsEnabled="{Binding IsChecked, ElementName=MeterOverlayAutoHideBox}"/>
                                 <CheckBox x:Name="MeterAutoGroupBox" Content="Show my group when I join a party or enter a dungeon" Margin="0,6,0,0"
-                                          ToolTip="Find a player opens by itself with your party (their class, server and Combat Power), without taking the keyboard from the game. It folds away when a boss fight starts."
+                                          ToolTip="Find a player opens by itself with your party (their class, server and Combat Power), without taking the keyboard from the game. While you're in a group the meter stays on screen, also over the game's windows (the group finder is one). It folds away when a boss fight starts, and goes when you leave the group."
                                           IsEnabled="{Binding IsChecked, ElementName=MeterOverlayOnBox}"/>
                                 <Grid Margin="0,6,0,2">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="170"/></Grid.ColumnDefinitions>

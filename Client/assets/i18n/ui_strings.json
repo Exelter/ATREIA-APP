@@ -17783,16 +17783,16 @@
     "zh-TW": "（伺服器）"
   },
   "Settings.Hotkey.MoveOverlays": {
-    "en": "Move the overlays in the game (unlock / lock)",
-    "de": "Overlays im Spiel verschieben (entsperren / sperren)",
-    "fr": "Déplacer les overlays en jeu (déverrouiller / verrouiller)",
-    "es": "Mover los overlays en el juego (desbloquear / bloquear)",
-    "ru": "Перемещать оверлеи в игре (разблокировать / заблокировать)",
-    "zh": "在游戏中移动悬浮窗（解锁 / 锁定）",
-    "pt": "Mover os overlays no jogo (desbloquear / bloquear)",
-    "ja": "ゲーム中にオーバーレイを移動（ロック解除 / ロック）",
-    "ko": "게임 중 오버레이 이동 (잠금 해제 / 잠금)",
-    "zh-TW": "在遊戲中移動浮動層（解鎖 / 鎖定）"
+    "en": "Open the overlay editor",
+    "de": "Overlay-Editor öffnen",
+    "fr": "Ouvrir l'éditeur d'overlays",
+    "es": "Abrir el editor de overlays",
+    "ru": "Открыть редактор оверлеев",
+    "zh": "打开悬浮窗编辑器",
+    "pt": "Abrir o editor de overlays",
+    "ja": "オーバーレイエディターを開く",
+    "ko": "오버레이 편집기 열기",
+    "zh-TW": "開啟浮動層編輯器"
   },
   "Overlays.MoveOn": {
     "en": "Overlays unlocked: drag and scale them where they are. {0} locks them again.",
@@ -21463,7 +21463,7 @@
     "fr": "Masquer les astuces"
   },
   "Home.Tip.Move": {
-    "en": "{0} unlocks the meter and every overlay so you can drag them right over the game; press it again to lock them.",
+    "en": "{0} opens the overlay editor: switch overlays on or off and drag them right over the game; Done locks them in place.",
     "de": "{0} entsperrt das Meter und alle Overlays, damit du sie direkt über dem Spiel verschieben kannst; nochmal drücken sperrt sie wieder.",
     "fr": "{0} déverrouille le meter et tous les overlays pour les déplacer directement sur le jeu ; appuyez à nouveau pour les verrouiller."
   },
@@ -22541,12 +22541,12 @@
     "ru": "Оверлеи: включить и выключить"
   },
   "OverlayMenu.Lede": {
-    "en": "Click a row to switch it on or off",
-    "de": "Eine Zeile anklicken schaltet sie an oder aus",
-    "fr": "Cliquez sur une ligne pour l'activer ou la désactiver",
-    "es": "Haz clic en una fila para activarla o desactivarla",
-    "pt": "Clique numa linha para ligar ou desligar",
-    "ru": "Нажмите строку, чтобы включить или выключить"
+    "en": "Click a row to switch it on or off, a key to change it",
+    "de": "Eine Zeile anklicken schaltet sie an oder aus, eine Taste ändert sie",
+    "fr": "Cliquez sur une ligne pour l'activer ou la désactiver, sur une touche pour la changer",
+    "es": "Haz clic en una fila para activarla o desactivarla, en una tecla para cambiarla",
+    "pt": "Clique numa linha para ligar ou desligar, numa tecla para a mudar",
+    "ru": "Нажмите строку, чтобы включить или выключить, клавишу — чтобы изменить"
   },
   "OverlayMenu.Close": {
     "en": "Close",

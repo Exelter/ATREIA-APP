@@ -64,6 +64,21 @@ public sealed class Aion2FrameDecoder
     /// (recordings 2026-10-11: 1010 Verteron, 600001 Krao Cave as an instance).</summary>
     private const int ZoneOpcode = 0x2136;
 
+    /// <summary>
+    /// The group finder's room ending for the local player (10 November 2026, the owner: "when leaving a group, the meter should not still show them"). The
+    /// roster (0x0297) comes while in a room, dungeon included, and nothing of it says the room is left, so the group stayed on the meter until the next room.
+    /// Read from five recordings (8 to 10 November, 14 rooms): <c>1d 97 00 00</c> when the player leaves (each "Left … room" of the chat), <c>2a 97 00</c> when
+    /// the player is taken out of it, and <c>1b 97 | room id u32</c> when a room closes (a dungeon run over, the leader closing it) - for any room, also one the
+    /// player already moved on from (a room started again comes with a new id first), so that one counts only for the room the player is in. The room list
+    /// (0x0197) also tells: the player's own room id at 8 (0 out of a room).
+    /// </summary>
+    private const int LeftRoomOpcode = 0x1d97;
+    private const int RemovedFromRoomOpcode = 0x2a97;
+    private const int RoomClosedOpcode = 0x1b97;
+
+    /// <summary>The group finder room the latest roster frame was of (its id at 2), 0 out of a room.</summary>
+    private uint _roomId;
+
     /// <summary>An entity going into or out of combat: <c>opcode | entity (varint) | 01 01 | server time u64</c> in, <c>| 00 00</c> out
     /// (the same entities get <c>00 01</c> frames too, which say nothing about the fight). Anchors the rage clock.</summary>
     private const int EngageOpcode = 0x218d;
@@ -702,6 +717,12 @@ public sealed class Aion2FrameDecoder
         if (opcode == ZoneOpcode)
         {
             DecodeZone(frame, timestamp);
+            return Array.Empty<DamageEvent>();
+        }
+
+        if (opcode is LeftRoomOpcode or RemovedFromRoomOpcode or RoomClosedOpcode)
+        {
+            DecodeRoomGone(opcode, frame);
             return Array.Empty<DamageEvent>();
         }
 
@@ -4140,8 +4161,39 @@ public sealed class Aion2FrameDecoder
 
         if (frame[0] == 0x02 && frame[1] == 0x97 && members.Count > 0)
         {
+            _roomId = frame.Length >= 6 ? BinaryPrimitives.ReadUInt32LittleEndian(frame[2..]) : 0;
             _entities.NoteParty(members, timestamp);
         }
+        else if (frame[0] == 0x01 && frame[1] == 0x97 && frame.Length >= 12 && frame[2] == 0 && frame[3] == 0
+            && BinaryPrimitives.ReadUInt32LittleEndian(frame[4..]) != 0 && BinaryPrimitives.ReadUInt32LittleEndian(frame[8..]) == 0
+            && (_roomId != 0 || _entities.PartySize > 0))
+        {
+            LeaveRoom(); // the room list says the player is in no room (see LeftRoomOpcode)
+        }
+    }
+
+    /// <summary>A room-ending frame (see <see cref="LeftRoomOpcode"/>): the group is gone, unless the frame is of another room than the player's.</summary>
+    private void DecodeRoomGone(int opcode, ReadOnlySpan<byte> frame)
+    {
+        if (opcode == RoomClosedOpcode)
+        {
+            if (frame.Length < 6 || _roomId == 0 || BinaryPrimitives.ReadUInt32LittleEndian(frame[2..]) != _roomId)
+            {
+                return;
+            }
+        }
+        else if (frame.Length > 4)
+        {
+            return; // not the short frames seen
+        }
+
+        LeaveRoom();
+    }
+
+    private void LeaveRoom()
+    {
+        _roomId = 0;
+        _entities.LeaveParty();
     }
 
     /// <summary>

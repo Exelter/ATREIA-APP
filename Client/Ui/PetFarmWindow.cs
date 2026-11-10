@@ -526,7 +526,8 @@ internal static class GameWindow
 
     /// <summary>Whether the window in front is the game or one of the meter's own windows (its settings, its dialogs): the DPS overlay
     /// shows only then, so it does not sit over a browser or the desktop.</summary>
-    public static bool ForegroundIsGameOrSelf()
+    /// <param name="ignoreMenu">True for the meter while it shows the group: it stays while a game window is open (the group finder is one).</param>
+    public static bool ForegroundIsGameOrSelf(bool ignoreMenu = false)
     {
         IntPtr hwnd = GetForegroundWindow();
         if (hwnd == IntPtr.Zero)
@@ -536,7 +537,7 @@ internal static class GameWindow
 
         if (hwnd == _lastChecked)
         {
-            return _lastWasGameOrSelf && !(MenuWatcher.Hidden && IsGame(hwnd));
+            return _lastWasGameOrSelf && !(MenuWatcher.Hidden && !ignoreMenu && IsGame(hwnd));
         }
 
         bool result = IsGame(hwnd);
@@ -548,7 +549,7 @@ internal static class GameWindow
 
         _lastChecked = hwnd;
         _lastWasGameOrSelf = result;
-        return result && !(MenuWatcher.Hidden && IsGame(hwnd)); // a game menu is open: out of the way
+        return result && !(MenuWatcher.Hidden && !ignoreMenu && IsGame(hwnd)); // a game menu is open: out of the way
     }
 
     /// <param name="ignoreMenu">True for the pet and collection views: they stay (and the shop reading works) while a game menu is open.</param>

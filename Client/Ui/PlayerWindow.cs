@@ -94,8 +94,11 @@ public sealed class PlayerView : Border
         Width = 560;
         CornerRadius = new CornerRadius(12);
         BorderThickness = new Thickness(1);
-        BorderBrush = new SolidColorBrush(Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF));
-        Background = new SolidColorBrush(Color.FromArgb(0xF2, 0x14, 0x12, 0x18)); // never see-through: every part takes the mouse over the game
+        // see-through like the meter (InGameGlass; 10 November 2026, the owner: the windows over the game "should be transparent")
+        MeterSettings look = MeterSettings.Load();
+        BorderBrush = InGameGlass.Edge(look);
+        Background = InGameGlass.Background(look);
+        InGameGlass.Apply(this);
         _foot.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
         _scroll = new ScrollViewer
         {

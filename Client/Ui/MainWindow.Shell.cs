@@ -606,7 +606,8 @@ public partial class MainWindow
         // Alt + drag in the game (10 November 2026): any overlay under the cursor glows and follows the mouse while Alt is held
         var altDrag = new CheckBox { IsChecked = MeterSettings.Load().AltDragOverlays, Content = ShellText("Alt + drag moves any overlay in the game", "Brush.Text", 12.5),
             VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 18, 6),
-            ToolTip = "Hold Alt (the game shows the cursor) and the overlay under it glows: drag it where you want it. Let go of Alt and clicks go to the game again." };
+            ToolTip = "Hold Alt (the game shows the cursor) and the overlay under it glows: drag it where you want it. Off by default: Alt is the game's own cursor key, so " +
+                "with this on, an overlay comes along when you click in the game with Alt held. The overlay editor (its hotkey, or the Atreia button) places them too." };
         altDrag.Click += (_, _) =>
         {
             var s = MeterSettings.Load();
@@ -803,24 +804,6 @@ public partial class MainWindow
 
         s.Save();
         ApplySettingsEverywhere(s);
-    }
-
-    /// <summary>
-    /// The hotkey for moving the overlays in the game (3 November 2026: "allow to move overlays in game" without opening the app): every overlay and the meter
-    /// unlocked - an outline, dragged and scaled where they are, over the game - and the next press locks them all again (clicks then go through to the game).
-    /// A note at the top of the screen says which it was.
-    /// </summary>
-    private void ToggleOverlaysMovable()
-    {
-        LocalizationManager loc = LocalizationManager.Instance;
-        bool movable = !(OverlaysMovable(MeterSettings.Load()) && !_meterOverlayLocked);
-        SetOverlaysMovable(movable);
-        var s = MeterSettings.Load();
-        s.MeterOverlayLocked = _meterOverlayLocked = !movable;
-        s.Save();
-        ApplyOverlayLock();
-        string keys = HotkeyBinding.Parse(s.HotkeyMoveOverlays).ToString();
-        CubeToast.Note(string.Format(System.Globalization.CultureInfo.CurrentCulture, loc[movable ? "Overlays.MoveOn" : "Overlays.MoveOff"], keys));
     }
 
     /// <summary>The pets only the Black Cloud Merchant sells that the player left ticked (all of them unless some were unticked on the Pets page), of the genera

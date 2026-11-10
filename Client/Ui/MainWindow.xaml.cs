@@ -440,6 +440,14 @@ public partial class MainWindow : Window
                 startupSettings.Save();
             }
 
+            if (!startupSettings.AltDragDefaultedOff)
+            {
+                // Alt + drag off for everyone once (10 November 2026): Alt is the game's cursor key, so locked overlays went along with clicks in the game
+                startupSettings.AltDragOverlays = false;
+                startupSettings.AltDragDefaultedOff = true;
+                startupSettings.Save();
+            }
+
             if (!startupSettings.MeterLookDefaulted)
             {
                 // the meter's panel see-through and its buttons always there (5 November 2026, the owner: the default "around the list"); the rest of
@@ -926,7 +934,7 @@ public partial class MainWindow : Window
                 ToggleAllOverlays();
                 break;
             case HotkeyAction.MoveOverlays:
-                ToggleOverlaysMovable();
+                ToggleOverlayEditor(); // the overlay editor (10 November 2026): every overlay unlocked while it is open, locked again with Done
                 break;
             case HotkeyAction.ToggleNetworkOverlay:
                 ToggleNetworkOverlay();
@@ -1648,8 +1656,20 @@ public partial class MainWindow : Window
             || (_meterStayInGroup && (_scopeContext == ScopeContext.Instance || _groupSeen));
         bool inFight = MeterOverlayRule.Shown(_meterOverlayAutoHide, _meterPopUpForBoss, _meterOverlayHideAfter, now - _lastOwnBossFight, now - _lastBossFight,
             now - _lastOwnCombat, _meterOverlay.Wanted, kept);
-        _meterOverlay.ShowOverlay(MeterOverlayActive && _gameGateOpen && inFight);
+        // while it shows the group it stays when a game window opens (10 November 2026, the owner: "the meter shows and disappears quickly every join, we said
+        // keep it showing"): rooms are joined in the game's group finder, a game window, which stepped the meter aside a moment after the group came up
+        // ("Show my group", on by default; with it off, while the player has the search open)
+        bool groupUp = _groupSeen && (_meterAutoGroup || OverlayFind.Visibility == Visibility.Visible);
+        // nor in a fight and the minutes after it (10 November 2026, a tester: "on the commend player page the meter disappears, and when you die it
+        // disappears"): the death screen and the page to commend players after a dungeon cover the game's bar like a game window, and they come exactly when
+        // the fight is looked at
+        bool afterFight = now - _lastOwnCombat < MeterStaysAfterFight || now - _lastOwnBossFight < MeterStaysAfterFight;
+        bool gate = _gameGateOpen || ((groupUp || afterFight) && GameWindow.ForegroundIsGameOrSelf(ignoreMenu: true));
+        _meterOverlay.ShowOverlay(MeterOverlayActive && gate && inFight);
     }
+
+    /// <summary>How long after the own last fight the meter stays over the game's windows (the death screen, the page to commend players).</summary>
+    private static readonly TimeSpan MeterStaysAfterFight = TimeSpan.FromMinutes(3);
 
     /// <summary>A training dummy (Training Scarecrow, Punching Bag ..., by its name in any language), known per target id.</summary>
     private bool IsDummyTarget(Aion2.Aion2EntityDirectory directory, int targetId)
@@ -8224,6 +8244,7 @@ public partial class MainWindow : Window
         UpdatePetMapButton(_gateSettings);
         AudioOutput.Muted = _gateSettings.MuteSounds;
         UpdateMeterOverlay();
+        GateOverlayEditor();
 
         if ((DateTime.UtcNow - _gateSettingsAt).TotalSeconds >= 1)
         {
@@ -8377,14 +8398,31 @@ public partial class MainWindow : Window
         _settingsWindow?.SyncOverlaySwitches(settings);
     }
 
-    /// <summary>The assist controller reads the settings every second, so the switch is all it takes.</summary>
+    /// <summary>
+    /// The Skill Assist hotkey hides what of it is on screen (the cooldowns, the buffs) and its next press brings back exactly that (10 November 2026, a tester:
+    /// "skill assist is Ctrl+Alt+S, and when I pressed it twice it started showing buffs even though I had turned them off"): it switched both on. With
+    /// nothing hidden by it, a press brings up the cooldowns, the buffs as their own switch says. The assist controller reads the settings every second.
+    /// </summary>
     private void ToggleAssistOverlay()
     {
         var settings = MeterSettings.Load();
-        // the hotkey switches both assist overlays (cooldowns and effects): on when either was off
-        bool on = !(settings.ShowAssistOverlay || settings.EffectsOverlayOn);
-        settings.ShowAssistOverlay = on;
-        settings.ShowEffectsOverlay = on;
+        if (settings.ShowAssistOverlay || settings.EffectsOverlayOn)
+        {
+            settings.AssistHotkeyBack = new[] { settings.ShowAssistOverlay ? 1 : 0, settings.ShowEffectsOverlay switch { false => 0, true => 1, null => 2 } };
+            settings.ShowAssistOverlay = false;
+            settings.ShowEffectsOverlay = false;
+        }
+        else if (settings.AssistHotkeyBack is [int cooldowns, int buffs])
+        {
+            settings.ShowAssistOverlay = cooldowns == 1;
+            settings.ShowEffectsOverlay = buffs switch { 0 => false, 1 => true, _ => null };
+            settings.AssistHotkeyBack = null;
+        }
+        else
+        {
+            settings.ShowAssistOverlay = true;
+        }
+
         settings.Save();
         _settingsWindow?.SyncOverlaySwitches(settings);
     }
@@ -8416,32 +8454,52 @@ public partial class MainWindow : Window
         _settingsWindow?.SyncOverlaySwitches(settings);
     }
 
-    /// <summary>Which overlays the "all overlays" hotkey switched off, so the next press brings back exactly those.</summary>
-    private (bool Hotkeys, bool Timetable, bool PetMap, bool PetFarm, bool WorldBoss, bool Network, bool Combat, bool Dummy, bool Assist, bool Loot, bool Gather, bool Season)? _overlaysSwitchedOff;
+    /// <summary>The overlays the "all overlays" hotkey switches, by id: whether one is on, and switching it.</summary>
+    private static readonly (string Id, Func<MeterSettings, bool> On, Action<MeterSettings, bool> Set)[] AllOverlaySwitches =
+    {
+        ("hotkeys", s => s.ShowHotkeyOverlay, (s, v) => s.ShowHotkeyOverlay = v),
+        ("timetable", s => s.ShowTimetable, (s, v) => s.ShowTimetable = v),
+        ("petmap", s => s.ShowPetMap, (s, v) => s.ShowPetMap = v),
+        ("petfarm", s => s.ShowPetFarm, (s, v) => s.ShowPetFarm = v),
+        ("boss", s => s.ShowBossOverlay, (s, v) => s.ShowBossOverlay = v),
+        ("network", s => s.ShowNetworkOverlay, (s, v) => s.ShowNetworkOverlay = v),
+        ("combat", s => s.ShowCombatOverlay, (s, v) => s.ShowCombatOverlay = v),
+        ("dummy", s => s.ShowDummyOverlay, (s, v) => s.ShowDummyOverlay = v),
+        ("cooldowns", s => s.ShowAssistOverlay, (s, v) => s.ShowAssistOverlay = v),
+        ("effects", s => s.EffectsOverlayOn, (s, v) => s.ShowEffectsOverlay = v),
+        ("loot", s => s.ShowLootOverlay, (s, v) => s.ShowLootOverlay = v),
+        ("gather", s => s.ShowGatherOverlay, (s, v) => s.ShowGatherOverlay = v),
+        ("season", s => s.ShowSeasonOverlay, (s, v) => s.ShowSeasonOverlay = v),
+        ("craft", s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v),
+        ("fps", s => s.ShowFpsOverlay, (s, v) => s.ShowFpsOverlay = v),
+    };
 
-    /// <summary>The effects overlay's own switch as it was before the "all overlays" hotkey switched it off (null: it follows the assist overlay).</summary>
-    private bool? _effectsSwitchedOff;
-
-    /// <summary>One press switches every overlay that is on off (hotkey list, timetable, interactive map, pet info); the next brings the same ones back.
-    /// The DPS overlay is not among them - it is the Hide UI mode with its own hotkey.</summary>
+    /// <summary>
+    /// One press switches every overlay that is on off; the next brings back exactly those (kept in the settings, so also after a restart: it used to bring
+    /// back a fixed set then, overlays the player never had on). With none switched off by it, a press brings back the usual ones. The DPS overlay is not
+    /// among them - it is the Hide UI mode with its own hotkey.
+    /// </summary>
     private void ToggleAllOverlays()
     {
         var settings = MeterSettings.Load();
-        bool anyOn = settings.ShowHotkeyOverlay || settings.ShowTimetable || settings.ShowPetMap || settings.ShowPetFarm || settings.ShowBossOverlay || settings.ShowNetworkOverlay || settings.ShowCombatOverlay || settings.ShowDummyOverlay || settings.ShowAssistOverlay || settings.ShowLootOverlay || settings.EffectsOverlayOn || settings.ShowGatherOverlay || settings.ShowSeasonOverlay;
-        if (anyOn)
+        var on = AllOverlaySwitches.Where(o => o.On(settings)).ToList();
+        if (on.Count > 0)
         {
-            _effectsSwitchedOff = settings.ShowEffectsOverlay;
-            settings.ShowEffectsOverlay = false;
-            _overlaysSwitchedOff = (settings.ShowHotkeyOverlay, settings.ShowTimetable, settings.ShowPetMap, settings.ShowPetFarm, settings.ShowBossOverlay, settings.ShowNetworkOverlay, settings.ShowCombatOverlay, settings.ShowDummyOverlay, settings.ShowAssistOverlay, settings.ShowLootOverlay, settings.ShowGatherOverlay, settings.ShowSeasonOverlay);
-            settings.ShowHotkeyOverlay = settings.ShowTimetable = settings.ShowPetMap = settings.ShowPetFarm = settings.ShowBossOverlay = settings.ShowNetworkOverlay = settings.ShowCombatOverlay = settings.ShowDummyOverlay = settings.ShowAssistOverlay = settings.ShowLootOverlay = settings.ShowGatherOverlay = settings.ShowSeasonOverlay = false;
+            settings.AllOverlaysBack = on.Select(o => o.Id).ToList();
+            foreach (var o in on)
+            {
+                o.Set(settings, false);
+            }
         }
         else
         {
-            var back = _overlaysSwitchedOff ?? (true, true, true, false, true, true, true, true, false, false, false, false);
-            (settings.ShowHotkeyOverlay, settings.ShowTimetable, settings.ShowPetMap, settings.ShowPetFarm, settings.ShowBossOverlay, settings.ShowNetworkOverlay, settings.ShowCombatOverlay, settings.ShowDummyOverlay, settings.ShowAssistOverlay, settings.ShowLootOverlay, settings.ShowGatherOverlay, settings.ShowSeasonOverlay) = back;
-            settings.ShowEffectsOverlay = _effectsSwitchedOff;
-            _overlaysSwitchedOff = null;
-            _effectsSwitchedOff = null;
+            var back = settings.AllOverlaysBack ?? new List<string> { "hotkeys", "timetable", "petmap", "boss", "network", "combat", "dummy" };
+            foreach (var o in AllOverlaySwitches.Where(o => back.Contains(o.Id)))
+            {
+                o.Set(settings, true);
+            }
+
+            settings.AllOverlaysBack = null;
         }
 
         settings.Save();
@@ -8450,6 +8508,9 @@ public partial class MainWindow : Window
         ApplyPetFarm(settings);
         _settingsWindow?.SyncOverlaySwitches(settings);
     }
+
+    /// <summary>Whether the "all overlays" hotkey has overlays switched off to bring back (the overlay menu's button says "Show all" then).</summary>
+    private static bool OverlaysSwitchedOff(MeterSettings s) => s.AllOverlaysBack is { Count: > 0 } && !AllOverlaySwitches.Any(o => o.On(s));
 
     /// <summary>Settings changed while Hide UI is up: switches to the look now chosen.</summary>
     private void ApplyOverlayLook()
@@ -9178,7 +9239,7 @@ public partial class MainWindow : Window
         {
             _overlayPingAt = DateTime.UtcNow;
             double? ping = capturing && !Headless ? Aion2.Capture.NetworkStats.Snapshot().PingMs : null;
-            OverlayPingText.Text = ping is double ms ? $"{ms:0} ms" : "";
+            OverlayPingText.Text = ping is double ms and >= 1 ? $"{ms:0} ms" : ""; // none yet reads 0: nothing then
         }
         if (!_dummyHeader)
         {

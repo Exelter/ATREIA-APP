@@ -42,9 +42,11 @@ public sealed class OverlayMenuWindow : MovableOverlay
         // by a short timer that asks Windows for the mouse: the button never takes the focus, so it can't count on hearing the button let go.
         _pill.PreviewMouseLeftButtonDown += (_, e) =>
         {
-            if (!IsLocked || !NativeCursor.TryGet(out int x, out int y))
+            // also unlocked (the overlay editor open): a click is the menu, a drag moves it (10 November 2026, the owner: the button "should be to open the
+            // settings like before" - unlocked, every click dragged it)
+            if (!NativeCursor.TryGet(out int x, out int y))
             {
-                return; // unlocked it is being placed with the others: the frame drags it
+                return;
             }
 
             e.Handled = true;
@@ -136,14 +138,21 @@ public sealed class OverlayMenuWindow : MovableOverlay
         }
     }
 
-    /// <summary>The keys of "Move overlays" (the overlay editor) on the button; nothing when there are none.</summary>
+    /// <summary>The keys of the overlay editor on the button; nothing when there are none.</summary>
     private void ShowKeys()
     {
         HotkeyBinding binding = HotkeyBinding.Parse(MeterSettings.Load().HotkeyMoveOverlays);
         _keys.Text = binding.IsEmpty ? "" : binding.ToString();
         _keys.Visibility = binding.IsEmpty ? Visibility.Collapsed : Visibility.Visible;
-        _pill.ToolTip = "Atreia overlays: click for the menu, drag to move this button" + (binding.IsEmpty ? "." : $". {binding} moves and sizes every overlay (the overlay editor); "
-            + "hold Alt and drag to move any one of them.");
+        _pill.ToolTip = "Atreia: click for the overlay menu (every overlay on or off, the hotkeys, the app), drag to move this button"
+            + (binding.IsEmpty ? "." : $". {binding} opens the overlay editor.");
+    }
+
+    /// <summary>A hotkey changed (the overlay editor): the keys on the button and in an open menu again.</summary>
+    public void ShowKeysAgain()
+    {
+        ShowKeys();
+        RefreshMenu();
     }
 
     /// <summary>
