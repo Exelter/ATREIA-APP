@@ -94,6 +94,22 @@ public static class ToolRender
                 break;
             }
 
+            case "radar":
+            case "deathrecap":
+            {
+                // the enemy radar with a much stronger enemy just come, and the death recap
+                FrameworkElement card = what == "radar" ? EnemyRadarWindow.View(RadarView.SampleView(DateTime.Now) with { Sample = false })
+                    : DeathRecapWindow.View(DeathRecapWindow.Sample(DateTime.Now));
+                shown = new Border
+                {
+                    Padding = new Thickness(24), Background = new LinearGradientBrush(Color.FromRgb(0x3a, 0x4a, 0x3a), Color.FromRgb(0x24, 0x30, 0x40), 45),
+                    Child = new Border { Width = what == "radar" ? 300 : 340, Child = card, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top },
+                };
+                width = 0;
+                height = 0;
+                break;
+            }
+
             case "fps":
             case "fps-access":
             {

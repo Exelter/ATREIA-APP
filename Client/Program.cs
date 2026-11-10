@@ -1726,6 +1726,11 @@ internal static class Program
                     window.OverlayBody.Children.Insert(at + 1, tip);
                 }
             }
+            else if (kind == "wipe")
+            {
+                // the wipe review over the lines: try 4 left the boss at 31 % (the best 18 %), four deaths, three of them to Searing Breath
+                window.ShowWipeReview(Ui.WipeReview.Sample(DateTime.Now));
+            }
             else if (kind == "grind")
             {
                 // the meter's Grind view (its switch after Stagger): 34 minutes farmed in the Abyss, Kinah and Abyss Points an hour in big, kills and loot under them

@@ -2074,6 +2074,7 @@ public partial class MainWindow : Window
             {
                 SessionAnalysis analysis = SessionAnalyzer.Analyze(stay);
                 var jobs = new List<(FightLogKind Kind, ReportInput Input, string? Detail, int Fights, double? HpLeft)>();
+                var wipes = new List<(BossAttempt Attempt, List<DamageEvent> Window)>();
                 var attempts = analysis.Attempts.ToList();
                 foreach (BossAttempt attempt in attempts)
                 {
@@ -2098,6 +2099,11 @@ public partial class MainWindow : Window
                     var window = events.Where(e => e.Timestamp >= from && e.Timestamp <= to).ToList();
                     var inWindow = window.SelectMany(e => new[] { e.SourceObjectId, e.TargetObjectId }).ToHashSet();
                     FightExtras extras = Dispatcher.Invoke(() => directory.Combat.Slice(from, to, nameOf, Keep));
+                    if (!attempt.Killed)
+                    {
+                        wipes.Add((attempt, window));
+                    }
+
                     jobs.Add((FightLogKind.Boss, new ReportInput(attempt.Name, attempt.Start, attempt.End, players.Where(p => inWindow.Contains(p.Id)).ToList(), window,
                         shields.Where(e => e.Timestamp >= from && e.Timestamp <= to).ToList(), avoids.Where(a => a.Timestamp >= from && a.Timestamp <= to).ToList(),
                         extras, attempt.TargetId, NpcOf(attempt.TargetId), attempt.Killed, nameOf, new HashSet<int> { attempt.TargetId }), run ? zone : null, 0,
@@ -2126,6 +2132,20 @@ public partial class MainWindow : Window
                 foreach (var job in jobs)
                 {
                     FightLog.Save(job.Kind, job.Input, job.Detail, zoneId, job.Fights, serverId, job.HpLeft);
+                }
+
+                // a try without the kill and with deaths in it: the wipe review on the meter (the latest one)
+                foreach ((BossAttempt attempt, List<DamageEvent> window) in wipes)
+                {
+                    List<DeathRecord> deaths = directory.Combat.DeathsIn(attempt.Start, attempt.End.AddSeconds(2), playerIds.Contains);
+                    if (deaths.Count == 0 || partial && DateTime.Now - attempt.End > TimeSpan.FromMinutes(5))
+                    {
+                        continue;
+                    }
+
+                    WipeReview review = BuildWipeReview(directory, attempt, NpcOf(attempt.TargetId), deaths, window, id => nameOf(id) ?? "#" + id,
+                        id => ClassOfPlayer(directory, id) ?? classes.GetValueOrDefault(id), playerIds, players.Count);
+                    Dispatcher.BeginInvoke(new Action(() => ShowWipeReview(review)));
                 }
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or ArgumentException)
@@ -8294,6 +8314,7 @@ public partial class MainWindow : Window
         UpdateOverlayBossCallout();
         UpdateOverlayStagger();
         UpdateOverlayGrind();
+        UpdateOverlayWipe();
         UpdateOverlayCubeCallout();
         UpdateOverlayBuffAlert();
         UpdateOverlayIdentity();
