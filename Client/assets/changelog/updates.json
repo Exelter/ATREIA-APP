@@ -31,6 +31,12 @@
         },
         {
           "kind": "improved",
+          "area": "Characters",
+          "title": "The Characters page as it was",
+          "text": "Your characters are a column on the left again, and All characters is the table it was, with the season missions and the inventory under it. Each character's own page keeps what 2.0 gave it: all your Odyle Energy together at the top, cards that fold and stay folded, and warnings that say what you'd lose and when."
+        },
+        {
+          "kind": "improved",
           "area": "Bosses",
           "title": "The wipe review says what it shows",
           "text": "It now reads Wipe review, names the boss and the health it was left at, labels its columns (who died, in order, when, and what killed them), and tells the whole story when you point at a name.",
