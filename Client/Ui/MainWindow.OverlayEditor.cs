@@ -75,6 +75,7 @@ public partial class MainWindow
             }
 
             Rect area = EditorArea();
+            _editorArea = area;
             _overlayGrid = OverlayEditorWindow.Grid(area);
             _overlayGrid.Show();
             var editor = new OverlayEditorWindow(s);
@@ -222,6 +223,27 @@ public partial class MainWindow
 
         // what counts for all of them
         root.Children.Add(EditorHeading("All overlays", 14));
+        IReadOnlyList<EditorScreen> screens = editor is null ? SampleScreens : EditorScreens();
+        if (screens.Count > 1)
+        {
+            // which screen (10 November 2026, the owner: "allow people to select screen 1 or screen 2, so if they want the overlays on screen 2, where the game
+            // isn't, they can")
+            var line = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
+            var screenLabel = EditorLabel("Screen");
+            screenLabel.Width = 70;
+            DockPanel.SetDock(screenLabel, Dock.Left);
+            line.Children.Add(screenLabel);
+            var chips = new WrapPanel();
+            foreach (EditorScreen screen in screens)
+            {
+                bool here = editor is null ? screen.Number == 1 : SameArea(screen.Area, _editorArea);
+                chips.Children.Add(ScreenChip(screen, here, () => MoveOverlaysToScreen(screen)));
+            }
+
+            line.Children.Add(chips);
+            root.Children.Add(line);
+        }
+
         var size = new DockPanel { Margin = new Thickness(0, 2, 0, 6) };
         var sizeButtons = new StackPanel { Orientation = Orientation.Horizontal };
         sizeButtons.Children.Add(EditorButton("", "Smaller", () => ScaleAllOverlays(0.9), false));
@@ -372,6 +394,122 @@ public partial class MainWindow
             FillOverlayEditor();
         };
         return tile;
+    }
+
+    /// <summary>The screen the editor and its grid are on (where its screen buttons put the overlays).</summary>
+    private Rect _editorArea;
+
+    /// <summary>The screen the game was last seen on (by its number less one), to mark it among the editor's screens.</summary>
+    private int _editorGameScreen = -1;
+
+    /// <summary>A monitor as the editor offers it: its number (Windows' order), its work area, its size in pixels, whether it is the main one and the game's.</summary>
+    private sealed record EditorScreen(int Number, Rect Area, string Size, bool Main, bool Game);
+
+    /// <summary>Two screens for the pictures (the build's machine has one).</summary>
+    private static readonly EditorScreen[] SampleScreens =
+    {
+        new(1, new Rect(0, 0, 2560, 1400), "2560 × 1440", true, true),
+        new(2, new Rect(2560, 0, 1920, 1040), "1920 × 1080", false, false),
+    };
+
+    private IReadOnlyList<EditorScreen> EditorScreens()
+    {
+        System.Windows.Forms.Screen[] all = System.Windows.Forms.Screen.AllScreens;
+        IReadOnlyList<Rect> areas = WindowPlacement.WorkAreas(); // in the same order, in the app's units
+        if (all.Length != areas.Count)
+        {
+            return Array.Empty<EditorScreen>();
+        }
+
+        if (GameWindow.ForegroundClientArea(ignoreMenu: true) is { } game)
+        {
+            var middle = new System.Drawing.Point(game.X + game.Width / 2, game.Y + game.Height / 2);
+            int at = Array.FindIndex(all, screen => screen.Bounds.Contains(middle));
+            if (at >= 0)
+            {
+                _editorGameScreen = at;
+            }
+        }
+
+        return all.Select((screen, i) => new EditorScreen(i + 1, areas[i], $"{screen.Bounds.Width} × {screen.Bounds.Height}", screen.Primary, i == _editorGameScreen)).ToList();
+    }
+
+    private static bool SameArea(Rect a, Rect b) =>
+        Math.Abs(a.Left - b.Left) < 2 && Math.Abs(a.Top - b.Top) < 2 && Math.Abs(a.Width - b.Width) < 2 && Math.Abs(a.Height - b.Height) < 2;
+
+    /// <summary>A screen of the editor: its number with the game's or the main one's mark, its size under it; lit where the editor is.</summary>
+    private static FrameworkElement ScreenChip(EditorScreen screen, bool here, Action click)
+    {
+        var words = new StackPanel();
+        words.Children.Add(new TextBlock
+        {
+            Text = $"Screen {screen.Number}" + (screen.Game ? " · game" : screen.Main ? " · main" : ""), FontSize = 11.5, FontWeight = here ? FontWeights.SemiBold : FontWeights.Normal,
+            Foreground = here ? MenuBrush(0xFF, 0xF4, 0xF6, 0xF8) : MenuBrush(0xFF, 0xB8, 0xC0, 0xC8),
+        });
+        words.Children.Add(new TextBlock { Text = screen.Size, FontSize = 9.5, Foreground = MenuBrush(0xFF, 0x8A, 0x93, 0x9D), Margin = new Thickness(0, 1, 0, 0) });
+        Brush rest = here ? MenuBrush(0x26, MenuGold.R, MenuGold.G, MenuGold.B) : MenuBrush(0x0C, 0xFF, 0xFF, 0xFF);
+        var chip = new Border
+        {
+            Child = words, Padding = new Thickness(9, 4, 10, 5), Margin = new Thickness(0, 0, 6, 0), CornerRadius = new CornerRadius(7), BorderThickness = new Thickness(1),
+            Background = rest, BorderBrush = here ? MenuBrush(0xA0, MenuGold.R, MenuGold.G, MenuGold.B) : MenuBrush(0x1C, 0xFF, 0xFF, 0xFF), Cursor = here ? Cursors.Arrow : Cursors.Hand,
+            ToolTip = here ? "The overlays are being placed on this screen" : $"Every overlay to screen {screen.Number}, in the same spots relative to its corners (the game can stay on "
+                + "another screen; the overlays still show only while the game is in front). The editor goes along.",
+        };
+        if (!here)
+        {
+            chip.MouseEnter += (_, _) => chip.Background = MenuBrush(0x1A, 0xFF, 0xFF, 0xFF);
+            chip.MouseLeave += (_, _) => chip.Background = rest;
+            chip.MouseLeftButtonDown += (_, e) => e.Handled = true;
+            chip.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                click();
+            };
+        }
+
+        return chip;
+    }
+
+    /// <summary>
+    /// Every overlay to <paramref name="screen"/>: each open one moved to the same spot relative to the corners of its new screen (one at the right edge stays at
+    /// the right edge), the saved places of the others too, so they come up there when switched on; the editor and its grid go along. The Atreia button
+    /// stays over the game.
+    /// </summary>
+    private void MoveOverlaysToScreen(EditorScreen screen)
+    {
+        Rect target = screen.Area;
+        Point? Into(Rect bounds)
+        {
+            Rect from = WindowPlacement.WorkAreaOf(bounds);
+            return SameArea(from, target) ? null : MapInto(bounds, from, target);
+        }
+
+        foreach (Window window in Application.Current.Windows.Cast<Window>().ToList())
+        {
+            if (window is IOverlayPlace place && !place.PlaceIsView && window is not OverlayMenuWindow && Into(place.PlaceBounds) is { } to)
+            {
+                place.PlaceAt(to.X, to.Y, save: true);
+            }
+        }
+
+        OverlayPlaces.MoveSaved(Into);
+        _editorArea = target;
+        if (_overlayGrid is { } grid)
+        {
+            (grid.Left, grid.Top, grid.Width, grid.Height) = (target.Left, target.Top, target.Width, target.Height);
+        }
+
+        _overlayEditor?.PlaceOn(target);
+        FillOverlayEditor();
+        CubeToast.Note($"Overlays on screen {screen.Number}: they show there while the game is in front.", 4);
+    }
+
+    /// <summary>The same spot relative to the corners of another screen: the share of the free room to the left and above is kept.</summary>
+    private static Point MapInto(Rect bounds, Rect from, Rect to)
+    {
+        double fx = from.Width - bounds.Width > 1 ? Math.Clamp((bounds.Left - from.Left) / (from.Width - bounds.Width), 0, 1) : 0;
+        double fy = from.Height - bounds.Height > 1 ? Math.Clamp((bounds.Top - from.Top) / (from.Height - bounds.Height), 0, 1) : 0;
+        return new Point(to.Left + fx * Math.Max(0, to.Width - bounds.Width), to.Top + fy * Math.Max(0, to.Height - bounds.Height));
     }
 
     /// <summary>An overlay's name on its tile: short in English (a tile is half the editor wide, with its key beside the name), else the app's own.</summary>

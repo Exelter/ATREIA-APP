@@ -89,6 +89,14 @@ public sealed class OverlayEditorWindow : Window
         Top = Math.Clamp(place.Y, room.Top, Math.Max(room.Top, room.Bottom - Math.Min(h, room.Height)));
     }
 
+    /// <summary>To another screen (the editor's screen buttons): at the right of <paramref name="area"/> near its top, kept there.</summary>
+    public void PlaceOn(Rect area)
+    {
+        double w = _frame.ActualWidth > 0 ? _frame.ActualWidth : EditorWidth, h = _frame.ActualHeight > 0 ? _frame.ActualHeight : 560;
+        Left = area.Right - w - 24;
+        Top = Math.Clamp(area.Top + 72, area.Top, Math.Max(area.Top, area.Bottom - Math.Min(h, area.Height)));
+    }
+
     /// <summary>The head: dragged to move the editor.</summary>
     public void DragFrom(UIElement head)
     {
