@@ -117,8 +117,9 @@ public static class SeasonLook
 
         return new Border
         {
-            Background = new LinearGradientBrush(Color.FromArgb(0xF4, 0x18, 0x22, 0x2B), Color.FromArgb(0xF4, 0x10, 0x16, 0x1D), 90),
-            BorderBrush = Paint(0x99, color), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(12, 9, 12, 10), Child = stack,
+            // the meter's dark (10 November 2026), edged in the mission's colour
+            Background = new LinearGradientBrush(Color.FromArgb(0xF4, 0x1B, 0x1A, 0x21), Color.FromArgb(0xF4, 0x0F, 0x0E, 0x13), 90),
+            BorderBrush = Paint(0x99, color), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 9, 12, 10), Child = stack,
         };
     }
 
