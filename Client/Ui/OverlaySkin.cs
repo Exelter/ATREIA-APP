@@ -24,6 +24,25 @@ internal static class OverlaySkin
     /// <summary>The soft edge of the overlays' frames.</summary>
     public static Brush SoftEdge => Edge;
 
+    /// <summary>
+    /// A solid background of the theme's overlay colour for one overlay's frames (11 November 2026, the owner: "some tabs should not be transparent"): the
+    /// enemy card, the radar and the death recap took the meter's own see-through background, so the game showed through them. The overlay's own opacity
+    /// (its slider on the Overlays page, kept by its title) still holds; without one, nearly opaque.
+    /// </summary>
+    public static void SolidBackground(FrameworkElement window, string title, double opacity = 0.95)
+    {
+        Color themed = Application.Current?.TryFindResource("Color.OverlayBg") is Color c ? c : Color.FromRgb(0x14, 0x12, 0x18);
+        double alpha = MeterSettings.Load().OverlayOpacities.TryGetValue(title, out double v) ? Math.Clamp(v, 0.2, 1) : opacity;
+        var brush = new SolidColorBrush(Color.FromArgb((byte)Math.Round(alpha * 255), themed.R, themed.G, themed.B));
+        if (window.Resources["Brush.OverlayBg"] is SolidColorBrush now && now.Color == brush.Color)
+        {
+            return;
+        }
+
+        brush.Freeze();
+        window.Resources["Brush.OverlayBg"] = brush;
+    }
+
     /// <summary>An overlay's frame: the theme's overlay background, a soft edge, round corners.</summary>
     public static Border Panel(UIElement child, Thickness padding)
     {

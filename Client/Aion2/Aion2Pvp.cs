@@ -58,6 +58,20 @@ public static class Aion2Pvp
     private static bool _persist, _dirty;
     private static DateTime _savedAt = DateTime.MinValue;
     private static DeathRecap? _last;
+    private static int _kills, _assists, _deaths;
+
+    /// <summary>The own kills (the last blow), assists (own hits in the victim's last seconds, another's last blow) and deaths since the app started; the
+    /// radar shows them since the zone began.</summary>
+    public static (int Kills, int Assists, int Deaths) Tally
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return (_kills, _assists, _deaths);
+            }
+        }
+    }
 
     /// <summary>The own character died (raised on the thread that feeds, the UI's).</summary>
     public static event Action<DeathRecap>? Died;
@@ -103,11 +117,13 @@ public static class Aion2Pvp
     /// <summary>
     /// The hits and deaths of one poll. <paramref name="nameOf"/> names anyone (players, monsters); <paramref name="isPlayer"/> tells another player;
     /// <paramref name="local"/> is the own character (-1: not known yet); <paramref name="watched"/> the players whose deaths are worth a recap of their own
-    /// (the group's, for the wipe review).
+    /// (the group's, for the wipe review); <paramref name="hostile"/> hears of every player who traded hits with the own character (an enemy, whatever
+    /// the faction says).
     /// </summary>
     public static void Feed(IReadOnlyList<DamageEvent> damage, IReadOnlyList<(int Entity, DateTime At)> deaths, int local, Func<int, string> nameOf, Func<int, string?> classOf,
-        Func<int, bool> isPlayer, Func<int, int> serverOf, Func<int, int?> powerOf, Func<int, bool> watched)
+        Func<int, bool> isPlayer, Func<int, int> serverOf, Func<int, int?> powerOf, Func<int, bool> watched, Action<int>? hostile = null)
     {
+        var enemies = new HashSet<int>();
         var raised = new List<(DeathRecap Recap, bool Own)>();
         lock (Gate)
         {
@@ -126,6 +142,11 @@ public static class Aion2Pvp
 
                 // a hit between the own character and another player: a rival met
                 int other = e.SourceObjectId == local && e.TargetObjectId != local ? e.TargetObjectId : e.TargetObjectId == local && e.SourceObjectId != local ? e.SourceObjectId : -1;
+                if (other >= 0 && isPlayer(other))
+                {
+                    enemies.Add(other);
+                }
+
                 if (other >= 0 && isPlayer(other) && nameOf(other) is { Length: > 0 } name && !name.StartsWith("0x", StringComparison.Ordinal))
                 {
                     Rival r = RivalFor(name, serverOf(other));
@@ -158,6 +179,7 @@ public static class Aion2Pvp
                 if (own)
                 {
                     _last = recap;
+                    _deaths++;
                     // every player who hit the own character in it: the death counts for him; the one with the last blow killed
                     foreach (RecapSource s in recap.Sources.Where(s => s.Player))
                     {
@@ -175,7 +197,16 @@ public static class Aion2Pvp
                 }
                 else if (local >= 0 && recap.Sources.Any(s => s.Id == local) && nameOf(victim) is { Length: > 0 } name && !name.StartsWith("0x", StringComparison.Ordinal))
                 {
-                    // another player died with the own hits in his last seconds: a kill
+                    // another player died with the own hits in his last seconds: a kill (the last blow own) or an assist
+                    if (recap.Killer?.Id == local)
+                    {
+                        _kills++;
+                    }
+                    else
+                    {
+                        _assists++;
+                    }
+
                     Rival r = RivalFor(name, serverOf(victim));
                     r.Kills++;
                     _dirty = true;
@@ -188,6 +219,11 @@ public static class Aion2Pvp
             }
 
             Save(force: false);
+        }
+
+        foreach (int id in enemies)
+        {
+            hostile?.Invoke(id);
         }
 
         foreach ((DeathRecap recap, bool own) in raised)
@@ -242,6 +278,7 @@ public static class Aion2Pvp
             Recent.Clear();
             RivalStore.Clear();
             _last = null;
+            _kills = _assists = _deaths = 0;
         }
     }
 

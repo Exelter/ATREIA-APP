@@ -1655,6 +1655,7 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
             _ownTarget = null;
             _inView.Clear();
             _inViewHeard.Clear();
+            _hostile.Clear();
             _zoneEpoch++;
         }
     }
@@ -4066,6 +4067,37 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
     /// <summary>A player in view this long without a word of him (no "player left", no move) is taken to be gone: on the recording of 8 November 2026 about one
     /// in twenty went without the game's "player left". He is back as soon as he moves.</summary>
     public static readonly TimeSpan InViewQuiet = TimeSpan.FromMinutes(5);
+
+    /// <summary>An entity's latest place around the player (world units, 100 per metre: spawn and movement frames) and when it was told; null when unknown.</summary>
+    public (float X, float Y, DateTime At)? PositionOf(int id)
+    {
+        lock (_gate)
+        {
+            return _around.TryGetValue(id, out var at) ? at : null;
+        }
+    }
+
+    // the players who traded hits with the own character since the zone began (11 November 2026: in the Abyss most enemies came with no server, and
+    // a player whose "player appeared" frame was missed had no faction either, so the radar and the enemy card never took them for enemies)
+    private readonly HashSet<int> _hostile = new();
+
+    /// <summary>A player hit the own character, or was hit by it: whatever the faction says, he is an enemy (the radar, the enemy card).</summary>
+    public void NoteHostile(int id)
+    {
+        lock (_gate)
+        {
+            _hostile.Add(id);
+        }
+    }
+
+    /// <summary>Whether a player traded hits with the own character in this zone.</summary>
+    public bool IsHostile(int id)
+    {
+        lock (_gate)
+        {
+            return _hostile.Contains(id);
+        }
+    }
 
     /// <summary>The other players in view now (since a zone change), with the moment each came.</summary>
     public IReadOnlyList<(int Id, DateTime Since)> PlayersInView()
