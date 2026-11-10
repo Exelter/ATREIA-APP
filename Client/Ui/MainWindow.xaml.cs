@@ -1248,6 +1248,7 @@ public partial class MainWindow : Window
         _petFarm?.RaiseToFront();
         _petMapController?.RaiseToFront();
         _overlayMenu?.RaiseAll(); // the menu's button and the open menu above every other overlay
+        NativeOverlay.KeepAppWindowsAbove(); // the panels, players' cards, the editor and any open tip above them all
     }
 
     private void TickHistory()
