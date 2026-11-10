@@ -271,7 +271,9 @@ public static class SelfCheckMinimap
             return false;
         }
 
-        (double gx, double gy) = raster.ToPixel(62869, -182578);
+        // the tile of Dranactus lies 6 m west and 14 m north of the land (maps.json "tileShift", 10 November 2026): the same picture pixels are a place that much further on
+        var shift = raster.Map.ShiftAt(Aion2Maps.ToNativePlain(raster.Map, 62869, -182578).X, Aion2Maps.ToNativePlain(raster.Map, 62869, -182578).Y);
+        (double gx, double gy) = raster.ToPixel(62869 + shift.X, -182578 + shift.Y);
         var zooms = Enumerable.Range(0, 58).Select(i => 0.3 * Math.Pow(1.04, i) * raster.PixelsPerMetre);
         var watch = Stopwatch.StartNew();
         var found = MinimapMatch.Calibrate(mini, zooms, (tw, th) => Around(raster, gx, gy, tw, th), MinimapMatch.DetailMetres * raster.PixelsPerMetre);
@@ -283,7 +285,8 @@ public static class SelfCheckMinimap
         }
 
         (double wx, double wy) = raster.ToWorld(f.Fix.X, f.Fix.Y);
-        double metres = Math.Sqrt(((wx - 62021) * (wx - 62021)) + ((wy + 181822) * (wy + 181822))) / 100;
+        double ex = 62021 + shift.X, ey = -181822 + shift.Y;
+        double metres = Math.Sqrt(((wx - ex) * (wx - ex)) + ((wy - ey) * (wy - ey))) / 100;
         bool ok = Math.Abs(f.Zoom - 0.97) < 0.02 && metres <= 3;
         Console.WriteLine($"  -> the owner's minimap (Altgard, Dranactus): zoom {f.Zoom:0.000} (0.97), {metres:0.0} m from the place, fit {f.Fix.Score:0.00}, {f.Fix.Agree}/{f.Fix.Pieces} pieces, "
             + $"margin {f.Fix.Margin:0.00}; the zoom searched in {ms:0} ms: {ok}");

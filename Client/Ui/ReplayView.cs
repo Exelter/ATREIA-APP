@@ -6,9 +6,11 @@ using AionDPS.Combat;
 namespace AionDPS.Ui;
 
 /// <summary>
-/// The fight from above: the group as class-coloured dots, the bosses as large ones with the way they face, the areas of the skills a boss is winding up (amber while it winds up,
-/// red as it lands), a red ring on whoever it hit, the dead crossed out, and the last few seconds of each walk as a trail. Positions are the game's own readings (it sends them with
-/// movements and skills, not on a regular beat), drawn straight between two of them. Drag to move the map, the wheel zooms, a double click fits it again.
+/// The fight from above: the group as class-coloured dots, the bosses as large ones with the way they face, the areas of the skills a boss is winding up in their own shape (a circle,
+/// a ring, a cone, a line, a cross or the whole room; amber while it winds up, red as it lands), the reach of the objects a boss leaves on the floor while they stay (violet), a red ring
+/// on whoever was hit, the dead crossed out, and the last few seconds of each walk as a trail. Positions are the game's own readings (it sends them with movements and skills, not on a
+/// regular beat), drawn straight between two of them. North is up, as on the game's map (10 November 2026: the map was drawn upside down before). Drag to move the map, the wheel zooms,
+/// a double click fits it again.
 /// </summary>
 public sealed class ReplayView : FrameworkElement
 {
@@ -103,7 +105,8 @@ public sealed class ReplayView : FrameworkElement
         _fitted = true;
     }
 
-    private Point ToScreen(double x, double y) => new(ActualWidth / 2 + (x - _origin.X) * _scale, ActualHeight / 2 - (y - _origin.Y) * _scale);
+    // the game's y grows to the south, as on its map (Aion2/MapRaster.cs): down the screen
+    private Point ToScreen(double x, double y) => new(ActualWidth / 2 + (x - _origin.X) * _scale, ActualHeight / 2 + (y - _origin.Y) * _scale);
 
     protected override void OnRender(DrawingContext dc)
     {
@@ -141,35 +144,76 @@ public sealed class ReplayView : FrameworkElement
             }
         }
 
-        // the areas
-        foreach (ReplayArea area in _data.Areas)
+        // the areas: the reach of the objects on the floor first (under everything), then the windups
+        foreach (ReplayArea area in _data.Areas.Where(a => a.Zone))
+        {
+            if (_time < area.Start || _time > area.End)
+            {
+                continue;
+            }
+
+            // an object on the floor: where it is now (it may move), violet while it stays, fading in its last second
+            var actor = _data.Entities.FirstOrDefault(e => e.Id == area.Actor);
+            Point c = actor?.At(_data.Start, _time) is { } place ? ToScreen(place.X, place.Y) : ToScreen(area.X, area.Y);
+            double fade = Math.Clamp(area.End - _time, 0, 1);
+            double r = area.Radius * _scale;
+            dc.DrawEllipse(new SolidColorBrush(Color.FromArgb((byte)(0x38 * fade + 0x10), 0xA8, 0x6B, 0xFF)), new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xC0 * fade + 0x20), 0xB8, 0x86, 0xFF)), 1.5), c, r, r);
+        }
+
+        foreach (ReplayArea area in _data.Areas.Where(a => !a.Zone))
         {
             if (_time < area.Start || _time > area.End + LandSeconds)
             {
                 continue;
             }
 
-            Point c = ToScreen(area.X, area.Y);
-            double r = area.Radius * _scale;
             bool landing = _time > area.End;
             double progress = Math.Clamp((_time - area.Start) / Math.Max(0.05, area.End - area.Start), 0, 1);
             Color fill = landing ? Color.FromArgb((byte)(0x80 * (1 - (_time - area.End) / LandSeconds)), 0xFF, 0x4D, 0x4D) : Color.FromArgb((byte)(0x16 + 0x40 * progress), 0xFF, 0xBA, 0x42);
             var pen = new Pen(new SolidColorBrush(landing ? Color.FromArgb(0xC0, 0xFF, 0x4D, 0x4D) : Color.FromArgb(0xC0, 0xFF, 0xBA, 0x42)), 1.5);
-            if (area.RadiusCm is null)
+            if (!area.Sized)
             {
                 pen.DashStyle = DashStyles.Dash; // nobody has measured this one: its size is a guess
             }
 
-            dc.DrawEllipse(new SolidColorBrush(fill), pen, c, r, r);
-            if (!landing && r > 8)
+            if (area.Shape is { Room: true })
             {
-                dc.DrawEllipse(null, new Pen(new SolidColorBrush(Color.FromArgb(0x90, 0xFF, 0xBA, 0x42)), 1), c, r * progress, r * progress);
+                // the whole room: the edge of the map lights up
+                dc.DrawRectangle(new SolidColorBrush(Color.FromArgb((byte)(fill.A / 3), fill.R, fill.G, fill.B)), new Pen(pen.Brush, 6), new Rect(3, 3, Math.Max(0, width - 6), Math.Max(0, height - 6)));
+                continue;
+            }
+
+            dc.DrawGeometry(new SolidColorBrush(fill), pen, AreaGeometry(area, 1));
+            if (!landing && progress > 0.02)
+            {
+                dc.DrawGeometry(null, new Pen(new SolidColorBrush(Color.FromArgb(0x90, 0xFF, 0xBA, 0x42)), 1), AreaGeometry(area, progress)); // how far the windup is
             }
         }
 
         // trails, then the entities
-        foreach (ReplayEntity e in _data.Entities.OrderBy(e => e.Role == ReplayRole.Add ? 0 : e.Role == ReplayRole.Boss ? 2 : 1))
+        foreach (ReplayEntity e in _data.Entities.OrderBy(e => e.Role is ReplayRole.Add or ReplayRole.Mechanic ? 0 : e.Role == ReplayRole.Boss ? 2 : 1))
         {
+            if (e.Role == ReplayRole.Mechanic)
+            {
+                // an object on the floor: a small violet diamond while it does something (its reach or a windup is on)
+                if (_data.Areas.Any(a => a.Actor == e.Id && a.Start <= _time && _time <= a.End + LandSeconds) && e.At(_data.Start, _time) is { } spot)
+                {
+                    Point m = ToScreen(spot.X, spot.Y);
+                    var diamond = new StreamGeometry();
+                    using (StreamGeometryContext g = diamond.Open())
+                    {
+                        g.BeginFigure(new Point(m.X, m.Y - 5), true, true);
+                        g.LineTo(new Point(m.X + 5, m.Y), true, false);
+                        g.LineTo(new Point(m.X, m.Y + 5), true, false);
+                        g.LineTo(new Point(m.X - 5, m.Y), true, false);
+                    }
+
+                    dc.DrawGeometry(new SolidColorBrush(Color.FromRgb(0xB8, 0x86, 0xFF)), new Pen(Brushes.White, 1), diamond);
+                }
+
+                continue;
+            }
+
             if (e.Role == ReplayRole.Add)
             {
                 // another monster of the fight: a small marker where it is, no trail, areas or health
@@ -219,7 +263,7 @@ public sealed class ReplayView : FrameworkElement
                 if (facing is not null)
                 {
                     double ang = facing.Facing * Math.PI / 180;
-                    dc.DrawLine(new Pen(Brushes.White, 2), at, new Point(at.X + Math.Cos(ang) * rb * 1.8, at.Y - Math.Sin(ang) * rb * 1.8));
+                    dc.DrawLine(new Pen(Brushes.White, 2), at, new Point(at.X + Math.Cos(ang) * rb * 1.8, at.Y + Math.Sin(ang) * rb * 1.8));
                 }
 
                 var label = new FormattedText(e.Name, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, ThemeManager.UiTypeface(), 11, text, dpi);
@@ -273,7 +317,7 @@ public sealed class ReplayView : FrameworkElement
             }
         }
 
-        ReplayArea? current = _data.Areas.LastOrDefault(a => a.Start <= _time && a.End + LandSeconds >= _time);
+        ReplayArea? current = _data.Areas.LastOrDefault(a => !a.Zone && a.Start <= _time && a.End + LandSeconds >= _time);
         if (current is not null)
         {
             status.Add(current.SkillName);
@@ -301,13 +345,84 @@ public sealed class ReplayView : FrameworkElement
         }
     }
 
+    /// <summary>
+    /// The shape of an area on the screen, <paramref name="share"/> of its size (the windup's progress grows inside it): a circle around the spot the windup aims at, a ring,
+    /// a cone around the facing, a line from just behind the spot ahead along the facing, a cross of two such bars. Sizes measured on recorded fights, else the size the meter learnt, else a guess.
+    /// </summary>
+    private Geometry AreaGeometry(ReplayArea area, double share)
+    {
+        Point c = ToScreen(area.X, area.Y);
+        double th = area.Facing * Math.PI / 180;
+        var (dx, dy) = (Math.Cos(th), Math.Sin(th)); // on the screen as in the world: y grows down
+        var shape = area.Shape;
+        double r = area.Radius * _scale * share;
+        Point At(double along, double across) => new(c.X + (dx * along - dy * across) * _scale, c.Y + (dy * along + dx * across) * _scale);
+        Geometry Bar(double from, double to, double half, bool turned)
+        {
+            var g = new StreamGeometry();
+            using (StreamGeometryContext ctx = g.Open())
+            {
+                Point P(double a, double b) => turned ? At(-b, a) : At(a, b);
+                ctx.BeginFigure(P(from, -half), true, true);
+                ctx.LineTo(P(to, -half), true, false);
+                ctx.LineTo(P(to, half), true, false);
+                ctx.LineTo(P(from, half), true, false);
+            }
+
+            return g;
+        }
+
+        switch (shape?.Shape)
+        {
+            case "ring":
+            {
+                double inner = (shape!.InnerCm ?? area.Radius * 0.5) * _scale * share;
+                return new CombinedGeometry(GeometryCombineMode.Exclude, new EllipseGeometry(c, r, r), new EllipseGeometry(c, inner, inner));
+            }
+
+            case "cone":
+            {
+                double half = (shape!.HalfAngle ?? Aion2.Protocol.Aion2MechanicAreas.GuessHalfAngle) * Math.PI / 180;
+                if (half >= Math.PI - 0.01)
+                {
+                    return new EllipseGeometry(c, r, r);
+                }
+
+                var g = new StreamGeometry();
+                using (StreamGeometryContext ctx = g.Open())
+                {
+                    ctx.BeginFigure(c, true, true);
+                    ctx.LineTo(new Point(c.X + Math.Cos(th - half) * r, c.Y + Math.Sin(th - half) * r), true, false);
+                    ctx.ArcTo(new Point(c.X + Math.Cos(th + half) * r, c.Y + Math.Sin(th + half) * r), new Size(r, r), 0, half * 2 > Math.PI, SweepDirection.Clockwise, true, false);
+                }
+
+                return g;
+            }
+
+            case "line":
+            {
+                double length = (shape!.LengthCm ?? Math.Max(area.Radius * 2, 900)) * share, half = shape!.WidthCm ?? Aion2.Protocol.Aion2MechanicAreas.GuessWidthCm;
+                return Bar(-(shape!.BehindCm ?? 0) * share, length, half, false);
+            }
+
+            case "cross":
+            {
+                double length = (shape!.LengthCm ?? Math.Max(area.Radius * 2, 900)) * share, half = shape!.WidthCm ?? Aion2.Protocol.Aion2MechanicAreas.GuessWidthCm;
+                return new CombinedGeometry(GeometryCombineMode.Union, Bar(-length, length, half, false), Bar(-length, length, half, true));
+            }
+
+            default:
+                return new EllipseGeometry(c, r, r);
+        }
+    }
+
     protected override void OnMouseWheel(MouseWheelEventArgs e)
     {
         base.OnMouseWheel(e);
         Point mouse = e.GetPosition(this);
-        double worldX = _origin.X + (mouse.X - ActualWidth / 2) / _scale, worldY = _origin.Y - (mouse.Y - ActualHeight / 2) / _scale;
+        double worldX = _origin.X + (mouse.X - ActualWidth / 2) / _scale, worldY = _origin.Y + (mouse.Y - ActualHeight / 2) / _scale;
         _scale = Math.Clamp(_scale * (e.Delta > 0 ? 1.2 : 1 / 1.2), 0.002, 1.0);
-        _origin = new Point(worldX - (mouse.X - ActualWidth / 2) / _scale, worldY + (mouse.Y - ActualHeight / 2) / _scale);
+        _origin = new Point(worldX - (mouse.X - ActualWidth / 2) / _scale, worldY - (mouse.Y - ActualHeight / 2) / _scale);
         _fitted = true;
         InvalidateVisual();
         e.Handled = true;
@@ -334,7 +449,7 @@ public sealed class ReplayView : FrameworkElement
         if (_panning)
         {
             Point now = e.GetPosition(this);
-            _origin = new Point(_panOrigin.X - (now.X - _panStart.X) / _scale, _panOrigin.Y + (now.Y - _panStart.Y) / _scale);
+            _origin = new Point(_panOrigin.X - (now.X - _panStart.X) / _scale, _panOrigin.Y - (now.Y - _panStart.Y) / _scale);
             _fitted = true;
             InvalidateVisual();
         }
@@ -413,7 +528,7 @@ public sealed class ReplayTimeline : FrameworkElement
         }
 
         var amber = new Pen(new SolidColorBrush(Color.FromArgb(0xB0, 0xFF, 0xBA, 0x42)), 1);
-        foreach (ReplayArea a in _data.Areas)
+        foreach (ReplayArea a in _data.Areas.Where(a => !a.Zone))
         {
             dc.DrawLine(amber, new Point(X(a.Start), 4), new Point(X(a.Start), 16));
         }

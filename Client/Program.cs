@@ -3044,7 +3044,7 @@ internal static class Program
         Environment.Exit(0);
     }
 
-    /// <summary>Draws the replay window at one moment of a made-up boss fight (eight players around a boss that winds up areas); no window is ever shown.</summary>
+    /// <summary>Draws the replay window at one moment of a made-up Eternal Ludra fight (eight players around her, her areas in their measured shapes, the objects on the floor); no window is ever shown.</summary>
     private static void RunRenderReplayMode(string path, double seconds, int scale)
     {
         Environment.SetEnvironmentVariable("AIONDPS_DATA_DIR", Path.Combine(Path.GetTempPath(), "aiondps-render-replay"));
@@ -3084,23 +3084,41 @@ internal static class Program
         }
 
         tracks.Add(new Combat.PositionTrack(boss, start, new[] { 0, 60000 }, new[] { 0, 0 }, new[] { 0, 0 }));
+        // Eternal Ludra's own attacks in their measured shapes (assets/aion2/bosses/mechanic_areas.json): a line ahead, a cone, a circle on a player, and the objects
+        // her mechanics leave on the floor: pools that hurt around them while they stay (violet) and the Airborne zones they wind up
+        const int ludra = 2301014, pool = 2920748, airborne = 2920793;
         var windups = new List<Combat.WindupRecord>();
         var hits = new List<Combat.DamageEvent>();
-        int[] skills = { 1236440, 1217430, 1223500 };
-        for (int s = 3; s < 58; s += 4)
+        (double At, int Skill, double Facing, int Target)[] attacks = { (3, 1803140, 30, 1), (7, 1803120, 200, 3), (11, 1803140, 300, 2), (16, 1803250, 0, 4), (21, 1803130, 0, 0), (26, 1803140, 120, 6) };
+        foreach (var (atSec, skill, facing, target) in attacks)
         {
-            int skill = skills[(s / 4) % skills.Length];
-            double angle = s * 0.9;
-            windups.Add(new Combat.WindupRecord(start.AddSeconds(s), boss, skill, (s / 4) % 8 + 1, 1500, angle * 57.3 % 360, (int)(700 * Math.Cos(angle)), (int)(700 * Math.Sin(angle)), true));
-            hits.Add(new Combat.DamageEvent(start.AddSeconds(s + 2.1), boss, (s / 4) % 8 + 1, 3000 + s * 10, false, "Attack", SkillId: skill));
+            double th = facing * Math.PI / 180;
+            bool onTarget = skill == 1803250;
+            var aim = onTarget ? (X: tracks[target - 1].X[(int)(atSec * 1000 / 700)], Y: tracks[target - 1].Y[(int)(atSec * 1000 / 700)]) : (X: (int)(300 * Math.Cos(th)), Y: (int)(300 * Math.Sin(th)));
+            windups.Add(new Combat.WindupRecord(start.AddSeconds(atSec), boss, skill, target > 0 ? target : boss, 1500, facing, aim.X, aim.Y, true));
+            hits.Add(new Combat.DamageEvent(start.AddSeconds(atSec + 2), boss, Math.Max(1, target), 4200, false, "Attack", SkillId: skill));
         }
+
+        var objects = new Dictionary<int, int>();
+        (int Id, double At, int X, int Y)[] pools = { (201, 4, -700, 500), (202, 8, 650, -350), (203, 9.5, -200, -900) };
+        foreach (var (id, atSec, px, py) in pools)
+        {
+            objects[id] = pool;
+            tracks.Add(new Combat.PositionTrack(id, start.AddSeconds(atSec), new[] { 0 }, new[] { px }, new[] { py }));
+        }
+
+        objects[301] = airborne;
+        tracks.Add(new Combat.PositionTrack(301, start.AddSeconds(10.8), new[] { 0 }, new[] { 900 }, new[] { 700 }));
+        windups.Add(new Combat.WindupRecord(start.AddSeconds(11.4), 301, 1803215, 301, 700, 0, 900, 700, true));
+        hits.Add(new Combat.DamageEvent(start.AddSeconds(12.3), 301, 7, 3100, false, "Attack", SkillId: 1803215));
 
         var extras = new Combat.FightExtras(Array.Empty<Combat.SkillUse>(), Array.Empty<Combat.BuffEvent>(), new[] { new Combat.StaggerEvent(start.AddSeconds(30), boss, 0, 0, true) },
             new Dictionary<int, string>(), tracks, windups, new[] { new Combat.DeathRecord(start.AddSeconds(41), 5, start.AddSeconds(52)) },
             new[] { new Combat.HpSeries(boss, start, Enumerable.Range(0, 61).Select(s => s * 1000).ToArray(), Enumerable.Range(0, 61).Select(s => (short)(1000 - s * 15)).ToArray()) });
-        var data = Combat.ReplayBuilder.Build(Aion2.Protocol.Aion2Npcs.NameOf(2300708, Ui.LocalizationManager.Instance.Language) ?? "Boss", extras, hits, start, start.AddSeconds(60),
-            id => id == boss ? (Aion2.Protocol.Aion2Npcs.NameOf(2300708, Ui.LocalizationManager.Instance.Language) ?? "Boss", "", false) : (names[id - 1], classes[id - 1], true),
-            skill => skill == 1236440 ? 520 : null, _ => Aion2.Protocol.Aion2SkillNames.Display("Attack"));
+        string bossName = Aion2.Protocol.Aion2Npcs.NameOf(ludra, Ui.LocalizationManager.Instance.Language) ?? "Eternal Ludra";
+        var data = Combat.ReplayBuilder.Build(bossName, extras, hits, start, start.AddSeconds(60),
+            id => id == boss ? (bossName, "", false) : objects.ContainsKey(id) ? ("", "", false) : (names[id - 1], classes[id - 1], true),
+            _ => null, _ => Aion2.Protocol.Aion2SkillNames.Display("Attack"), null, null, id => id == boss ? ludra : objects.TryGetValue(id, out int npc) ? npc : null);
         var window = new Ui.FightReplayWindow(data);
         window.ShowAt(seconds);
         const double width = 960, height = 700;

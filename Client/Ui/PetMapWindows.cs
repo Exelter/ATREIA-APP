@@ -1690,7 +1690,7 @@ public sealed class PetMapWindow : MovableOverlay
         if (opacity > 0 && !landPicture)
         {
             int decode = Math.Min(map.Tile, tileOnScreen > 640 ? 1536 : 768);
-            var (nx, ny) = Aion2Maps.ToNative(map, midX, midY); // the view's middle on the picture
+            var (nx, ny) = Aion2Maps.ToNativePlain(map, midX, midY); // the view's middle on the picture as its tiles are laid (each tile's own shift added below)
             double halfNative = ViewSize / 2 / k; // generous: the tiles beyond the visible part are clipped
             int c0 = Math.Max(0, (int)Math.Floor((nx - halfNative) / map.Tile)), c1 = Math.Min(map.Grid - 1, (int)Math.Floor((nx + halfNative) / map.Tile));
             int r0 = Math.Max(0, (int)Math.Floor((ny - halfNative) / map.Tile)), r1 = Math.Min(map.Grid - 1, (int)Math.Floor((ny + halfNative) / map.Tile));
@@ -1718,8 +1718,10 @@ public sealed class PetMapWindow : MovableOverlay
                     img.Opacity = opacity;
                     img.Width = map.Tile * kx;
                     img.Height = map.Tile * ky;
-                    Canvas.SetLeft(img, cx + (col * map.Tile - nx) * kx);
-                    Canvas.SetTop(img, cy + (row * map.Tile - ny) * ky);
+                    // a tile that lies off on its own is put where its land is (maps.json "tileShift", measured against the game's own reports)
+                    var shift = map.ShiftAt(col * map.Tile + 1, row * map.Tile + 1);
+                    Canvas.SetLeft(img, cx + (col * map.Tile - nx) * kx + shift.X * ppu);
+                    Canvas.SetTop(img, cy + (row * map.Tile - ny) * ky + shift.Y * ppu);
                     img.Visibility = Visibility.Visible;
                 }
             }

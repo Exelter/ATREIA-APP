@@ -75,6 +75,7 @@ public static class SelfCheck
         ok &= SelfCheckFightClock.Run();
         ok &= SelfCheckColorPicker.Run();
         ok &= SelfCheckReplay.Run();
+        ok &= SelfCheckMechanics.Run();
         ok &= SelfCheckIdentity.Run();
         ok &= SelfCheckStatCalc.Run();
         ok &= SelfCheckProfileStats.Run();

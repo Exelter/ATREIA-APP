@@ -56,8 +56,10 @@ public sealed class MinimapCalibration
     /// <summary>The file beside the settings.</summary>
     public static string DefaultPath => Path.Combine(Path.GetDirectoryName(Aion2CharacterStore.DefaultPath)!, "minimap-calibration.json");
 
-    /// <summary>A map's own numbers (its tiles' scale and offset): learnt pairs belong to them.</summary>
-    public static string StampOf(Protocol.Aion2MapInfo map) => FormattableString.Invariant($"2|{map.Scale:R}|{map.OffsetX:R}|{map.OffsetY:R}");
+    /// <summary>A map's own numbers (its tiles' scale and offset, and the tiles that lie off, as their sum): learnt pairs belong to them.</summary>
+    public static string StampOf(Protocol.Aion2MapInfo map) => map.Shifts is { Count: > 0 } shifts
+        ? FormattableString.Invariant($"2|{map.Scale:R}|{map.OffsetX:R}|{map.OffsetY:R}|{shifts.Count}|{shifts.Sum(s => Math.Abs(s.Value.X) + Math.Abs(s.Value.Y) + s.Key):0}")
+        : FormattableString.Invariant($"2|{map.Scale:R}|{map.OffsetX:R}|{map.OffsetY:R}");
 
     private MapCal Of(string map, string stamp)
     {

@@ -76,7 +76,19 @@ public static class SelfCheckMaps
         bool instance = Aion2Maps.Choose(600999, true, none, out bool k4) is null && !k4 && Aion2Maps.Choose(600092, true, MobsOn("verteron", 5), out _)?.Key == "HornCave";
         Console.WriteLine($"  -> map chosen: zone 20 is the Abyss {abyss}; Verteron's monsters around while the zone says Altgard (invasion) {invasion}; Altgard stays with its own or few others {home}; "
             + $"the Abyss's monsters win too {intoAbyss}; Ishalgen (no map) shows none {noMap}; Middle Reshanta its own {middle}; nothing known keeps the map {unknown}; an instance without a map none, with one its own {instance}");
-        return abyss && invasion && home && intoAbyss && noMap && middle && unknown && instance;
+        // the tiles that lie off on their own (maps.json "tileShift"): a place in Dranactus' tile is drawn that much further on the picture, a picture pixel there reads
+        // back as the same place, a tile without a shift is drawn by the numbers alone, and the learnt minimap pairs start again with the new numbers
+        Aion2MapInfo alt = Aion2Maps.All.First(m => m.Key == "altgard");
+        var plain = Aion2Maps.ToNativePlain(alt, 62869, -182578);
+        var drawn = Aion2Maps.ToNative(alt, 62869, -182578);
+        var back = new AionDPS.Aion2.MapRaster(alt).ToWorld(drawn.X, drawn.Y);
+        var tileShift = alt.ShiftAt(plain.X, plain.Y);
+        var untouched = Aion2Maps.ToNative(alt, 0, 300000);
+        bool shifted = tileShift.X != 0 && Math.Abs(drawn.X - (plain.X - alt.Scale * tileShift.X)) < 0.001 && Math.Abs(drawn.Y - (plain.Y - alt.Scale * tileShift.Y)) < 0.001
+            && Math.Abs(back.X - 62869) < 0.01 && Math.Abs(back.Y + 182578) < 0.01 && untouched == Aion2Maps.ToNativePlain(alt, 0, 300000)
+            && AionDPS.Aion2.MinimapCalibration.StampOf(alt).Split('|').Length == 6 && AionDPS.Aion2.MinimapCalibration.StampOf(Aion2Maps.All.First(m => m.Key == "eltnen")).Split('|').Length == 4;
+        Console.WriteLine($"  -> a tile of the picture that lies off is drawn where its land is, its pixels read back as the same place, the others as before: {shifted}");
+        return abyss && invasion && home && intoAbyss && noMap && middle && unknown && instance && shifted;
     }
 
     /// <summary>

@@ -93,6 +93,26 @@
           "title": "Siege and boss timers on the new days",
           "text": "The timetable follows the game's new schedule: the Artifact Siege and the Artifact bosses (the Executors) now run only on Thursday and Saturday (no more Monday), and Argo, the Spirit King spawns every day at 10:30 and 22:30 on your server's clock. The timers, the in-game timetable and the field boss list all show the new times. The timetable also comes from atreia.app now, so the next change shows up without an update.",
           "example": "Monday evening on NA East: the timetable no longer counts down to a siege that isn't coming. It shows the next one, Thursday at 21:00, with the Executors at 21:30, and Argo at 22:30 tonight."
+        },
+        {
+          "kind": "improved",
+          "area": "Replay",
+          "title": "Ludra's mechanics where they really land",
+          "text": "The replay draws a boss's attacks in their real shape: circles, rings, cones, lines and crosses, pointing the way the boss faces. For Abyssal Forge: Ludra, the sizes come from 31 recorded Eternal Ludra pulls and the other bosses of the run. Most of Ludra's dangerous attacks come from the things she leaves on the floor, like the pools and the Airborne zones, not from Ludra herself. The replay now shows those in violet for as long as they stay, and their hits on your group count. The map is also the right way up now, with north on top like the game's map. Before, it was upside down.",
+          "example": "You replay a wipe: the violet pool next to your Cleric was there for 12 seconds, and the Airborne zone that killed her lit up a second before she died."
+        },
+        {
+          "kind": "improved",
+          "area": "Meter",
+          "title": "Ludra's attacks timed from the first pull",
+          "text": "The cast bar knows which of Ludra's attacks hit an area and how long after the cast the hit lands, from your very first pull. Before, the meter had to see each attack a few times first.",
+          "example": "First Ludra of the week: the bar marks her attack as an area and counts down to the hit, 1.5 s after the cast ends."
+        },
+        {
+          "kind": "fixed",
+          "area": "Map",
+          "title": "Map pieces that were off now line up",
+          "text": "Some parts of the Altgard and Lower Reshanta map pictures sat up to 80 m away from the land they show, so Hidden Cubes, gathering spots and your arrow looked like they were in the wrong place. Each of those parts is now moved to where its land really is, measured against the game's own position reports."
         }
       ]
     },

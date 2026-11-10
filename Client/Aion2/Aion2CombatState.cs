@@ -569,7 +569,10 @@ public sealed class Aion2CombatState
 
                 SkillLesson? lesson = _lessons.GetValueOrDefault(cast.Notice.SkillId);
                 bool aimedAtSelf = cast.Notice.Target == cast.Notice.Actor || cast.Notice.Target <= 0;
-                list.Add(new CastView(cast.Notice, aimedAtSelf || (lesson?.IsArea ?? false), lesson?.LandMs, lesson?.MaxOnYou ?? 0, lesson?.MaxAny ?? 0, cast.Stopped));
+                // what recorded fights measured (Ludra's bosses: assets/aion2/bosses/mechanic_areas.json) counts until the meter has seen the skill itself
+                int skill = cast.Notice.SkillId;
+                list.Add(new CastView(cast.Notice, aimedAtSelf || (lesson?.IsArea ?? false) || Protocol.Aion2MechanicAreas.IsArea(skill),
+                    lesson?.LandMs ?? Protocol.Aion2MechanicAreas.LandMsOf(skill), lesson?.MaxOnYou ?? 0, lesson?.MaxAny ?? 0, cast.Stopped));
             }
 
             return list.OrderBy(c => c.Notice.End).ToList();

@@ -1,0 +1,373 @@
+{
+ "_note": [
+  "Boss mechanics of Abyssal Forge: Ludra as they land, measured from 31 pulls of Eternal Ludra and the other bosses of the run (debug recordings of",
+  "7 and 8 November 2026, Tools/mechanics/fit_areas.py). areas: per skill a monster winds up, its shape on the floor around the spot the windup aims at",
+  "(circle; ring: inner to radius; cone: radius and half the angle around the facing; line: from behind the spot to length ahead of it, width to each side;",
+  "cross: two such bars of length each way; room: everybody), sizes in centimetres, onTarget: the spot is the targeted player, landMs: the time from the end",
+  "of the windup to the first hit, seen: how many landings it rests on, fit: how well the shape told the players it hit from the ones it missed (F1).",
+  "A skill without a shape here keeps the game client's word (skill_shapes.json) and the size the meter learns. hazards: per object a boss leaves on the floor,",
+  "the radius it hits players in, how long it stays (seconds) and its skills. objects: every such object (the replay follows them)."
+ ],
+ "areas": {
+  "1239200": {
+   "landMs": 269,
+   "seen": 47
+  },
+  "1239220": {
+   "landMs": 183,
+   "seen": 22
+  },
+  "1239400": {
+   "landMs": 309,
+   "seen": 7,
+   "shape": "cone",
+   "radius": 300,
+   "half": 120,
+   "fit": 0.59
+  },
+  "1239420": {
+   "landMs": 241,
+   "seen": 11,
+   "shape": "circle",
+   "radius": 550,
+   "fit": 0.55
+  },
+  "1802730": {
+   "landMs": 337,
+   "seen": 6
+  },
+  "1802770": {
+   "landMs": 462,
+   "seen": 7,
+   "shape": "cone",
+   "radius": 1100,
+   "half": 120,
+   "fit": 0.71
+  },
+  "1802800": {
+   "landMs": 350,
+   "seen": 4,
+   "shape": "circle",
+   "radius": 950,
+   "onTarget": true,
+   "fit": 0.56
+  },
+  "1802805": {
+   "landMs": 382,
+   "seen": 5,
+   "shape": "circle",
+   "radius": 400,
+   "fit": 0.91
+  },
+  "1801820": {
+   "landMs": 400,
+   "seen": 19,
+   "shape": "circle",
+   "radius": 850,
+   "fit": 0.63
+  },
+  "1801830": {
+   "landMs": 1372,
+   "seen": 5
+  },
+  "1801840": {
+   "landMs": 961,
+   "seen": 49,
+   "shape": "line",
+   "length": 1800,
+   "width": 400,
+   "behind": 400,
+   "fit": 0.66
+  },
+  "1801843": {
+   "landMs": 971,
+   "seen": 37,
+   "shape": "circle",
+   "radius": 350,
+   "fit": 0.74
+  },
+  "1801850": {
+   "landMs": 318,
+   "seen": 31
+  },
+  "1801860": {
+   "landMs": 977,
+   "seen": 30
+  },
+  "1801870": {
+   "landMs": 651,
+   "seen": 51,
+   "shape": "circle",
+   "radius": 450,
+   "fit": 0.82
+  },
+  "1801961": {
+   "landMs": 1166,
+   "seen": 5
+  },
+  "1801962": {
+   "landMs": 1975,
+   "seen": 8,
+   "shape": "room"
+  },
+  "1801969": {
+   "landMs": 1997,
+   "seen": 13,
+   "shape": "room"
+  },
+  "1802510": {
+   "landMs": 15,
+   "seen": 7
+  },
+  "1802515": {
+   "landMs": 1,
+   "seen": 11
+  },
+  "1802520": {
+   "landMs": 26,
+   "seen": 33,
+   "shape": "circle",
+   "radius": 700,
+   "fit": 0.63
+  },
+  "1802530": {
+   "landMs": 18,
+   "seen": 13
+  },
+  "1802540": {
+   "landMs": 200,
+   "seen": 17,
+   "shape": "circle",
+   "radius": 1500,
+   "fit": 0.59
+  },
+  "1802550": {
+   "landMs": 15,
+   "seen": 12
+  },
+  "1802555": {
+   "landMs": 47,
+   "seen": 23
+  },
+  "1802570": {
+   "landMs": 1032,
+   "seen": 20,
+   "shape": "circle",
+   "radius": 450,
+   "onTarget": true,
+   "fit": 0.77
+  },
+  "1803080": {
+   "landMs": 304,
+   "seen": 18
+  },
+  "1803110": {
+   "landMs": 440,
+   "seen": 33
+  },
+  "1803120": {
+   "landMs": 553,
+   "seen": 34
+  },
+  "1803130": {
+   "landMs": 1560,
+   "seen": 16,
+   "shape": "circle",
+   "radius": 2200,
+   "fit": 0.65
+  },
+  "1803140": {
+   "landMs": 504,
+   "seen": 46,
+   "shape": "line",
+   "length": 800,
+   "width": 700,
+   "behind": 700,
+   "fit": 0.8
+  },
+  "1803250": {
+   "landMs": 1001,
+   "seen": 36,
+   "shape": "circle",
+   "radius": 2050,
+   "onTarget": true,
+   "fit": 0.61
+  },
+  "1803310": {
+   "landMs": 1351,
+   "seen": 18
+  },
+  "1803370": {
+   "landMs": 400,
+   "seen": 12
+  },
+  "1803400": {
+   "landMs": 2103,
+   "seen": 11,
+   "shape": "circle",
+   "radius": 4200,
+   "onTarget": true,
+   "fit": 0.9
+  },
+  "1801951": {
+   "landMs": 1481,
+   "seen": 73
+  },
+  "1801964": {
+   "landMs": 1523,
+   "seen": 21,
+   "shape": "room"
+  },
+  "1803165": {
+   "landMs": 15,
+   "seen": 43
+  },
+  "1803203": {
+   "landMs": 33,
+   "seen": 18,
+   "shape": "room"
+  },
+  "1803204": {
+   "landMs": 7,
+   "seen": 7,
+   "shape": "room"
+  },
+  "1803012": {
+   "landMs": 1027,
+   "seen": 59
+  },
+  "1803396": {
+   "landMs": 36,
+   "seen": 17
+  },
+  "1803215": {
+   "landMs": 205,
+   "seen": 67,
+   "shape": "circle",
+   "radius": 1250,
+   "fit": 0.67
+  }
+ },
+ "hazards": {
+  "2920668": {
+   "radius": 150,
+   "seconds": 13.3,
+   "skills": [
+    1801942
+   ],
+   "seen": 56,
+   "fit": 0.96
+  },
+  "2920670": {
+   "radius": 350,
+   "seconds": 4.5,
+   "skills": [
+    1801832
+   ],
+   "seen": 12,
+   "fit": 0.93
+  },
+  "2920673": {
+   "radius": 300,
+   "seconds": 3.2,
+   "skills": [
+    1801892
+   ],
+   "seen": 14,
+   "fit": 0.92
+  },
+  "2920674": {
+   "radius": 3500,
+   "seconds": 10.5,
+   "skills": [
+    1200046
+   ],
+   "seen": 8,
+   "fit": 0.71
+  },
+  "2920675": {
+   "radius": 650,
+   "seconds": 8.9,
+   "skills": [
+    1802570
+   ],
+   "seen": 13,
+   "fit": 0.8
+  },
+  "2920725": {
+   "radius": 750,
+   "seconds": 20.9,
+   "skills": [
+    1802716
+   ],
+   "seen": 24,
+   "fit": 0.76
+  },
+  "2920748": {
+   "radius": 400,
+   "seconds": 12.1,
+   "skills": [
+    1803185
+   ],
+   "seen": 475,
+   "fit": 0.86
+  },
+  "2920750": {
+   "radius": 4000,
+   "seconds": 3.3,
+   "skills": [
+    1803235
+   ],
+   "seen": 146,
+   "fit": 0.77
+  },
+  "2920755": {
+   "radius": 300,
+   "seconds": 15.1,
+   "skills": [
+    1803201
+   ],
+   "seen": 70,
+   "fit": 0.89
+  },
+  "2920763": {
+   "radius": 550,
+   "seconds": 5.6,
+   "skills": [
+    1803385
+   ],
+   "seen": 54,
+   "fit": 0.7
+  },
+  "2920772": {
+   "radius": 450,
+   "seconds": 19.1,
+   "skills": [
+    1803014
+   ],
+   "seen": 334,
+   "fit": 0.81
+  }
+ },
+ "objects": [
+  2920668,
+  2920670,
+  2920673,
+  2920674,
+  2920675,
+  2920676,
+  2920677,
+  2920725,
+  2920746,
+  2920748,
+  2920750,
+  2920752,
+  2920754,
+  2920755,
+  2920757,
+  2920763,
+  2920764,
+  2920772,
+  2920793
+ ]
+}

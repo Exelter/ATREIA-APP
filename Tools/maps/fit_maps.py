@@ -7,6 +7,12 @@ Per map and axis the game's place against the reading's: game = A * reading + B 
 made at a walk (8 m/s at most, under 0.4 s from the reading, a fit of 0.3 or better), each installation weighed alike. A reading is
 (picture pixel - offset) / scale, so the picture lies right with scale / A and offset - scale * B / A on that axis; printed per map with how far off the
 checks were before and after. Only the maps whose checks cover a good part of them (several hundred metres both ways) should be changed.
+
+Tiles that lie off on their own (10 November 2026: on Altgard the western tiles 76 m east, Dranactus' tile 6 m, the north-eastern one 72 m north - no one
+scale and offset fits them all) get a shift of their own in maps.json ("tileShift": {"column_row": [x, y]}, world units, game place minus picture place),
+which the app adds to every reading in that tile and to where it draws the tile. Printed per tile as "tileShift would be": the shift in maps.json now plus
+the median of what is left of the checks made with these numbers (checks of other numbers count only for the line above). Take a tile's shift only from
+a few checks or more that agree (a spread of a few metres).
 """
 import collections
 import json
@@ -91,6 +97,24 @@ for m, ps in sorted(by_map.items()):
         for (c, r), d in sorted(cells.items()):
             print(f"    tile {c}_{r}: {len(d)} checks, left {st.median(x for x, _ in d):+.1f} m across, {st.median(y for _, y in d):+.1f} m down")
     if m in MAPS:
+        # the tiles that lie off on their own: the median of what the game says against the reading, per tile, of the checks made with today's numbers
+        shift = MAPS[m].get("tileShift", {})
+        # the app's stamp of today's numbers (Aion2/MinimapCalibration.cs StampOf): with tile shifts their count and sum (column * 100 + row, |x| + |y|) follow
+        stamp_now = f"2|{MAPS[m]['scale']!r}|{MAPS[m]['offsetX']!r}|{MAPS[m]['offsetY']!r}"
+        if shift:
+            total = sum(abs(v[0]) + abs(v[1]) + int(k.split("_")[0]) * 100 + int(k.split("_")[1]) for k, v in shift.items())
+            stamp_now += f"|{len(shift)}|{total:.0f}"
+        now = [p for (mm, stamp), pts in pairs.items() if mm == m and (stamp == stamp_now or (stamp == "log" and not shift)) for p in pts]
+        cells = collections.defaultdict(list)
+        s0, ox0, oy0 = MAPS[m]["scale"], MAPS[m]["offsetX"], MAPS[m]["offsetY"]
+        for p in now:
+            cells[f"{int((ox0 + s0 * p[0]) // tile)}_{int((oy0 + s0 * p[1]) // tile)}"].append((p[2] - p[0], p[3] - p[1]))
+        for key, d in sorted(cells.items()):
+            if len(d) >= 5:
+                dx, dy = st.median(x for x, _ in d), st.median(y for _, y in d)
+                mad = 1.4826 * st.median(abs(x - dx) + abs(y - dy) for x, y in d) / 100
+                old = shift.get(key, [0, 0])
+                print(f"    tileShift {key}: {len(d)} checks (spread {mad:.1f} m), now {old}, would be [{round(old[0] + dx, -1):.0f}, {round(old[1] + dy, -1):.0f}]")
         s, ox, oy = MAPS[m]["scale"], MAPS[m]["offsetX"], MAPS[m]["offsetY"]
         print(f"    maps.json now: scale {s}, offsetX {ox}, offsetY {oy}")
         print(f"    would be:      scaleX {s / ax!r}, scaleY {s / ay!r}, offsetX {ox - s * bx / ax!r}, offsetY {oy - s * by / ay!r}")

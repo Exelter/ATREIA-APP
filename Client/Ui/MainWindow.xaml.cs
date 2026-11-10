@@ -3904,9 +3904,10 @@ public partial class MainWindow : Window
 
         Func<int, string?> nameOf = id => session.Names.GetValueOrDefault(id) ?? ResolveDisplayName(id);
         bool IsPlayer(int id) => session.Classes.Count == 0 || session.Classes.ContainsKey(id);
+        var dir = _liveSource?.Entities as Aion2.Aion2EntityDirectory;
         return ReplayBuilder.Build(SessionLabels.NameOf(session), extras, all, from, to,
             id => (nameOf(id) ?? "", session.Classes.GetValueOrDefault(id) ?? "", IsPlayer(id) && session.Classes.ContainsKey(id)), SkillRadius,
-            id => Aion2.Protocol.Aion2SkillNames.Display(Aion2.Protocol.Aion2SkillNames.NameOf(id)));
+            id => Aion2.Protocol.Aion2SkillNames.Display(Aion2.Protocol.Aion2SkillNames.NameOf(id)), npcOf: id => dir?.NpcIdOf(id));
     }
 
     /// <summary>The rotation, effect, stagger and replay data of a session, read from the live capture, for saving it with the file: the players of the session and the bosses.</summary>
@@ -3918,7 +3919,7 @@ public partial class MainWindow : Window
         }
 
         FightExtras extras = dir.Combat.Slice(session.Start, session.End ?? DateTime.Now, id => dir.NameFor(id) ?? dir.MonsterNameFor(id),
-            id => session.Classes.ContainsKey(id) || dir.IsKnownPlayer(id) || dir.BossNpcIdOf(id) is not null,
+            id => session.Classes.ContainsKey(id) || dir.IsKnownPlayer(id) || dir.BossNpcIdOf(id) is not null || IsMechanicObject(dir, id),
             (id, from, to) => HpSeriesOf(dir, id, from, to, dir.IsKnownPlayer(id)));
         return extras.IsEmpty ? null : extras;
     }
@@ -3926,15 +3927,19 @@ public partial class MainWindow : Window
     /// <summary>An id of the live capture as the grid knows it (the same, except while a session is on view).</summary>
     private int GridId(int liveId) => _historyMode ? _historyReplayIds.GetValueOrDefault(liveId, -1) : liveId;
 
-    /// <summary>Whose positions the replay keeps: the group (the players in the rows) and the bosses.</summary>
+    /// <summary>Whose positions the replay keeps: the group (the players in the rows), the bosses and the objects their mechanics leave on the floor.</summary>
     private bool ReplayKeeps(int id)
     {
         int gridId = GridId(id);
         return _rowsByObjectId.ContainsKey(gridId) && IsPlayerName(gridId)
             || ReplayDirectory?.BossNpcIdOf(id) is not null
             || _selectedTargetId == gridId
-            || IsReplayAdd(id);
+            || IsReplayAdd(id)
+            || IsMechanicObject(ReplayDirectory, id);
     }
+
+    /// <summary>An object a boss's mechanics leave on the floor (Eternal Ludra's pools and Airborne zones ...): the replay follows it and draws its reach.</summary>
+    private static bool IsMechanicObject(Aion2.Aion2EntityDirectory? dir, int id) => dir?.NpcIdOf(id) is int npc && Aion2.Protocol.Aion2MechanicAreas.IsObject(npc);
 
     private HashSet<int> _replayAdds = new();
     private int _replayAddsFor = -1;
@@ -4035,7 +4040,7 @@ public partial class MainWindow : Window
 
         ReplayData built = ReplayBuilder.Build(title.Trim(), extras, events, from, to,
             id => (ResolveDisplayName(GridId(id)), ResolveClassName(GridId(id)), IsPlayerName(GridId(id))), SkillRadius, id => Aion2.Protocol.Aion2SkillNames.Display(Aion2.Protocol.Aion2SkillNames.NameOf(id)),
-            IsReplayAdd, id => ReplayDirectory is { } own && own.LocalPlayerId == id);
+            IsReplayAdd, id => ReplayDirectory is { } own && own.LocalPlayerId == id, id => ReplayDirectory?.NpcIdOf(id));
         // what the replay window needs to fetch the paths the other clients of this fight sent
         if (_selectedTargetId is int bossEntity && ReplayDirectory?.BossNpcIdOf(bossEntity) is int bossNpc && ResolveServerIdentity() is (string fingerprint, _))
         {
