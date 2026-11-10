@@ -39,8 +39,8 @@ public sealed class GrindSession
 /// you're going to get per hour - changes on average: kill a marshal and it goes off, then drops steadily"). Kinah and Abyss Points come from the inventory
 /// frames (0x1B56), which carry the new balance of each (Kinah 930100031, bound Kinah 930100001, Abyss Points 930100003; checked on the recordings of 7 to 10
 /// November 2026): what a balance rises by counts, what is spent does not. The kills and the pickups come from the loot log (<see cref="Aion2Loot"/>: a kill
-/// the player had a hand in, a drop he picked up). A balance that rises while no kill or pickup came for ten minutes (the storage, the mail, a trade in town)
-/// starts nothing. Per hour is the session's average over the time farmed, the time since the last kill included up to five minutes, so a big kill shows at
+/// the player had a hand in, a drop he picked up). Kinah that comes while no kill or pickup came for ten minutes (the storage, the mail, a trade in town) starts
+/// nothing; Abyss Points come from fighting - a kill of a player too, which the loot log does not count - and always do. Per hour is the session's average over the time farmed, the time since the last kill included up to five minutes, so a big kill shows at
 /// once and the rate settles again as the minutes go by. Kept in aion2-grind.json (the last 40 sessions); nothing leaves the PC.
 /// </summary>
 public static class Aion2Grind
@@ -53,7 +53,7 @@ public static class Aion2Grind
     /// <summary>A pause this long ends the session: the next kill starts a new one.</summary>
     public static readonly TimeSpan Over = TimeSpan.FromMinutes(30);
 
-    /// <summary>Kinah and Abyss Points count while a kill or pickup was this recent.</summary>
+    /// <summary>Kinah counts while a kill or pickup was this recent.</summary>
     private static readonly TimeSpan Farming = TimeSpan.FromMinutes(10);
 
     private const int MaxSessions = 40;
@@ -130,7 +130,14 @@ public static class Aion2Grind
                 long balance = kind == 2 ? 0 : quantity;
                 bool known = Balances.TryGetValue(item, out long before);
                 Balances[item] = balance;
-                if (login || !known || balance <= before || _current is not { } session || now - session.End > Farming)
+                if (login || !known || balance <= before)
+                {
+                    continue;
+                }
+
+                // Kinah only while farming (not the storage, the mail or a trade in town); Abyss Points come from fighting (a kill of a player too, which the loot
+                // log does not count) and always do
+                if (item != AbyssPoints && (_current is not { } session || now - session.End > Farming))
                 {
                     continue;
                 }
