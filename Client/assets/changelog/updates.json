@@ -13,7 +13,7 @@
           "kind": "new",
           "area": "Overlays",
           "title": "The overlay editor",
-          "text": "One key (Ctrl+Alt+V unless you changed it), or the first button of the overlay menu, opens the overlay editor over the game. Every overlay is a tile: click it to switch it on or off. While the editor is open each overlay shows where it sits on a faint grid, so you see how it will look: drag it, size it at its corners. An overlay's key is on its tile: click the key and press new ones. Size and opacity for all of them, the Atreia button and Alt + drag are there too. Done locks everything in place.",
+          "text": "One key (Ctrl+Alt+V unless you changed it), or the first button of the overlay menu, opens the overlay editor over the game. Every overlay is a tile: click it to switch it on or off. While the editor is open each overlay shows where it sits on a faint grid, so you see how it will look: drag it, size it at its corners. An overlay's key is on its tile: click the key and press new ones. With two screens, pick the one the overlays go on: put them on your second screen, away from the game, and they still show while you play. Size and opacity for all of them, the Atreia button and Alt + drag are there too. Done locks everything in place.",
           "example": "Press Ctrl+Alt+V, switch on Timers and World bosses, drag them under the minimap, set the opacity to 70 % and press Done."
         },
         {
