@@ -942,6 +942,8 @@ public partial class SettingsWindow : Window
         _settings.CraftCountInventory = onDisk.CraftCountInventory;
         _settings.CraftCountStorage = onDisk.CraftCountStorage;
         _settings.CraftCountAccountStorage = onDisk.CraftCountAccountStorage;
+        _settings.CraftCountAlts = onDisk.CraftCountAlts;
+        _settings.CraftTab = onDisk.CraftTab;
         _settings.OverlayOpacities[OverlayPlaces.Craft] = onDisk.OverlayOpacities.GetValueOrDefault(OverlayPlaces.Craft, 0.6);
         // the gathering overlay is switched on, locked and placed outside this window (its card, the overlays page, dragging it): the file's values stand
         _settings.ShowGatherOverlay = onDisk.ShowGatherOverlay;

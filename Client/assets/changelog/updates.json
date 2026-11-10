@@ -6,7 +6,7 @@
   ],
   "versions": [
     {
-      "version": "1.21.13",
+      "version": "2.0.0",
       "date": "2026-11-10",
       "items": [
         {
@@ -28,6 +28,31 @@
           "area": "Overlays",
           "title": "Buffs show a preview while you place them",
           "text": "In the overlay editor the buffs overlay shows a few sample buffs when none are on your character, so you can see how it will look. The other overlays already show samples while you place them."
+        },
+        {
+          "kind": "new",
+          "area": "Crafting",
+          "title": "A new crafting page that knows where everything is",
+          "text": "The crafting calculator is rebuilt. It counts your bag, your storage, the server storage and what your other characters on the server hold unbound, and each material shows where it lies. It also counts when the app started after you logged in: each character's items are kept from its last login. Every place can be switched off with one click at the top.",
+          "example": "90 ore needed: 40 in the bag, 25 in storage and 18 on your alt Arkhel. 7 left to get, 2.1K Kinah at the market."
+        },
+        {
+          "kind": "new",
+          "area": "Crafting",
+          "title": "Market prices for your server",
+          "text": "Every material and every product shows its market price for your server: what each recipe is worth, what its materials cost, the profit, and what buying the missing materials would cost."
+        },
+        {
+          "kind": "new",
+          "area": "Crafting",
+          "title": "What you can craft right now",
+          "text": "A tab lists every recipe your items already cover, how many times you can craft it, and what you'd make on each one at market prices, the most profitable first. One click adds it to your plan. You can also search every recipe by its name or one of its materials."
+        },
+        {
+          "kind": "improved",
+          "area": "Crafting",
+          "title": "A clearer crafting overlay",
+          "text": "The overlay over the game shows how far your plan is, each recipe with a bar, what is still missing, what buying it costs, and where the part you have is lying when it isn't in your bag."
         }
       ]
     },

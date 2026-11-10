@@ -500,11 +500,21 @@ internal static class Program
             if (args.Length < 2)
             {
                 Console.WriteLine("Usage: AionDPS render-craft <out.png> [recording.jsonl] [language]");
-                Console.WriteLine("  Draws the crafting tool (page, overlay, configuration) with a made-up plan and the stock of a recording into one picture. No window is shown; set AIONDPS_DATA_DIR to a throw-away folder.");
+                Console.WriteLine("  Draws the crafting tool (page, overlay, configuration) with a made-up plan, stock and market into pictures (the plan, what can be crafted now, the recipes). No window is shown; set AIONDPS_DATA_DIR to a throw-away folder.");
                 return;
             }
 
-            RunRenderCraftMode(args[1], args.Length > 2 ? args[2] : "", args.Length > 3 ? args[3] : "");
+            try
+            {
+                RunRenderCraftMode(args[1], args.Length > 2 ? args[2] : "", args.Length > 3 ? args[3] : "");
+            }
+            catch (Exception ex)
+            {
+                // what went wrong, beside the picture that is not there (the pictures workflow keeps no console output)
+                File.WriteAllText(Path.ChangeExtension(args[1], null) + "-error.txt", ex.ToString());
+                throw;
+            }
+
             return;
         }
 
@@ -3943,14 +3953,93 @@ internal static class Program
         Console.WriteLine($"aion2-skill-averages: {skills.Count} skill(s), {skills.Count(kv => kv.Value.Samples >= Aion2.Protocol.Aion2HitAverages.MinSamples)} with {Aion2.Protocol.Aion2HitAverages.MinSamples}+ hits, written to {output}");
     }
 
-    /// <summary>Draws the crafting tool (the page with its overlay, and the configuration window) into one picture: a made-up plan, the stock of a recording; no window is ever shown.</summary>
+    /// <summary>
+    /// A made-up stock for the crafting pictures: of every material the plan needs a share in a place of its own (all, some, none; the bag, the storage, the
+    /// server storage, another character), the materials of a few more recipes in the bag (for what can be crafted now), and market prices for all of them.
+    /// </summary>
+    private static (Ui.CraftStock Stock, Upload.MarketBook Book) CraftPictureStock(string crafter, IReadOnlyList<Aion2.CraftEntry> planned)
+    {
+        const bool elyos = true;
+        var empty = new Dictionary<int, long>();
+        List<Aion2.CraftLine> needs = Aion2.CraftCalc.Total(Aion2.CraftCalc.Compute(planned, empty, true, elyos)).OrderBy(l => l.Item).ToList();
+        double[] shares = { 1.0, 0.65, 0.25, 0, 1.0, 0.8, 0.4, 1.0, 0.1 };
+        var places = new List<(int Item, Ui.CraftPlace Place)>();
+        for (int i = 0; i < needs.Count; i++)
+        {
+            long have = (long)Math.Round(needs[i].Needed * shares[i % shares.Length]);
+            if (have <= 0)
+            {
+                continue;
+            }
+
+            switch (i % 4)
+            {
+                case 0:
+                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Bag, null, have)));
+                    break;
+                case 1:
+                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Bag, null, (have + 1) / 2)));
+                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Storage, null, have / 2)));
+                    break;
+                case 2:
+                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Server, null, have)));
+                    break;
+                default:
+                    // a bound item never lies with another character (it would not count there)
+                    bool bound = Aion2.Aion2Inventories.IsBound(needs[i].Item);
+                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Storage, null, bound ? have : (have + 2) / 3)));
+                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Character, "Arkhel", bound ? 0 : have - (have + 2) / 3)));
+                    break;
+            }
+        }
+
+        List<Aion2.CraftRecipe> visible = Aion2.Aion2CraftData.Visible(elyos).ToList();
+        int k = 0;
+        foreach (Aion2.CraftRecipe extra in visible.Where((r, n) => n % 23 == 5).Take(10))
+        {
+            int times = 2 + k++ % 5;
+            foreach (Aion2.CraftLine line in Aion2.CraftCalc.Total(Aion2.CraftCalc.Compute(new[] { new Aion2.CraftEntry { Recipe = extra.Id, Count = times } }, empty, true, elyos)))
+            {
+                places.Add((line.Item, new Ui.CraftPlace(k % 3 == 0 ? Ui.CraftPlaceKind.Server : Ui.CraftPlaceKind.Bag, null, line.Needed)));
+            }
+        }
+
+        // prices: each raw material its own, each product around what its materials cost (some at a gain, some at a loss)
+        var prices = new Dictionary<int, Upload.MarketPrice>();
+        long PriceOf(int item) => 120 + (long)((uint)item * 2654435761u % 4800);
+        foreach (Aion2.CraftRecipe r in visible)
+        {
+            Aion2.CraftResult? one = Aion2.CraftCalc.Compute(new[] { new Aion2.CraftEntry { Recipe = r.Id, Count = 1 } }, empty, true, elyos).FirstOrDefault();
+            if (one is null)
+            {
+                continue;
+            }
+
+            long cost = 0;
+            foreach (Aion2.CraftLine m in one.Materials)
+            {
+                long p = PriceOf(m.Item);
+                prices[m.Item] = new Upload.MarketPrice(p, p, 6, p);
+                cost += p * m.Needed;
+            }
+
+            double factor = 0.85 + (uint)r.Id * 2246822519u % 90 / 100.0;
+            long each = Math.Max(1, (long)(cost * factor / Math.Max(1, r.Count)));
+            prices.TryAdd(r.Product, new Upload.MarketPrice(each, each, 4, each));
+        }
+
+        var book = new Upload.MarketBook(1301, "Picture", DateTime.UtcNow.AddMinutes(-6), prices);
+        return (Ui.CraftStock.Made(crafter, 1301, new[] { "Arkhel" }, places), book);
+    }
+
+    /// <summary>Draws the crafting tool (the page with its overlay, and the configuration window) into one picture, and the page's other two tabs into pictures of their own: a made-up plan, stock and market; no window is ever shown.</summary>
     private static void RunRenderCraftMode(string path, string recording, string language)
     {
         var app = new System.Windows.Application();
         app.Resources.MergedDictionaries.Add(
             (System.Windows.ResourceDictionary)System.Windows.Application.LoadComponent(new Uri("/Ui/Styles/Shared.xaml", UriKind.Relative)));
         var settings = Ui.MeterSettings.Load();
-        Ui.LocalizationManager.Instance.Language = language.Length > 0 ? language : settings.Language.Length > 0 ? settings.Language : "de";
+        Ui.LocalizationManager.Instance.Language = language.Length > 0 ? language : settings.Language.Length > 0 ? settings.Language : "en";
         Ui.ThemeManager.Apply(app, settings);
         Ui.MainWindow.Headless = true;
         // in the running meter the buttons, combo boxes, check boxes and scroll bars take their styles from the main window: it is made (never shown) to take them from there
@@ -3965,7 +4054,8 @@ internal static class Program
         }
 
         Aion2.Aion2Stock.Reset();
-        if (recording.Length > 0)
+        // a recording only when one is given (the pictures workflow passes the picture's name again where no other argument follows)
+        if (recording.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase) && File.Exists(recording))
         {
             using var source = new Aion2.Aion2PacketCombatSource(Aion2.Protocol.Aion2Protocol.Load());
             foreach (Aion2.Capture.TcpSegment segment in Aion2.Capture.SegmentRecording.Read(recording))
@@ -3981,25 +4071,30 @@ internal static class Program
             }
         }
 
-        Aion2.CraftPlan.ReplaceFor("", new[]
+        // the plan of a made-up character, its items in every place (the bag, the storage, the server storage, another character), and a made-up market
+        const string crafter = "Lumiel";
+        var planned = new[]
         {
-            new Aion2.CraftEntry { Recipe = 314016004, Count = 20 }, new Aion2.CraftEntry { Recipe = 314036002, Count = 10 },
-            new Aion2.CraftEntry { Recipe = 111025001, Count = 1, AccountWide = false }, new Aion2.CraftEntry { Recipe = 213034001, Count = 2 },
-            new Aion2.CraftEntry { Recipe = 514085002, Count = 10, AccountWide = false },
-        });
+            new Aion2.CraftEntry { Recipe = 314016004, Count = 20, Character = crafter }, new Aion2.CraftEntry { Recipe = 314036002, Count = 10, Character = crafter },
+            new Aion2.CraftEntry { Recipe = 111025001, Count = 1, AccountWide = false, Character = crafter }, new Aion2.CraftEntry { Recipe = 213034001, Count = 2, Character = crafter },
+            new Aion2.CraftEntry { Recipe = 514085002, Count = 10, AccountWide = false, Character = crafter },
+        };
+        Aion2.CraftPlan.ReplaceFor(crafter, planned);
+        (Ui.CraftStock pictureStock, Upload.MarketBook pictureBook) = CraftPictureStock(crafter, planned);
+        Ui.CraftWorkshopPage.Picture = (pictureStock, pictureBook);
 
-        var craftPage = new Ui.CraftPage(() => null);
-        var module = new Ui.ModulePage("", craftPage, s => true, (s, v) => { }, s => "Ctrl+Alt+R", () => { }, () => { }, s => { }, null, craftPage.ModeBar);
+        var craftPage = new Ui.CraftWorkshopPage(() => null);
+        craftPage.ShowTab("plan");
+        var module = new Ui.ModulePage(Ui.LocalizationManager.Instance["Main.MenuTools.Craft"], craftPage, s => true, (s, v) => { }, s => "Ctrl+Alt+R", () => { }, () => { }, s => { }) { FitWidth = true };
         // the page inside the tools window, with its title bar and its list of tools
         var groups = Ui.ToolsWindow.Groups();
         var toolsWindow = new Ui.ToolsWindow(groups, id => id == "craft" ? new Ui.ToolPage { Content = module } : null, _ => { });
         toolsWindow.Select("craft");
         var page = (System.Windows.UIElement)toolsWindow.Content;
         toolsWindow.Content = null;
-        var results = Ui.CraftText.Results(null, settings);
-        var overlayLines = Ui.CraftOverlayController.OverlayLines(results, settings, sample: false);
+        var picturePlan = Ui.CraftWorkshop.Plan(Aion2.CraftPlan.For(crafter), pictureStock, settings.CraftResolve, true, pictureBook);
         var overlay = new Ui.CraftOverlayWindow();
-        overlay.Render(overlayLines.Caption, overlayLines.Lines, overlayLines.More);
+        overlay.Render(Ui.CraftOverlayController.ViewOf(pictureStock, pictureBook, picturePlan, settings, sample: false));
         var overlayContent = overlay.DetachBody()!;
         var window = new Ui.CraftConfigWindow(() => null);
         // the whole frame of the window (title bar with icon, title, minimize and close), lifted out of the never shown window
@@ -4037,7 +4132,7 @@ internal static class Program
         }
 
         var left = new System.Windows.Controls.StackPanel { Width = 980 };
-        left.Children.Add(new System.Windows.Controls.Border { Width = 980, Height = 860, Background = back, Child = page });
+        left.Children.Add(new System.Windows.Controls.Border { Width = 980, Height = 1180, Background = back, Child = page });
         var strip = new System.Windows.Controls.Border { Padding = new System.Windows.Thickness(20), Background = new System.Windows.Media.LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x3a, 0x4a, 0x52), System.Windows.Media.Color.FromRgb(0x1c, 0x26, 0x2e), 60) };
         strip.Child = new System.Windows.Controls.Border { Child = overlayContent, HorizontalAlignment = System.Windows.HorizontalAlignment.Left };
         left.Children.Add(strip);
@@ -4057,6 +4152,27 @@ internal static class Program
         using (var file = File.Create(path))
         {
             encoder.Save(file);
+        }
+
+        // what the items let the character craft now, and the recipes to add: pictures of their own
+        foreach ((string tab, string suffix) in new[] { ("now", "-now"), ("recipes", "-recipes") })
+        {
+            var tabPage = new Ui.CraftWorkshopPage(() => null);
+            tabPage.ShowTab(tab);
+            var tabModule = new Ui.ModulePage(Ui.LocalizationManager.Instance["Main.MenuTools.Craft"], tabPage, s => true, (s, v) => { }, s => "Ctrl+Alt+R", () => { }, () => { }, s => { })
+            {
+                FitWidth = true,
+            };
+            var tabShot = new System.Windows.Controls.Border { Width = 1180, Height = 1000, Background = back, Child = tabModule };
+            tabShot.Measure(new System.Windows.Size(1180, 1000));
+            tabShot.Arrange(new System.Windows.Rect(0, 0, 1180, 1000));
+            tabShot.UpdateLayout();
+            var tabBitmap = Shot(1180, 1000, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            tabBitmap.Render(tabShot);
+            var tabEncoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            tabEncoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(tabBitmap));
+            using var tabFile = File.Create(Path.ChangeExtension(path, null) + suffix + ".png");
+            tabEncoder.Save(tabFile);
         }
 
         // the question every configuration window asks when it is closed with changes
