@@ -393,6 +393,9 @@
     "kill": [],
     "avoid": [],
     "npcSpawn": [16694],
+    "playerRemove": [
+      18230
+    ],
     "npcRemove": [16950],
     "envSpawn": [13366],
     "envRemove": [13622],

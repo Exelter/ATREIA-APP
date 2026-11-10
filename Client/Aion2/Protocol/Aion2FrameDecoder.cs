@@ -122,6 +122,11 @@ public sealed class Aion2FrameDecoder
     /// <summary>The boss rages decoded since the last call, oldest first.</summary>
     public IReadOnlyList<EnrageMark> DrainEnrages() => Drain(_enrages);
 
+    private readonly List<(int Entity, DateTime At)> _deaths = new();
+
+    /// <summary>The deaths (hit points read at 0 after something above) since the last call, oldest first: monsters and players alike.</summary>
+    public IReadOnlyList<(int Entity, DateTime At)> DrainDeaths() => Drain(_deaths);
+
     private void DecodeEngage(ReadOnlySpan<byte> frame, DateTime timestamp)
     {
         int p = 2;
@@ -1072,6 +1077,9 @@ public sealed class Aion2FrameDecoder
             case OpcodeFamily.NpcRemove:
                 DecodeNpcRemove(frame, timestamp);
                 return Array.Empty<DamageEvent>();
+            case OpcodeFamily.PlayerRemove:
+                DecodePlayerRemove(frame);
+                return Array.Empty<DamageEvent>();
             case OpcodeFamily.EnvSpawn:
                 DecodeEnvSpawn(frame);
                 return Array.Empty<DamageEvent>();
@@ -1361,6 +1369,16 @@ public sealed class Aion2FrameDecoder
         _entities.NoteRemoved(unchecked((int)entityId), frame[^1], timestamp);
         _entities.Combat.NoteGone(unchecked((int)entityId), timestamp);
         _entities.Combat.ForgetEntity(unchecked((int)entityId));
+    }
+
+    /// <summary>Another player left the view (0x4736): <c>opcode | entity id (varint) | 2 bytes</c>.</summary>
+    private void DecodePlayerRemove(ReadOnlySpan<byte> frame)
+    {
+        int p = 2;
+        if (TryReadVarint(frame, ref p, out long entityId) && frame.Length == p + 2)
+        {
+            _entities.NotePlayerGone(unchecked((int)entityId));
+        }
     }
 
     private void DecodeNpcSpawn(ReadOnlySpan<byte> frame, DateTime timestamp)
@@ -2404,6 +2422,11 @@ public sealed class Aion2FrameDecoder
                 _entities.Combat.NoteRevive(unchecked((int)entityId), timestamp); // back on their feet
             }
 
+            if (hp == 0 && before != 0)
+            {
+                _deaths.Add((unchecked((int)entityId), timestamp)); // the death recap, the rivals, the wipe review and the kill counts go by these
+            }
+
             if (hp == 0)
             {
                 _entities.Combat.NoteGone(unchecked((int)entityId), timestamp);
@@ -2731,6 +2754,7 @@ public sealed class Aion2FrameDecoder
                 _entities.Register((int)id, name);
                 _entities.NoteIdentity((int)id, name, 0);
                 _entities.NoteMet(name, timestamp);
+                _entities.NotePlayerInView((int)id, timestamp);
                 ReadSeenProfile(frame, (int)id, k + 1 + frame[k]);
 
                 // The faction: the byte after the 4 bytes that follow the name is 1 for a player of an Elyos server and 2 for one of an

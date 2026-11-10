@@ -71,6 +71,7 @@ public static class SelfCheck
         ok &= SelfCheckBlackCloud.Run();
         ok &= SelfCheckCp.Run();
         ok &= SelfCheckCraft.Run();
+        ok &= SelfCheckPvp.Run();
         ok &= SelfCheckGatherTally.Run();
         ok &= SelfCheckFightClock.Run();
         ok &= SelfCheckColorPicker.Run();

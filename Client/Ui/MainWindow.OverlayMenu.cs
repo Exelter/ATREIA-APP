@@ -128,7 +128,7 @@ public partial class MainWindow
 
     private static string MenuGroupOf(string id) => id switch
     {
-        "meter" or "combat" or "cooldowns" or "effects" or "enemy" => "Combat",
+        "meter" or "combat" or "cooldowns" or "effects" or "enemy" or "radar" or "deathrecap" => "Combat",
         "timetable" or "boss" or "petmap" or "petfarm" => "World",
         "loot" or "gather" or "season" or "craft" => "Tools",
         _ => "System",
@@ -137,7 +137,7 @@ public partial class MainWindow
     private static string MenuGlyphOf(string id) => id switch
     {
         "meter" => "\uE9D2", "combat" => "\uE7C1", "cooldowns" => "\uE945", "effects" => "\uE9F9", "timetable" => "\uE787", "boss" => "\uE7BA", "petmap" => "\uE707",
-        "petfarm" => "\uE8D4", "loot" => "\uE7B8", "gather" => "\uE8D4", "season" => "\uE734", "craft" => "\uE90F", "network" => "\uE701", "fps" => "\uE9D9", "enemy" => "\uE7EE",
+        "petfarm" => "\uE8D4", "loot" => "\uE7B8", "gather" => "\uE8D4", "season" => "\uE734", "craft" => "\uE90F", "network" => "\uE701", "fps" => "\uE9D9", "enemy" => "\uE7EE", "radar" => "\uE707", "deathrecap" => "\uE7BA",
         "hotkeys" => "\uE765", _ => "\uE8B7",
     };
 

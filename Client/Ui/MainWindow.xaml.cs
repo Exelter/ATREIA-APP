@@ -148,6 +148,8 @@ public partial class MainWindow : Window
     private NetworkOverlayController? _network;
     private FpsOverlayController? _fps;
     private EnemyCardController? _enemyCard;
+    private EnemyRadarController? _enemyRadar;
+    private DeathRecapController? _deathRecap;
     private DummyTestController? _dummy;
     private readonly System.Windows.Threading.DispatcherTimer _gateTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private bool _gameGateOpen = true;
@@ -1111,10 +1113,16 @@ public partial class MainWindow : Window
         // The live capture is polled whatever the grid shows, so the session recording goes on while a stored session is on view.
         CombatBatch captured = _liveSource?.Poll(_paused) ?? CombatBatch.Empty;
         bool ownFight = NoteOwnCombat(captured.Damage); // every hit tells of bosses, dummies and the own fighting, counted or not
+        // the deaths the stream told of (hit points at 0): the game sends no kill message, so these are what a kill is
+        IReadOnlyList<(int Entity, DateTime At)> deaths = (_liveSource as Aion2.Aion2PacketCombatSource)?.DrainDeaths() ?? Array.Empty<(int Entity, DateTime At)>();
         if (_liveSource?.Entities is Aion2.Aion2EntityDirectory lootDirectory)
         {
-            // the loot tool's drop rates: whom the player hit and who died, counted or not (the open world too)
-            Aion2.Aion2Loot.NoteCombat(captured.Damage, captured.Kills, lootDirectory.IsLocalPlayer, lootDirectory.NpcIdOf);
+            // the loot tool's drop rates: whom the player hit and who died, counted or not (the open world too); a monster the player hit that died is a kill now
+            // even when it dropped nothing for him (10 November 2026: only kills with a pickup were counted, so the grind's kills an hour came out low)
+            IReadOnlyList<KillEvent> kills = deaths.Count == 0 ? captured.Kills
+                : captured.Kills.Concat(deaths.Select(d => new KillEvent(d.At, null, d.Entity, lootDirectory.IsPlayer(d.Entity)))).ToList();
+            Aion2.Aion2Loot.NoteCombat(captured.Damage, kills, lootDirectory.IsLocalPlayer, lootDirectory.NpcIdOf);
+            FeedPvp(lootDirectory, captured.Damage, deaths);
         }
 
         CombatBatch liveBatch = Counted(captured);
@@ -1252,6 +1260,8 @@ public partial class MainWindow : Window
         _combat?.RaiseToFront();
         _network?.RaiseToFront();
         _enemyCard?.RaiseToFront();
+        _enemyRadar?.RaiseToFront();
+        _deathRecap?.RaiseToFront();
         _dummy?.RaiseToFront();
         _petFarm?.RaiseToFront();
         _petMapController?.RaiseToFront();
@@ -1568,6 +1578,10 @@ public partial class MainWindow : Window
             _network ??= new NetworkOverlayController();
             _fps ??= new FpsOverlayController(); // the FPS counter (listens to Windows' frame timing only while it is on)
             _enemyCard ??= new EnemyCardController(() => _liveSource?.Entities as Aion2EntityDirectory); // the player selected in the Abyss
+            _enemyRadar ??= new EnemyRadarController(() => _liveSource?.Entities as Aion2EntityDirectory,
+                (id, name) => _enemyCard?.Known(name ?? "", (_liveSource?.Entities as Aion2EntityDirectory)?.ServerIdOf(id) ?? 0)); // the enemies in view
+            _deathRecap ??= new DeathRecapController(); // who killed the own character
+            Aion2Pvp.EnablePersistence(); // the rivals: the players fought, with the kills and the deaths against each
             Aion2Loot.EnablePersistence();
             Aion2Grind.EnablePersistence(); // the grind sessions: Kinah, Abyss Points, kills and loot per hour (the meter's Grind view, the Grind page)
             Aion2BlackCloud.EnablePersistence(); // every character's pets and the Black Cloud Merchant's last offers (the notes, the Pets page)
@@ -2288,6 +2302,7 @@ public partial class MainWindow : Window
             ("inventories", () => Aion2Inventories.Flush(force)),
             ("loot", () => Aion2Loot.Flush()),
             ("grind", () => Aion2Grind.Flush()),
+            ("rivals", () => Aion2Pvp.Flush()),
             ("gathering", () => Aion2GatherLog.Flush()),
             ("field bosses", () => Aion2FieldBosses.Flush()),
         })
@@ -2365,6 +2380,8 @@ public partial class MainWindow : Window
         _network?.Dispose();
         _fps?.Dispose();
         _enemyCard?.Dispose();
+        _enemyRadar?.Dispose();
+        _deathRecap?.Dispose();
         _dummy?.Dispose();
         FlushStores(force: true);
         AionDPS.Upload.MapShare.Flush(); // the map accuracy checks still waiting (a few seconds at most)
@@ -8514,6 +8531,8 @@ public partial class MainWindow : Window
         ("craft", s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v),
         ("fps", s => s.ShowFpsOverlay, (s, v) => s.ShowFpsOverlay = v),
         ("enemy", s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v),
+        ("radar", s => s.ShowEnemyRadar, (s, v) => s.ShowEnemyRadar = v),
+        ("deathrecap", s => s.ShowDeathRecap, (s, v) => s.ShowDeathRecap = v),
     };
 
     /// <summary>

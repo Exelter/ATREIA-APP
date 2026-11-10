@@ -1653,6 +1653,7 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
             _target = null;
             _lastHit = null;
             _ownTarget = null;
+            _inView.Clear();
             _zoneEpoch++;
         }
     }
@@ -4035,6 +4036,45 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
     }
 
     /// <summary>True once the object has been seen using a class skill - i.e. it is a player.</summary>
+    private readonly Dictionary<int, DateTime> _inView = new();
+
+    /// <summary>A player came into view (his "player appeared" frame, 0x4536).</summary>
+    public void NotePlayerInView(int id, DateTime at)
+    {
+        lock (_gate)
+        {
+            _inView[id] = at;
+        }
+    }
+
+    /// <summary>A player left the view (0x4736: <c>opcode | entity id (varint) | 2 bytes</c>; on the recording of 8 November 2026, 110 of 133 players who came into view
+    /// again had it as the last frame about them in between).</summary>
+    public void NotePlayerGone(int id)
+    {
+        lock (_gate)
+        {
+            _inView.Remove(id);
+        }
+    }
+
+    /// <summary>The other players in view now (since a zone change), with the moment each came.</summary>
+    public IReadOnlyList<(int Id, DateTime Since)> PlayersInView()
+    {
+        lock (_gate)
+        {
+            return _inView.Select(kv => (kv.Key, kv.Value)).ToList();
+        }
+    }
+
+    /// <summary>Whether an id is another player's: his skills were seen, or the game announced him ("player appeared").</summary>
+    public bool IsPlayer(int id)
+    {
+        lock (_gate)
+        {
+            return _classVotes.ContainsKey(id) || _seen.ContainsKey(id) || _inView.ContainsKey(id) || _factionById.ContainsKey(id);
+        }
+    }
+
     public bool IsKnownPlayer(int id)
     {
         lock (_gate)

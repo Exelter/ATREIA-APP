@@ -843,7 +843,7 @@ public static class SelfCheckAion2
     /// </summary>
     private static bool RunAion2OwnTargetScenario()
     {
-        Console.WriteLine("[selftest] Aion 2 own selection (a player selected, then cleared):");
+        Console.WriteLine("[selftest] Aion 2 own selection and the players in view (a player selected, then cleared; in view, then gone):");
         using var source = new Aion2PacketCombatSource(Aion2Protocol.Load());
         var dir = (Aion2EntityDirectory)source.Entities;
         uint seq = 9000;
@@ -871,8 +871,11 @@ public static class SelfCheckAion2
         bool kept = dir.OwnTarget?.EntityId == 16372;
         Send(new byte[] { 0x34, 0x38, 0x00, 0x00, 0x00, 0x00 });
         bool cleared = dir.OwnTarget is null;
-        Console.WriteLine($"  -> a player selected: {selected}; another form leaves it: {kept}; cleared: {cleared}");
-        return selected && kept && cleared;
+        bool inView = dir.PlayersInView().Any(p => p.Id == 16372) && dir.IsPlayer(16372);
+        Send(new byte[] { 0x47, 0x36, 0xF4, 0x7F, 0x01, 0x00 }); // she leaves the view
+        bool left = dir.PlayersInView().Count == 0;
+        Console.WriteLine($"  -> a player selected: {selected}; another form leaves it: {kept}; cleared: {cleared}; in view: {inView}, then gone (0x4736): {left}");
+        return selected && kept && cleared && inView && left;
     }
 
     /// <summary>
