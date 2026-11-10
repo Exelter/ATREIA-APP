@@ -23,7 +23,7 @@ public enum FightLogKind
 public sealed record FightLogEntry(
     string Id, FightLogKind Kind, string Title, string? Detail, DateTime Start, double Seconds, bool? Killed, int BossFights,
     double YourDps, double PartyDps, int? BossNpcId, int ZoneId, string File, string? You = null, string? YourClass = null, string? Url = null, int? ServerId = null,
-    IReadOnlyList<string>? Players = null);
+    IReadOnlyList<string>? Players = null, double? BossHpLeft = null);
 
 /// <summary>
 /// The history on this PC (%APPDATA%\AtreiaApp\History): every dungeon run, boss fight, dummy parse and arena stay is saved as a file of its own
@@ -46,6 +46,11 @@ public static class FightLog
 
     /// <summary>Raised (on the saving thread) when an entry was added or removed.</summary>
     public static event Action? Changed;
+
+    /// <summary>Counts up with every change of the list (what is worked out from it, a best or the tries on a boss, is worked out again then).</summary>
+    public static int Version => Volatile.Read(ref _version);
+
+    private static int _version;
 
     private sealed record PlayerDto(int Id, string Name, string Class, int? Cp, bool Self);
 
@@ -95,7 +100,8 @@ public static class FightLog
     /// Saves a fight as an entry of its own: its file first, then the index. <paramref name="detail"/> is the second word of the title ("Normal",
     /// "2:00 parse"); <paramref name="bossFights"/> the boss fights inside a run. Returns the entry, or null when there is nothing to keep (no damage).
     /// </summary>
-    public static FightLogEntry? Save(FightLogKind kind, ReportInput input, string? detail = null, int zoneId = 0, int bossFights = 0, int? serverId = null)
+    public static FightLogEntry? Save(FightLogKind kind, ReportInput input, string? detail = null, int zoneId = 0, int bossFights = 0, int? serverId = null,
+        double? bossHpLeft = null)
     {
         var playerIds = input.Players.Select(p => p.Id).ToHashSet();
         double seconds = Math.Max(1, (input.End - input.Start).TotalSeconds);
@@ -130,7 +136,7 @@ public static class FightLog
             Convert.ToBase64String(ExtrasBlob.Pack(input.Extras with { Tracks = null, Hp = null })), input.Targets?.ToList());
         var entry = new FightLogEntry(id, kind, input.Title, detail, input.Start, seconds, kind == FightLogKind.Boss ? input.Killed : null, bossFights,
             you is not null ? yours / seconds : 0, party / seconds, input.BossNpcId, zoneId, relative, you?.Name, you?.ClassName, ServerId: serverId > 0 ? serverId : null,
-            Players: NamesOf(input.Players.Select(p => p.Name)));
+            Players: NamesOf(input.Players.Select(p => p.Name)), BossHpLeft: kind == FightLogKind.Boss ? (input.Killed ? 0 : bossHpLeft) : null);
 
         lock (Gate)
         {
@@ -160,6 +166,7 @@ public static class FightLog
             SaveIndex(index);
         }
 
+        Interlocked.Increment(ref _version);
         Changed?.Invoke();
         return entry;
     }
@@ -241,6 +248,7 @@ public static class FightLog
 
         if (changed)
         {
+            Interlocked.Increment(ref _version);
             Changed?.Invoke();
         }
     }
@@ -273,6 +281,7 @@ public static class FightLog
             TryDelete(Path.Combine(Folder, entry.File));
         }
 
+        Interlocked.Increment(ref _version);
         Changed?.Invoke();
     }
 
@@ -361,6 +370,7 @@ public static class FightLog
             finally
             {
                 Volatile.Write(ref _filling, 0);
+                Interlocked.Increment(ref _version);
                 Changed?.Invoke();
             }
         });
