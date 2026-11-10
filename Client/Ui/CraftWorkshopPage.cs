@@ -600,9 +600,26 @@ public sealed class CraftWorkshopPage : StackPanel
     /// <summary>For every character, or for this one only.</summary>
     private static FrameworkElement ScopeChip(CraftEntry entry, string character)
     {
+        // a switch, not a figure: a person (or people) before the words, no fill, lit under the mouse
         string text = entry.AccountWide ? "All characters" : "Only " + (entry.Character.Length > 0 ? entry.Character : character);
-        var chip = Pill(text, Color.FromRgb(0x9A, 0xA4, 0xAE), "Click: " + (entry.AccountWide ? "only for " + character : "for every character") + " (each character's own items count)");
-        chip.Cursor = Cursors.Hand;
+        Color grey = Color.FromRgb(0x9A, 0xA4, 0xAE);
+        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        row.Children.Add(new TextBlock
+        {
+            Text = entry.AccountWide ? "\uE716" : "\uE77B", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 11, Margin = new Thickness(0, 1, 6, 0),
+            Foreground = new SolidColorBrush(grey), VerticalAlignment = VerticalAlignment.Center,
+        });
+        row.Children.Add(new TextBlock { Text = text, FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(grey), VerticalAlignment = VerticalAlignment.Center });
+        var idle = new SolidColorBrush(Colors.Transparent);
+        var lit = new SolidColorBrush(Color.FromArgb(0x22, grey.R, grey.G, grey.B));
+        var chip = new Border
+        {
+            Child = row, Padding = new Thickness(8, 3, 10, 4), Margin = new Thickness(0, 0, 6, 6), CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1),
+            Background = idle, BorderBrush = new SolidColorBrush(Color.FromArgb(0x55, grey.R, grey.G, grey.B)), Cursor = Cursors.Hand,
+            ToolTip = "Click: " + (entry.AccountWide ? "only for " + character : "for every character") + " (each character's own items count)",
+        };
+        chip.MouseEnter += (_, _) => chip.Background = lit;
+        chip.MouseLeave += (_, _) => chip.Background = idle;
         chip.MouseLeftButtonUp += (_, _) =>
         {
             entry.AccountWide = !entry.AccountWide;
@@ -634,7 +651,16 @@ public sealed class CraftWorkshopPage : StackPanel
         }
 
         _body.Children.Add(Text($"{chances.Count} recipe{(chances.Count == 1 ? "" : "s")} your items cover, the most profitable at the market first", 12.5, "Brush.TextMuted", margin: new Thickness(2, 0, 0, 10)));
-        var wrap = new WrapPanel();
+        // as many columns as fit (a card wants about 340 px), sharing the width evenly: no ragged gap on the right
+        var wrap = new UniformGrid { Columns = 3, Margin = new Thickness(0, 0, -12, 0) };
+        wrap.SizeChanged += (_, e) =>
+        {
+            int columns = Math.Max(1, (int)((e.NewSize.Width) / 352));
+            if (wrap.Columns != columns)
+            {
+                wrap.Columns = columns;
+            }
+        };
         foreach (CraftChance c in chances.Take(60))
         {
             bool planned = entries.Any(e => e.Recipe == c.Recipe.Id || Aion2CraftData.ForFaction(e.Recipe, elyos)?.Id == c.Recipe.Id);
@@ -647,7 +673,6 @@ public sealed class CraftWorkshopPage : StackPanel
     private FrameworkElement ChanceCard(CraftChance c, bool planned, string character)
     {
         var card = Card(new Thickness(14, 12, 14, 12));
-        card.Width = 356;
         card.Margin = new Thickness(0, 0, 12, 12);
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

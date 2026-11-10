@@ -26,6 +26,13 @@ public sealed class CraftConfigWindow : Window
     private readonly List<CraftEntry> _entries;
     private double _opacity;
     private readonly string _baseline;
+
+    // the plan as this window found it: the crafting page changes the plan too while this window is open (Add to plan, the counts), so the list is written back
+    // only when it was edited here, and what the page added meanwhile is kept
+    private readonly string _planAtOpen;
+    private readonly HashSet<int> _recipesAtOpen;
+
+    private static string PlanKey(IEnumerable<CraftEntry> entries) => string.Join(",", entries.Select(e => e.Recipe + "x" + e.Count + (e.AccountWide ? "a" : "c")));
     private bool _allowClose;
 
     private string _category = "Alchemy";
@@ -50,6 +57,8 @@ public sealed class CraftConfigWindow : Window
         _settings = MeterSettings.Load();
         _opacity = _settings.OverlayOpacities.GetValueOrDefault(OverlayPlaces.Craft, 0.6);
         _entries = CraftPlan.For(_character).Select(e => new CraftEntry { Recipe = e.Recipe, Count = e.Count, AccountWide = e.AccountWide, Character = e.Character }).ToList();
+        _planAtOpen = PlanKey(_entries);
+        _recipesAtOpen = _entries.Select(e => e.Recipe).ToHashSet();
 
         Title = loc["Craft.ConfigTitle"];
         Width = 720;
@@ -627,16 +636,56 @@ public sealed class CraftConfigWindow : Window
 
     private void SaveAll()
     {
-        CraftPlan.ReplaceFor(_character, _entries);
-        // the overlay saves its place straight to disk while this window is open: only the fields of this window are written, to a fresh copy
+        if (PlanKey(_entries) != _planAtOpen)
+        {
+            // what the crafting page added while this window was open stays, after this window's list
+            var edited = new List<CraftEntry>(_entries);
+            foreach (CraftEntry added in CraftPlan.For(_character).Where(e => !_recipesAtOpen.Contains(e.Recipe) && edited.All(x => x.Recipe != e.Recipe)))
+            {
+                edited.Add(new CraftEntry { Recipe = added.Recipe, Count = added.Count, AccountWide = added.AccountWide, Character = added.Character });
+            }
+
+            CraftPlan.ReplaceFor(_character, edited);
+        }
+
+        // the overlay saves its place straight to disk while this window is open, and the crafting page switches the places counted: only what was changed in
+        // this window is written, to a fresh copy
         MeterSettings s = MeterSettings.Load();
-        s.CraftResolve = _resolve;
-        s.CraftCountInventory = _countInventory;
-        s.CraftCountStorage = _countStorage;
-        s.CraftCountAccountStorage = _countAccount;
-        s.CraftOverlayLocked = !_movable;
-        s.CraftOverlayLines = _lines;
-        s.OverlayOpacities[OverlayPlaces.Craft] = _opacity;
+        if (_resolve != _settings.CraftResolve)
+        {
+            s.CraftResolve = _resolve;
+        }
+
+        if (_countInventory != _settings.CraftCountInventory)
+        {
+            s.CraftCountInventory = _countInventory;
+        }
+
+        if (_countStorage != _settings.CraftCountStorage)
+        {
+            s.CraftCountStorage = _countStorage;
+        }
+
+        if (_countAccount != _settings.CraftCountAccountStorage)
+        {
+            s.CraftCountAccountStorage = _countAccount;
+        }
+
+        if (!_movable != _settings.CraftOverlayLocked)
+        {
+            s.CraftOverlayLocked = !_movable;
+        }
+
+        if (_lines != _settings.CraftOverlayLines)
+        {
+            s.CraftOverlayLines = _lines;
+        }
+
+        if (Math.Abs(_opacity - _settings.OverlayOpacities.GetValueOrDefault(OverlayPlaces.Craft, 0.6)) > 0.001)
+        {
+            s.OverlayOpacities[OverlayPlaces.Craft] = _opacity;
+        }
+
         s.Save();
     }
 
