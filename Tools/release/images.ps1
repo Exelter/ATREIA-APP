@@ -12,8 +12,19 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $agent = 'AtreiaApp-checks'
 
+# A connection the server drops (several checks start at once when pull requests are merged together, and all fetch the pack) is tried again:
+# up to four tries, 10, 30 and 60 seconds apart. Messages go to the host, so they never mix into what the tries return.
+function Invoke-Often([string]$label, [scriptblock]$work) {
+    $last = $null
+    foreach ($wait in 0, 10, 30, 60) {
+        if ($wait) { Write-Host "${label}: trying again in $wait s"; Start-Sleep -Seconds $wait }
+        try { return (& $work) } catch { $last = $_; Write-Host "${label}: $($_.Exception.Message)" }
+    }
+    throw $last
+}
+
 try {
-    $pack = Invoke-RestMethod -Uri $Index -UserAgent $agent -TimeoutSec 60
+    $pack = Invoke-Often 'Image pack index' { Invoke-RestMethod -Uri $Index -UserAgent $agent -TimeoutSec 60 }
 } catch {
     "::error title=Image pack::The image pack is not on atreia.app yet (${Index}: $($_.Exception.Message)). Put it there with the site's tools/app-images.mjs, then DEPLOY."
     exit 1
@@ -21,10 +32,15 @@ try {
 
 $url = if ($pack.url) { $pack.url } else { [Uri]::new([Uri]$Index, [string]$pack.file).AbsoluteUri }
 $zip = Join-Path ([IO.Path]::GetTempPath()) "atreia-images-$($pack.version).zip"
-Invoke-WebRequest -Uri $url -OutFile $zip -UserAgent $agent -TimeoutSec 900
-$hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($hash -ne ([string]$pack.sha256).ToLowerInvariant()) {
-    "::error title=Image pack::$url does not match the SHA-256 in $Index ($hash, not $($pack.sha256))."
+# a download cut short does not match the SHA-256, so it is fetched again as well
+try {
+    Invoke-Often 'Image pack' {
+        Invoke-WebRequest -Uri $url -OutFile $zip -UserAgent $agent -TimeoutSec 900
+        $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($hash -ne ([string]$pack.sha256).ToLowerInvariant()) { throw "$url does not match the SHA-256 in $Index ($hash, not $($pack.sha256))." }
+    } | Out-Null
+} catch {
+    "::error title=Image pack::$($_.Exception.Message)"
     exit 1
 }
 
