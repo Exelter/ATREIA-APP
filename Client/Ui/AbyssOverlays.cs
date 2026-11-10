@@ -58,13 +58,13 @@ public sealed record RadarView(IReadOnlyList<RadarEnemy> Enemies, RadarEnemy? Wa
     /// <summary>What the radar shows while it is placed with no enemy around.</summary>
     public static RadarView SampleView(DateTime now)
     {
-        var kraeger = new RadarEnemy(1, "Kraeger", "Templar", 2_418_300, 3_120, 0.12, new Rival { Name = "Kraeger", Met = 4, Kills = 2, Deaths = 2, KilledBy = 1 }, now);
+        var kraeger = new RadarEnemy(1, "Kraeger", "Templar", 231_400, 3_120, 0.12, new Rival { Name = "Kraeger", Met = 4, Kills = 2, Deaths = 2, KilledBy = 1 }, now);
         return new RadarView(new[]
         {
             kraeger,
-            new RadarEnemy(2, "Vesh", "Assassin", 2_205_900, 3_044, 0.02, null, now),
-            new RadarEnemy(3, "Morrigane", "Sorcerer", 1_984_200, 2_967, -0.08, new Rival { Name = "Morrigane", Met = 1, Kills = 1 }, now),
-            new RadarEnemy(4, "Toskar", "Gladiator", 1_712_450, 2_880, -0.21, null, now),
+            new RadarEnemy(2, "Vesh", "Assassin", 210_700, 3_044, 0.02, null, now),
+            new RadarEnemy(3, "Morrigane", "Sorcerer", 190_100, 2_967, -0.08, new Rival { Name = "Morrigane", Met = 1, Kills = 1 }, now),
+            new RadarEnemy(4, "Toskar", "Gladiator", 163_200, 2_880, -0.21, null, now),
             new RadarEnemy(5, "Ilyre", "Cleric", null, null, null, null, now),
         }, kraeger, Sample: true);
     }
@@ -150,7 +150,7 @@ public sealed class EnemyRadarWindow : MovableOverlay
             var text = new TextBlock { FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis };
             text.Inlines.Add(new System.Windows.Documents.Run("STRONGER ENEMY  ") { FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Enemy) });
             text.Inlines.Add(new System.Windows.Documents.Run(w.Name) { FontWeight = FontWeights.SemiBold, Foreground = Brushes.White });
-            text.Inlines.Add(new System.Windows.Documents.Run($"  {GrindView.Short(w.CombatPower ?? 0)}  ▲ {w.Against:P0}") { Foreground = new SolidColorBrush(Enemy) });
+            text.Inlines.Add(new System.Windows.Documents.Run($"  {PlayerRow.Compact(w.CombatPower ?? 0)}  ▲ {w.Against:P0}") { Foreground = new SolidColorBrush(Enemy) });
             warn.Child = text;
             stack.Children.Add(warn);
         }
@@ -183,7 +183,7 @@ public sealed class EnemyRadarWindow : MovableOverlay
             Foreground = e.ClassName is null ? Brushes.White : ClassBrushes.Text(e.ClassName) };
         Grid.SetColumn(name, 1);
         grid.Children.Add(name);
-        var power = new TextBlock { Text = e.CombatPower is int cp ? GrindView.Short(cp) : "…", FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(10, 0, 0, 0),
+        var power = new TextBlock { Text = e.CombatPower is int cp ? PlayerRow.Compact(cp) : "…", FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(10, 0, 0, 0),
             Foreground = new SolidColorBrush(OverlaySkin.Gold), VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right,
             ToolTip = e.ItemLevel is int il ? $"Item level {il:N0}" : null };
         power.SetValue(System.Windows.Documents.Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);

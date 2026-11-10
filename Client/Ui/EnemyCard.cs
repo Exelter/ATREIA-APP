@@ -48,7 +48,7 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
     }
 
     /// <summary>What the card shows while it is placed with nobody selected.</summary>
-    public static EnemyCardData SampleCard(int? ownPower) => new("Kraeger", "Templar", 45, "Nezekan", "Iron Oath", 2_418_300, 3_120, true, ownPower ?? 2_160_000, Sample: true,
+    public static EnemyCardData SampleCard(int? ownPower) => new("Kraeger", "Templar", 45, "Nezekan", "Iron Oath", 231_400, 3_120, true, ownPower ?? 206_600, Sample: true,
         Rival: new Rival { Name = "Kraeger", Met = 4, Kills = 2, Deaths = 2, KilledBy = 1 });
 }
 
@@ -164,7 +164,10 @@ public sealed class EnemyCardWindow : MovableOverlay
         numbers.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var power = new StackPanel();
         power.Children.Add(Caption("COMBAT POWER"));
-        power.Children.Add(Big(card.CombatPower is int cp ? cp.ToString("N0", CultureInfo.CurrentCulture) : card.Looking ? "…" : "?", OverlaySkin.Gold));
+        TextBlock powerText = Big(card.CombatPower is int cp ? PlayerRow.Compact(cp) : card.Looking ? "…" : "?", OverlaySkin.Gold);
+        // short like the meter's own CP (231.4K); the exact figure on hover
+        powerText.ToolTip = card.CombatPower is int exact ? exact.ToString("N0", CultureInfo.CurrentCulture) : null;
+        power.Children.Add(powerText);
         if (card.Against is double against)
         {
             bool stronger = against > 0.005;

@@ -110,17 +110,20 @@ public sealed class ToolsWindow : Window
         var nav = new StackPanel { Margin = new Thickness(6) };
         var template = (ControlTemplate)XamlReader.Parse(
             "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='RadioButton'>" +
-            "<Border x:Name='Bd' Background='Transparent' CornerRadius='7' Padding='12,8'><ContentPresenter/></Border>" +
+            "<Border x:Name='Bd' Background='Transparent' BorderBrush='Transparent' BorderThickness='3,0,0,0' CornerRadius='4' Padding='12,8,12,8'><ContentPresenter/></Border>" +
             "<ControlTemplate.Triggers>" +
-            "<Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Bd' Property='Background' Value='#1a2b38'/></Trigger>" +
-            "<Trigger Property='IsChecked' Value='True'><Setter TargetName='Bd' Property='Background' Value='#26405a'/></Trigger>" +
+            "<Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Bd' Property='Background' Value='{DynamicResource Brush.Control}'/></Trigger>" +
+            "<Trigger Property='IsChecked' Value='True'><Setter TargetName='Bd' Property='Background' Value='{DynamicResource Brush.ControlRaised}'/>" +
+            "<Setter TargetName='Bd' Property='BorderBrush' Value='{DynamicResource Brush.Accent}'/></Trigger>" +
             "</ControlTemplate.Triggers></ControlTemplate>");
         bool first = true;
         foreach (var group in groups)
         {
             if (!first)
             {
-                nav.Children.Add(new Border { Height = 1, Margin = new Thickness(6, 5, 6, 5), Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#294557")! });
+                var line = new Border { Height = 1, Margin = new Thickness(6, 5, 6, 5) };
+                line.SetResourceReference(Border.BackgroundProperty, "Brush.Border");
+                nav.Children.Add(line);
             }
 
             first = false;
@@ -129,18 +132,19 @@ public sealed class ToolsWindow : Window
                 var button = new RadioButton
                 {
                     GroupName = "Tools", Template = template, Cursor = System.Windows.Input.Cursors.Hand, Margin = new Thickness(entry.Sub ? 22 : 0, 0, 0, 2),
-                    Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#9db3c2")!,
                     Content = new TextBlock { Text = entry.OwnWindow ? entry.Title + "  ↗" : entry.Title, FontSize = entry.Sub ? 12 : 13, TextTrimming = TextTrimming.CharacterEllipsis },
                 };
+                // the app's own colours (its main column, MainWindow.Shell.cs): quiet text, the chosen tool bright on a raised ground with a gold edge
+                button.SetResourceReference(Control.ForegroundProperty, "Brush.TextMuted");
                 button.Checked += (_, _) =>
                 {
-                    button.Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#ffba42")!;
+                    button.SetResourceReference(Control.ForegroundProperty, "Brush.Text");
                     if (!_selecting)
                     {
                         Select(entry.Id);
                     }
                 };
-                button.Unchecked += (_, _) => button.Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#9db3c2")!;
+                button.Unchecked += (_, _) => button.SetResourceReference(Control.ForegroundProperty, "Brush.TextMuted");
                 _entries[entry.Id] = entry;
                 _buttons[entry.Id] = button;
                 nav.Children.Add(button);
@@ -162,8 +166,8 @@ public sealed class ToolsWindow : Window
         navBody.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = nav });
         var navBorder = new Border { Width = 220, Child = navBody, BorderThickness = new Thickness(0, 0, 1, 0) };
         _navBorder = navBorder;
-        navBorder.Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#11202b")!;
-        navBorder.BorderBrush = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#294557")!;
+        navBorder.SetResourceReference(Border.BackgroundProperty, "Brush.TitleBar");
+        navBorder.SetResourceReference(Border.BorderBrushProperty, "Brush.Border");
         var root = new DockPanel();
         DockPanel.SetDock(navBorder, Dock.Left);
         root.Children.Add(navBorder);

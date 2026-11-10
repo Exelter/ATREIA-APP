@@ -81,7 +81,7 @@ public static class ToolRender
             {
                 // the enemy card over the game: an enemy stronger than you, and one of your own side (allies switched on)
                 var row = new StackPanel { Orientation = Orientation.Horizontal };
-                row.Children.Add(new Border { Width = 290, Child = EnemyCardWindow.View(new EnemyCardData("Kraeger", "Templar", 45, "Nezekan", "Iron Oath", 2_418_300, 3_120, true, 2_160_000)) });
+                row.Children.Add(new Border { Width = 290, Child = EnemyCardWindow.View(new EnemyCardData("Kraeger", "Templar", 45, "Nezekan", "Iron Oath", 231_400, 3_120, true, 206_600)) });
                 row.Children.Add(new Border { Width = 290, Margin = new Thickness(20, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top,
                     Child = EnemyCardWindow.View(new EnemyCardData("Seliora", "Cleric", 45, "Siel", null, 1_902_450, 2_874, false, 2_160_000)) });
                 shown = new Border
