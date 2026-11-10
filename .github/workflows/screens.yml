@@ -6,6 +6,8 @@ on:
   push:
     branches: [main]
     paths: ["Client/**", ".github/workflows/screens.yml"]
+  pull_request:
+    paths: ["Client/**", ".github/workflows/screens.yml"]
 
 permissions:
   contents: write

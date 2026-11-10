@@ -955,9 +955,9 @@ public sealed class HistoryWindow : Window
         }
 
         // a clean picture of the fight for Discord (ShareCard): copied, and kept in Pictures\Atreia App
-        var share = new MenuItem { Header = "Copy as an image (for Discord)" };
-        share.Click += (_, _) => _ = ShareAsync(entry);
-        menu.Items.Add(share);
+        var copyImage = new MenuItem { Header = "Copy as an image (for Discord)" };
+        copyImage.Click += (_, _) => _ = ShareAsync(entry);
+        menu.Items.Add(copyImage);
         menu.Items.Add(delete);
         row.ContextMenu = menu;
         return row;
