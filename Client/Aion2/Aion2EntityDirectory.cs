@@ -3580,6 +3580,16 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
         }
     }
 
+    /// <summary>The local player is out of the group finder's room (left it, was taken out, the room closed): no group any more, until the next roster
+    /// frame (see Aion2FrameDecoder.LeftRoomOpcode).</summary>
+    public void LeaveParty()
+    {
+        lock (_gate)
+        {
+            _party = new HashSet<string>(StringComparer.Ordinal);
+        }
+    }
+
     // Party member name -> class, from the roster's class code.
     private readonly Dictionary<string, string> _partyClasses = new(StringComparer.Ordinal);
 

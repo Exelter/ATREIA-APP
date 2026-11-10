@@ -122,7 +122,10 @@ internal static class JourneyViews
 
             good = change > 0 == higherIsBetter;
             string arrow = change > 0 ? "↗" : "↘";
-            text = arrow + " " + (percent ? Math.Abs(change).ToString(Math.Abs(change) < 10 ? "0.#" : "0", CultureInfo.CurrentCulture) + "%"
+            // a big rise as times as much (10 November 2026: "41 h ↗ 2703%" against a first week with the app barely on read oddly; "↗ 28×" says it)
+            double times = before > 0 ? now / before : 0;
+            text = arrow + " " + (percent && change >= 400 ? times.ToString(times < 10 ? "0.#" : "0", CultureInfo.CurrentCulture) + "×"
+                : percent ? Math.Abs(change).ToString(Math.Abs(change) < 10 ? "0.#" : "0", CultureInfo.CurrentCulture) + "%"
                 : Math.Abs(change).ToString("0.#", CultureInfo.CurrentCulture) + (unit ?? ""));
         }
 

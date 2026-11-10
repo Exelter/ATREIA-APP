@@ -6,6 +6,67 @@
   ],
   "versions": [
     {
+      "version": "1.21.10",
+      "date": "2026-11-10",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Overlays",
+          "title": "The overlay editor",
+          "text": "One key (Ctrl+Alt+V unless you changed it), or the first button of the overlay menu, opens the overlay editor over the game. Every overlay is a tile: click it to switch it on or off. While the editor is open each overlay shows where it sits on a faint grid, so you see how it will look: drag it, size it at its corners. An overlay's key is on its tile: click the key and press new ones. Size and opacity for all of them, the Atreia button and Alt + drag are there too. Done locks everything in place.",
+          "example": "Press Ctrl+Alt+V, switch on Timers and World bosses, drag them under the minimap, set the opacity to 70 % and press Done."
+        },
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "Your group stays when you join",
+          "text": "Rooms are joined in the game's group finder, which counts as a game window, so the meter showed your group and vanished a moment later. While you're in a group the meter now stays, also over the game's windows. Switch off Show my group in Settings if you'd rather it stepped aside."
+        },
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "Leaving a group clears it",
+          "text": "Leave the room, get taken out of it, or have it close after the run: the group goes from the meter and it's back to how it was. Before, the old group stayed until you joined another."
+        },
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "The meter stays when you die and on the commend page",
+          "text": "For three minutes after your last fight the meter stays on screen over the death screen and the page to commend players, right when you want to look at the fight."
+        },
+        {
+          "kind": "fixed",
+          "area": "Overlays",
+          "title": "Hotkeys keep your settings",
+          "text": "The Skill Assist key hides what of it is on screen and brings back exactly that: it no longer turns the buffs on when you had them off. The key for all overlays brings back exactly what it hid, also after a restart."
+        },
+        {
+          "kind": "fixed",
+          "area": "Overlays",
+          "title": "Locked overlays stay where they are",
+          "text": "Alt is the game's own key for the cursor, so with Alt + drag on, an overlay came along when you clicked in the game with Alt held. Alt + drag is off now; place overlays in the editor, or switch it on there if you want it."
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "See-through windows over the game",
+          "text": "The panels you open from the meter (Characters, Journey, Legion …), a player's card and the overlay menu are see-through like the meter, at your overlays' opacity, with no light line along the top."
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "The Atreia button opens the menu",
+          "text": "A click on the Atreia button over the game opens the overlay menu again, also while you're placing overlays, and a drag moves it. In the menu, click an overlay's key to change it."
+        },
+        {
+          "kind": "improved",
+          "area": "Journey",
+          "title": "Big changes read as times as much",
+          "text": "Against a week when you barely played, a rise shows as ↗ 28× instead of ↗ 2703 %."
+        }
+      ]
+    },
+    {
       "version": "1.21.9",
       "date": "2026-11-10",
       "items": [

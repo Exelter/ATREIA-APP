@@ -885,6 +885,12 @@ public partial class SettingsWindow : Window
         _settings.NaturalVoiceDefaulted = onDisk.NaturalVoiceDefaulted;
         _settings.MeterBarDefaulted = onDisk.MeterBarDefaulted;
         _settings.MeterLookDefaulted = onDisk.MeterLookDefaulted;
+        _settings.AltDragDefaultedOff = onDisk.AltDragDefaultedOff;
+        _settings.AltDragOverlays = onDisk.AltDragOverlays; // its switch is on the app's Overlays page
+        _settings.AssistHotkeyBack = onDisk.AssistHotkeyBack; // what the hotkeys hid, to bring back
+        _settings.AllOverlaysBack = onDisk.AllOverlaysBack;
+        _settings.OverlayEditorLeft = onDisk.OverlayEditorLeft; // the overlay editor's place over the game
+        _settings.OverlayEditorTop = onDisk.OverlayEditorTop;
         _settings.OverlayLook = onDisk.OverlayLook; // the meter's panel and buttons are set on its look page
         _settings.MeterHeaderButtons = onDisk.MeterHeaderButtons;
         _settings.MeterFoldIdle = onDisk.MeterFoldIdle; // the meter's fold, Grind and counters: its look page and the pill's menu

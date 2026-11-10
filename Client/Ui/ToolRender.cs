@@ -102,6 +102,26 @@ public static class ToolRender
                 break;
             }
 
+            case "overlay-editor":
+            {
+                // the overlay editor over the game (10 November 2026): a few overlays on, one key read, on a busy backdrop that shows the glass
+                var on = new MeterSettings { ShowCombatOverlay = true, ShowTimetable = true, ShowPetMap = true, ShowLootOverlay = true, ShowNetworkOverlay = true, ShowAssistOverlay = true,
+                    ShowEffectsOverlay = false, OverlayLook = "Black", OverlayOpacity = 0.6 };
+                var stripes = new StackPanel();
+                foreach (Color c in new[] { Color.FromRgb(0xC8, 0xD6, 0xE0), Color.FromRgb(0x6B, 0x7F, 0x52), Color.FromRgb(0x3A, 0x4A, 0x3A), Color.FromRgb(0xB0, 0x9A, 0x70), Color.FromRgb(0x24, 0x30, 0x40) })
+                {
+                    stripes.Children.Add(new Border { Height = 180, Background = new SolidColorBrush(c) });
+                }
+
+                var stage = new Grid { Width = 460 };
+                stage.Children.Add(stripes);
+                stage.Children.Add(new Border { Child = hostWindow.OverlayEditorPicture(on), Margin = new Thickness(40, 24, 40, 24), VerticalAlignment = VerticalAlignment.Top });
+                shown = stage;
+                width = 0;
+                height = 0;
+                break;
+            }
+
             case "overlay-menu":
             case "overlay-button":
             {

@@ -36,6 +36,7 @@ public static class SelfCheckAion2
         ok &= RunAion2SummonOwnerScenario();
         ok &= RunAion2NamedSummonScenario();
         ok &= RunAion2RosterReplacesPartyScenario();
+        ok &= RunAion2LeftRoomScenario();
         ok &= RunAion2GuildScenario();
         ok &= RunAion2PartyByClassScenario();
         ok &= RunAion2AccentAndLeftoverSummonScenario();
@@ -706,6 +707,78 @@ public static class SelfCheckAion2
         bool classes = dir.PartyClassOfName("Skeeve") == "Cleric" && dir.PartyClassOfName("Chumley") is null;
         Console.WriteLine($"  -> three members listed: {three}; the next frame names the local player alone, the others are gone: {alone}; a member's class by name: {classes}");
         return three && alone && classes;
+    }
+
+    /// <summary>
+    /// Leaving the group finder's room empties the group (10 November 2026, the owner: "when leaving a group, the meter should not still show them"): the frames
+    /// in the shapes of the recordings of 8 to 10 November (see Aion2FrameDecoder.LeftRoomOpcode) - leaving (1d 97 00 00), being taken out (2a 97 00), the
+    /// player's room closing (1b 97 | room) and the room list naming no room of the player's; a closing room the player already moved on from changes nothing.
+    /// </summary>
+    private static bool RunAion2LeftRoomScenario()
+    {
+        Console.WriteLine("[selftest] Aion 2 group finder room: leaving it empties the group:");
+        using var source = new Aion2PacketCombatSource(Aion2Protocol.Load());
+        var dir = (Aion2EntityDirectory)source.Entities;
+        uint seq = 5000;
+
+        static byte[] Roster(uint room)
+        {
+            var body = new List<byte> { 0x02, 0x97 };
+            body.AddRange(BitConverter.GetBytes(room));
+            body.Add(4);
+            body.AddRange("Fast"u8.ToArray()); // the room's title
+            body.AddRange(new byte[] { 0x05, 0xCD, 0x27, 0x09, 0x00, 0x00 });
+            foreach ((string name, byte cls) in new[] { ("Aahz", (byte)0x20), ("Skeeve", (byte)0x18), ("Chumley", (byte)0x24) })
+            {
+                body.AddRange(new byte[] { 0x19, 0x05 }); // server 1305
+                body.Add((byte)name.Length);
+                body.AddRange(System.Text.Encoding.UTF8.GetBytes(name));
+                body.AddRange(new byte[] { cls, 0, 0, 0, 45, 0, 0, 0, 0, 0, 0, 0 });
+            }
+
+            return body.ToArray();
+        }
+
+        static byte[] RoomList(uint own) =>
+            new byte[] { 0x01, 0x97, 0x00, 0x00, 0xCD, 0x27, 0x09, 0x00 }.Concat(BitConverter.GetBytes(own)).Concat(new byte[] { 0x00, 0x00, 0x00, 0x00 }).ToArray();
+
+        int Send(params byte[][] frames)
+        {
+            var wire = new List<byte>();
+            foreach (byte[] body in frames)
+            {
+                int length = body.Length + 4;
+                while (length >= 0x80)
+                {
+                    wire.Add((byte)(length & 0x7f | 0x80));
+                    length >>= 7;
+                }
+
+                wire.Add((byte)length);
+                wire.AddRange(body);
+            }
+
+            source.Ingest(Segment(seq, wire.ToArray()));
+            seq += (uint)wire.Count;
+            source.Poll(false);
+            return dir.PartyNames.Count;
+        }
+
+        byte[] closedA = { 0x1B, 0x97, 0x11, 0x22, 0x33, 0x00 }, closedB = { 0x1B, 0x97, 0x44, 0x55, 0x66, 0x00 };
+        int joined = Send(Roster(0x00332211));
+        int otherClosed = Send(closedB);
+        int left = Send(new byte[] { 0x1D, 0x97, 0x00, 0x00 });
+        Send(Roster(0x00332211));
+        int closed = Send(closedA);
+        Send(Roster(0x00332211));
+        int listedOwn = Send(RoomList(0x00332211));
+        int listedNone = Send(RoomList(0));
+        Send(Roster(0x00332211));
+        int taken = Send(new byte[] { 0x2A, 0x97, 0x00 });
+        bool ok = joined == 3 && otherClosed == 3 && left == 0 && closed == 0 && listedOwn == 3 && listedNone == 0 && taken == 0;
+        Console.WriteLine($"  -> joined {joined}, another room closed {otherClosed}, left {left}, own room closed {closed}, the list naming the room {listedOwn}, " +
+            $"naming none {listedNone}, taken out {taken}");
+        return ok;
     }
 
     /// <summary>

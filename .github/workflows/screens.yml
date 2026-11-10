@@ -6,6 +6,8 @@ on:
   push:
     branches: [main]
     paths: ["Client/**", ".github/workflows/screens.yml"]
+  pull_request:
+    paths: ["Client/**", ".github/workflows/screens.yml"]
 
 permissions:
   contents: write
@@ -89,6 +91,7 @@ jobs:
             @('render-tool', 'hotkeys.png', 'hotkeys'),
             @('render-tool', 'hotkeys-problems.png', 'hotkeys-problems'),
             @('render-tool', 'overlay-menu.png', 'overlay-menu'),
+            @('render-tool', 'overlay-editor.png', 'overlay-editor'),
             @('render-tool', 'overlay-button.png', 'overlay-button'),
             @('render-tool', 'fps.png', 'fps'),
             @('render-tool', 'fps-access.png', 'fps-access'),
