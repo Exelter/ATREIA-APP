@@ -250,7 +250,7 @@ public static class SelfCheckMinimap
     /// <summary>
     /// The owner's own minimap (the game's top right corner on his 2560 x 1440 window, at Dranactus in Altgard): taken where the game puts the minimap,
     /// its zoom must be found by itself (0.97 map pixels a screen pixel, about a metre) and the fix must land where the match of 2 Nov 2026 put it
-    /// (world 62021, -181822; the network's last exact report was 11 m away).
+    /// (pixel 4747, 2277 of Altgard's picture; the network's last exact report was 11 m away).
     /// </summary>
     private static bool RealMinimap()
     {
@@ -271,9 +271,10 @@ public static class SelfCheckMinimap
             return false;
         }
 
-        // the tile of Dranactus lies 6 m west and 14 m north of the land (maps.json "tileShift", 10 November 2026): the same picture pixels are a place that much further on
-        var shift = raster.Map.ShiftAt(Aion2Maps.ToNativePlain(raster.Map, 62869, -182578).X, Aion2Maps.ToNativePlain(raster.Map, 62869, -182578).Y);
-        (double gx, double gy) = raster.ToPixel(62869 + shift.X, -182578 + shift.Y);
+        // on the picture, so the check stays the same when the map's numbers are refitted (10 November 2026): the guess and the place in Altgard's picture pixels
+        // (world 62869, -182578 and 62021, -181822 by the numbers of 2 November)
+        (double gx, double gy) = (4755.33, 2269.57);
+        (double ex, double ey) = (4747.00, 2277.00);
         var zooms = Enumerable.Range(0, 58).Select(i => 0.3 * Math.Pow(1.04, i) * raster.PixelsPerMetre);
         var watch = Stopwatch.StartNew();
         var found = MinimapMatch.Calibrate(mini, zooms, (tw, th) => Around(raster, gx, gy, tw, th), MinimapMatch.DetailMetres * raster.PixelsPerMetre);
@@ -284,9 +285,7 @@ public static class SelfCheckMinimap
             return false;
         }
 
-        (double wx, double wy) = raster.ToWorld(f.Fix.X, f.Fix.Y);
-        double ex = 62021 + shift.X, ey = -181822 + shift.Y;
-        double metres = Math.Sqrt(((wx - ex) * (wx - ex)) + ((wy - ey) * (wy - ey))) / 100;
+        double metres = Math.Sqrt(((f.Fix.X - ex) * (f.Fix.X - ex)) + ((f.Fix.Y - ey) * (f.Fix.Y - ey))) / raster.PixelsPerMetre;
         bool ok = Math.Abs(f.Zoom - 0.97) < 0.02 && metres <= 3;
         Console.WriteLine($"  -> the owner's minimap (Altgard, Dranactus): zoom {f.Zoom:0.000} (0.97), {metres:0.0} m from the place, fit {f.Fix.Score:0.00}, {f.Fix.Agree}/{f.Fix.Pieces} pieces, "
             + $"margin {f.Fix.Margin:0.00}; the zoom searched in {ms:0} ms: {ok}");

@@ -111,8 +111,8 @@
         {
           "kind": "fixed",
           "area": "Map",
-          "title": "Map pieces that were off now line up",
-          "text": "Some parts of the Altgard and Lower Reshanta map pictures sat up to 80 m away from the land they show, so Hidden Cubes, gathering spots and your arrow looked like they were in the wrong place. Each of those parts is now moved to where its land really is, measured against the game's own position reports."
+          "title": "Altgard and Verteron maps line up with the land",
+          "text": "The Altgard map picture was drawn 1.8 % too small, so the further you were from the middle, the further off it was: up to 80 m at the western edge. Verteron's picture sat about 60 m off. Both are now refitted from the position checks of every player who shares them, about 10,000 of them from 13 PCs. The picture now lines up with the Hidden Cubes, gathering spots and your arrow within about 10 to 15 m from the first second, and the app's own calibration takes off the rest on your PC as you play. The Abyss maps were already close. Eltnen, Morheim and Middle Reshanta get the same fix once enough checks come in."
         }
       ]
     },

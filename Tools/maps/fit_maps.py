@@ -8,11 +8,12 @@ made at a walk (8 m/s at most, under 0.4 s from the reading, a fit of 0.3 or bet
 (picture pixel - offset) / scale, so the picture lies right with scale / A and offset - scale * B / A on that axis; printed per map with how far off the
 checks were before and after. Only the maps whose checks cover a good part of them (several hundred metres both ways) should be changed.
 
-Tiles that lie off on their own (10 November 2026: on Altgard the western tiles 76 m east, Dranactus' tile 6 m, the north-eastern one 72 m north - no one
-scale and offset fits them all) get a shift of their own in maps.json ("tileShift": {"column_row": [x, y]}, world units, game place minus picture place),
-which the app adds to every reading in that tile and to where it draws the tile. Printed per tile as "tileShift would be": the shift in maps.json now plus
-the median of what is left of the checks made with these numbers (checks of other numbers count only for the line above). Take a tile's shift only from
-a few checks or more that agree (a spread of a few metres).
+A tile that lies off on its own can get a shift of its own in maps.json ("tileShift": {"column_row": [x, y]}, world units, game place minus picture
+place), which the app adds to every reading in that tile and to where it draws the tile. Printed per tile as "tileShift would be": the shift in maps.json
+now plus the median of what is left of the checks made with these numbers. One PC's readings can be 10 to 20 m off of their own (its screen and minimap
+layout; the app's own calibration takes that off on that PC), so take a tile's shift only from several installations that agree, and first see whether
+the line above explains the tiles (10 November 2026: one PC's Altgard checks looked like tiles shifted up to 80 m each; the checks of 13 installations
+showed Altgard's scale 1.8 % off instead, refitted to 10-15 m per installation).
 """
 import collections
 import json

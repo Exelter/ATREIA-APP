@@ -5,9 +5,9 @@ namespace AionDPS.Aion2.Protocol;
 
 /// <summary>One world map of the game as the pet map draws it: its tiles (assets/aion2/maps/&lt;key&gt;), the size of a tile and the grid, and
 /// how a world coordinate becomes a pixel of the whole map (<c>pixel = offset + scale * world</c>, no flip, no rotation). <see cref="Shifts"/>: tiles of the picture
-/// that lie off on their own (10 November 2026: on Altgard the western tiles 76 m east of the land, Dranactus' tile 6 m, the north-eastern one 72 m north,
-/// measured by the minimap reader against the game's own reports): per tile (column * 100 + row) how far the land in it lies from where the numbers put it,
-/// in world units (game place minus picture place).</summary>
+/// that lie off on their own, should a map have any (maps.json "tileShift"): per tile (column * 100 + row) how far the land in it lies from where the numbers put
+/// it, in world units (game place minus picture place). Taken only from the checks of several PCs that agree: one PC's readings can be 10 to 20 m off of their
+/// own (10 November 2026: the owner's Altgard checks made its tiles look shifted by up to 80 m each, everyone's together showed one scale and offset off instead).</summary>
 public sealed record Aion2MapInfo(string Key, string Title, string Table, int Tile, int Grid, double Scale, double OffsetX, double OffsetY,
     IReadOnlyList<string>? Tables = null, IReadOnlyList<int>? Zones = null, IReadOnlyDictionary<int, (double X, double Y)>? Shifts = null)
 {
