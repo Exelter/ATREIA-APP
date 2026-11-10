@@ -9038,6 +9038,7 @@ public partial class MainWindow : Window
             }, !card && _overlayBuffs, !restricted),
             OverlayItem("All in one", () => Pick(MeterMode.All), !card && !_overlayBuffs && !_overlayStagger && _mode == MeterMode.All, !restricted),
             OverlayItem("Grind: Kinah, Abyss Points and loot per hour", () => SetGrindView(true), !card && _overlayGrind),
+            OverlayItem("Copy this fight as an image (for Discord)", ShareMeterFight, false, _rows.Any(r => !r.IsEnemy && r.Damage > 0)),
             new Separator(),
         };
 

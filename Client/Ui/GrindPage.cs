@@ -331,6 +331,20 @@ public sealed class GrindPage : StackPanel
             again.ToolTip = "Start counting again from the next kill: this session goes to the earlier ones";
             DockPanel.SetDock(again, Dock.Right);
             head.Children.Add(again);
+            GrindFigures figures = f;
+            Border? share = null;
+            share = ActionButton("\uE72D", "Share", () =>
+            {
+                bool copied = ShareCard.Copy(ShareCard.Grind(figures), "Grind " + (figures.Session.Zone != 0 ? LootText.MapName(figures.Session.Zone) : ""), out _);
+                if (share?.Child is StackPanel { Children.Count: 2 } line && line.Children[1] is TextBlock label)
+                {
+                    label.Text = copied ? "Copied: paste it in Discord" : "Clipboard busy, try again";
+                }
+            });
+            share.ToolTip = "Copy this session as an image to paste in Discord (also kept in Pictures\\Atreia App)";
+            share.Margin = new Thickness(0, 0, 8, 0);
+            DockPanel.SetDock(share, Dock.Right);
+            head.Children.Add(share);
         }
 
         stack.Children.Add(head);

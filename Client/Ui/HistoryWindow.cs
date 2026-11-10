@@ -954,6 +954,10 @@ public sealed class HistoryWindow : Window
             menu.Items.Add(copyLink);
         }
 
+        // a clean picture of the fight for Discord (ShareCard): copied, and kept in Pictures\Atreia App
+        var share = new MenuItem { Header = "Copy as an image (for Discord)" };
+        share.Click += (_, _) => _ = ShareAsync(entry);
+        menu.Items.Add(share);
         menu.Items.Add(delete);
         row.ContextMenu = menu;
         return row;
@@ -1008,6 +1012,42 @@ public sealed class HistoryWindow : Window
 
     /// <summary>Opens a fight's report in the page (the Home page's recent fights come here too).</summary>
     public void Open(FightLogEntry entry) => _ = OpenAsync(entry);
+
+    /// <summary>The fight's share card to the clipboard (10 November 2026): its players by damage, read back from its file.</summary>
+    private async Task ShareAsync(FightLogEntry entry)
+    {
+        Cursor = Cursors.Wait;
+        try
+        {
+            ReportInput? input = await Task.Run(() => FightLog.Open(entry));
+            if (input is null)
+            {
+                ThemedMessageBox.Show(Window.GetWindow(_root) ?? this, "This fight's file is gone or could not be read.", "History", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string kicker = entry.Kind switch
+            {
+                FightLogKind.Boss => entry.Killed == true ? "BOSS KILL" : "WIPE" + (entry.BossHpLeft is double left ? $"  ·  {left:P0} LEFT" : ""),
+                FightLogKind.Run => "DUNGEON RUN",
+                FightLogKind.Dummy => "DUMMY PARSE",
+                FightLogKind.Pvp => "PVP",
+                _ => "FIGHT",
+            };
+            string? zone = entry.ZoneId != 0 ? Aion2Zones.NameOf(entry.ZoneId, "en") : entry.Detail;
+            string sub = string.Join("  ·  ", new[] { zone, entry.Start.ToString("ddd d MMM, HH:mm", System.Globalization.CultureInfo.CurrentCulture) }.Where(t => t is { Length: > 0 }));
+            FrameworkElement card = ShareCard.Fight(kicker, entry.Title, sub, TimeSpan.FromSeconds(entry.Seconds), ShareCard.LinesOf(input, entry.You),
+                entry.Kind == FightLogKind.Boss && entry.Killed != true ? Color.FromRgb(0xFF, 0x7A, 0x6E) : null);
+            bool copied = ShareCard.Copy(card, entry.Title, out string? saved);
+            ThemedMessageBox.Show(Window.GetWindow(_root) ?? this,
+                (copied ? "Copied as an image: paste it in Discord with Ctrl+V." : "The clipboard is busy: the image wasn't copied.") + (saved is not null ? "\n\nAlso saved to " + saved : ""),
+                "History", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        finally
+        {
+            Cursor = null;
+        }
+    }
 
     private async Task OpenAsync(FightLogEntry entry)
     {
