@@ -4101,6 +4101,23 @@ public sealed class Aion2FrameDecoder
             }
         }
 
+        // a low character (under 20,000: one of 4,270 frames of the recordings of 7 to 10 November 2026, a level 20 with 19,725): the same places once more for a
+        // smaller number - the other place then reads it shifted by a byte (under 1,000 or over 4,000,000), so only the right one fits
+        foreach (int back in stackalloc[] { 9, 10, 8, 11 })
+        {
+            int at = frame.Length - back;
+            if (at < 0 || at + 4 > frame.Length)
+            {
+                continue;
+            }
+
+            uint low = BinaryPrimitives.ReadUInt32LittleEndian(frame[at..]);
+            if (low is >= 1_000 and < 20_000)
+            {
+                return (int)low;
+            }
+        }
+
         return null;
     }
 

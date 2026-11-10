@@ -1,16 +1,21 @@
 using System.Globalization;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using AionDPS.Aion2;
 using AionDPS.Aion2.Protocol;
+using AionDPS.Upload;
 
 namespace AionDPS.Ui;
 
 /// <summary>Who the selected player is, as the game showed him: name, class, level, server, legion, Combat Power and item level, and whether he is an enemy.</summary>
 public sealed record EnemyCardData(string Name, string? ClassName, int? Level, string? Server, string? Legion, int? CombatPower, int? ItemLevel, bool Enemy, int? OwnPower,
-    bool Sample = false)
+    bool Sample = false, int ServerId = 0, bool Looking = false)
 {
+    /// <summary>Whether something the card shows is not known yet (it is then looked up).</summary>
+    public bool Incomplete => CombatPower is null || ItemLevel is null || ClassName is null || Level is null;
+
     /// <summary>His Combat Power against the own: +0.12 is 12 % more (null when one of them is not known).</summary>
     public double? Against => CombatPower is int theirs && OwnPower is int mine && mine > 0 ? (double)theirs / mine - 1 : null;
 
@@ -37,7 +42,7 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
         string? server = dir.ServerIdOf(id) is int sid && Aion2Servers.IsKnown(sid) ? Aion2Servers.NameOf(sid) : null;
         int? power = profile?.CombatPower is int cp and > 0 and not 397228 ? cp : null; // 397228: the fixed number of the 10 against 10 arena
         return new EnemyCardData(dir.NameFor(id) ?? "Unknown player", className, profile?.Level, server, dir.GuildOf(id), power, profile?.ItemLevel is > 0 ? profile.ItemLevel : null,
-            enemy, ownPower);
+            enemy, ownPower, ServerId: dir.ServerIdOf(id) ?? 0);
     }
 
     /// <summary>What the card shows while it is placed with nobody selected.</summary>
@@ -47,8 +52,9 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
 /// <summary>
 /// The enemy card (10 November 2026, the owner: "when you tab to a player in the Abyss, an enemy, it shows their class, their CP, their item level"): the
 /// player the local player selected (the game's own selection message, see <see cref="Aion2EntityDirectory.OwnTarget"/>), with what his "player appeared"
-/// frame told - class, level, Combat Power, item level - his server and legion, and his Combat Power against the own. Enemies only, unless allies are
-/// switched on too. Placed, scaled and locked like the other overlays; over the game only.
+/// frame told - class, level, Combat Power, item level - his server and legion, and his Combat Power against the own; what the frame left out (or a frame
+/// the meter never saw) is looked up on the website and the character's official page. Enemies only, unless allies are switched on too. Placed, scaled
+/// and locked like the other overlays; over the game only.
 /// </summary>
 public sealed class EnemyCardWindow : MovableOverlay
 {
@@ -97,7 +103,8 @@ public sealed class EnemyCardWindow : MovableOverlay
 
     public void Render(EnemyCardData? card)
     {
-        string key = card is null ? "" : string.Join("|", card.Name, card.ClassName, card.Level, card.Server, card.Legion, card.CombatPower, card.ItemLevel, card.Enemy, card.OwnPower, card.Sample);
+        string key = card is null ? "" : string.Join("|", card.Name, card.ClassName, card.Level, card.Server, card.Legion, card.CombatPower, card.ItemLevel, card.Enemy, card.OwnPower, card.Sample,
+            card.Looking);
         if (key == _shown)
         {
             return;
@@ -154,7 +161,7 @@ public sealed class EnemyCardWindow : MovableOverlay
         numbers.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var power = new StackPanel();
         power.Children.Add(Caption("COMBAT POWER"));
-        power.Children.Add(Big(card.CombatPower is int cp ? cp.ToString("N0", CultureInfo.CurrentCulture) : "?", OverlaySkin.Gold));
+        power.Children.Add(Big(card.CombatPower is int cp ? cp.ToString("N0", CultureInfo.CurrentCulture) : card.Looking ? "…" : "?", OverlaySkin.Gold));
         if (card.Against is double against)
         {
             bool stronger = against > 0.005;
@@ -167,7 +174,11 @@ public sealed class EnemyCardWindow : MovableOverlay
         numbers.Children.Add(power);
         var items = new StackPanel { Margin = new Thickness(12, 0, 0, 0) };
         items.Children.Add(Caption("ITEM LEVEL"));
-        items.Children.Add(Big(card.ItemLevel is int il ? il.ToString("N0", CultureInfo.CurrentCulture) : "?", Color.FromRgb(0xE9, 0xEE, 0xF2)));
+        items.Children.Add(Big(card.ItemLevel is int il ? il.ToString("N0", CultureInfo.CurrentCulture) : card.Looking ? "…" : "?", Color.FromRgb(0xE9, 0xEE, 0xF2)));
+        if (card.Looking && (card.CombatPower is null || card.ItemLevel is null))
+        {
+            items.Children.Add(new TextBlock { Text = "looking it up…", FontSize = 10.5, Foreground = new SolidColorBrush(Muted) });
+        }
         Grid.SetColumn(items, 1);
         numbers.Children.Add(items);
         stack.Children.Add(numbers);
@@ -195,6 +206,11 @@ public sealed class EnemyCardController : IDisposable
     private DateTime _settingsAt = DateTime.UtcNow;
     private int? _ownPower;
     private DateTime _ownPowerAt = DateTime.MinValue;
+
+    // What the website and the official pages told of players the game's frame told too little of (by "name|server"), and the lookups going on.
+    private readonly Dictionary<string, (FoundPlayer? Found, int? CombatPower, int? ItemLevel, DateTime At)> _looked = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _looking = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly TimeSpan LookedKept = TimeSpan.FromMinutes(20), NotFoundRetry = TimeSpan.FromMinutes(2);
 
     public EnemyCardController(Func<Aion2EntityDirectory?> directory)
     {
@@ -234,6 +250,11 @@ public sealed class EnemyCardController : IDisposable
         }
 
         EnemyCardData? card = dir is null ? null : EnemyCardData.Of(dir, _settings.EnemyCardAllies, _ownPower);
+        if (card is { Incomplete: true } && dir is not null)
+        {
+            card = Complete(card, dir);
+        }
+
         if (card is null && !locked)
         {
             card = EnemyCardData.SampleCard(_ownPower);
@@ -248,5 +269,70 @@ public sealed class EnemyCardController : IDisposable
         _overlay.ApplyLockedIfChanged(locked);
         _overlay.Render(card);
         _overlay.ShowOverlay(card is not null && GameWindow.OverlayMayShow());
+    }
+
+    /// <summary>
+    /// The figures the game's frame left out (10 November 2026, the owner: "load them no matter what"): a player whose "player appeared" frame was not seen (the
+    /// meter started while he was already in view) has no Combat Power or item level from the game. Then the website's search (what it knows of the character),
+    /// and for what it doesn't know the character's official page through the website - the card shows "…" meanwhile. Kept 20 minutes; a player not found is
+    /// looked for again after two.
+    /// </summary>
+    private EnemyCardData Complete(EnemyCardData card, Aion2EntityDirectory dir)
+    {
+        int ownServer = dir.LocalCharacter?.ServerId ?? 0;
+        string key = card.Name + "|" + card.ServerId.ToString(CultureInfo.InvariantCulture);
+        if (_looked.TryGetValue(key, out var got))
+        {
+            card = card with
+            {
+                CombatPower = card.CombatPower ?? got.CombatPower, ItemLevel = card.ItemLevel ?? got.ItemLevel, ClassName = card.ClassName ?? got.Found?.ClassName,
+                Level = card.Level ?? got.Found?.Level, Server = card.Server ?? (got.Found is { Server.Length: > 0 } f ? f.Server : null),
+            };
+        }
+
+        TimeSpan age = got.At == default ? TimeSpan.MaxValue : DateTime.UtcNow - got.At;
+        bool stale = got.At == default || age > LookedKept || (card.Incomplete && age > NotFoundRetry);
+        // a few at a time (the website's searches are limited: tabbing through a crowd asks for the ones looked at longest)
+        if (card.Incomplete && stale && card.Name != "Unknown player" && _looking.Count < 3 && _looking.Add(key))
+        {
+            _ = LookUpAsync(key, card.Name, card.ServerId, ownServer, card.Enemy);
+        }
+
+        return _looking.Contains(key) ? card with { Looking = true } : card;
+    }
+
+    private async Task LookUpAsync(string key, string name, int server, int ownServer, bool enemy)
+    {
+        try
+        {
+            // the server when the game named it, else the own region (the Abyss and the arenas match within a region), the other side when it is an enemy
+            string region = FindPlayerClient.RegionOf(server > 0 ? server : ownServer);
+            FindAnswer answer = await FindPlayerClient.SearchAsync(name, region);
+            bool Fits(FoundPlayer p) => server > 0 ? p.ServerId == server : ownServer <= 0 || (p.ServerId / 1000 != ownServer / 1000) == enemy;
+            FoundPlayer? found = answer.Players.FirstOrDefault(p => p.Name == name && Fits(p))
+                ?? answer.Players.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase) && Fits(p));
+            int? power = found?.CombatPower, items = found?.ItemLevel;
+            if (power is null || items is null)
+            {
+                // the official page: the website asks it for any character, a player of the meter or not
+                FoundPlayer page = found ?? new FoundPlayer(name, null, null, "", server, region, null, null, null, null, null);
+                if (page.ServerId > 0)
+                {
+                    (int? pagePower, int? pageItems) = await FindPlayerClient.FiguresAsync(page);
+                    power ??= pagePower;
+                    items ??= pageItems;
+                }
+            }
+
+            _looked[key] = (found, power, items, DateTime.UtcNow);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            _looked[key] = (null, null, null, DateTime.UtcNow);
+        }
+        finally
+        {
+            _looking.Remove(key);
+        }
     }
 }
