@@ -1578,8 +1578,11 @@ public partial class MainWindow : Window
             _network ??= new NetworkOverlayController();
             _fps ??= new FpsOverlayController(); // the FPS counter (listens to Windows' frame timing only while it is on)
             _enemyCard ??= new EnemyCardController(() => _liveSource?.Entities as Aion2EntityDirectory); // the player selected in the Abyss
-            _enemyRadar ??= new EnemyRadarController(() => _liveSource?.Entities as Aion2EntityDirectory,
-                (id, name) => _enemyCard?.Known(name ?? "", (_liveSource?.Entities as Aion2EntityDirectory)?.ServerIdOf(id) ?? 0)); // the enemies in view
+            // the enemies in view; what the game's frame left out of one is looked up like the enemy card does it
+            _enemyRadar ??= new EnemyRadarController(() => _liveSource?.Entities as Aion2EntityDirectory, (id, name) =>
+                _liveSource?.Entities is Aion2EntityDirectory radarDir
+                    ? _enemyCard?.Lookup(name ?? "", radarDir.ServerIdOf(id) ?? 0, radarDir.LocalCharacter?.ServerId ?? 0, enemy: true)
+                    : null);
             _deathRecap ??= new DeathRecapController(); // who killed the own character
             Aion2Pvp.EnablePersistence(); // the rivals: the players fought, with the kills and the deaths against each
             Aion2Loot.EnablePersistence();

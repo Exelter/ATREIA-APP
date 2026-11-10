@@ -243,10 +243,24 @@ public sealed class EnemyCardController : IDisposable
 
     public void RaiseToFront() => _overlay?.RaiseToFront();
 
-    /// <summary>What a lookup found of a player (the radar shows it too), null when none was made.</summary>
-    public (int? Power, int? Items)? Known(string name, int serverId) =>
-        _looked.TryGetValue(name + "|" + serverId.ToString(CultureInfo.InvariantCulture), out var got) && (got.CombatPower is not null || got.ItemLevel is not null)
-            ? (got.CombatPower, got.ItemLevel) : null;
+    /// <summary>
+    /// What a lookup found of a player the game's frame told too little of, null while none did; a lookup is started when none was made yet (or the last is old),
+    /// a few at a time - the radar asks for the enemies in view this way, the card for the one selected.
+    /// </summary>
+    public (int? Power, int? Items)? Lookup(string name, int serverId, int ownServer, bool enemy)
+    {
+        string key = name + "|" + serverId.ToString(CultureInfo.InvariantCulture);
+        _looked.TryGetValue(key, out var got);
+        bool complete = got.CombatPower is not null && got.ItemLevel is not null;
+        TimeSpan age = got.At == default ? TimeSpan.MaxValue : DateTime.UtcNow - got.At;
+        if ((got.At == default || age > LookedKept || (!complete && age > NotFoundRetry)) && name.Length > 0 && name != "Unknown player" && _looking.Count < 3
+            && _looking.Add(key))
+        {
+            _ = LookUpAsync(key, name, serverId, ownServer, enemy);
+        }
+
+        return got.CombatPower is not null || got.ItemLevel is not null ? (got.CombatPower, got.ItemLevel) : null;
+    }
 
     public void Dispose()
     {
