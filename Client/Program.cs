@@ -2293,6 +2293,20 @@ internal static class Program
         };
         var parses = new List<Upload.PlayerParse> { new("Thamon", 21_480, 92, 3, 31), new("Kromede", 18_210, 77, 9, 40), new("Debilkarim", 15_400, 51, 22, 45) };
         var boards = new List<Upload.PlayerBoard> { new("Nezekan", 48, 60), new("Zikel", 36, 60), new("Vaizel", 22, 60), new("Triniel", 9, 60) };
+        // the Daevanion tab: the Templar's Nezekan board from the app's node table, the 48 nodes nearest the start open (the website sends them as the
+        // character's official page lists them: place, type, grade, open, effects)
+        var tableNodes = Aion2.Protocol.Aion2DaevanionCatalog.NodesOfBoard(21);
+        if (tableNodes.Count > 0)
+        {
+            int midRow = (tableNodes.Min(n => n.Row) + tableNodes.Max(n => n.Row)) / 2, midCol = (tableNodes.Min(n => n.Col) + tableNodes.Max(n => n.Col)) / 2;
+            var open = tableNodes.Where(n => n.Type != "Start").OrderBy(n => Math.Abs(n.Row - midRow) + Math.Abs(n.Col - midCol)).ThenBy(n => n.Id).Take(48).Select(n => n.Id).ToHashSet();
+            var nodes = tableNodes.Select(n => new Upload.PlayerBoardNode(n.Row, n.Col, n.Type, n.Grade, n.Type == "Start" || open.Contains(n.Id),
+                n.Type == "Start" ? Array.Empty<Upload.PlayerEffect>()
+                    : new[] { new Upload.PlayerEffect(n.Type == "SkillLevel" && int.TryParse(n.Key, out int skill) ? Aion2.Protocol.Aion2SkillNames.Display(Aion2.Protocol.Aion2SkillNames.NameOf(skill)) : n.Key,
+                        (n.Type == "SkillLevel" ? "Lv. +" : "+") + n.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)) })).ToList();
+            boards[0] = boards[0] with { Nodes = nodes };
+        }
+
         int Stat(string token) => Aion2.Protocol.Aion2CpData.StatId(token);
         var genus = new List<Upload.PlayerGenus>
         {
@@ -2346,6 +2360,10 @@ internal static class Program
         grid.Children.Add(View(page with { Sheet = unknown, App = null }, "Stats"));
         grid.Children.Add(View(page with { Sheet = unknown }, "Stats"));
         grid.Children.Add(View(page with { Sheet = null, App = null, Stats = new List<(string, string)>() }, "Stats"));
+        grid.Children.Add(View(page, "Daevanion")); // the board with its nodes and what the open ones add up to
+        var unread = View(page, "Daevanion");
+        unread.SelectBoard(1); // a board whose nodes the website hasn't read: its bar
+        grid.Children.Add(unread);
         var strip = new System.Windows.Controls.Border { Padding = new System.Windows.Thickness(20, 20, 2, 2), Child = grid,
             Background = new System.Windows.Media.LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x4a, 0x56, 0x3a), System.Windows.Media.Color.FromRgb(0x22, 0x2c, 0x30), 60) };
         strip.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));

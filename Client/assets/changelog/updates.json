@@ -22,6 +22,13 @@
           "title": "The other party in a raid, too",
           "text": "In a fight with two parties together, like Ludra, the game only tells you who is in your own party. Under your group, Find a player now also lists the players fighting with you: everyone who hit the same monsters as your group or healed it in the last 10 minutes, most damage first. In a raid that is the other party; at an open-world boss it can include strangers at the same boss. Each one is a click away from their card.",
           "example": "At Ludra, open Find a player: your three party members, then under Fighting with you the four players of the other party."
+        },
+        {
+          "kind": "new",
+          "area": "Find a player",
+          "title": "Daevanion boards node by node",
+          "text": "A player's page has a Daevanion tab: pick a board and see it the way the game draws it, every node in its place, the open ones lit. Point at a node to see what it gives, and under the board you see everything the open nodes add up to, stats and skill levels. On the Overview, a click on a board's line opens it. This works for every character, with or without the app.",
+          "example": "You open a Templar's page, click Nezekan: 48 of 60 nodes lit, and under it Critical Hit +120, Max HP +1,400 and Shield Bash Lv. +2 from the open nodes."
         }
       ]
     },
