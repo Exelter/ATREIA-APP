@@ -572,6 +572,8 @@ public partial class MainWindow
             new(loc["Checklist.Season"], loc["Shell.OvSeasonWhat"], s => s.ShowSeasonOverlay, (s, v) => s.ShowSeasonOverlay = v, "checklist", null, null, "season"),
             new(loc["Main.MenuTools.Craft"], loc["Shell.OvCraftWhat"], s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v, "craft", null, s => s.HotkeyCraft, "craft"),
             new(loc["Settings.Nav.Network"], loc["Shell.OvNetworkWhat"], s => s.ShowNetworkOverlay, (s, v) => s.ShowNetworkOverlay = v, "network", null, s => s.HotkeyNetwork, "network"),
+            new("FPS counter", "The game's frames per second and its 1% low, from Windows' own frame timing (nothing touches the game).", s => s.ShowFpsOverlay,
+                (s, v) => s.ShowFpsOverlay = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Fps), null, "fps"),
             new(loc["Shell.OvHotkeys"], loc["Shell.OvHotkeysWhat"], s => s.ShowHotkeyOverlay, (s, v) => s.ShowHotkeyOverlay = v, null, null, s => s.HotkeyHotkeyOverlay, "hotkeys"),
             // the button at the top of the screen that opens the overlay menu (with its switch here, the way back once it is switched off)
             new(loc["Shell.OvMenu"], loc["Shell.OvMenuWhat"], s => s.ShowOverlayMenu, (s, v) => s.ShowOverlayMenu = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Menu), null, "menu"),
@@ -601,6 +603,17 @@ public partial class MainWindow
             Margin = new Thickness(0, 0, 18, 6), ToolTip = loc["Shell.LayoutMovableTip"] };
         movable.Click += (_, _) => SetOverlaysMovable(movable.IsChecked == true);
         bar.Children.Add(movable);
+        // Alt + drag in the game (10 November 2026): any overlay under the cursor glows and follows the mouse while Alt is held
+        var altDrag = new CheckBox { IsChecked = MeterSettings.Load().AltDragOverlays, Content = ShellText("Alt + drag moves any overlay in the game", "Brush.Text", 12.5),
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 18, 6),
+            ToolTip = "Hold Alt (the game shows the cursor) and the overlay under it glows: drag it where you want it. Let go of Alt and clicks go to the game again." };
+        altDrag.Click += (_, _) =>
+        {
+            var s = MeterSettings.Load();
+            s.AltDragOverlays = altDrag.IsChecked == true;
+            s.Save();
+        };
+        bar.Children.Add(altDrag);
         Button LayoutButton(string text, string tip, Action click)
         {
             var b = new Button { Content = text, ToolTip = tip, Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 8, 6) };
@@ -737,6 +750,7 @@ public partial class MainWindow
             OverlayPlaces.Season => s.ShowSeasonOverlay ? loc["Checklist.Season"] : null,
             OverlayPlaces.Craft => s.ShowCraftOverlay ? loc["Main.MenuTools.Craft"] : null,
             OverlayPlaces.Network => s.ShowNetworkOverlay ? loc["Settings.Nav.Network"] : null,
+            OverlayPlaces.Fps => s.ShowFpsOverlay ? "FPS counter" : null,
             OverlayPlaces.Hotkeys => s.ShowHotkeyOverlay ? loc["Shell.OvHotkeys"] : null,
             OverlayPlaces.Dummy => s.ShowDummyOverlay ? loc["Shell.Dummy"] : null,
             OverlayPlaces.Menu => s.ShowOverlayMenu ? loc["Shell.OvMenu"] : null,
@@ -755,6 +769,7 @@ public partial class MainWindow
         (s => s.GatherOverlayLocked, (s, v) => s.GatherOverlayLocked = v), (s => s.SeasonOverlayLocked, (s, v) => s.SeasonOverlayLocked = v),
         (s => s.NetworkOverlayLocked, (s, v) => s.NetworkOverlayLocked = v), (s => s.DummyOverlayLocked, (s, v) => s.DummyOverlayLocked = v),
         (s => s.HotkeyOverlayLocked ?? s.PetFarmLocked, (s, v) => s.HotkeyOverlayLocked = v), (s => s.OverlayMenuLocked, (s, v) => s.OverlayMenuLocked = v),
+        (s => s.FpsOverlayLocked, (s, v) => s.FpsOverlayLocked = v),
     };
 
     private static bool OverlaysMovable(MeterSettings s) => OverlayLocks.All(l => !l.Get(s));
@@ -880,7 +895,7 @@ public partial class MainWindow
     private void ResetAllOverlayPlaces()
     {
         foreach (string title in new[] { OverlayPlaces.Assist, OverlayPlaces.Effects, OverlayPlaces.Network, OverlayPlaces.Dummy, OverlayPlaces.WorldBoss, OverlayPlaces.Hotkeys, OverlayPlaces.Timetable,
-                     OverlayPlaces.PetMap, OverlayPlaces.PetList, OverlayPlaces.PetInfo, OverlayPlaces.Loot, OverlayPlaces.Gather, OverlayPlaces.Season, OverlayPlaces.Craft, OverlayPlaces.BossCast, OverlayPlaces.BossHp, OverlayPlaces.TargetOfTarget })
+                     OverlayPlaces.PetMap, OverlayPlaces.PetList, OverlayPlaces.PetInfo, OverlayPlaces.Loot, OverlayPlaces.Gather, OverlayPlaces.Season, OverlayPlaces.Craft, OverlayPlaces.BossCast, OverlayPlaces.BossHp, OverlayPlaces.TargetOfTarget, OverlayPlaces.Fps })
         {
             OverlayPlaces.Reset(title);
         }

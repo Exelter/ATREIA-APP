@@ -89,6 +89,7 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         OverlayPlaces.WasReset += onReset;
         Closed += (_, _) => OverlayPlaces.WasReset -= onReset;
         OverlayDocking.Attach(this, SavePlace);
+        OverlayAltDrag.Register(this, () => !_isView, ApplyClickThrough); // Alt + drag moves it in the game (10 November 2026)
     }
 
     private readonly double _defaultLeft, _defaultTop;

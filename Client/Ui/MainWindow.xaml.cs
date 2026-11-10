@@ -146,6 +146,7 @@ public partial class MainWindow : Window
     private DateTime _streamSettingsAt = DateTime.MinValue;
     private MeterSettings _streamSettings = new();
     private NetworkOverlayController? _network;
+    private FpsOverlayController? _fps;
     private DummyTestController? _dummy;
     private readonly System.Windows.Threading.DispatcherTimer _gateTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private bool _gameGateOpen = true;
@@ -1535,6 +1536,7 @@ public partial class MainWindow : Window
                 ShowUploadStatus(string.Format(LocalizationManager.Instance["Verify.StatusLine"], name, server))));
             EnsureRestrictableControllers();
             _network ??= new NetworkOverlayController();
+            _fps ??= new FpsOverlayController(); // the FPS counter (listens to Windows' frame timing only while it is on)
             Aion2Loot.EnablePersistence();
             Aion2BlackCloud.EnablePersistence(); // every character's pets and the Black Cloud Merchant's last offers (the notes, the Pets page)
             Aion2BlackCloud.Offered += (name, offered) => Dispatcher.BeginInvoke(new Action(() => OnBlackCloudOffered(name, offered)));
@@ -1601,6 +1603,8 @@ public partial class MainWindow : Window
         host.Children.Remove(CompactOverlayPanel);
         _meterOverlay = new MeterOverlayWindow(CompactOverlayPanel, Resources);
         _meterOverlay.SetClickThrough(_compactClickThrough);
+        // Alt + drag moves it in the game like every overlay, unless it is locked in place with its padlock (10 November 2026)
+        OverlayAltDrag.Register(_meterOverlay, () => !_meterOverlayLocked);
         _meterOverlay.GrowUp = _meterGrowUp;
         // the layout editor scales the meter like its own corner grip does
         _meterOverlay.ScaleOf = () => CompactOverlayScale.ScaleX;
@@ -2309,6 +2313,7 @@ public partial class MainWindow : Window
         _streamTimer.Stop();
         _streamServer?.Dispose();
         _network?.Dispose();
+        _fps?.Dispose();
         _dummy?.Dispose();
         FlushStores(force: true);
         AionDPS.Upload.MapShare.Flush(); // the map accuracy checks still waiting (a few seconds at most)

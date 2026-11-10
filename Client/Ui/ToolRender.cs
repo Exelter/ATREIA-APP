@@ -77,6 +77,31 @@ public static class ToolRender
                 break;
             }
 
+            case "fps":
+            case "fps-access":
+            {
+                // the FPS counter over the game: counting (green), and asking Windows for the access once
+                var fps = new FpsOverlayWindow();
+                if (what == "fps")
+                {
+                    fps.Render(143, 97, FpsMeter.State.Running);
+                }
+                else
+                {
+                    fps.Render(null, null, FpsMeter.State.NoAccess);
+                }
+
+                UIElement body = fps.DetachBody()!;
+                shown = new Border
+                {
+                    Padding = new Thickness(24), Background = new LinearGradientBrush(Color.FromRgb(0x3a, 0x4a, 0x3a), Color.FromRgb(0x24, 0x30, 0x40), 45),
+                    Child = new Border { Child = body, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top },
+                };
+                width = 0;
+                height = 0;
+                break;
+            }
+
             case "overlay-menu":
             case "overlay-button":
             {

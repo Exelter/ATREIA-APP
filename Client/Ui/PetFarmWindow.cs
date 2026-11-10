@@ -38,6 +38,7 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
         AltTabHidden.Apply(this);
         ShowActivated = false; // the game keeps the keyboard
         Topmost = true;
+        OverlayAltDrag.Register(this); // Alt + drag moves it in the game (10 November 2026)
         SizeToContent = SizeToContent.WidthAndHeight;
 
         var settings = MeterSettings.Load();

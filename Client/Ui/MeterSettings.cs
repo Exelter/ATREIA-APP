@@ -222,6 +222,13 @@ public sealed class MeterSettings
     /// the ids of the lines switched off in the Network analysis settings are kept in <see cref="NetworkOverlayHidden"/> (everything shows by default).</summary>
     public bool ShowNetworkOverlay { get; set; }
 
+    /// <summary>The FPS counter over the game (FpsOverlay.cs): the game's frames per second and its 1 % low, read from Windows' own frame timing. Off until
+    /// switched on.</summary>
+    public bool ShowFpsOverlay { get; set; }
+
+    /// <summary>Every overlay moves with the mouse while Alt is held (OverlayAltDrag.cs). On by default; off, they only move in "Move overlays".</summary>
+    public bool AltDragOverlays { get; set; } = true;
+
     /// <summary>The assist overlay (see AssistOverlayWindow): own cooldowns and effects, switched in the Tools > Assist window. Locked (default): click-through; unlocked: it can be moved and scaled.</summary>
     public bool ShowAssistOverlay { get; set; }
 
@@ -328,6 +335,8 @@ public sealed class MeterSettings
 
     public bool NetworkOverlayLocked { get; set; } = true;
 
+    public bool FpsOverlayLocked { get; set; } = true;
+
     public List<string> NetworkOverlayHidden { get; set; } = new();
 
     /// <summary>The loot overlay (see LootOverlayWindow): what the player picked up in the running session, kept in the Loot tool. Off until switched on. Locked (default): click-through; unlocked: it can be moved and scaled.</summary>
@@ -395,6 +404,11 @@ public sealed class MeterSettings
     public bool CraftCountStorage { get; set; } = true;
     public bool CraftCountAccountStorage { get; set; } = true;
 
+    public double? FpsOverlayLeft { get; set; }
+    public double? FpsOverlayTop { get; set; }
+    public double FpsOverlayScale { get; set; } = 1.0;
+    public double? FpsOverlayWidth { get; set; }
+    public double? FpsOverlayHeight { get; set; }
     public double? NetworkOverlayLeft { get; set; }
     public double? NetworkOverlayTop { get; set; }
     public double NetworkOverlayScale { get; set; } = 1.0;

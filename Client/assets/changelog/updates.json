@@ -11,6 +11,25 @@
       "items": [
         {
           "kind": "new",
+          "area": "Overlays",
+          "title": "Hold Alt and drag any overlay",
+          "text": "Every overlay now moves with the mouse in the game: hold Alt (the game shows the cursor), the overlay under it glows gold, and you drag it where you want it. Let go of Alt and your clicks go to the game again. The meter moves the same way unless you locked it with its padlock. \"Move overlays\" (Ctrl+Alt+V) still unlocks them all at once, with the handles to size them. You can switch Alt + drag off on the Overlays page.",
+          "example": "The loot overlay covers your quest list: hold Alt, drag it to the corner, let go."
+        },
+        {
+          "kind": "new",
+          "area": "Overlays",
+          "title": "An FPS counter",
+          "text": "Turn on the FPS counter in the overlay menu (or on the Overlays page): the game's frames per second, green from 60, amber from 30, red below, with the 1% low under it. It reads Windows' own frame timing, the way the Xbox Game Bar does, and never touches the game. Windows has to allow this once: the counter shows an Allow button that adds you to Windows' \"Performance Log Users\" group (Windows asks first), then sign out of Windows and in again."
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "A smaller overlay button you can move",
+          "text": "The Atreia button at the top of the screen is now a small square with the emblem, and it shows the keys of Move overlays (the overlay editor) on it. Click it for the overlay menu as before, or drag it anywhere you like: it stays where you leave it."
+        },
+        {
+          "kind": "new",
           "area": "Meter",
           "title": "Everything from the meter",
           "text": "A new button on the meter's bar opens a launcher with a tile for each tool: Characters, CP calculator, Journey, Legion, Items, Gathering, Season missions, Timers, Map and History. A tile opens that page right over the game, in a panel that looks like the meter, so you never have to leave the game for the app. Drag it by its top, size it at its edges, close it with Esc; it comes back where you left it. Pages that belong together are tabs of one panel.",
