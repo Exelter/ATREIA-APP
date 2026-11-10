@@ -879,10 +879,20 @@ public static class SelfCheckAion2
         Send(new byte[] { 0x34, 0x38, 0x00, 0x00, 0x00, 0x00 });
         bool cleared = dir.OwnTarget is null;
         bool inView = dir.PlayersInView().Any(p => p.Id == 16372) && dir.IsPlayer(16372);
+
+        // no word of her for five minutes (the game's "player left" now and then never comes): off the list; she moves: back on it
+        DateTime clock = DateTime.UtcNow;
+        dir.Clock = () => clock;
+        clock = clock.Add(Aion2EntityDirectory.InViewQuiet).AddSeconds(30);
+        bool quiet = dir.PlayersInView().Count == 0;
+        dir.NoteAround(16372, 1000, 2000);
+        bool moved = dir.PlayersInView().Any(p => p.Id == 16372);
+
         Send(new byte[] { 0x47, 0x36, 0xF4, 0x7F, 0x01, 0x00 }); // she leaves the view
         bool left = dir.PlayersInView().Count == 0;
-        Console.WriteLine($"  -> a player selected: {selected}; another form leaves it: {kept}; cleared: {cleared}; in view: {inView}, then gone (0x4736): {left}");
-        return selected && kept && cleared && inView && left;
+        Console.WriteLine($"  -> a player selected: {selected}; another form leaves it: {kept}; cleared: {cleared}; in view: {inView}, then gone (0x4736): {left}; "
+            + $"five quiet minutes leave her off: {quiet}, back once she moves: {moved}");
+        return selected && kept && cleared && inView && left && quiet && moved;
     }
 
     /// <summary>

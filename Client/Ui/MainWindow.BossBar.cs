@@ -196,7 +196,9 @@ public partial class MainWindow
 
         LocalizationManager loc = LocalizationManager.Instance;
         _bossNumbers!.Text = max > 0 ? $"{PlayerRow.Compact(hp)} / {PlayerRow.Compact(max)}" : PlayerRow.Compact(hp);
-        _bossName!.Text = name.Length > 0 ? name : loc["Overlay.BossBar.Boss"];
+        // the header names the boss already: the line says how much of it is left instead of naming it twice
+        bool named = name.Length > 0 && OverlayTargetText.Text is { Length: > 0 } header && header.Contains(name, StringComparison.OrdinalIgnoreCase);
+        _bossName!.Text = named && max > 0 ? Percent(Math.Clamp((double)hp / max, 0, 1)) + " left" : name.Length > 0 ? name : loc["Overlay.BossBar.Boss"];
         bool rageFirst = kill is TimeSpan k && rage is TimeSpan r && r > TimeSpan.Zero && k > r;
         _bossKill!.Text = kill is TimeSpan dies ? string.Format(CultureInfo.CurrentCulture, loc["Overlay.BossLine.Kill"], Clock(dies)) : loc["Overlay.BossLine.NoKill"];
         _bossKill.Foreground = kill is null ? OverlayPictures.Muted : rageFirst ? OverlayPictures.Red : new SolidColorBrush(Color.FromRgb(0x6C, 0xD4, 0x8A));

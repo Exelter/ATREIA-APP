@@ -550,8 +550,11 @@ public partial class MainWindow
 
     // ---- Overlays ----
 
+    /// <summary>A second switch of an overlay, a link beside its "Reset place" ("Show allies too: off").</summary>
+    private sealed record OverlayOption(string Text, Func<MeterSettings, bool> Get, Action<MeterSettings, bool> Set);
+
     private sealed record OverlayDef(string Name, string What, Func<MeterSettings, bool> Get, Action<MeterSettings, bool> Set, string? Page, Action? Reset = null,
-        Func<MeterSettings, string>? Keys = null, string Id = "");
+        Func<MeterSettings, string>? Keys = null, string Id = "", OverlayOption? Option = null);
 
     /// <summary>Every overlay over the game, the main ones first: its switch, what it shows and where its settings are.</summary>
     private List<OverlayDef> OverlayDefs()
@@ -575,7 +578,8 @@ public partial class MainWindow
             new("FPS counter", "The game's frames per second and its 1% low, from Windows' own frame timing (nothing touches the game).", s => s.ShowFpsOverlay,
                 (s, v) => s.ShowFpsOverlay = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Fps), null, "fps"),
             new("Enemy card", "Select an enemy player in the Abyss: his class, level, Combat Power and item level, and how his Combat Power compares with yours.",
-                s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyCard), null, "enemy"),
+                s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyCard), null, "enemy",
+                new OverlayOption("Players of your side too", s => s.EnemyCardAllies, (s, v) => s.EnemyCardAllies = v)),
             new("Enemy radar", "Every enemy player in view, the strongest first, with class, Combat Power and your record against each; a warning when a much stronger one comes.",
                 s => s.ShowEnemyRadar, (s, v) => s.ShowEnemyRadar = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyRadar), null, "radar"),
             new("Death recap", "When you die: who hit you, with which skills, how much, and over how many seconds.",
@@ -697,6 +701,23 @@ public partial class MainWindow
                 TextBlock back = ShellLink(loc["Shell.OvReset"], reset);
                 back.Margin = new Thickness(def.Page is null ? 0 : 16, 0, 0, 0);
                 links.Children.Add(back);
+            }
+
+            if (def.Option is { } option)
+            {
+                // a second switch as a link: its state in the text, a click turns it
+                TextBlock? opt = null;
+                void Show() => opt!.Text = option.Text + ": " + (option.Get(MeterSettings.Load()) ? "on" : "off");
+                opt = ShellLink("", () =>
+                {
+                    var settings = MeterSettings.Load();
+                    option.Set(settings, !option.Get(settings));
+                    settings.Save();
+                    Show();
+                });
+                Show();
+                opt.Margin = new Thickness(links.Children.Count > 0 ? 16 : 0, 0, 0, 0);
+                links.Children.Add(opt);
             }
 
             if (links.Children.Count > 0)

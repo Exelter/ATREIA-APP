@@ -2138,7 +2138,7 @@ public partial class MainWindow : Window
                 foreach ((BossAttempt attempt, List<DamageEvent> window) in wipes)
                 {
                     List<DeathRecord> deaths = directory.Combat.DeathsIn(attempt.Start, attempt.End.AddSeconds(2), playerIds.Contains);
-                    if (deaths.Count == 0 || partial && DateTime.Now - attempt.End > TimeSpan.FromMinutes(5))
+                    if (deaths.Count == 0 || DateTime.Now - attempt.End > TimeSpan.FromMinutes(5)) // an older try (saved as the stay ends) is no news any more
                     {
                         continue;
                     }

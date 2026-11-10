@@ -313,48 +313,59 @@ public sealed class GrindPage : StackPanel
         }
 
         GrindSession s = f.Session;
-        var head = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 0, 0, 14) };
-        var left = new StackPanel { Orientation = Orientation.Horizontal };
-        left.Children.Add(StatePill(f.Over));
-        left.Children.Add(Text(s.Zone != 0 ? LootText.MapName(s.Zone) : "This session", 17, "Brush.Text", bold: true, margin: new Thickness(10, 0, 0, 0)));
-        string who = (s.Character.Length > 0 ? "  ·  " + s.Character : "") + "  ·  since " + s.Start.ToString("HH:mm", CultureInfo.CurrentCulture) + "  ·  farmed " + f.FarmedText;
-        left.Children.Add(Text(who, 12.5, "Brush.TextMuted", margin: new Thickness(4, 2, 0, 0)));
-        head.Children.Add(left);
-        if (Picture is null)
+        // the head: the state and the map, who and since when under them; the buttons on the right (first, so they keep their room on a narrow page)
+        var head = new DockPanel { Margin = new Thickness(0, 0, 0, 14) };
+        Border again = ActionButton("\uE72C", "New session", () =>
         {
-            Border again = ActionButton("\uE72C", "New session", () =>
+            if (Picture is not null)
             {
-                Aion2Grind.NewSession();
-                _shown = "";
-                Refresh();
-            });
-            again.ToolTip = "Start counting again from the next kill: this session goes to the earlier ones";
-            DockPanel.SetDock(again, Dock.Right);
-            head.Children.Add(again);
-            GrindFigures figures = f;
-            Border? share = null;
-            share = ActionButton("\uE72D", "Share", () =>
-            {
-                bool copied = ShareCard.Copy(ShareCard.Grind(figures), "Grind " + (figures.Session.Zone != 0 ? LootText.MapName(figures.Session.Zone) : ""), out _);
-                if (share?.Child is StackPanel { Children.Count: 2 } line && line.Children[1] is TextBlock label)
-                {
-                    // a moment of "Copied", then the button as it was
-                    label.Text = copied ? "Copied" : "Try again";
-                    var back = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
-                    back.Tick += (_, _) =>
-                    {
-                        back.Stop();
-                        label.Text = "Share";
-                    };
-                    back.Start();
-                }
-            });
-            share.ToolTip = "Copy this session as an image to paste in Discord (also kept in Pictures\\Atreia App)";
-            share.Margin = new Thickness(0, 0, 8, 0);
-            DockPanel.SetDock(share, Dock.Right);
-            head.Children.Add(share);
-        }
+                return;
+            }
 
+            Aion2Grind.NewSession();
+            _shown = "";
+            Refresh();
+        });
+        again.ToolTip = "Start counting again from the next kill: this session goes to the earlier ones";
+        again.VerticalAlignment = VerticalAlignment.Top;
+        DockPanel.SetDock(again, Dock.Right);
+        head.Children.Add(again);
+        GrindFigures figures = f;
+        Border? share = null;
+        share = ActionButton("\uE72D", "Share", () =>
+        {
+            bool copied = ShareCard.Copy(ShareCard.Grind(figures), "Grind " + (figures.Session.Zone != 0 ? LootText.MapName(figures.Session.Zone) : ""), out _);
+            if (share?.Child is StackPanel { Children.Count: 2 } line && line.Children[1] is TextBlock label)
+            {
+                // a moment of "Copied", then the button as it was
+                label.Text = copied ? "Copied" : "Try again";
+                var back = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+                back.Tick += (_, _) =>
+                {
+                    back.Stop();
+                    label.Text = "Share";
+                };
+                back.Start();
+            }
+        });
+        share.ToolTip = "Copy this session as an image to paste in Discord (also kept in Pictures\\Atreia App)";
+        share.Margin = new Thickness(0, 0, 8, 0);
+        share.VerticalAlignment = VerticalAlignment.Top;
+        DockPanel.SetDock(share, Dock.Right);
+        head.Children.Add(share);
+
+        var title = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+        var name = new StackPanel { Orientation = Orientation.Horizontal };
+        name.Children.Add(StatePill(f.Over));
+        TextBlock map = Text(s.Zone != 0 ? LootText.MapName(s.Zone) : "This session", 17, "Brush.Text", bold: true, margin: new Thickness(10, 0, 0, 0));
+        map.TextTrimming = TextTrimming.CharacterEllipsis;
+        name.Children.Add(map);
+        title.Children.Add(name);
+        string who = (s.Character.Length > 0 ? s.Character + "  ·  " : "") + "since " + s.Start.ToString("HH:mm", CultureInfo.CurrentCulture) + "  ·  farmed " + f.FarmedText;
+        TextBlock whoText = Text(who, 12.5, "Brush.TextMuted", margin: new Thickness(0, 5, 0, 0));
+        whoText.TextTrimming = TextTrimming.CharacterEllipsis;
+        title.Children.Add(whoText);
+        head.Children.Add(title);
         stack.Children.Add(head);
         var tiles = new UniformGrid { Columns = 4 };
         tiles.Children.Add(Tile("KINAH / HOUR", f.KinahPerHour is double k ? GrindView.Short(k) : "…", "+" + GrindView.Short(s.Kinah) + " this session", GrindView.KinahColour));

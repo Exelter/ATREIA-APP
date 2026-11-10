@@ -69,7 +69,8 @@ public static class Aion2Grind
     private static readonly object Gate = new();
     private static readonly List<GrindSession> Stored = new();   // the ended sessions, newest first
     private static readonly Dictionary<int, MobYield> Yields = new();   // per monster, over every grind
-    private static readonly List<(int Npc, DateTime At, bool Paid)> RecentKills = new();   // the kills of the last seconds, for the Kinah that follows them
+    // the kills of the last seconds, for the Kinah and the Abyss Points that follow them (a kill pays each once: its Kinah and its points apart)
+    private static readonly List<(int Npc, DateTime At, bool PaidKinah, bool PaidAp)> RecentKills = new();
     private static readonly Dictionary<int, long> Balances = new();
     private static GrindSession? _current;
     private static string _character = "";
@@ -166,7 +167,7 @@ public static class Aion2Grind
 
                 // the monster it came from: the oldest kill of the last five seconds that paid nothing yet, else the latest one (a pack killed at once pays
                 // one after the other)
-                if (PayingKill(now) is int npc && npc > 0)
+                if (PayingKill(now, item == AbyssPoints) is int npc && npc > 0)
                 {
                     MobYield y = YieldOf(npc);
                     if (item == AbyssPoints)
@@ -207,7 +208,7 @@ public static class Aion2Grind
             if (npc > 0)
             {
                 YieldOf(npc).Kills++;
-                RecentKills.Add((npc, now, false));
+                RecentKills.Add((npc, now, false, false));
                 RecentKills.RemoveAll(k => now - k.At > TimeSpan.FromSeconds(5));
             }
 
@@ -335,14 +336,15 @@ public static class Aion2Grind
         return y;
     }
 
-    // Under the lock: the monster a gain at <paramref name="now"/> came from (null: no kill in the last five seconds).
-    private static int? PayingKill(DateTime now)
+    // Under the lock: the monster a gain at <paramref name="now"/> came from (null: no kill in the last five seconds): the oldest kill of them that hasn't paid
+    // this currency yet (a kill's Kinah and its Abyss Points come one after the other, a pack's kills each in turn).
+    private static int? PayingKill(DateTime now, bool abyssPoints)
     {
-        int index = RecentKills.FindIndex(k => !k.Paid && now - k.At <= TimeSpan.FromSeconds(5) && now >= k.At.AddSeconds(-1));
+        int index = RecentKills.FindIndex(k => !(abyssPoints ? k.PaidAp : k.PaidKinah) && now - k.At <= TimeSpan.FromSeconds(5) && now >= k.At.AddSeconds(-1));
         if (index >= 0)
         {
-            (int npc, DateTime at, _) = RecentKills[index];
-            RecentKills[index] = (npc, at, true);
+            (int npc, DateTime at, bool paidKinah, bool paidAp) = RecentKills[index];
+            RecentKills[index] = (npc, at, paidKinah || !abyssPoints, paidAp || abyssPoints);
             return npc;
         }
 
