@@ -18,6 +18,12 @@
         {
           "kind": "fixed",
           "area": "Overlays",
+          "title": "No more jumping while you drag",
+          "text": "\"Place overlays on a grid\" made every overlay jump in 20 px steps while dragged, which felt like lag. It's off now, and the overlay editor has its own Snap to the grid switch. When it's on, the editor's grid shows the exact lines the overlays snap to."
+        },
+        {
+          "kind": "fixed",
+          "area": "Overlays",
           "title": "The FPS counter stays on",
           "text": "On some PCs the counter switched between the frame rate and \"waiting for the game\" every moment. Windows hands over the game's frames in batches, and the counter took a late batch for a stopped game. It now asks for the frames twice a second and only says it's waiting after three seconds without any."
         },

@@ -179,6 +179,10 @@ public sealed class MeterSettings
     /// <summary>Overlays snap to a grid while they are dragged.</summary>
     public bool OverlayGridSnap { get; set; }
 
+    /// <summary>The grid snapping switched off once for everyone (10 November 2026: overlays jumped in 20 px steps while dragged, and players took it for lag;
+    /// its switch is in the overlay editor now).</summary>
+    public bool GridSnapDefaultedOff { get; set; }
+
     /// <summary>The width of one grid cell in screen units (the grid is placed from the screen's top left corner).</summary>
     public int OverlayGridSize { get; set; } = 20;
 

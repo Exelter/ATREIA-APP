@@ -440,6 +440,15 @@ public partial class MainWindow : Window
                 startupSettings.Save();
             }
 
+            if (!startupSettings.GridSnapDefaultedOff)
+            {
+                // the grid snapping off for everyone once (10 November 2026, the owner: "this forces overlays to stay on [the grid]"): overlays jumped in steps
+                // while dragged; the overlay editor shows the switch now
+                startupSettings.OverlayGridSnap = false;
+                startupSettings.GridSnapDefaultedOff = true;
+                startupSettings.Save();
+            }
+
             if (!startupSettings.AltDragDefaultedOff)
             {
                 // Alt + drag off for everyone once (10 November 2026): Alt is the game's cursor key, so locked overlays went along with clicks in the game
