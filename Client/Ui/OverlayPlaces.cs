@@ -1,3 +1,5 @@
+using System.Windows;
+
 namespace AionDPS.Ui;
 
 /// <summary>
@@ -24,6 +26,52 @@ public static class OverlayPlaces
         [BossHp] = new[] { CombatOverlayWindow.BossHpId },
         [TargetOfTarget] = new[] { CombatOverlayWindow.TargetIconId, CombatOverlayWindow.TargetNameId, CombatOverlayWindow.TargetHpId, CombatOverlayWindow.TargetEffectsId, CombatOverlayWindow.TargetBlockId },
     };
+
+    /// <summary>
+    /// The saved places of the overlays (and of Skill Assist's own skills) that <paramref name="move"/> puts elsewhere - given the saved place and size
+    /// (an estimate when no size is kept), it answers the new top left corner, or null to leave it. For overlays whose window is not open: an open one is moved
+    /// through its window. The Atreia button is left where it is (it belongs over the game).
+    /// </summary>
+    public static void MoveSaved(Func<Rect, Point?> move)
+    {
+        var s = MeterSettings.Load();
+        var type = typeof(MeterSettings);
+        bool changed = false;
+        foreach ((string title, string prefix) in Prefixes)
+        {
+            if (title == Menu || type.GetProperty(prefix + "Left") is not { } leftProperty || type.GetProperty(prefix + "Top") is not { } topProperty
+                || leftProperty.GetValue(s) is not double left || topProperty.GetValue(s) is not double top)
+            {
+                continue;
+            }
+
+            double width = type.GetProperty(prefix + "Width")?.GetValue(s) is double w && w > 0 ? w : 300;
+            double height = type.GetProperty(prefix + "Height")?.GetValue(s) is double h && h > 0 ? h : 160;
+            if (move(new Rect(left, top, width, height)) is { } to)
+            {
+                leftProperty.SetValue(s, to.X);
+                topProperty.SetValue(s, to.Y);
+                changed = true;
+            }
+        }
+
+        foreach (Dictionary<int, double[]> places in new[] { s.AssistCooldownPlaces, s.AssistCooldownTilePlaces })
+        {
+            foreach ((int skill, double[] at) in places.ToList())
+            {
+                if (at is [double left, double top] && double.IsFinite(left) && double.IsFinite(top) && move(new Rect(left, top, 200, 32)) is { } to)
+                {
+                    places[skill] = new[] { to.X, to.Y };
+                    changed = true;
+                }
+            }
+        }
+
+        if (changed)
+        {
+            s.Save();
+        }
+    }
 
     /// <summary>An overlay was reset: its window (if open) puts the start values on again.</summary>
     public static event Action<string>? WasReset;
