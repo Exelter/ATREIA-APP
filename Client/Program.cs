@@ -1687,6 +1687,19 @@ internal static class Program
                 // the boss bar over the lines: a boss at 62 %, dying in 1:23 at the group's pace, its enrage in 2:10
                 window.ShowBossBar("Kromede the Corrupt", 7_840_000, 12_600_000, TimeSpan.FromSeconds(83), TimeSpan.FromSeconds(130));
             }
+            else if (kind == "findgroup")
+            {
+                // Find a player opened in a group: the box empty, the other three players of the group a click each
+                window.OverlayBody.Visibility = System.Windows.Visibility.Collapsed;
+                window.OverlayTimeText.Visibility = System.Windows.Visibility.Collapsed;
+                window.OverlayFind.Visibility = System.Windows.Visibility.Visible;
+                window.ShowGroupMates(new[]
+                {
+                    new Ui.MainWindow.GroupMate("Valtheris", "Templar", 2302),
+                    new Ui.MainWindow.GroupMate("Lunessa", "Cleric", 2302),
+                    new Ui.MainWindow.GroupMate("Korrin", "Sorcerer", 2305),
+                });
+            }
             else if (kind == "findservers")
             {
                 // Find a player's server picker: Europe's Asmodian servers, Vaizel picked

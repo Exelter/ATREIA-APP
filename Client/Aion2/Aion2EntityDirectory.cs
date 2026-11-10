@@ -3616,6 +3616,15 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
         return ids;
     }
 
+    /// <summary>A party member's class as the roster gave it; null when it gave none for the name.</summary>
+    public string? PartyClassOfName(string name)
+    {
+        lock (_gate)
+        {
+            return _partyClasses.TryGetValue(name, out string? className) ? className : null;
+        }
+    }
+
     /// <summary>Notes a party member's class, as the roster gives it.</summary>
     public void NotePartyClass(string name, string className)
     {

@@ -701,8 +701,11 @@ public static class SelfCheckAion2
         bool three = dir.PartyNames.Count == 3;
         dir.NoteParty(new[] { "Aahz" }, at.AddSeconds(3));
         bool alone = dir.PartyNames.Count == 1 && dir.PartyNames.Contains("Aahz");
-        Console.WriteLine($"  -> three members listed: {three}; the next frame names the local player alone, the others are gone: {alone}");
-        return three && alone;
+        // Find a player lists the group with each member's class as the roster gave it
+        dir.NotePartyClass("Skeeve", "Cleric");
+        bool classes = dir.PartyClassOfName("Skeeve") == "Cleric" && dir.PartyClassOfName("Chumley") is null;
+        Console.WriteLine($"  -> three members listed: {three}; the next frame names the local player alone, the others are gone: {alone}; a member's class by name: {classes}");
+        return three && alone && classes;
     }
 
     /// <summary>

@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "1.21.8",
+      "date": "2026-11-10",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Find a player",
+          "title": "Your group, one click each",
+          "text": "Open Find a player while you're in a group and the other players of your group are listed under the box, with their class and server. Click one to see their card, Combat Power, Item Level and best parse, without typing the name. Clear the box to get the list back.",
+          "example": "Your Nightmare group has a Cleric you don't know: open Find a player, click Lunessa, and her card comes up."
+        }
+      ]
+    },
+    {
       "version": "1.21.7",
       "date": "2026-11-10",
       "items": [
