@@ -71,7 +71,7 @@
           "kind": "new",
           "area": "Abyss",
           "title": "Enemy card",
-          "text": "Tab onto an enemy player and a card shows their class, level, server, legion, Combat Power and item level, and how their Combat Power compares with yours. Place it where you like in the overlay editor; it only shows while an enemy is selected."
+          "text": "Tab onto an enemy player and a card shows their class, level, server, legion, Combat Power and item level, and how their Combat Power compares with yours. If the game didn't send their numbers (for example the app started while they were already nearby), the card looks them up from their character page. Place it where you like in the overlay editor; it only shows while an enemy is selected."
         }
       ]
     },
