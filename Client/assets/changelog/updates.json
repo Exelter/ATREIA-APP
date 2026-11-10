@@ -122,7 +122,7 @@
           "kind": "new",
           "area": "Characters",
           "title": "Every character on one board",
-          "text": "All characters shows every counter as a row and every character as a column, so you see at a glance which alt has what: Odyle Energy (with all of it together and how many runs it makes), the daily tasks, Nightmare and the daily dungeons, the keys your server's characters share, this week's Ascension Trial, Subjugation, Ludra and the other raids with their boss, the dungeon rewards and the Abyss Corridors. A counter turns red when it's so full that part of the next refill is lost, and amber when the week's tickets are about to reset unused. Sections fold and stay folded. Eight characters fit side by side. Season missions and the inventory have tabs of their own.",
+          "text": "All characters shows every counter as a row and every character as a column, so you see at a glance which alt has what: Odyle Energy (with all of it together and how many runs it makes), the daily tasks, Nightmare and the daily dungeons, the keys your server's characters share, this week's Ascension Trial, Subjugation, Ludra's Abyssal Forge with its boss, the Conquest and Transcendence rewards and the Abyss Corridors. Only what the Global servers have is listed. A counter turns red when it's so full that part of the next refill is lost, and amber when the week's tickets are about to reset unused. Sections fold and stay folded. Eight characters fit side by side. Season missions and the inventory have tabs of their own.",
           "example": "Kaivhan's Nightmare is at 13/14 with +2 coming at 08:00: the cell is red and says −1 at 08:00."
         },
         {

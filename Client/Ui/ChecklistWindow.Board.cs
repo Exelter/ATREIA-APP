@@ -417,7 +417,8 @@ public sealed partial class ChecklistWindow
         LocalizationManager loc = LocalizationManager.Instance;
         CultureInfo culture = loc.Culture;
         var sections = new List<BoardSection>();
-        bool Seen(int id) => all.Any(c => c.Tickets.ContainsKey(id) || Aion2Tickets.IsLocked(c, id));
+        // what the Global servers have only: the login carries the counters of Korea's and Taiwan's newer content too (NotOnGlobal)
+        bool Seen(int id) => !NotOnGlobal.Contains(id) && all.Any(c => c.Tickets.ContainsKey(id) || Aion2Tickets.IsLocked(c, id));
         DateTime nextDaily = ChecklistManual.LastDailyReset(now).AddDays(1), nextWeekly = ChecklistManual.LastWeeklyReset(now).AddDays(7);
         string Resets(DateTime next) => string.Format(culture, loc["Checklist.Board.Resets"], (next - now > TimeSpan.FromDays(1) ? next.ToString("ddd", culture) + " " : "") + next.ToString("t", culture),
             SpanText(next - now));

@@ -47,6 +47,14 @@ public sealed partial class ChecklistWindow : Window
         new[] { 90000001, 90000002, 90000003, 90000004, 90000005, 90000006 },
     };
 
+    /// <summary>
+    /// Content the game's login reports on the Global servers too but that is only live in Korea and Taiwan so far, so it is not shown (10 November 2026, the
+    /// owner: "make sure the things u add are global only not kr and tw too"): Expedition: Ordeal, and the Sanctuaries Corroded Decontamination Facility and
+    /// Chalice of Muspel (in the Global client's data, not announced for Global; Ludra's Abyssal Forge is, since 4 November 2026). Every one of the 44 logins on
+    /// the recordings of 7 to 10 November carried all the counters, released or not, so what the login sends tells nothing; take an id out once it comes to Global.
+    /// </summary>
+    internal static readonly HashSet<int> NotOnGlobal = new() { 60015101, 90000003, 90000004, 90000005, 90000006 };
+
     /// <summary>The weekly counter of the daily dungeon (the unknown fissure's entry count).</summary>
     private const int DailyDungeonTicket = 101;
 
@@ -1021,7 +1029,8 @@ public sealed partial class ChecklistWindow : Window
         var blocks = new List<(UIElement Box, int Rows)>();
         foreach (int[] block in DungeonBlocks)
         {
-            TicketDef[] defs = block.Select(Aion2Tickets.Find).Where(d => d is not null && (character.Tickets.ContainsKey(d.Id) || Aion2Tickets.IsLocked(character, d.Id))).Select(d => d!).ToArray();
+            TicketDef[] defs = block.Where(id => !NotOnGlobal.Contains(id)).Select(Aion2Tickets.Find)
+                .Where(d => d is not null && (character.Tickets.ContainsKey(d.Id) || Aion2Tickets.IsLocked(character, d.Id))).Select(d => d!).ToArray();
             if (defs.Length == 0)
             {
                 continue;
