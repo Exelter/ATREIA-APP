@@ -7466,9 +7466,12 @@ public partial class MainWindow : Window
 
             case "loot":
             {
+                // the Grind tool (10 November 2026): the grind going on and the earlier ones, the loot log as its second tab; the switch is the loot overlay's
                 var lootPage = new LootPage();
-                var page = new ModulePage(loc["Main.MenuTools.Loot"], lootPage, s => s.ShowLootOverlay, (s, v) => s.ShowLootOverlay = v, s => s.HotkeyLoot, hotkeys, settingsPage, applied) { FitWidth = true };
-                return new ToolPage { Content = page, Cleanup = () => { page.Stop(); lootPage.Stop(); } };
+                var grindPage = new GrindPage(lootPage, Aion2OwnServerId);
+                var page = new ModulePage(loc["Main.MenuTools.Grind"], grindPage, s => s.ShowLootOverlay, (s, v) => s.ShowLootOverlay = v, s => s.HotkeyLoot, hotkeys, settingsPage, applied,
+                    masterLabel: loc["Main.MenuTools.Loot"] + " · " + loc["Settings.Overlay.Master"]) { FitWidth = true };
+                return new ToolPage { Content = page, Cleanup = () => { page.Stop(); grindPage.Stop(); } };
             }
 
             case "craft":
