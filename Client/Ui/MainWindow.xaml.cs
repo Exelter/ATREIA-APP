@@ -1560,6 +1560,7 @@ public partial class MainWindow : Window
             _network ??= new NetworkOverlayController();
             _fps ??= new FpsOverlayController(); // the FPS counter (listens to Windows' frame timing only while it is on)
             Aion2Loot.EnablePersistence();
+            Aion2Grind.EnablePersistence(); // the grind sessions: Kinah, Abyss Points, kills and loot per hour (the meter's Grind view, the Grind page)
             Aion2BlackCloud.EnablePersistence(); // every character's pets and the Black Cloud Merchant's last offers (the notes, the Pets page)
             Aion2BlackCloud.Offered += (name, offered) => Dispatcher.BeginInvoke(new Action(() => OnBlackCloudOffered(name, offered)));
             Aion2BlackCloud.Bought += (_, pet) => Dispatcher.BeginInvoke(new Action(() => ShopMarks.Drop(pet)));
@@ -2277,6 +2278,7 @@ public partial class MainWindow : Window
             ("supply", () => Aion2Supply.Flush(force)),
             ("inventories", () => Aion2Inventories.Flush(force)),
             ("loot", () => Aion2Loot.Flush()),
+            ("grind", () => Aion2Grind.Flush()),
             ("gathering", () => Aion2GatherLog.Flush()),
             ("field bosses", () => Aion2FieldBosses.Flush()),
         })

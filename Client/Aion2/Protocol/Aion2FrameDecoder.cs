@@ -980,6 +980,7 @@ public sealed class Aion2FrameDecoder
                 return Array.Empty<DamageEvent>();
             case OpcodeFamily.Equipment:
                 Aion2Stock.NoteSnapshot(frame, timestamp);
+                Aion2Grind.NoteInventory(frame, timestamp, _entities.LocalCharacter?.Name, login: true);
                 DecodeEquipment(frame);
                 return Array.Empty<DamageEvent>();
             case OpcodeFamily.Daevanion:
@@ -994,6 +995,9 @@ public sealed class Aion2FrameDecoder
                 return Array.Empty<DamageEvent>();
             case OpcodeFamily.TargetSelect:
                 DecodeTargetSelect(frame);
+                return Array.Empty<DamageEvent>();
+            case OpcodeFamily.OwnTarget:
+                DecodeOwnTarget(frame);
                 return Array.Empty<DamageEvent>();
             case OpcodeFamily.PetProgress:
                 DecodePetProgress(frame);
@@ -2616,6 +2620,26 @@ public sealed class Aion2FrameDecoder
     }
 
     /// <summary>
+    /// The local player's selection (0x3438): <c>opcode | 00 00 00 | entity id (varint)</c>, 0 when the selection was cleared. Checked on the recordings of
+    /// 7 to 10 November 2026: each of 670 selections is followed by the target-of-target frame (0x3538) of the same entity, the 15 players selected among them
+    /// too; 0x3538 itself is any entity's own target (a monster turning on a player), so it cannot tell what the player selected. A form with other bytes after
+    /// the opcode (<c>00 17 3a ...</c>) is something else and is left alone.
+    /// </summary>
+    private void DecodeOwnTarget(ReadOnlySpan<byte> frame)
+    {
+        if (frame.Length < 6 || frame[2] != 0 || frame[3] != 0 || frame[4] != 0)
+        {
+            return;
+        }
+
+        int p = 5;
+        if (TryReadVarint(frame, ref p, out long id) && p == frame.Length && id is >= 0 and <= int.MaxValue)
+        {
+            _entities.SetOwnTarget(id == 0 ? null : (int)id);
+        }
+    }
+
+    /// <summary>
     /// An inventory change of the local player: <c>opcode | 01 00 00 | 8 bytes | item id u32 | quantity u32 ...</c> (also AP and Kinah, see
     /// the resources note; bytes 5-8 are the item instance, so two souls dropped at once differ). Only a pet soul is of interest: it goes to the pet farm log with the monsters that died right before it.
     /// </summary>
@@ -2627,6 +2651,7 @@ public sealed class Aion2FrameDecoder
         }
 
         var gains = Aion2Stock.NoteChange(frame, timestamp);
+        Aion2Grind.NoteInventory(frame, timestamp, _entities.LocalCharacter?.Name);
         if (gains.Count > 0 && Aion2GatherLog.AnyResource(gains))
         {
             // the gathering tool's tally: a resource that came while a gathering place of it is near the player

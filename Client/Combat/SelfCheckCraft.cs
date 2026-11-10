@@ -258,7 +258,7 @@ public static class SelfCheckCraft
         bool weekOver = !Aion2Tickets.WeeklyPointsStale(tuesday, Utc(4, 6)) && Aion2Tickets.WeeklyPointsStale(tuesday, Utc(4, 8))
             && Aion2Tickets.NextWeeklyResetAfter(Utc(3, 20)) == Utc(4, 7) && Aion2Tickets.WeeklyPointsStale(default, Utc(4, 6));
         Console.WriteLine($"  -> the week's season points are over at the weekly reset after the maintenance (Wednesday 07:00 UTC): {weekOver}");
-        points &= weekOver && Achievements() && Season() && Supply() && Inventories() && SeasonCoins();
+        points &= weekOver && Achievements() && Season() && Supply() && Inventories() && SeasonCoins() && Grind();
 
         // the own rank of the ranking window (a real frame: Abyss, overall, rank 1,764, 92,435 points, fell 16 places)
         byte[] rankFrame = Convert.FromHexString("578D00000100E4060000353B030000001805044161687A08416B617473756B6901002D00000000000000021369010000000000347B226B696C6C5F636F756E74223A31312C2264656174685F636F756E74223A34322C226173736973745F636F756E74223A36317DF0FFFFFF00000000120000000F0000003422000016C5282CA1010000");
@@ -555,6 +555,43 @@ public static class SelfCheckCraft
 
     /// <summary>The Oath Coins of the weekly missions: 200 and 280 for the two steps of "Collecting Dream Shards", 49,140 for
     /// all weekly missions of either faction; a count of last week gives none this week.</summary>
+    /// <summary>
+    /// The grind tracker (Aion2/Aion2Grind.cs): Kinah and Abyss Points from the balances of the inventory frames (a rise counts, spending not, nothing
+    /// before a kill), the time farmed without the pauses, the average per hour, and another character starting its own session.
+    /// </summary>
+    private static bool Grind()
+    {
+        const int kina = Aion2Grind.Kinah, ap = Aion2Grind.AbyssPoints;
+        Aion2Grind.ResetForCheck();
+        DateTime t = new(2026, 11, 10, 18, 0, 0, DateTimeKind.Local);
+        byte[] Balance(int item, long amount, byte slot) => Frame(0x1b, 0, (1, 1, slot, item, amount));
+
+        Aion2Grind.NoteInventory(Balance(kina, 1000, 0), t.AddSeconds(-30), "Tester");
+        Aion2Grind.NoteInventory(Balance(kina, 1400, 0), t.AddSeconds(-20), "Tester");   // no kill yet: the storage, the mail - nothing
+        bool idle = Aion2Grind.Current is null;
+        Aion2Grind.NoteKill(210010000, t);
+        Aion2Grind.NoteInventory(Balance(kina, 1900, 0), t.AddSeconds(5), "Tester");     // +500
+        Aion2Grind.NoteInventory(Balance(ap, 100, 1), t.AddSeconds(6), "Tester");        // the first Abyss Points seen: the start only
+        Aion2Grind.NoteInventory(Balance(ap, 160, 1), t.AddSeconds(8), "Tester");        // +60
+        Aion2Grind.NoteInventory(Balance(kina, 1200, 0), t.AddSeconds(9), "Tester");     // spent: not counted
+        Aion2Grind.NoteInventory(Balance(kina, 1300, 0), t.AddSeconds(10), "Tester");    // +100
+        Aion2Grind.NotePickup(Kinah, 5, t.AddSeconds(10));                               // a currency: counted through its balance
+        Aion2Grind.NotePickup(Elixir, 2, t.AddSeconds(10));
+        Aion2Grind.NoteKill(210010000, t.AddMinutes(20));                                 // after a pause: its 20 minutes are not farmed
+        GrindSession? s = Aion2Grind.Current;
+        bool amounts = s is { Kinah: 600, AbyssPoints: 60, Kills: 2 } && s.Items.GetValueOrDefault(Elixir) == 2 && !s.Items.ContainsKey(Kinah) && s.Zone == 210010000;
+        double farmed = s is null ? 0 : Aion2Grind.ActiveSecondsAt(s, t.AddMinutes(20).AddSeconds(50));   // 10 s, then 50 s since the last kill
+        bool time = Math.Abs(farmed - 60) < 0.01 && s?.PerHour(600, farmed) is double perHour && Math.Abs(perHour - 36_000) < 0.01
+            && s.PerHour(600, 30) is null;
+        Aion2Grind.NoteInventory(Balance(kina, 50_000, 0), t.AddMinutes(21), "Other");  // another character: its balance is a start, not a gain
+        Aion2Grind.NoteKill(210010000, t.AddMinutes(21));
+        bool other = Aion2Grind.Current is { Kinah: 0, Kills: 1, Character: "Other" } && Aion2Grind.Sessions.Count == 1 && Aion2Grind.Sessions[0].Kinah == 600;
+        Aion2Grind.ResetForCheck();
+        Console.WriteLine($"  -> grind: nothing before a kill: {idle}; Kinah +600, Abyss Points +60, 2 kills, the loot without Kinah: {amounts}; 60 s farmed (the pause left out), "
+            + $"36,000 Kinah an hour, none before a minute: {time}; another character starts its own: {other}");
+        return idle && amounts && time && other;
+    }
+
     private static bool SeasonCoins()
     {
         IReadOnlyList<SeasonMission> all = SeasonMissions.All;

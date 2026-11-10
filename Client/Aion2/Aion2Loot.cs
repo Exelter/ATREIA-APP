@@ -553,6 +553,7 @@ public static class Aion2Loot
         }
 
         CountedKills[entity] = (at, new HashSet<int>());
+        Aion2Grind.NoteKill(_zone, at); // the grind tracker counts the same kills (its own lock, never back in here)
         KillOrder.Enqueue(entity);
         while (KillOrder.Count > MaxKillsKept)
         {
@@ -708,6 +709,7 @@ public static class Aion2Loot
     {
         // The session's clock is the computer's: the frames carry the time they were captured at, which is the same clock.
         DateTime now = Local(frameTime);
+        Aion2Grind.NotePickup(item, count, now);
         if (cube)
         {
             AddCube(monster, item, count, now);
