@@ -153,7 +153,7 @@ public sealed class GrindPage : StackPanel
         var stack = new StackPanel();
         card.Child = stack;
         stack.Children.Add(Text("BEST MONSTERS TO FARM", 10.5, "Brush.TextMuted", bold: true, margin: new Thickness(10, 0, 10, 2)));
-        stack.Children.Add(Text("Per kill: the Kinah that came right after the kill, and the drops at your server's market. Monsters killed at least five times.", 11.5,
+        stack.Children.Add(Text("Kinah plus drops at your server's market, per kill. Monsters killed five times or more.", 11.5,
             "Brush.TextMuted", margin: new Thickness(10, 0, 10, 8)));
         if (ranked.Count == 0)
         {
@@ -338,7 +338,15 @@ public sealed class GrindPage : StackPanel
                 bool copied = ShareCard.Copy(ShareCard.Grind(figures), "Grind " + (figures.Session.Zone != 0 ? LootText.MapName(figures.Session.Zone) : ""), out _);
                 if (share?.Child is StackPanel { Children.Count: 2 } line && line.Children[1] is TextBlock label)
                 {
-                    label.Text = copied ? "Copied: paste it in Discord" : "Clipboard busy, try again";
+                    // a moment of "Copied", then the button as it was
+                    label.Text = copied ? "Copied" : "Try again";
+                    var back = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+                    back.Tick += (_, _) =>
+                    {
+                        back.Stop();
+                        label.Text = "Share";
+                    };
+                    back.Start();
                 }
             });
             share.ToolTip = "Copy this session as an image to paste in Discord (also kept in Pictures\\Atreia App)";
@@ -354,7 +362,7 @@ public sealed class GrindPage : StackPanel
         tiles.Children.Add(Tile("KILLS / HOUR", f.KillsPerHour is double kh ? kh.ToString("N0", CultureInfo.CurrentCulture) : "…", s.Kills.ToString("N0", CultureInfo.CurrentCulture) + " killed",
             GrindView.KillColour));
         tiles.Children.Add(Tile("LOOT / HOUR", f.LootPerHour is double lh ? GrindView.Short(lh) : f.Items == 0 ? "–" : "…",
-            f.LootWorth is long w ? $"{f.Items:N0} items, ~{GrindView.Short(w)} at the market" : $"{f.Items:N0} items", GrindView.LootColour));
+            f.LootWorth is long w ? $"{f.Items:N0} items  ·  ~{GrindView.Short(w)}" : $"{f.Items:N0} items", GrindView.LootColour));
         stack.Children.Add(tiles);
         TextBlock note = Text(f.KinahPerHour is null ? "The hourly numbers come after the first minute farmed." :
             "Per hour is this session's average over the time farmed: a big kill lifts it at once, and it settles again as the minutes go by. Pauses of more than five minutes don't count.",

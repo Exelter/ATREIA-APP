@@ -100,13 +100,20 @@ public static class GrindView
             foot.Children.Add(again);
         }
 
-        string where = s.Zone != 0 ? "  ·  " + LootText.MapName(s.Zone) : "";
-        foot.Children.Add(new TextBlock
+        // the time farmed and the map are in the meter's header already: the foot only says when the clock stopped
+        if (f.Over)
         {
-            Text = (f.Over ? "Paused  ·  " : "Farmed ") + f.FarmedText + where, FontSize = 10.5, Foreground = new SolidColorBrush(Faint), TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center, ToolTip = "The time farmed: pauses of more than five minutes are left out, so the hourly numbers stay honest",
-        });
-        stack.Children.Add(foot);
+            foot.Children.Add(new TextBlock
+            {
+                Text = "Ended: the next kill starts a new session", FontSize = 10.5, Foreground = new SolidColorBrush(Faint), TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center, ToolTip = "Half an hour without a kill ends a session; it stays on the Grind page",
+            });
+        }
+
+        if (foot.Children.Count > 0)
+        {
+            stack.Children.Add(foot);
+        }
         return stack;
     }
 

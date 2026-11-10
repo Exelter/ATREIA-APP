@@ -367,7 +367,7 @@ public sealed class DeathRecapWindow : MovableOverlay
             stack.Children.Add(blow);
         }
 
-        string totals = $"{recap.Taken.ToString("N0", CultureInfo.CurrentCulture)} taken in {seconds}" + (recap.Healed > 0 ? $"  ·  {recap.Healed.ToString("N0", CultureInfo.CurrentCulture)} healed" : "");
+        string totals = $"{recap.Taken.ToString("N0", CultureInfo.CurrentCulture)} taken" + (recap.Healed > 0 ? $"  ·  {recap.Healed.ToString("N0", CultureInfo.CurrentCulture)} healed" : "");
         stack.Children.Add(new TextBlock { Text = totals, FontSize = 11, Foreground = new SolidColorBrush(Faint), Margin = new Thickness(0, 0, 0, 4) });
         stack.Children.Add(OverlaySkin.Divider(2, 5));
 
@@ -400,7 +400,7 @@ public sealed class DeathRecapWindow : MovableOverlay
             grid.Children.Add(pct);
             stack.Children.Add(grid);
             stack.Children.Add(ShareBar(share, s.Player ? Red : Color.FromRgb(0xC8, 0x9B, 0x5A)));
-            string skills = string.Join("  ·  ", s.Skills.Take(3).Select(k => $"{k.Name} ×{k.Hits} {GrindView.Short(k.Amount)}"));
+            string skills = string.Join("  ·  ", s.Skills.Take(3).Select(k => $"{k.Name} ×{k.Hits} {k.Amount.ToString("N0", CultureInfo.CurrentCulture)}"));
             if (skills.Length > 0)
             {
                 stack.Children.Add(new TextBlock { Text = skills, FontSize = 10.5, Foreground = new SolidColorBrush(Faint), TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 1, 0, 3) });

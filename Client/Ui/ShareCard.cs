@@ -26,20 +26,10 @@ public static class ShareCard
     private static readonly Color Muted = Color.FromRgb(0x9D, 0xB3, 0xC2);
     private static readonly Color Faint = Color.FromRgb(0x6F, 0x87, 0x97);
 
-    /// <summary>The players of a saved fight by damage (the report's own events: what each player did in the fight's window).</summary>
-    public static List<ShareLine> LinesOf(ReportInput input, string? you)
-    {
-        double seconds = Math.Max(1, (input.End - input.Start).TotalSeconds);
-        var ids = input.Players.ToDictionary(p => p.Id);
-        var totals = input.Events.Where(e => !e.IsHeal && ids.ContainsKey(e.SourceObjectId) && !ids.ContainsKey(e.TargetObjectId) && e.Timestamp >= input.Start && e.Timestamp <= input.End)
-            .GroupBy(e => e.SourceObjectId).Select(g => (Id: g.Key, Total: g.Sum(e => e.Amount))).Where(t => t.Total > 0).ToList();
-        long all = totals.Sum(t => t.Total);
-        return totals.OrderByDescending(t => t.Total).Select(t =>
-        {
-            ReportPlayer p = ids[t.Id];
-            return new ShareLine(p.Name, p.ClassName, t.Total / seconds, t.Total, all > 0 ? (double)t.Total / all : 0, p.IsSelf || p.Name == you);
-        }).ToList();
-    }
+    /// <summary>The players of a saved fight by damage, as its report counts them (the boss and its adds only, in the fight's window): the card and History agree.</summary>
+    public static List<ShareLine> LinesOf(ReportInput input, string? you) =>
+        FightReport.Build(input).Players.Where(p => p.Damage > 0).OrderByDescending(p => p.Damage)
+            .Select(p => new ShareLine(p.Player.Name, p.Player.ClassName, p.Dps, p.Damage, p.Share / 100, p.Player.IsSelf || p.Player.Name == you)).ToList();
 
     /// <summary>A fight's card: <paramref name="kicker"/> ("BOSS KILL", "WIPE", "FIGHT") over the title, the place and day, the length and the group's DPS, the players.</summary>
     public static FrameworkElement Fight(string kicker, string title, string? sub, TimeSpan length, IReadOnlyList<ShareLine> lines, Color? accent = null)

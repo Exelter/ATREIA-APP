@@ -1019,8 +1019,8 @@ public sealed class HistoryWindow : Window
         Cursor = Cursors.Wait;
         try
         {
-            ReportInput? input = await Task.Run(() => FightLog.Open(entry));
-            if (input is null)
+            List<ShareLine>? lines = await Task.Run(() => FightLog.Open(entry) is { } input ? ShareCard.LinesOf(input, entry.You) : null);
+            if (lines is null)
             {
                 ThemedMessageBox.Show(Window.GetWindow(_root) ?? this, "This fight's file is gone or could not be read.", "History", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -1036,12 +1036,10 @@ public sealed class HistoryWindow : Window
             };
             string? zone = entry.ZoneId != 0 ? Aion2Zones.NameOf(entry.ZoneId, "en") : entry.Detail;
             string sub = string.Join("  ·  ", new[] { zone, entry.Start.ToString("ddd d MMM, HH:mm", System.Globalization.CultureInfo.CurrentCulture) }.Where(t => t is { Length: > 0 }));
-            FrameworkElement card = ShareCard.Fight(kicker, entry.Title, sub, TimeSpan.FromSeconds(entry.Seconds), ShareCard.LinesOf(input, entry.You),
+            FrameworkElement card = ShareCard.Fight(kicker, entry.Title, sub, TimeSpan.FromSeconds(entry.Seconds), lines,
                 entry.Kind == FightLogKind.Boss && entry.Killed != true ? Color.FromRgb(0xFF, 0x7A, 0x6E) : null);
-            bool copied = ShareCard.Copy(card, entry.Title, out string? saved);
-            ThemedMessageBox.Show(Window.GetWindow(_root) ?? this,
-                (copied ? "Copied as an image: paste it in Discord with Ctrl+V." : "The clipboard is busy: the image wasn't copied.") + (saved is not null ? "\n\nAlso saved to " + saved : ""),
-                "History", MessageBoxButton.OK, MessageBoxImage.Information);
+            bool copied = ShareCard.Copy(card, entry.Title, out _);
+            CubeToast.Note(copied ? "Copied as an image: paste it in Discord with Ctrl+V" : "The clipboard is busy: try again", 4, anywhere: true);
         }
         finally
         {

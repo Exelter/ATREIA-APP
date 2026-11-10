@@ -100,6 +100,7 @@ jobs:
             @('render-tool', 'enemycard.png', 'enemycard'),
             @('render-tool', 'radar.png', 'radar'),
             @('render-tool', 'deathrecap.png', 'deathrecap'),
+            @('render-tool', 'share.png', 'share'),
             @('render-tool', 'grind-page.png', 'grind'),
             @('render-tool', 'grind-loot.png', 'grind-loot'),
             @('render-tool', 'account.png', 'account'),

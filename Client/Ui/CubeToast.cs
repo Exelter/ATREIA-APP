@@ -23,10 +23,13 @@ public static class CubeToast
     public static bool Active { get; private set; }
 
     /// <summary>Shows the note (again) with <paramref name="text"/>; it stays until <see cref="Release"/>.</summary>
-    public static void Show(string text)
+    public static void Show(string text) => Show(text, anywhere: false);
+
+    // anywhere: an answer to a click in the app's own windows (copied to the clipboard), shown whatever is in front
+    private static void Show(string text, bool anywhere)
     {
         Active = true;
-        if (MainWindow.Headless || !GameWindow.OverlayMayShow())
+        if (MainWindow.Headless || !anywhere && !GameWindow.OverlayMayShow())
         {
             return; // only over the game, never on the desktop or over one of the game's windows
         }
@@ -78,14 +81,14 @@ public static class CubeToast
 
     /// <summary>A short note of another kind in the same place, without the cube (the overlays unlocked or locked by their hotkey, the Black Cloud Merchant): it
     /// fades after <paramref name="seconds"/>. A cube's note in range is left alone.</summary>
-    public static void Note(string text, double seconds = 3)
+    public static void Note(string text, double seconds = 3, bool anywhere = false)
     {
-        if (Active || MainWindow.Headless || !GameWindow.OverlayMayShow())
+        if (Active || MainWindow.Headless || !anywhere && !GameWindow.OverlayMayShow())
         {
             return;
         }
 
-        Show(text);
+        Show(text, anywhere);
         Active = false;
         _icon!.Visibility = Visibility.Collapsed;
         _timer!.Interval = TimeSpan.FromSeconds(seconds);

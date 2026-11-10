@@ -22,6 +22,6 @@ public partial class MainWindow
         var card = ShareCard.Fight(_overlayBossShown ? "BOSS FIGHT" : "FIGHT", title, DateTime.Now.ToString("ddd d MMM, HH:mm", System.Globalization.CultureInfo.CurrentCulture),
             length, lines);
         bool copied = ShareCard.Copy(card, title, out _);
-        CubeToast.Note(copied ? "Copied as an image: paste it in Discord with Ctrl+V" : "The clipboard is busy: try again", 4);
+        CubeToast.Note(copied ? "Copied as an image: paste it in Discord with Ctrl+V" : "The clipboard is busy: try again", 4, anywhere: true);
     }
 }

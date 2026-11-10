@@ -98,7 +98,7 @@ public sealed record WipeReview(string Boss, DateTime Start, TimeSpan Length, in
             blow.Inlines.Add(new System.Windows.Documents.Run(d.Skill ?? "no hit seen") { Foreground = new SolidColorBrush(d.Skill == w.Mechanic && w.MechanicDeaths > 1 ? red : muted) });
             if (d.Amount > 0)
             {
-                blow.Inlines.Add(new System.Windows.Documents.Run("  " + GrindView.Short(d.Amount)) { FontWeight = FontWeights.SemiBold, Foreground = Brushes.White });
+                blow.Inlines.Add(new System.Windows.Documents.Run("  " + d.Amount.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)) { FontWeight = FontWeights.SemiBold, Foreground = Brushes.White });
             }
 
             Grid.SetColumn(blow, 3);
@@ -126,9 +126,9 @@ public sealed record WipeReview(string Boss, DateTime Start, TimeSpan Length, in
     /// <summary>A made-up wipe for the pictures.</summary>
     public static WipeReview Sample(DateTime now) => new("Ultimate Berk", now.AddMinutes(-4), TimeSpan.FromSeconds(171), 4, 0.31, 0.18, new[]
     {
-        new WipeDeath("Lunessa", "Cleric", TimeSpan.FromSeconds(134), "Ultimate Berk", "Searing Breath", 12_400, 18_900),
-        new WipeDeath("Korrin", "Sorcerer", TimeSpan.FromSeconds(139), "Ultimate Berk", "Searing Breath", 11_800, 15_200),
-        new WipeDeath("Valtheris", "Templar", TimeSpan.FromSeconds(151), "Ultimate Berk", "Tail Swipe", 9_800, 24_600),
-        new WipeDeath("Lumiel", "Chanter", TimeSpan.FromSeconds(168), "Ultimate Berk", "Searing Breath", 15_100, 21_000),
+        new WipeDeath("Draegor", "Cleric", TimeSpan.FromSeconds(134), "Ultimate Berk", "Searing Breath", 12_400, 18_900),
+        new WipeDeath("Seraphyne", "Sorcerer", TimeSpan.FromSeconds(139), "Ultimate Berk", "Searing Breath", 11_800, 15_200),
+        new WipeDeath("Nyxelle", "Ranger", TimeSpan.FromSeconds(151), "Ultimate Berk", "Tail Swipe", 9_800, 24_600),
+        new WipeDeath("Lumiael", "Spiritmaster", TimeSpan.FromSeconds(168), "Ultimate Berk", "Searing Breath", 15_100, 21_000),
     }, "Searing Breath", 3, 4);
 }

@@ -110,6 +110,29 @@ public static class ToolRender
                 break;
             }
 
+            case "share":
+            {
+                // the share cards: a boss kill and a grind session, side by side, as they go to the clipboard
+                DateTime now = DateTime.Now;
+                var lines = new[]
+                {
+                    new ShareLine("Kaivhan", "Gladiator", 8_300, 916_700, 0.293, true), new ShareLine("Nyxelle", "Ranger", 7_100, 790_800, 0.252, false),
+                    new ShareLine("Seraphyne", "Sorcerer", 6_800, 757_700, 0.242, false), new ShareLine("Draegor", "Cleric", 3_900, 434_200, 0.139, false),
+                    new ShareLine("Lumiael", "Spiritmaster", 2_100, 232_800, 0.074, false),
+                };
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.Add(new Border
+                {
+                    Child = ShareCard.Fight("BOSS KILL", "Transcendent Bakarma", now.ToString("ddd d MMM, HH:mm", System.Globalization.CultureInfo.InvariantCulture), TimeSpan.FromSeconds(171), lines),
+                    VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 0, 24, 0),
+                });
+                row.Children.Add(new Border { Child = ShareCard.Grind(GrindFigures.Of(GrindSample.Current(now), now, GrindSample.Book())), VerticalAlignment = VerticalAlignment.Top });
+                shown = new Border { Padding = new Thickness(24), Background = new SolidColorBrush(Color.FromRgb(0x31, 0x33, 0x38)), Child = row };
+                width = 0;
+                height = 0;
+                break;
+            }
+
             case "fps":
             case "fps-access":
             {
