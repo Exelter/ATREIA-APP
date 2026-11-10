@@ -574,6 +574,8 @@ public partial class MainWindow
             new(loc["Settings.Nav.Network"], loc["Shell.OvNetworkWhat"], s => s.ShowNetworkOverlay, (s, v) => s.ShowNetworkOverlay = v, "network", null, s => s.HotkeyNetwork, "network"),
             new("FPS counter", "The game's frames per second and its 1% low, from Windows' own frame timing (nothing touches the game).", s => s.ShowFpsOverlay,
                 (s, v) => s.ShowFpsOverlay = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Fps), null, "fps"),
+            new("Enemy card", "Select an enemy player in the Abyss: his class, level, Combat Power and item level, and how his Combat Power compares with yours.",
+                s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyCard), null, "enemy"),
             new(loc["Shell.OvHotkeys"], loc["Shell.OvHotkeysWhat"], s => s.ShowHotkeyOverlay, (s, v) => s.ShowHotkeyOverlay = v, null, null, s => s.HotkeyHotkeyOverlay, "hotkeys"),
             // the button at the top of the screen that opens the overlay menu (with its switch here, the way back once it is switched off)
             new(loc["Shell.OvMenu"], loc["Shell.OvMenuWhat"], s => s.ShowOverlayMenu, (s, v) => s.ShowOverlayMenu = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Menu), null, "menu"),
@@ -770,6 +772,7 @@ public partial class MainWindow
             OverlayPlaces.Craft => s.ShowCraftOverlay ? loc["Main.MenuTools.Craft"] : null,
             OverlayPlaces.Network => s.ShowNetworkOverlay ? loc["Settings.Nav.Network"] : null,
             OverlayPlaces.Fps => s.ShowFpsOverlay ? "FPS counter" : null,
+            OverlayPlaces.EnemyCard => s.ShowEnemyCard ? "Enemy card" : null,
             OverlayPlaces.Hotkeys => s.ShowHotkeyOverlay ? loc["Shell.OvHotkeys"] : null,
             OverlayPlaces.Dummy => s.ShowDummyOverlay ? loc["Shell.Dummy"] : null,
             OverlayPlaces.Menu => s.ShowOverlayMenu ? loc["Shell.OvMenu"] : null,
@@ -788,7 +791,7 @@ public partial class MainWindow
         (s => s.GatherOverlayLocked, (s, v) => s.GatherOverlayLocked = v), (s => s.SeasonOverlayLocked, (s, v) => s.SeasonOverlayLocked = v),
         (s => s.NetworkOverlayLocked, (s, v) => s.NetworkOverlayLocked = v), (s => s.DummyOverlayLocked, (s, v) => s.DummyOverlayLocked = v),
         (s => s.HotkeyOverlayLocked ?? s.PetFarmLocked, (s, v) => s.HotkeyOverlayLocked = v), (s => s.OverlayMenuLocked, (s, v) => s.OverlayMenuLocked = v),
-        (s => s.FpsOverlayLocked, (s, v) => s.FpsOverlayLocked = v),
+        (s => s.FpsOverlayLocked, (s, v) => s.FpsOverlayLocked = v), (s => s.EnemyCardLocked, (s, v) => s.EnemyCardLocked = v),
     };
 
     private static bool OverlaysMovable(MeterSettings s) => OverlayLocks.All(l => !l.Get(s));
@@ -896,7 +899,7 @@ public partial class MainWindow
     private void ResetAllOverlayPlaces()
     {
         foreach (string title in new[] { OverlayPlaces.Assist, OverlayPlaces.Effects, OverlayPlaces.Network, OverlayPlaces.Dummy, OverlayPlaces.WorldBoss, OverlayPlaces.Hotkeys, OverlayPlaces.Timetable,
-                     OverlayPlaces.PetMap, OverlayPlaces.PetList, OverlayPlaces.PetInfo, OverlayPlaces.Loot, OverlayPlaces.Gather, OverlayPlaces.Season, OverlayPlaces.Craft, OverlayPlaces.BossCast, OverlayPlaces.BossHp, OverlayPlaces.TargetOfTarget, OverlayPlaces.Fps })
+                     OverlayPlaces.PetMap, OverlayPlaces.PetList, OverlayPlaces.PetInfo, OverlayPlaces.Loot, OverlayPlaces.Gather, OverlayPlaces.Season, OverlayPlaces.Craft, OverlayPlaces.BossCast, OverlayPlaces.BossHp, OverlayPlaces.TargetOfTarget, OverlayPlaces.Fps, OverlayPlaces.EnemyCard })
         {
             OverlayPlaces.Reset(title);
         }

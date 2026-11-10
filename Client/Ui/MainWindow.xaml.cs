@@ -147,6 +147,7 @@ public partial class MainWindow : Window
     private MeterSettings _streamSettings = new();
     private NetworkOverlayController? _network;
     private FpsOverlayController? _fps;
+    private EnemyCardController? _enemyCard;
     private DummyTestController? _dummy;
     private readonly System.Windows.Threading.DispatcherTimer _gateTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private bool _gameGateOpen = true;
@@ -1250,6 +1251,7 @@ public partial class MainWindow : Window
         _craft?.RaiseToFront();
         _combat?.RaiseToFront();
         _network?.RaiseToFront();
+        _enemyCard?.RaiseToFront();
         _dummy?.RaiseToFront();
         _petFarm?.RaiseToFront();
         _petMapController?.RaiseToFront();
@@ -1565,6 +1567,7 @@ public partial class MainWindow : Window
             EnsureRestrictableControllers();
             _network ??= new NetworkOverlayController();
             _fps ??= new FpsOverlayController(); // the FPS counter (listens to Windows' frame timing only while it is on)
+            _enemyCard ??= new EnemyCardController(() => _liveSource?.Entities as Aion2EntityDirectory); // the player selected in the Abyss
             Aion2Loot.EnablePersistence();
             Aion2Grind.EnablePersistence(); // the grind sessions: Kinah, Abyss Points, kills and loot per hour (the meter's Grind view, the Grind page)
             Aion2BlackCloud.EnablePersistence(); // every character's pets and the Black Cloud Merchant's last offers (the notes, the Pets page)
@@ -2361,6 +2364,7 @@ public partial class MainWindow : Window
         _streamServer?.Dispose();
         _network?.Dispose();
         _fps?.Dispose();
+        _enemyCard?.Dispose();
         _dummy?.Dispose();
         FlushStores(force: true);
         AionDPS.Upload.MapShare.Flush(); // the map accuracy checks still waiting (a few seconds at most)
@@ -8509,6 +8513,7 @@ public partial class MainWindow : Window
         ("season", s => s.ShowSeasonOverlay, (s, v) => s.ShowSeasonOverlay = v),
         ("craft", s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v),
         ("fps", s => s.ShowFpsOverlay, (s, v) => s.ShowFpsOverlay = v),
+        ("enemy", s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v),
     };
 
     /// <summary>
