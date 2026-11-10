@@ -6,6 +6,8 @@ on:
   push:
     branches: [main]
     paths: ["Client/**", ".github/workflows/screens.yml"]
+  pull_request:
+    paths: ["Client/**", ".github/workflows/screens.yml"]
 
 permissions:
   contents: write
@@ -45,6 +47,7 @@ jobs:
             @('render-overlay', 'stagger.png', 'stagger'),
             @('render-overlay', 'stagger-failed.png', 'stagger-failed'),
             @('render-overlay', 'stagger-tip.png', 'stagger-tip'),
+            @('render-overlay', 'grind.png', 'grind'),
             @('render-overlay', 'findservers.png', 'findservers'),
             @('render-overlay', 'findgroup.png', 'findgroup'),
             @('render-overlay', 'apps.png', 'apps'),
@@ -93,6 +96,9 @@ jobs:
             @('render-tool', 'overlay-button.png', 'overlay-button'),
             @('render-tool', 'fps.png', 'fps'),
             @('render-tool', 'fps-access.png', 'fps-access'),
+            @('render-tool', 'enemycard.png', 'enemycard'),
+            @('render-tool', 'grind-page.png', 'grind'),
+            @('render-tool', 'grind-loot.png', 'grind-loot'),
             @('render-tool', 'account.png', 'account'),
             @('render-network', 'network.png', '2'),
             @('render-network', 'network-small.png', '2'),

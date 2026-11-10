@@ -139,3 +139,39 @@ public static class GrindView
         return grid;
     }
 }
+
+/// <summary>A made-up grind for the pictures: 34 minutes farmed in Chaotic Middle Reshanta, two earlier sessions, a market for the loot.</summary>
+internal static class GrindSample
+{
+    public static GrindSession Current(DateTime now) => new()
+    {
+        Id = "picture", Character = "Lumiel", Start = now.AddMinutes(-41), End = now.AddSeconds(-12), ActiveSeconds = 34 * 60 + 8, Kinah = 712_400, AbyssPoints = 18_640,
+        Kills = 214, ZoneKills = new() { [22] = 214 },
+        Items = new() { [511351001] = 14, [511351002] = 5, [511360003] = 9, [510116011] = 22, [511900001] = 2, [610620013] = 36 },
+    };
+
+    public static IReadOnlyList<GrindSession> Earlier(DateTime now) => new[]
+    {
+        new GrindSession
+        {
+            Id = "a", Character = "Lumiel", Start = now.AddDays(-1).AddHours(-2), End = now.AddDays(-1).AddHours(-1).AddMinutes(-8), ActiveSeconds = 47 * 60, Kinah = 905_200,
+            AbyssPoints = 24_100, Kills = 301, ZoneKills = new() { [22] = 301 }, Items = new() { [511351001] = 19, [510116011] = 30 },
+        },
+        new GrindSession
+        {
+            Id = "b", Character = "Arkhel", Start = now.AddDays(-2).AddHours(-5), End = now.AddDays(-2).AddHours(-4), ActiveSeconds = 58 * 60, Kinah = 1_480_000, Kills = 466,
+            ZoneKills = new() { [103] = 466 }, Items = new() { [511360003] = 31, [610620013] = 120 },
+        },
+    };
+
+    public static MarketBook Book()
+    {
+        var prices = new Dictionary<int, MarketPrice>();
+        foreach ((int item, long price) in new (int, long)[] { (511351001, 4_200), (511351002, 18_500), (511360003, 6_100), (510116011, 1_350), (511900001, 96_000), (610620013, 640) })
+        {
+            prices[item] = new MarketPrice(price, price, 8, price);
+        }
+
+        return new MarketBook(1301, "Picture", DateTime.UtcNow.AddMinutes(-4), prices);
+    }
+}
