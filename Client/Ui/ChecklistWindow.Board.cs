@@ -771,7 +771,7 @@ public sealed partial class ChecklistWindow
         var tip = new List<string> { c.Name };
         if (className is not null)
         {
-            tip.Add(ClassCatalog.DisplayName(className, loc.Language));
+            tip.Add(AionDPS.Data.ClassCatalog.DisplayName(className, loc.Language));
         }
 
         if (Strength(c, loc) is { } strength)
