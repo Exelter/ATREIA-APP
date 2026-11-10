@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "1.21.13",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Updates",
+          "title": "Contributors get the betas by themselves",
+          "text": "If you have the Contributor role in the Atreia Discord and the app is signed in with that Discord (App menu → Atreia account), the app now takes each beta by itself, like any update. Everyone else stays on the normal updates. A beta moves on to the full version by itself once that is out.",
+          "example": "Ylva has the Contributor role and the app signed in: the 2.0 beta downloads while she plays, and the next start runs it."
+        }
+      ]
+    },
+    {
       "version": "1.21.12",
       "date": "2026-11-10",
       "items": [
