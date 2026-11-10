@@ -188,16 +188,21 @@ public static class SelfCheck
         clock &= Math.Abs(Aion2.ServerClock.Offset.TotalMilliseconds - 500) < 1;
         Aion2.ServerClock.Reset();
         clock &= Aion2.ServerClock.Offset == TimeSpan.Zero;
-        // The shipped table also has the Abyss's executor bosses and Guardian Lord Nahma (European clock, 21:30 Mon/Thu/Sat and 21:00 Fri/Sun).
-        bool boss = Schedule.EventSchedule.Events.Any(e => e.Id == "executor_bosses" && e.Windows[0].Days.SequenceEqual(new[] { 1, 4, 6 }) && e.Windows[0].Start == TimeSpan.FromHours(21.5))
-            && Schedule.EventSchedule.Events.Any(e => e.Id == "guardian_lord_nahma" && e.NameIn("de") == "Wächtergott Nahma" && e.Windows[0].Days.SequenceEqual(new[] { 0, 5 }));
-        // Each region runs its events on its own server clock (the website's model): the shipped table read for NA East has the Monday siege at 21:00 New
-        // York time, 02:00 UTC on Tuesday in winter; the rift's portals are open for its first ten minutes of the hour; Watcher Kaira comes every three hours.
+        // The shipped table also has the Abyss's executor bosses and Guardian Lord Nahma (European clock, 21:30 Thu/Sat since the patch of 4 November 2026 -
+        // Monday's went with the siege's - and 21:00 Fri/Sun), and Argo, the Spirit King twice a day (10:30 and 22:30, the same patch).
+        bool boss = Schedule.EventSchedule.Events.Any(e => e.Id == "executor_bosses" && e.Windows[0].Days.SequenceEqual(new[] { 4, 6 }) && e.Windows[0].Start == TimeSpan.FromHours(21.5))
+            && Schedule.EventSchedule.Events.Any(e => e.Id == "guardian_lord_nahma" && e.NameIn("de") == "Wächtergott Nahma" && e.Windows[0].Days.SequenceEqual(new[] { 0, 5 }))
+            && Schedule.EventSchedule.Events.Any(e => e.Id == "argo_spirit_king" && e.Windows.Count == 2 && e.Windows[0].Start == TimeSpan.FromHours(10.5)
+                && e.Windows[1].Start == TimeSpan.FromHours(22.5) && e.Windows.All(w => w.Days.Count == 7));
+        // Each region runs its events on its own server clock (the website's model): the shipped table read for NA East has the Thursday siege at 21:00 New
+        // York time, 02:00 UTC on Friday in winter, and none on Monday any more (4 November 2026: Thursdays and Saturdays only); the rift's portals are open for
+        // its first ten minutes of the hour; Watcher Kaira comes every three hours.
         var naEast = Schedule.EventSchedule.LoadTable(Schedule.EventSchedule.ShippedPath, "nae");
         var siege = naEast.Events.FirstOrDefault(e => e.Id == "abyss_raid");
-        DateTime siegeUtc = new DateTime(2026, 11, 10, 2, 0, 0, DateTimeKind.Utc);
+        DateTime siegeUtc = new DateTime(2026, 11, 13, 2, 0, 0, DateTimeKind.Utc), mondayUtc = new DateTime(2026, 11, 10, 2, 0, 0, DateTimeKind.Utc);
         bool regions = naEast.Region == "nae" && siege is not null
             && Schedule.EventSchedule.Between(siege, siegeUtc.AddHours(-1).ToLocalTime(), siegeUtc.AddHours(1).ToLocalTime()).Any(o => o.Start.ToUniversalTime() == siegeUtc)
+            && !Schedule.EventSchedule.Between(siege, mondayUtc.AddHours(-1).ToLocalTime(), mondayUtc.AddHours(1).ToLocalTime()).Any()
             && naEast.Events.Any(e => e.Id == "spacetime_rift" && e.OpenMinutes == 10 && e.Look == "rift")
             && naEast.Events.Any(e => e.Id == "watcher_kaira" && e.Windows.Count == 8 && e.Look == "kaira");
         Console.WriteLine($"  -> soon 30 min before, active with time left, silent between, past midnight, next day: {ok}; shipped table: {shipped}; UTC events: {utc}; server clock: {clock}; executor bosses and Nahma: {boss}; region clocks: {regions}");

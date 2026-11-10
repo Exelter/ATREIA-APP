@@ -86,6 +86,13 @@
           "title": "Daevanion boards node by node",
           "text": "A player's page has a Daevanion tab: pick a board and see it the way the game draws it, every node in its place, the open ones lit. Point at a node to see what it gives, and under the board you see everything the open nodes add up to, stats and skill levels. On the Overview, a click on a board's line opens it. This works for every character, with or without the app.",
           "example": "You open a Templar's page, click Nezekan: 48 of 60 nodes lit, and under it Critical Hit +120, Max HP +1,400 and Shield Bash Lv. +2 from the open nodes."
+        },
+        {
+          "kind": "fixed",
+          "area": "Timers",
+          "title": "Siege and boss timers on the new days",
+          "text": "The timetable follows the game's new schedule: the Artifact Siege and the Artifact bosses (the Executors) now run only on Thursday and Saturday (no more Monday), and Argo, the Spirit King spawns every day at 10:30 and 22:30 on your server's clock. The timers, the in-game timetable and the field boss list all show the new times. The timetable also comes from atreia.app now, so the next change shows up without an update.",
+          "example": "Monday evening on NA East: the timetable no longer counts down to a siege that isn't coming. It shows the next one, Thursday at 21:00, with the Executors at 21:30, and Argo at 22:30 tonight."
         }
       ]
     },
