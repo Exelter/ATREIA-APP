@@ -5702,8 +5702,10 @@ public partial class MainWindow : Window
             return;
         }
 
+        bool others = MeterSettings.Load().UploadOtherPlayersProfiles;
+        var (areas, hits) = ReplayUploadBuilder.Attacks(data, fight.StartedAt, others); // the boss's attacks for the site's replay (2.0.2)
         var request = new ReplayUploadRequest(AppVersion.Text, fingerprint, sent.EncounterId, fight.BossNpcId, fight.StartedAt.ToUniversalTime(), fight.EndedAt.ToUniversalTime(),
-            ReplayUploadBuilder.Tracks(data, MeterSettings.Load().UploadOtherPlayersProfiles));
+            ReplayUploadBuilder.Tracks(data, others), Areas: areas, Hits: hits);
         UploadResult replay = await UploadClient.SendReplayAsync(request);
         ShowUploadStatus(replay.Success ? string.Format(LocalizationManager.Instance["Main.UploadReplay.Done"], request.Tracks.Count) : $"Upload failed: {replay.Error}");
     }
@@ -5735,7 +5737,9 @@ public partial class MainWindow : Window
             var tracks = ReplayUploadBuilder.Tracks(data, settings.UploadOtherPlayersProfiles);
             if (tracks.Count > 0)
             {
-                await UploadClient.SendReplayAsync(new ReplayUploadRequest(AppVersion.Text, fingerprint, sent.EncounterId, fight.BossNpcId, fight.StartedAt.ToUniversalTime(), fight.EndedAt.ToUniversalTime(), tracks));
+                var (areas, hits) = ReplayUploadBuilder.Attacks(data, fight.StartedAt, settings.UploadOtherPlayersProfiles); // the boss's attacks for the site's replay (2.0.2)
+                await UploadClient.SendReplayAsync(new ReplayUploadRequest(AppVersion.Text, fingerprint, sent.EncounterId, fight.BossNpcId, fight.StartedAt.ToUniversalTime(),
+                    fight.EndedAt.ToUniversalTime(), tracks, Areas: areas, Hits: hits));
             }
         }
         catch (Exception ex)

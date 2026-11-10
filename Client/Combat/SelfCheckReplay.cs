@@ -121,6 +121,17 @@ public static class SelfCheckReplay
             && filled.Entities.Single(e => e.Name == "Imp").Role == ReplayRole.Add && ReferenceEquals(ReplayMerge.Apply(sharedData, Array.Empty<AionDPS.Upload.ServerReplayTrack>()), sharedData);
         Console.WriteLine($"  -> the upload for the replay leaves other players' paths out without the switch ({upload}); the paths other clients sent fill the map ({merged})");
         ok &= upload && merged;
+
+        // the boss's attacks for the site's replay (2.0.2): the wind-up on the upload's clock (here a second after the fight's start), its shape and size, the boss as its
+        // path is named; a hit only on a player whose path goes too
+        var hitsBoth = hits.Append(new DamageEvent(at.AddSeconds(4), boss, 2, 500, false, "Slam", SkillId: skill)).ToArray();
+        ReplayData attackData = ReplayBuilder.Build("Test", shared, hitsBoth, at, at.AddSeconds(10), who, _ => 650, _ => "Slam", null, id => id == 1);
+        var (areasUp, hitsMine) = AionDPS.Upload.ReplayUploadBuilder.Attacks(attackData, at.AddSeconds(-1), includeOthers: false);
+        var (_, hitsAll) = AionDPS.Upload.ReplayUploadBuilder.Attacks(attackData, at.AddSeconds(-1), includeOthers: true);
+        bool attacks = areasUp.Count == 1 && areasUp[0] is { StartMs: 3000, EndMs: 4500, Actor: "Boss", Skill: "Slam", Radius: 650, X: 500, Y: 500, Zone: false, Shape.Length: > 0 }
+            && hitsMine.Count == 1 && hitsMine[0] is { Victim: "Me", AtMs: 4700 } && hitsAll.Count == 2 && hitsAll.Any(h => h.Victim == "Pal");
+        Console.WriteLine($"  -> the boss's attacks go with the replay on the fight's clock, its hits only on the players whose paths go: {attacks}");
+        ok &= attacks;
         return ok;
     }
 }

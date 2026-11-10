@@ -6,6 +6,18 @@
   ],
   "versions": [
     {
+      "version": "2.0.2",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Bosses",
+          "title": "The replay on the website shows the boss and its attacks",
+          "text": "A fight's replay on its page now shows the boss itself standing on the floor, turned the way it faces, and every attack as you'd see it coming: its shape on the floor (circle, ring, cone, line, cross or the whole room) filling up as the boss winds it up and flashing red when it lands, the pools it leaves, and a ring on whoever got caught. The app sends the attacks with the positions from this version on; fights uploaded before show the boss and which way it faces."
+        }
+      ]
+    },
+    {
       "version": "2.0.1",
       "date": "2026-11-11",
       "headline": "The Abyss radar becomes a round war map, and the PvP overlays show in the Abyss",
