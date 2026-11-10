@@ -83,7 +83,7 @@ public static class ToolRender
                 var row = new StackPanel { Orientation = Orientation.Horizontal };
                 row.Children.Add(new Border { Width = 290, Child = EnemyCardWindow.View(new EnemyCardData("Kraeger", "Templar", 45, "Nezekan", "Iron Oath", 231_400, 3_120, true, 206_600)) });
                 row.Children.Add(new Border { Width = 290, Margin = new Thickness(20, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top,
-                    Child = EnemyCardWindow.View(new EnemyCardData("Seliora", "Cleric", 45, "Siel", null, 1_902_450, 2_874, false, 2_160_000)) });
+                    Child = EnemyCardWindow.View(new EnemyCardData("Seliora", "Cleric", 45, "Siel", null, 181_800, 2_874, false, 206_600)) });
                 shown = new Border
                 {
                     Padding = new Thickness(24), Background = new LinearGradientBrush(Color.FromRgb(0x3a, 0x4a, 0x3a), Color.FromRgb(0x24, 0x30, 0x40), 45),
