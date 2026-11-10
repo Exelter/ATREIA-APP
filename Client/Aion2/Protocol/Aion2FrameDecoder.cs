@@ -4156,6 +4156,15 @@ public sealed class Aion2FrameDecoder
                 _entities.NotePartyClass(name, className);
             }
 
+            if (frame[0] == 0x02 && frame[1] == 0x97)
+            {
+                (int? itemLevel, int? combatPower) = RosterFiguresBehindName(frame, after);
+                if (itemLevel is not null || combatPower is not null)
+                {
+                    _entities.NotePartyFigures(name, itemLevel, combatPower);
+                }
+            }
+
             i = after + 7;
         }
 
@@ -4221,6 +4230,42 @@ public sealed class Aion2FrameDecoder
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// A room member's Item Level and Combat Power, as the group finder's room shows them (10 November 2026, the owner: "since we pull who's in the lobby, also
+    /// show their CP at once, highest to lowest"): behind the name <c>class u32 | level u32 | Item Level u32 | server u16 | the id again or 0x10xx | a marker
+    /// byte | Combat Power u32</c>, all one byte further when a marker byte sits before the server (see <see cref="HomeServerBehindName"/>). Read from 31 members
+    /// of 14 rooms (8 to 10 November): the local player's matched his own (Item Level 2,914, Combat Power 182,444), the others the game's room list. Null for
+    /// what does not read as such.
+    /// </summary>
+    private static (int? ItemLevel, int? CombatPower) RosterFiguresBehindName(ReadOnlySpan<byte> frame, int afterName)
+    {
+        int? itemLevel = null;
+        if (afterName + 12 <= frame.Length)
+        {
+            uint il = BinaryPrimitives.ReadUInt32LittleEndian(frame[(afterName + 8)..]);
+            itemLevel = il is >= 500 and <= 9999 ? (int)il : null;
+        }
+
+        foreach (int offset in stackalloc[] { 12, 13 })
+        {
+            int at = afterName + offset;
+            if (at + 9 > frame.Length)
+            {
+                continue;
+            }
+
+            int server = frame[at] | frame[at + 1] << 8;
+            int next = frame[at + 2] | frame[at + 3] << 8;
+            if (server is >= 1000 and <= 2999 && server % 100 is >= 1 and <= 30 && Aion2Servers.IsKnown(server) && (next == server || next >> 8 == 0x10))
+            {
+                uint cp = BinaryPrimitives.ReadUInt32LittleEndian(frame[(at + 5)..]);
+                return (itemLevel, cp is >= 1_000 and <= 3_000_000 ? (int)cp : null);
+            }
+        }
+
+        return (itemLevel, null);
     }
 
     /// <summary>A plausible character name at <paramref name="at"/>: a length byte (3-24) followed

@@ -650,7 +650,13 @@ public partial class MainWindow
     }
 
     /// <summary>A player of the own group, as the game's party roster lists them: the name, the class and the server when the roster gave them.</summary>
-    internal readonly record struct GroupMate(string Name, string? ClassName, int? ServerId);
+    internal readonly record struct GroupMate(string Name, string? ClassName, int? ServerId, int? CombatPower = null, int? ItemLevel = null);
+
+    /// <summary>The list highest Combat Power first (10 November 2026, the owner: "show their CP at once, highest to lowest"); who has none known yet after, in
+    /// the order they came.</summary>
+    private static List<GroupMate> StrongestFirst(IEnumerable<GroupMate> mates) =>
+        mates.Select((m, i) => (Mate: m, Order: i)).OrderByDescending(x => x.Mate.CombatPower.HasValue).ThenByDescending(x => x.Mate.CombatPower ?? 0).ThenBy(x => x.Order)
+            .Select(x => x.Mate).ToList();
 
     /// <summary>The other players of the own group (the party roster the meter's Group view reads too), in the roster's order; empty out of a group.</summary>
     private IReadOnlyList<GroupMate> GroupMates()
@@ -661,9 +667,15 @@ public partial class MainWindow
         }
 
         string? own = directory.LocalCharacter?.Name;
-        return directory.PartyNames.Where(n => n != own)
-            .Select(n => new GroupMate(n, directory.PartyClassOfName(n), directory.ServerIdOfName(n)))
-            .ToList();
+        // with the Item Level and Combat Power the room's roster gives (Ludra, Conquest, exploration ... any group of the group finder), or the website's
+        // when it has none
+        return StrongestFirst(directory.PartyNames.Where(n => n != own).Select(n =>
+        {
+            var mate = new GroupMate(n, directory.PartyClassOfName(n), directory.ServerIdOfName(n));
+            (int? itemLevel, int? combatPower) = directory.PartyFiguresOfName(n);
+            FoundPlayer? found = LookedUp(mate);
+            return mate with { CombatPower = combatPower ?? found?.CombatPower, ItemLevel = itemLevel ?? found?.ItemLevel };
+        }));
     }
 
     /// <summary>How far back the fight is read for the players fighting with the group.</summary>
@@ -729,14 +741,16 @@ public partial class MainWindow
                 continue;
             }
 
-            mates.Add(new GroupMate(name, directory.ClassOf(id), directory.ServerIdOf(id) ?? directory.ServerIdOfName(name)));
+            var mate = new GroupMate(name, directory.ClassOf(id), directory.ServerIdOf(id) ?? directory.ServerIdOfName(name));
+            FoundPlayer? found = LookedUp(mate);
+            mates.Add(mate with { CombatPower = directory.SeenProfileOf(id)?.CombatPower ?? found?.CombatPower, ItemLevel = directory.SeenProfileOf(id)?.ItemLevel ?? found?.ItemLevel });
             if (mates.Count == 16)
             {
                 break;
             }
         }
 
-        return mates;
+        return StrongestFirst(mates);
     }
 
     /// <summary>The empty box's lists: the group, then the players fighting with it.</summary>
@@ -752,7 +766,7 @@ public partial class MainWindow
     private System.Windows.Threading.DispatcherTimer? _groupWatch;
 
     private static string ListsKey(IReadOnlyList<GroupMate> mates, IReadOnlyList<GroupMate> alongside) =>
-        string.Join("|", mates.Select(m => $"{m.Name}/{m.ClassName}/{m.ServerId}")) + "#" + string.Join("|", alongside.Select(m => $"{m.Name}/{m.ClassName}/{m.ServerId}"));
+        string.Join("|", mates.Select(m => $"{m.Name}/{m.ClassName}/{m.ServerId}/{m.CombatPower}")) + "#" + string.Join("|", alongside.Select(m => $"{m.Name}/{m.ClassName}/{m.ServerId}/{m.CombatPower}"));
 
     /// <summary>
     /// The lists follow the group while they are on show (10 November 2026, the owner: "it does not update when new people join the lobby or leave"): every
@@ -866,12 +880,14 @@ public partial class MainWindow
         Grid.SetColumn(who, 1);
         grid.Children.Add(who);
         var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        if (known?.CombatPower is int cp)
+        // the Combat Power the room's roster gave (at once), else the website's
+        if ((mate.CombatPower ?? known?.CombatPower) is int cp)
         {
+            int? itemLevel = mate.ItemLevel ?? known?.ItemLevel;
             right.Children.Add(new TextBlock
             {
                 Text = FindPlayerClient.Number(cp), FontSize = 12, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0),
-                Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC3, 0x5A)), ToolTip = "Combat Power" + (known.ItemLevel is int il ? $" · Item Level {FindPlayerClient.Number(il)}" : ""),
+                Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC3, 0x5A)), ToolTip = "Combat Power" + (itemLevel is int il ? $" · Item Level {FindPlayerClient.Number(il)}" : ""),
             });
         }
 
