@@ -146,12 +146,7 @@ public sealed class SeasonOverlayWindow : MovableOverlay
 
     public SeasonOverlayWindow() : base(OverlayPlaces.Season, new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Right - 340, 220, LoadSize, SaveSize, OverlayEdgeMode.Width)
     {
-        Body = new Border
-        {
-            Background = new LinearGradientBrush(Color.FromArgb(0xC8, 0x15, 0x22, 0x2D), Color.FromArgb(0xC8, 0x0B, 0x13, 0x1A), 90),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x70, 0x4A, 0x66, 0x78)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(12, 8, 12, 9), Child = _rows,
-        };
+        Body = OverlaySkin.Panel(_rows, new Thickness(12, 8, 12, 9)); // the meter's look (10 November 2026)
     }
 
     public new bool HasContent => _lines.Count > 0;
@@ -207,18 +202,9 @@ public sealed class SeasonOverlayWindow : MovableOverlay
             return;
         }
 
-        var head = new DockPanel { LastChildFill = true, Margin = new Thickness(0, 0, 0, 5) };
-        var resets = new TextBlock
-        {
-            Text = "↻ " + ChecklistWindow.LeftText(untilReset), FontSize = 11, Foreground = new SolidColorBrush(SeasonLook.Muted), VerticalAlignment = VerticalAlignment.Bottom,
-            Margin = new Thickness(10, 0, 0, 1), ToolTip = string.Format(CultureInfo.CurrentCulture, loc["Checklist.SeasonResets"], ChecklistWindow.LeftText(untilReset)),
-        };
-        DockPanel.SetDock(resets, Dock.Right);
-        head.Children.Add(resets);
-        head.Children.Add(new TextBlock
-        {
-            Text = loc["Checklist.Season"], FontWeight = FontWeights.Bold, FontSize = 13.5, Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Bottom, TextTrimming = TextTrimming.CharacterEllipsis,
-        });
+        // the head in the meter's look (10 November 2026): the title, and when the weekly missions start again
+        Grid head = OverlaySkin.Heading(loc["Checklist.Season"], "↻ " + ChecklistWindow.LeftText(untilReset));
+        head.ToolTip = string.Format(CultureInfo.CurrentCulture, loc["Checklist.SeasonResets"], ChecklistWindow.LeftText(untilReset));
         _rows.Children.Add(head);
 
         foreach (SeasonProgress p in list.Take(14))

@@ -15,11 +15,7 @@ public sealed class HotkeyOverlayWindow : MovableOverlay
 
     public HotkeyOverlayWindow() : base("Aion DPS Hotkeys", new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Left + 40, 120, LoadSize, SaveSize, OverlayEdgeMode.Uniform)
     {
-        Body = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(0x99, 0x0E, 0x18, 0x20)), BorderBrush = new SolidColorBrush(Color.FromArgb(0x99, 0x29, 0x45, 0x57)),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(10, 6, 10, 6), Child = _rows,
-        };
+        Body = OverlaySkin.Panel(_rows, new Thickness(10, 9, 10, 8));
     }
 
     private static (double?, double?) LoadSize()
@@ -93,33 +89,48 @@ public sealed class HotkeyOverlayWindow : MovableOverlay
         _shown = key;
         _rows.Children.Clear();
         var loc = LocalizationManager.Instance;
+        // the meter's look (10 November 2026): each group under a small gold heading, its hotkeys as names and keycaps, every other line on a faint band; a hotkey
+        // that does nothing says so in red (another program has it, or another of the meter's hotkeys: Settings > Hotkeys to pick another)
+        bool band = false;
         foreach (var (name, keys, problem) in rows)
         {
             if (keys.Length == 0)
             {
-                _rows.Children.Add(new TextBlock
+                if (_rows.Children.Count > 0)
                 {
-                    Text = name.ToUpperInvariant(), FontWeight = FontWeights.Bold, FontSize = 10.5, Foreground = new SolidColorBrush(Color.FromRgb(0x9D, 0xB3, 0xC2)),
-                    Margin = new Thickness(0, _rows.Children.Count == 0 ? 0 : 8, 0, 2),
-                });
+                    _rows.Children.Add(OverlaySkin.Divider(4, 4));
+                }
+
+                _rows.Children.Add(OverlaySkin.Heading(name));
+                band = false;
                 continue;
             }
 
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+            var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var n = new TextBlock { Text = name, FontWeight = FontWeights.Bold, FontSize = 12.5, Foreground = Brushes.White, Margin = new Thickness(0, 0, 18, 0), VerticalAlignment = VerticalAlignment.Center };
-            // a hotkey that does nothing says so in red: another program has it, or another of the meter's hotkeys (Settings > Hotkeys to pick another)
-            var k = new TextBlock
-            {
-                Text = problem is { } why ? keys + " · " + loc[why == HotkeyProblem.Twice ? "Hotkeys.Problem.TwiceShort" : "Hotkeys.Problem.TakenShort"] : keys,
-                FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right,
-                Foreground = new SolidColorBrush(problem is null ? Color.FromRgb(0xFF, 0xD2, 0x7A) : Color.FromRgb(0xFF, 0x7A, 0x6E)),
-            };
-            Grid.SetColumn(k, 1);
+            var n = new TextBlock { Text = name, FontSize = 11.5, Margin = new Thickness(0, 0, 18, 0), VerticalAlignment = VerticalAlignment.Center };
+            n.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
             grid.Children.Add(n);
-            grid.Children.Add(k);
-            _rows.Children.Add(grid);
+            var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            right.Children.Add(OverlaySkin.Keys(keys, problem is null ? null : OverlaySkin.Bad));
+            if (problem is { } why)
+            {
+                right.Children.Add(new TextBlock
+                {
+                    Text = loc[why == HotkeyProblem.Twice ? "Hotkeys.Problem.TwiceShort" : "Hotkeys.Problem.TakenShort"], FontSize = 10.5, Margin = new Thickness(6, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(OverlaySkin.Bad),
+                });
+            }
+
+            Grid.SetColumn(right, 1);
+            grid.Children.Add(right);
+            _rows.Children.Add(new Border
+            {
+                Child = grid, Padding = new Thickness(7, 3, 7, 3), CornerRadius = new CornerRadius(5),
+                Background = band ? new SolidColorBrush(Color.FromArgb(0x0B, 0xFF, 0xFF, 0xFF)) : Brushes.Transparent,
+            });
+            band = !band;
         }
     }
 }

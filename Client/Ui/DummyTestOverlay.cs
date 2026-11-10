@@ -37,11 +37,7 @@ public sealed class DummyTestOverlayWindow : MovableOverlay
         stack.Children.Add(_bar);
         stack.Children.Add(_sub);
         stack.Children.Add(_stats);
-        Body = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(0x99, 0x0E, 0x18, 0x20)), BorderBrush = new SolidColorBrush(Color.FromArgb(0x99, 0x29, 0x45, 0x57)),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(14, 6, 14, 8), Child = stack,
-        };
+        Body = OverlaySkin.Panel(stack, new Thickness(14, 6, 14, 8)); // the meter's look (10 November 2026)
     }
 
     private static (double?, double?) LoadSize()

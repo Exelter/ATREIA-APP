@@ -37,13 +37,14 @@ public partial class MainWindow
         MeterSettings s = MeterSettings.Load();
         return new Control[]
         {
-            OverlayItem("Buff and cooldown timers…", OpenAssistFromMeter),
+            OverlayItem("Buff and cooldown timers…", OpenAssistFromMeter, glyph: "\uE945"),
             OverlayItem("Pet tracker map", TogglePetMap, s.ShowPetMap, !PrivacyConsent.Restricted),
             OverlayItem("Pet tracker list", TogglePetList, s.ShowPetMap && s.PetMapShowList, s.ShowPetMap && !PrivacyConsent.Restricted),
             OverlayItem("Sound alerts", () => ChangeOverlaySetting(x => x.MuteSounds = !x.MuteSounds), !s.MuteSounds),
             new Separator(),
-            OverlayItem("Clear current fight", ResetMeter),
-            OverlayItem("Fight history", OpenHistory),
+            OverlayItem("Clear current fight", ResetMeter, glyph: "\uE7A7"),
+            OverlayItem("Fight history", OpenHistory, glyph: "\uE81C"),
+            OverlayItem("Everything from the meter…", ShowLauncher, glyph: "\uE8A9"),
             // Find a player: the search button on the meter and "…" (6 November 2026, the owner: three were too many)
         };
     }
@@ -56,14 +57,12 @@ public partial class MainWindow
         {
             ShowClient();
             _ = OpenFightReportAsync();
-        }),
-        OverlayItem("History", OpenHistory),
-        OverlayItem("Find a player", ShowFindPlayer),
-        OverlayItem("Characters", () =>
-        {
-            ShowClient();
-            OpenChecklist(true);
-        }),
+        }, glyph: "\uE9D2"),
+        OverlayItem("History", OpenHistory, glyph: "\uE81C"),
+        OverlayItem("Find a player", ShowFindPlayer, glyph: "\uE721"),
+        // over the game, in a panel of the meter's look (10 November 2026): no trip to the app's window
+        OverlayItem("Characters", () => OpenGamePanel("characters", "characters"), glyph: "\uE716"),
+        OverlayItem("Everything from the meter…", ShowLauncher, glyph: "\uE8A9"),
         OverlayItem("Settings", () =>
         {
             ShowClient();
@@ -75,12 +74,12 @@ public partial class MainWindow
             {
                 OnSettingsClicked(this, new RoutedEventArgs());
             }
-        }),
-        OverlayItem("What's new", () => OnAnnouncementsClicked(this, new RoutedEventArgs())),
-        OverlayItem("Support us on Ko-fi ♥", () => OpenInBrowser(KofiPage)),
+        }, glyph: "\uE713"),
+        OverlayItem("What's new", () => OnAnnouncementsClicked(this, new RoutedEventArgs()), glyph: "\uE789"),
+        OverlayItem("Support us on Ko-fi ♥", () => OpenInBrowser(KofiPage), glyph: "\uEB51"),
         new Separator(),
-        OverlayItem("Hide the meter", HideMeterOverlay),
-        OverlayItem("Exit Atreia App", Close),
+        OverlayItem("Hide the meter", HideMeterOverlay, glyph: "\uED1A"),
+        OverlayItem("Exit Atreia App", Close, glyph: "\uE7E8"),
     };
 
     private static void OpenInBrowser(string url)
