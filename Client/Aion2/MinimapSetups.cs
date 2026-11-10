@@ -9,7 +9,7 @@ namespace AionDPS.Aion2;
 /// (on Altgard four PCs alike at one offset, two others alike at another): the screen and minimap layout, not the map. The app learns its own within minutes
 /// of walking (<see cref="MinimapCalibration"/>, per map and window size); until then the offset measured for its window size on everyone's checks is taken
 /// (assets/aion2/maps/minimap_setups.json: per window size the offset in minimap pixels, so it holds at any minimap zoom; the checks carry the window size and
-/// zoom from 1.21.8 and Tools/maps/fit_maps.py prints the offsets per resolution). A window size not in the table: none.
+/// zoom from 1.21.9 and Tools/maps/fit_maps.py prints the offsets per resolution). A window size not in the table: none.
 /// </summary>
 public static class MinimapSetups
 {

@@ -1,0 +1,47 @@
+name: Put the update notes on atreia.app
+
+# The update notes the installed app reads (Client/UpdateNotes.cs: Brand.UpdatesUrl + updates.json) are put on atreia.app with every release
+# (release.yml). When the notes of a version already out are corrected afterwards (10 November 2026: 1.21.9 went out with its notes still filed
+# under 1.21.8, so an app updating from 1.21.8 found none), this puts main's Client/assets/changelog/updates.json there again, nothing else.
+# Run it by hand (Actions > Put the update notes on atreia.app > Run workflow) once the release's own run has finished, or the release puts its copy back.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  notes:
+    name: The update notes onto atreia.app
+    runs-on: ubuntu-latest
+    env:
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: The notes read as notes
+        run: |
+          python3 - <<'PY'
+          import json
+          d = json.load(open("Client/assets/changelog/updates.json", encoding="utf-8"))
+          versions = [v["version"] for v in d["versions"]]
+          assert versions and all(v["items"] for v in d["versions"]), "a version without notes"
+          print("newest:", versions[0], "-", len(d["versions"][0]["items"]), "items")
+          PY
+
+      - name: Put them on atreia.app
+        run: |
+          if [ -z "$R2_ENDPOINT" ]; then echo "::error::The R2 secrets are not set: nothing put."; exit 1; fi
+          command -v aws > /dev/null || pip install --quiet --user awscli
+          export PATH="$HOME/.local/bin:$PATH"
+          aws s3 cp Client/assets/changelog/updates.json s3://atreia-app/updates/updates.json --endpoint-url "$R2_ENDPOINT" --content-type application/json --only-show-errors
+          echo "The update notes on atreia.app are main's now ($(git rev-parse --short HEAD))."

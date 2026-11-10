@@ -14,7 +14,7 @@ refit from the owner's checks shifted Altgard's tiles by up to 80 m, which every
 
     game = A * reading + B + offset[setup]
 
-where a setup is one installation with one window size and minimap zoom (the "setup" the app sends with its checks from 1.21.8; before that, the
+where a setup is one installation with one window size and minimap zoom (the "setup" the app sends with its checks from 1.21.9; before that, the
 installation alone), each setup weighed alike, robust (checks far off the line left out), the setups' offsets put to a median of zero (the map is
 right for a typical PC; each PC's own offset is what the app's calibration takes off on that PC within minutes). A reading is
 (picture pixel - offset) / scale, so the picture lies right with scale / A and offset - scale * B / A on that axis.
