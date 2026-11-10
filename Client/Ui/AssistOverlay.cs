@@ -833,6 +833,13 @@ public sealed class AssistController : IDisposable
         }
 
         window.Panel.Refresh(_directory());
+        if (!locked && !window.Panel.HasContent && window.Panel.Part == AssistPart.Effects && SampleEffects() is { } sample)
+        {
+            // being placed (the overlay editor) with nothing on the character: a few made-up buffs show how it will look (10 November 2026, the owner: "show
+            // sample content for overlays that are empty, so people see what they'll look like")
+            window.Panel.Refresh(sample);
+        }
+
         if (locked && !window.Panel.HasContent)
         {
             window.ShowOverlay(false);
@@ -840,5 +847,35 @@ public sealed class AssistController : IDisposable
         }
 
         window.ShowOverlay(true);
+    }
+
+    private static Aion2EntityDirectory? _sampleEffects;
+    private static bool _sampleTried;
+
+    /// <summary>Three of the game's buffs (with their icons), on no end, on a made-up character: the effects overlay's sample while it is placed.</summary>
+    private static Aion2EntityDirectory? SampleEffects()
+    {
+        if (_sampleTried)
+        {
+            return _sampleEffects;
+        }
+
+        _sampleTried = true;
+        var table = Aion2.Protocol.Aion2SkillNames.Load();
+        var effects = table.Where(kv => kv.Value.Contains("Armor") || kv.Value.Contains("Shield") || kv.Value.Contains("Boost") || kv.Value.Contains("Stance"))
+            .Where(kv => Aion2.Protocol.Aion2SkillIcons.PathFor(kv.Key) is not null).GroupBy(kv => kv.Value).Select(g => g.First().Key).Take(3).ToList();
+        if (effects.Count == 0)
+        {
+            return null;
+        }
+
+        var dir = new Aion2EntityDirectory { LocalPlayerId = 1 };
+        DateTime now = DateTime.Now;
+        for (int i = 0; i < effects.Count; i++)
+        {
+            dir.Combat.NoteBuff(new BuffNotice(now, 1, 100 + i, effects[i] * 10, effects[i], -1, 1));
+        }
+
+        return _sampleEffects = dir;
     }
 }

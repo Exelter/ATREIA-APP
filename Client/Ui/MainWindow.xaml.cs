@@ -2049,7 +2049,7 @@ public partial class MainWindow : Window
             try
             {
                 SessionAnalysis analysis = SessionAnalyzer.Analyze(stay);
-                var jobs = new List<(FightLogKind Kind, ReportInput Input, string? Detail, int Fights)>();
+                var jobs = new List<(FightLogKind Kind, ReportInput Input, string? Detail, int Fights, double? HpLeft)>();
                 var attempts = analysis.Attempts.ToList();
                 foreach (BossAttempt attempt in attempts)
                 {
@@ -2076,7 +2076,8 @@ public partial class MainWindow : Window
                     FightExtras extras = Dispatcher.Invoke(() => directory.Combat.Slice(from, to, nameOf, Keep));
                     jobs.Add((FightLogKind.Boss, new ReportInput(attempt.Name, attempt.Start, attempt.End, players.Where(p => inWindow.Contains(p.Id)).ToList(), window,
                         shields.Where(e => e.Timestamp >= from && e.Timestamp <= to).ToList(), avoids.Where(a => a.Timestamp >= from && a.Timestamp <= to).ToList(),
-                        extras, attempt.TargetId, NpcOf(attempt.TargetId), attempt.Killed, nameOf, new HashSet<int> { attempt.TargetId }), run ? zone : null, 0));
+                        extras, attempt.TargetId, NpcOf(attempt.TargetId), attempt.Killed, nameOf, new HashSet<int> { attempt.TargetId }), run ? zone : null, 0,
+                        attempt.Killed ? 0 : HpLeftOf(directory, attempt.TargetId, attempt.Start, attempt.End)));
                 }
 
                 if (runExtras is not null)
@@ -2094,13 +2095,13 @@ public partial class MainWindow : Window
                         DateTime first = fighting.Min(e => e.Timestamp), last = fighting.Max(e => e.Timestamp);
                         BossAttempt? lastBoss = attempts.LastOrDefault();
                         jobs.Insert(0, (arena ? FightLogKind.Pvp : FightLogKind.Run, new ReportInput(zone, first, last, players, events, shields, avoids, runExtras,
-                            lastBoss?.TargetId, lastBoss is null ? null : NpcOf(lastBoss.TargetId), lastBoss?.Killed ?? false, nameOf, null), null, attempts.Count));
+                            lastBoss?.TargetId, lastBoss is null ? null : NpcOf(lastBoss.TargetId), lastBoss?.Killed ?? false, nameOf, null), null, attempts.Count, null));
                     }
                 }
 
                 foreach (var job in jobs)
                 {
-                    FightLog.Save(job.Kind, job.Input, job.Detail, zoneId, job.Fights, serverId);
+                    FightLog.Save(job.Kind, job.Input, job.Detail, zoneId, job.Fights, serverId, job.HpLeft);
                 }
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or ArgumentException)

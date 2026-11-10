@@ -6,6 +6,32 @@
   ],
   "versions": [
     {
+      "version": "1.21.13",
+      "date": "2026-11-10",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Meter",
+          "title": "Your pace against your best",
+          "text": "During a boss fight, a line under the boss's health shows your DPS against your best kill of that boss on this character: ▲ green when you're ahead, ▼ when you're behind.",
+          "example": "▲ 6% vs your best 41.6K on Transcendent Bakarma, a minute in."
+        },
+        {
+          "kind": "new",
+          "area": "Meter",
+          "title": "How far each try got",
+          "text": "Wipe and pull again: the meter shows which try this is, the lowest the boss's health got in any try, and where the last one left it, so you can see the group getting closer. It counts the tries of the last few hours since that boss's last kill.",
+          "example": "Try 4 · best 18% · last 31%"
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "Buffs show a preview while you place them",
+          "text": "In the overlay editor the buffs overlay shows a few sample buffs when none are on your character, so you can see how it will look. The other overlays already show samples while you place them."
+        }
+      ]
+    },
+    {
       "version": "1.21.12",
       "date": "2026-11-10",
       "items": [
