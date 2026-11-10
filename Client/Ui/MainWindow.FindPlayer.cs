@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using AionDPS.Aion2;
 using AionDPS.Aion2.Protocol;
+using AionDPS.Combat;
 using AionDPS.Upload;
 
 namespace AionDPS.Ui;
@@ -193,7 +194,7 @@ public partial class MainWindow
         }
 
         OverlayFind.Visibility = Visibility.Visible;
-        ShowGroupMates(GroupMates()); // the group's players, a click each, until a name is searched
+        ShowGroupLists(); // the group's players and those fighting with it, a click each, until a name is searched
         _overlayPeekUntil = DateTime.Now + TimeSpan.FromMinutes(2); // the meter stays up while the search is used
         if (_meterOverlay is { IsVisible: true } overlay && !overlay.IsActive)
         {
@@ -224,7 +225,7 @@ public partial class MainWindow
         if (OverlayFindBox.Text.Length == 0 && OverlayFind.Visibility == Visibility.Visible)
         {
             _findAsked++; // a search still on its way no longer replaces the group
-            ShowGroupMates(GroupMates()); // the box emptied: the group again
+            ShowGroupLists(); // the box emptied: the group again
         }
     }
 
@@ -650,68 +651,164 @@ public partial class MainWindow
             .ToList();
     }
 
+    /// <summary>How far back the fight is read for the players fighting with the group.</summary>
+    private static readonly TimeSpan AlongsideWindow = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// The players fighting with the group who are not in it (10 November 2026, the owner: Ludra and other corps fights): the game's roster names the own party
+    /// only, so the other party of a corps is read from the fight, as the meter's Corps view reads it - the named players who hit a monster the group hit, or
+    /// healed one of them, over the last 10 minutes of the fight. Most damage first. In a raid that is the other party; in the open world it can be a stranger
+    /// at the same boss. Empty out of a group, and while the history shows a stored fight.
+    /// </summary>
+    private IReadOnlyList<GroupMate> AlongsideMates()
+    {
+        if (_historyMode || _liveSource?.Entities is not Aion2EntityDirectory directory || !RosterKnown(directory))
+        {
+            return Array.Empty<GroupMate>();
+        }
+
+        IReadOnlyList<DamageEvent> events = _aggregator.Events;
+        if (events.Count == 0)
+        {
+            return Array.Empty<GroupMate>();
+        }
+
+        // the last 10 minutes; the list is in the order the hits came in, so reading back stops a little behind the cut
+        DateTime cut = events[^1].Timestamp - AlongsideWindow;
+        var recent = new List<DamageEvent>();
+        for (int i = events.Count - 1; i >= 0; i--)
+        {
+            DamageEvent ev = events[i];
+            if (ev.Timestamp < cut - TimeSpan.FromSeconds(30))
+            {
+                break;
+            }
+
+            if (ev.Timestamp >= cut && ev.SourceObjectId != ev.TargetObjectId)
+            {
+                recent.Add(ev);
+            }
+        }
+
+        var memberOf = new Dictionary<int, bool>();
+        bool Member(int id) => memberOf.TryGetValue(id, out bool known) ? known : memberOf[id] = IsGroupMember(id, directory);
+        var groupTargets = recent.Where(ev => !ev.IsHeal && Member(ev.SourceObjectId)).Select(ev => ev.TargetObjectId).ToHashSet();
+        var damage = new Dictionary<int, long>();
+        foreach (DamageEvent ev in recent)
+        {
+            bool alongside = ev.IsHeal ? Member(ev.TargetObjectId) : groupTargets.Contains(ev.TargetObjectId);
+            if (alongside && !Member(ev.SourceObjectId) && directory.IsKnownPlayer(ev.SourceObjectId))
+            {
+                damage[ev.SourceObjectId] = damage.GetValueOrDefault(ev.SourceObjectId) + (ev.IsHeal ? 0 : ev.Amount);
+            }
+        }
+
+        IReadOnlySet<string> party = directory.PartyNames;
+        string? own = directory.LocalCharacter?.Name;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var mates = new List<GroupMate>();
+        foreach ((int id, _) in damage.OrderByDescending(d => d.Value))
+        {
+            if (directory.NameFor(id) is not { Length: >= 2 } name || name == own || party.Contains(name) || !seen.Add(name))
+            {
+                continue;
+            }
+
+            mates.Add(new GroupMate(name, directory.ClassOf(id), directory.ServerIdOf(id) ?? directory.ServerIdOfName(name)));
+            if (mates.Count == 16)
+            {
+                break;
+            }
+        }
+
+        return mates;
+    }
+
+    /// <summary>The empty box's lists: the group, then the players fighting with it.</summary>
+    private void ShowGroupLists() => ShowGroupMates(GroupMates(), AlongsideMates());
+
     /// <summary>
     /// Find a player with an empty box (10 November 2026, the owner: "pops up people in your party … and you can click to check them"): the other players of the
-    /// group, one click each to their card, with no name to type. Nothing out of a group.
+    /// group, one click each to their card, with no name to type, then the players fighting with the group (see <see cref="AlongsideMates"/>). Nothing out of a group.
     /// </summary>
-    internal void ShowGroupMates(IReadOnlyList<GroupMate> mates)
+    internal void ShowGroupMates(IReadOnlyList<GroupMate> mates, IReadOnlyList<GroupMate>? alongside = null)
     {
         OverlayFindResults.Children.Clear();
         OverlayFindCard.Visibility = Visibility.Collapsed;
         _findShown = null;
         _findPlayers = Array.Empty<FoundPlayer>();
-        ShowFindStatus(mates.Count > 0 ? "In your group:" : null);
+        alongside ??= Array.Empty<GroupMate>();
+        ShowFindStatus(mates.Count > 0 ? "In your group:" : alongside.Count > 0 ? "Fighting with you:" : null);
         foreach (GroupMate mate in mates)
         {
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.Children.Add(new Image { Width = 20, Height = 20, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center,
-                Source = mate.ClassName is { } cls ? new ClassIconConverter().Convert(cls, typeof(ImageSource), null, CultureInfo.CurrentCulture) as ImageSource : null });
-            var who = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            var nameText = new TextBlock { Text = mate.Name, FontSize = 12, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
-            nameText.Foreground = mate.ClassName is { } c ? ClassBrushes.Text(c) : (Brush)FindResource("Brush.OverlayText");
-            who.Children.Add(nameText);
-            var parts = new List<string>();
-            if (mate.ClassName is { Length: > 0 } className)
-            {
-                parts.Add(className);
-            }
-
-            if (mate.ServerId is int server && Aion2Servers.IsKnown(server))
-            {
-                parts.Add(Aion2Servers.NameOf(server));
-            }
-
-            if (parts.Count > 0)
-            {
-                var line = new TextBlock { Text = string.Join("  ·  ", parts), FontSize = 10.5, TextTrimming = TextTrimming.CharacterEllipsis };
-                line.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
-                who.Children.Add(line);
-            }
-
-            Grid.SetColumn(who, 1);
-            grid.Children.Add(who);
-            var go = new TextBlock { Text = "›", FontSize = 15, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 2, 0) };
-            go.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
-            Grid.SetColumn(go, 2);
-            grid.Children.Add(go);
-
-            // never fully transparent: in the see-through look Windows gives clicks on such pixels to the game
-            var rest = new SolidColorBrush(Color.FromArgb(0x0A, 0xFF, 0xFF, 0xFF));
-            var row = new Border { Child = grid, Padding = new Thickness(7, 4, 7, 4), CornerRadius = new CornerRadius(6), Background = rest, Cursor = Cursors.Hand,
-                Margin = new Thickness(0, 0, 0, 2), ToolTip = $"{mate.Name}'s card" };
-            row.MouseEnter += (_, _) => row.Background = new SolidColorBrush(Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF));
-            row.MouseLeave += (_, _) => row.Background = rest;
-            GroupMate picked = mate;
-            row.MouseLeftButtonUp += (_, ev) =>
-            {
-                ev.Handled = true;
-                _ = FindGroupMateAsync(picked);
-            };
-            OverlayFindResults.Children.Add(row);
+            OverlayFindResults.Children.Add(GroupMateRow(mate));
         }
+
+        if (mates.Count > 0 && alongside.Count > 0)
+        {
+            var heading = new TextBlock { Text = "Fighting with you:", FontSize = 11, Margin = new Thickness(2, 8, 0, 4),
+                ToolTip = "Players who fought the same monsters as your group, or healed it: in a raid, the other party" };
+            heading.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+            OverlayFindResults.Children.Add(heading);
+        }
+
+        foreach (GroupMate mate in alongside)
+        {
+            OverlayFindResults.Children.Add(GroupMateRow(mate));
+        }
+    }
+
+    /// <summary>One player of the empty box's lists: class icon, name, class · server, and a click to their card.</summary>
+    private Border GroupMateRow(GroupMate mate)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.Children.Add(new Image { Width = 20, Height = 20, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center,
+            Source = mate.ClassName is { } cls ? new ClassIconConverter().Convert(cls, typeof(ImageSource), null, CultureInfo.CurrentCulture) as ImageSource : null });
+        var who = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        var nameText = new TextBlock { Text = mate.Name, FontSize = 12, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
+        nameText.Foreground = mate.ClassName is { } c ? ClassBrushes.Text(c) : (Brush)FindResource("Brush.OverlayText");
+        who.Children.Add(nameText);
+        var parts = new List<string>();
+        if (mate.ClassName is { Length: > 0 } className)
+        {
+            parts.Add(className);
+        }
+
+        if (mate.ServerId is int server && Aion2Servers.IsKnown(server))
+        {
+            parts.Add(Aion2Servers.NameOf(server));
+        }
+
+        if (parts.Count > 0)
+        {
+            var line = new TextBlock { Text = string.Join("  ·  ", parts), FontSize = 10.5, TextTrimming = TextTrimming.CharacterEllipsis };
+            line.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+            who.Children.Add(line);
+        }
+
+        Grid.SetColumn(who, 1);
+        grid.Children.Add(who);
+        var go = new TextBlock { Text = "›", FontSize = 15, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 2, 0) };
+        go.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        Grid.SetColumn(go, 2);
+        grid.Children.Add(go);
+
+        // never fully transparent: in the see-through look Windows gives clicks on such pixels to the game
+        var rest = new SolidColorBrush(Color.FromArgb(0x0A, 0xFF, 0xFF, 0xFF));
+        var row = new Border { Child = grid, Padding = new Thickness(7, 4, 7, 4), CornerRadius = new CornerRadius(6), Background = rest, Cursor = Cursors.Hand,
+            Margin = new Thickness(0, 0, 0, 2), ToolTip = $"{mate.Name}'s card" };
+        row.MouseEnter += (_, _) => row.Background = new SolidColorBrush(Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF));
+        row.MouseLeave += (_, _) => row.Background = rest;
+        GroupMate picked = mate;
+        row.MouseLeftButtonUp += (_, ev) =>
+        {
+            ev.Handled = true;
+            _ = FindGroupMateAsync(picked);
+        };
+        return row;
     }
 
     /// <summary>A group member clicked: the website's search for the name in the region of the member's server, kept to that server, then the card of the one found
