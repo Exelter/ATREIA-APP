@@ -187,6 +187,8 @@ public partial class MainWindow : Window
     private MeterOverlayWindow? _meterOverlay;
     private bool _meterOverlayOn = true;
     private bool _meterOverlayAutoHide = true;
+    private bool _meterStayInGroup = true;
+    private bool _meterAutoGroup = true;
     private TimeSpan _meterOverlayHideAfter = TimeSpan.FromSeconds(30);
 
     /// <summary>The last moment the own character hit something or was hit (local time): the overlay stays up a while after it.</summary>
@@ -746,6 +748,8 @@ public partial class MainWindow : Window
         _meterOverlayOn = settings.MeterOverlayOn;
         _meterOverlayAutoHide = settings.MeterOverlayAutoHide;
         _meterPopUpForBoss = settings.MeterPopUpForBoss;
+        _meterStayInGroup = settings.MeterStayInGroup;
+        _meterAutoGroup = settings.MeterAutoGroup;
         _trackOpenWorld = settings.TrackOpenWorld;
         UpdateOpenWorldButton();
         _meterOverlayHideAfter = TimeSpan.FromSeconds(Math.Clamp(settings.MeterOverlayHideSeconds, 10, 600));
@@ -1637,8 +1641,11 @@ public partial class MainWindow : Window
         }
 
         DateTime now = DateTime.Now;
+        AutoShowGroup(now);
         bool kept = now < _overlayPeekUntil || _meterOverlay.IsMouseOver || _overlayMenuOpen || OverlayFind.Visibility == Visibility.Visible || OverlayApps.Visibility == Visibility.Visible
-            || _dummy?.Model.State is DummyState.Armed or DummyState.Running or DummyState.Finished;
+            || _dummy?.Model.State is DummyState.Armed or DummyState.Running or DummyState.Finished
+            // in a dungeon or a group the meter stays up, so the group can be looked up (an option, on by default: 10 November 2026)
+            || (_meterStayInGroup && (_scopeContext == ScopeContext.Instance || _groupSeen));
         bool inFight = MeterOverlayRule.Shown(_meterOverlayAutoHide, _meterPopUpForBoss, _meterOverlayHideAfter, now - _lastOwnBossFight, now - _lastBossFight,
             now - _lastOwnCombat, _meterOverlay.Wanted, kept);
         _meterOverlay.ShowOverlay(MeterOverlayActive && _gameGateOpen && inFight);
@@ -2930,6 +2937,8 @@ public partial class MainWindow : Window
     private double _rdpsSeconds;
 
     private string _barLegendKey = "";
+    private bool _barLegendCounted;
+    private int _barLegendSessions = MeterSettings.Load().BarLegendSessions;
 
     /// <summary>The pictures of the build: a meter the player made narrower, its lines ranked (and capped) as a fight's are.</summary>
     internal void ShowSampleCrowd(double width)
@@ -2950,6 +2959,17 @@ public partial class MainWindow : Window
     internal void UpdateBarLegend()
     {
         bool show = BarPartsOn && CompactOverlayRowsArea.Visibility == Visibility.Visible && _rows.Any(r => r.HealFillPercent - r.FillPercent >= 0.3);
+        // the colours are learnt after a few days of play (10 November 2026): the line shows in the first five sessions it was needed in, then gives its row back
+        if (show && !Headless && !_barLegendCounted)
+        {
+            _barLegendCounted = true;
+            MeterSettings counted = MeterSettings.Load();
+            counted.BarLegendSessions++;
+            counted.Save();
+            _barLegendSessions = counted.BarLegendSessions;
+        }
+
+        show &= Headless || _barLegendSessions <= 5;
         OverlayBarLegend.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (!show)
         {
@@ -3884,9 +3904,10 @@ public partial class MainWindow : Window
 
         Func<int, string?> nameOf = id => session.Names.GetValueOrDefault(id) ?? ResolveDisplayName(id);
         bool IsPlayer(int id) => session.Classes.Count == 0 || session.Classes.ContainsKey(id);
+        var dir = _liveSource?.Entities as Aion2.Aion2EntityDirectory;
         return ReplayBuilder.Build(SessionLabels.NameOf(session), extras, all, from, to,
             id => (nameOf(id) ?? "", session.Classes.GetValueOrDefault(id) ?? "", IsPlayer(id) && session.Classes.ContainsKey(id)), SkillRadius,
-            id => Aion2.Protocol.Aion2SkillNames.Display(Aion2.Protocol.Aion2SkillNames.NameOf(id)));
+            id => Aion2.Protocol.Aion2SkillNames.Display(Aion2.Protocol.Aion2SkillNames.NameOf(id)), npcOf: id => dir?.NpcIdOf(id));
     }
 
     /// <summary>The rotation, effect, stagger and replay data of a session, read from the live capture, for saving it with the file: the players of the session and the bosses.</summary>
@@ -3898,7 +3919,7 @@ public partial class MainWindow : Window
         }
 
         FightExtras extras = dir.Combat.Slice(session.Start, session.End ?? DateTime.Now, id => dir.NameFor(id) ?? dir.MonsterNameFor(id),
-            id => session.Classes.ContainsKey(id) || dir.IsKnownPlayer(id) || dir.BossNpcIdOf(id) is not null,
+            id => session.Classes.ContainsKey(id) || dir.IsKnownPlayer(id) || dir.BossNpcIdOf(id) is not null || IsMechanicObject(dir, id),
             (id, from, to) => HpSeriesOf(dir, id, from, to, dir.IsKnownPlayer(id)));
         return extras.IsEmpty ? null : extras;
     }
@@ -3906,15 +3927,19 @@ public partial class MainWindow : Window
     /// <summary>An id of the live capture as the grid knows it (the same, except while a session is on view).</summary>
     private int GridId(int liveId) => _historyMode ? _historyReplayIds.GetValueOrDefault(liveId, -1) : liveId;
 
-    /// <summary>Whose positions the replay keeps: the group (the players in the rows) and the bosses.</summary>
+    /// <summary>Whose positions the replay keeps: the group (the players in the rows), the bosses and the objects their mechanics leave on the floor.</summary>
     private bool ReplayKeeps(int id)
     {
         int gridId = GridId(id);
         return _rowsByObjectId.ContainsKey(gridId) && IsPlayerName(gridId)
             || ReplayDirectory?.BossNpcIdOf(id) is not null
             || _selectedTargetId == gridId
-            || IsReplayAdd(id);
+            || IsReplayAdd(id)
+            || IsMechanicObject(ReplayDirectory, id);
     }
+
+    /// <summary>An object a boss's mechanics leave on the floor (Eternal Ludra's pools and Airborne zones ...): the replay follows it and draws its reach.</summary>
+    private static bool IsMechanicObject(Aion2.Aion2EntityDirectory? dir, int id) => dir?.NpcIdOf(id) is int npc && Aion2.Protocol.Aion2MechanicAreas.IsObject(npc);
 
     private HashSet<int> _replayAdds = new();
     private int _replayAddsFor = -1;
@@ -4015,7 +4040,7 @@ public partial class MainWindow : Window
 
         ReplayData built = ReplayBuilder.Build(title.Trim(), extras, events, from, to,
             id => (ResolveDisplayName(GridId(id)), ResolveClassName(GridId(id)), IsPlayerName(GridId(id))), SkillRadius, id => Aion2.Protocol.Aion2SkillNames.Display(Aion2.Protocol.Aion2SkillNames.NameOf(id)),
-            IsReplayAdd, id => ReplayDirectory is { } own && own.LocalPlayerId == id);
+            IsReplayAdd, id => ReplayDirectory is { } own && own.LocalPlayerId == id, id => ReplayDirectory?.NpcIdOf(id));
         // what the replay window needs to fetch the paths the other clients of this fight sent
         if (_selectedTargetId is int bossEntity && ReplayDirectory?.BossNpcIdOf(bossEntity) is int bossNpc && ResolveServerIdentity() is (string fingerprint, _))
         {
@@ -8216,8 +8241,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        _hotkeyOverlay.ApplyLockedIfChanged(s.HotkeyOverlayLocked ?? s.PetFarmLocked);
-        _hotkeyOverlay.ShowOverlay(s.ShowHotkeyOverlay && GameWindow.OverlayMayShow());
+        bool hotkeysLocked = s.HotkeyOverlayLocked ?? s.PetFarmLocked;
+        _hotkeyOverlay.ApplyLockedIfChanged(hotkeysLocked);
+        // a cheat sheet to peek at (10 November 2026): only while Ctrl+Alt are held, the keys every hotkey starts with (an option, on by default; always while placed)
+        bool peeked = !s.HotkeyOverlayPeek || !hotkeysLocked || HotkeyOverlayWindow.PeekKeysHeld();
+        _hotkeyOverlay.ShowOverlay(s.ShowHotkeyOverlay && peeked && GameWindow.OverlayMayShow());
     }
 
     /// <summary>Shows or hides the timetable overlay as Settings say (startup, after Settings, hotkey).</summary>

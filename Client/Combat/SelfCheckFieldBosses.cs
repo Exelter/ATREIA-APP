@@ -24,6 +24,13 @@ public static class SelfCheckFieldBosses
         Console.WriteLine($"  -> every region has its number, Lower Reshanta's bosses in the game's order: {numbered && order} (numbers {numbered}, order {order})");
         ok &= numbered && order;
 
+        // the patch of 4 November 2026: the three Executors on Thursday and Saturday only, Argo, the Spirit King at 10:30 and 22:30 every day
+        bool patched = lower is not null
+            && lower.Bosses.Where(b => b.Npc is 2600096 or 2600097 or 2600098).All(b => b.Rule is { Kind: "weekly" } r && r.Days.SequenceEqual(new[] { 4, 6 }))
+            && lower.Bosses.FirstOrDefault(b => b.Npc == 2600068)?.Rule is { Kind: "cycle", Base: "10:30", EveryMinutes: 720 };
+        Console.WriteLine($"  -> the Executors on Thursday and Saturday, Argo, the Spirit King at 10:30 and 22:30: {patched}");
+        ok &= patched;
+
         // a face for every boss but one (the game has no portrait of Wings of Hellfire Fios)
         int faces = Aion2FieldBosses.Maps.SelectMany(m => m.Bosses).Count(b => Aion2.Protocol.Aion2Artwork.FieldBossPortraitPath(b.Npc) is not null);
         int all = Aion2FieldBosses.Maps.Sum(m => m.Bosses.Count);

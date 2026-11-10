@@ -60,6 +60,7 @@ public sealed class GamePanelWindow : Window
         });
         AltTabHidden.Apply(this);
         Content = Frame(title, glyph);
+        Loaded += (_, _) => OverlayMotion.Appear((UIElement)Content); // fades in and settles
         ShowTab(tab);
         PreviewKeyDown += (_, e) =>
         {

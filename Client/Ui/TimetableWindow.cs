@@ -82,8 +82,9 @@ public sealed class TimetableWindow : Window, IOverlayPlace
             Hide();
         };
         DockPanel.SetDock(close, Dock.Right);
-        var title = new TextBlock { FontWeight = FontWeights.Bold, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Tag = "title" };
-        title.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
+        // the heading as the other overlays have it (10 November 2026): small gold capitals
+        var title = new TextBlock { FontWeight = FontWeights.SemiBold, FontSize = 10.5, VerticalAlignment = VerticalAlignment.Center, Tag = "title", Margin = new Thickness(3, 1, 0, 1),
+            Foreground = new SolidColorBrush(OverlaySkin.Gold) };
         header.Children.Add(close);
         header.Children.Add(title);
         _header = header;
@@ -113,6 +114,10 @@ public sealed class TimetableWindow : Window, IOverlayPlace
             {
                 Refresh();
                 _timer.Start();
+                if (!_isView)
+                {
+                    OverlayMotion.Appear(_panel); // fades in and settles (10 November 2026)
+                }
             }
             else
             {
@@ -278,7 +283,7 @@ public sealed class TimetableWindow : Window, IOverlayPlace
         if (loc.Language != _language)
         {
             _language = loc.Language;
-            _title.Text = loc["Timers.Title"];
+            _title.Text = loc["Timers.Title"].ToUpper(CultureInfo.CurrentCulture);
             _dirty = true;
         }
 
@@ -407,12 +412,32 @@ public sealed class TimetableWindow : Window, IOverlayPlace
             row.Children.Add(stripe);
         }
 
-        row.Children.Add(grid);
-        _body.Children.Add(new Border
+        // the meter's motion (10 November 2026): an event coming up has a thin bar under it that fills as it comes closer (full when it starts, within the
+        // lookahead); an event going live glows in its colour a moment
+        if (!live && !quiet && until > now && _lookahead > TimeSpan.Zero)
         {
-            Child = row, CornerRadius = new CornerRadius(4), Padding = new Thickness(live ? 3 : 5, 3, 7, 3), Margin = new Thickness(0, 1, 0, 1),
+            var lines = new StackPanel();
+            lines.Children.Add(grid);
+            Grid bar = OverlayMotion.Countdown(1 - (until - now).TotalSeconds / _lookahead.TotalSeconds, until - now, TimerLook.BrushOf(look, 0xC0), Frozen(Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)));
+            bar.Margin = new Thickness(31, 3, 0, 0);
+            lines.Children.Add(bar);
+            row.Children.Add(lines);
+        }
+        else
+        {
+            row.Children.Add(grid);
+        }
+
+        var shown = new Border
+        {
+            Child = row, CornerRadius = new CornerRadius(6), Padding = new Thickness(live ? 3 : 5, 3, 7, 3), Margin = new Thickness(0, 1, 0, 1),
             Background = live ? TimerLook.BrushOf(look, 0x40) : RowBack, Opacity = quiet ? 0.8 : 1.0,
-        });
+        };
+        _body.Children.Add(shown);
+        if (OverlayMotion.BecameTrue("timer-live|" + scheduled.Id, live))
+        {
+            OverlayMotion.Pulse(shown, TimerLook.BrushOf(look).Color);
+        }
     }
 
     private static Brush Frozen(Color color)

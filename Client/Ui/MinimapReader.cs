@@ -199,7 +199,8 @@ internal sealed class MinimapReader : IDisposable
         // off, so the match looked 85 m from the player with a reach of 40 m and found nothing; every fix came only after eight misses had widened the reach -
         // "no fix for 8 reads" every 2 to 3 s, and the arrow moved in steps).
         string stamp = MinimapCalibration.StampOf(map);
-        (double readX, double readY) = ToReading(_anchor, map.Key, guess.X, guess.Y, now, (x, y) => _cal.Correct(map.Key, stamp, x, y, now));
+        var prior = PriorOf(key, settings);
+        (double readX, double readY) = ToReading(_anchor, map.Key, guess.X, guess.Y, now, (x, y) => _cal.Correct(CalKey(map, key), stamp, x, y, now, prior));
         if (!_rasters.TryGetValue(map.Key, out MapRaster? raster))
         {
             // only the map played now is kept: each holds a decoded picture of its whole map (the memory grew with every map visited)
@@ -255,6 +256,20 @@ internal sealed class MinimapReader : IDisposable
             }
         });
     }
+
+    /// <summary>What the calibration of this PC is kept under: the map and the game window's size (10 November 2026, the owner: "make sure to account for differences in
+    /// resolution"). Everyone's checks showed every PC reading off by an amount of its own, 0 to 30 m, the same all over a map; a window of another size is another
+    /// layout of the minimap, so its offset is learnt on its own instead of mixed with the other one's.</summary>
+    internal static string CalKey(Aion2MapInfo map, string windowKey) => map.Key + "@" + windowKey;
+
+    /// <summary>What a reading on this window size is put right by before this PC has learnt its own (<see cref="MinimapSetups"/>): the window's minimap zoom from its layout.</summary>
+    private static (double X, double Y) PriorOf(string windowKey, MeterSettings settings) =>
+        settings.MinimapLayouts.TryGetValue(windowKey, out double[]? layout) && layout.Length >= 5 ? MinimapSetups.PriorFor(windowKey, layout[4]) : (0, 0);
+
+    /// <summary>The setup a check was made with, sent with it (Upload/MapShare.cs): the game window's size and the minimap's metres a pixel, so the maps' refit can
+    /// tell the offset of a resolution from the map's own (Tools/maps/fit_maps.py).</summary>
+    internal static string SetupOf(string windowKey, double[] layout) =>
+        layout.Length >= 5 ? FormattableString.Invariant($"{windowKey}|{layout[4]:0.000}") : windowKey;
 
     internal sealed record Job(IntPtr Game, Size Client, string Key, MapRaster Raster, double GuessX, double GuessY, Layout? Layout, bool Save, int Misses,
         double Reach = 40, bool Recheck = false, bool SaveLost = false, IReadOnlyList<Layout>? Hints = null, bool SaveCorner = false, bool ArrowCheck = false);
@@ -376,7 +391,7 @@ internal sealed class MinimapReader : IDisposable
         double late = Math.Clamp((now - outcome.At).TotalSeconds, 0, 0.3);
         Aion2MapInfo map = job.Raster.Map;
         double ux = sx + (svx * late), uy = sy + (svy * late);
-        (double cx, double cy) = Anchored(_anchor, map.Key, ux, uy, now) ?? _cal.Correct(map.Key, MinimapCalibration.StampOf(map), ux, uy, now);
+        (double cx, double cy) = Anchored(_anchor, map.Key, ux, uy, now) ?? _cal.Correct(CalKey(map, job.Key), MinimapCalibration.StampOf(map), ux, uy, now, PriorOf(job.Key, _settings));
         if (Impossible(directory.ReportedPosition, directory.Clock(), cx, cy))
         {
             // the game itself put the player somewhere else a moment ago, farther than anyone moves in the time: the minimap matched the wrong place (the owner,
@@ -658,7 +673,9 @@ internal sealed class MinimapReader : IDisposable
         // from now on the readings go on from this report (a teleport or a lost reading, far off, anchors nothing: the readings stand on their own again)
         _anchor = Distance(exact.X, exact.Y, rx, ry) <= AnchorMostOff ? (map.Key, exact.X, exact.Y, rx, ry, DateTime.UtcNow) : null;
         string stamp = MinimapCalibration.StampOf(map);
-        (double cx, double cy) = _cal.Correct(map.Key, stamp, rx, ry, exact.At);
+        string calKey = CalKey(map, key);
+        string setup = SetupOf(key, kept);
+        (double cx, double cy) = _cal.Correct(calKey, stamp, rx, ry, exact.At, PriorOf(key, settings));
         double ex = exact.X - cx, ey = exact.Y - cy, metres = Math.Sqrt((ex * ex) + (ey * ey)) / 100;
         double raw = Distance(exact.X, exact.Y, rx, ry) / 100;
         if (metres > 25)
@@ -670,10 +687,10 @@ internal sealed class MinimapReader : IDisposable
             if (arrowInMiddle && raw <= 100)
             {
                 // the middle is right and the map's tiles are off here by this much: just what the maps' refit needs (Upload/MapShare.cs)
-                Upload.MapShare.Note(map.Key, stamp, rx, ry, exact.X, exact.Y, speed, dt, _lastMatch?.Score ?? 0, ShareOn(settings));
+                Upload.MapShare.Note(map.Key, stamp, rx, ry, exact.X, exact.Y, speed, dt, _lastMatch?.Score ?? 0, ShareOn(settings), setup);
             }
 
-            string steadyNote = arrowInMiddle && metres <= MinimapCalibration.MaxSteady / 100 ? NoteSteady(map.Key, stamp, rx, ry, exact.X, exact.Y, speed, exact.At) : "";
+            string steadyNote = arrowInMiddle && metres <= MinimapCalibration.MaxSteady / 100 ? NoteSteady(calKey, stamp, rx, ry, exact.X, exact.Y, speed, exact.At) : "";
             Log(FormattableString.Invariant($"{DateTime.Now:HH:mm:ss.fff} {map.Key}: a report {metres:0} m from the reading at {rx:0} {ry:0} ({(exact.X - cx) / 100:+0.0;-0.0} {(exact.Y - cy) / 100:+0.0;-0.0} m; ") +
                 (steadyNote.Length > 0 ? steadyNote : arrowInMiddle ? "the arrow in the middle: the same offset again teaches the map" : "left out: a teleport or a lost reading") + ")");
             if (!arrowInMiddle)
@@ -698,9 +715,9 @@ internal sealed class MinimapReader : IDisposable
         }
 
         Accuracy = (Median(list), list.Count, map.Title);
-        bool learnt = _cal.Add(map.Key, stamp, rx, ry, exact.X, exact.Y, speed, exact.At, steady: raw > 25);
-        Upload.MapShare.Note(map.Key, stamp, rx, ry, exact.X, exact.Y, speed, dt, _lastMatch?.Score ?? 0, ShareOn(settings));
-        var line = _cal.Line(map.Key);
+        bool learnt = _cal.Add(calKey, stamp, rx, ry, exact.X, exact.Y, speed, exact.At, steady: raw > 25);
+        Upload.MapShare.Note(map.Key, stamp, rx, ry, exact.X, exact.Y, speed, dt, _lastMatch?.Score ?? 0, ShareOn(settings), setup);
+        var line = _cal.Line(calKey);
         (double px, double py) = Aion2Maps.ToNative(map, rx, ry);
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         Log(string.Format(inv, "{0:HH:mm:ss.fff} {1}: {2:0.00} m off the game's report ({3:0.00} m before the correction), {4:0.0} m/s, {5:0.00} s from the reading; " +
@@ -708,7 +725,7 @@ internal sealed class MinimapReader : IDisposable
             DateTime.Now, map.Key, metres, raw, speed / 100, dt, exact.X, exact.Y, rx, ry, px, py, kept[4],
             _lastMatch is { } m ? string.Format(inv, ", fit {0:0.00} pieces {1}/{2} margin {3:0.00}", m.Score, m.Agree, m.Pieces, m.Margin) : "",
             _lastArrow is { } a ? string.Format(inv, ", arrow {0:+0.0;-0.0} {1:+0.0;-0.0} px", a.X, a.Y) : "",
-            line.X.A, line.X.B, line.Y.A, line.Y.B, _cal.Count(map.Key), learnt ? "" : " (not learnt: too fast)"));
+            line.X.A, line.X.B, line.Y.A, line.Y.B, _cal.Count(calKey), learnt ? "" : " (not learnt: too fast)"));
     }
 
     /// <summary>The map accuracy data goes (Upload/MapShare.cs): switched on and the privacy terms accepted.</summary>

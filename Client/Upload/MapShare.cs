@@ -11,7 +11,8 @@ namespace AionDPS.Upload;
 /// with the next version - the map's arrow, the Hidden Cubes and the collectibles then sit on the right spot of the picture on every map from the first
 /// second. Switched off in Settings, Upload; nothing goes without the privacy terms accepted (declining switches it off).
 /// <para>
-/// What goes, per map: the map's name and its numbers (scale and offset, so a pair is read against the picture it was made on), and for each check the
+/// What goes, per map: the map's name and its numbers (scale and offset, so a pair is read against the picture it was made on), the game window's size and the
+/// minimap's zoom (metres a pixel: every PC reads off by an amount of its own, which the refit tells apart by these, 10 November 2026), and for each check the
 /// reading's place and the game's place (world units, rounded to a metre), the speed, how far apart in time the two were and how well the minimap fitted;
 /// with the day, the app's version and the random value this installation made for itself (<see cref="MeterSettings.EnsureAnonymousId"/>, kept by the
 /// site only as a keyed hash). No name, server, legion, account or time of day; the site keeps no IP address with it.
@@ -29,7 +30,7 @@ public static class MapShare
 
     private static readonly TimeSpan Every = TimeSpan.FromMinutes(10);
     private static readonly object Gate = new();
-    private static readonly Dictionary<(string Map, string Stamp), List<double[]>> Waiting = new();
+    private static readonly Dictionary<(string Map, string Stamp, string Setup), List<double[]>> Waiting = new();
     private static DateTime _day = DateTime.MinValue, _sentAt = DateTime.UtcNow;
     private static int _today, _sent;
 
@@ -43,14 +44,14 @@ public static class MapShare
     /// One check of the minimap reader against the game's own report (Ui/MinimapReader.CheckAgainstGame): the reading's place (raw, before any correction)
     /// and the game's, both world units; the speed (world units a second), the seconds between the two and the reading's fit (0 to 1).
     /// </summary>
-    public static void Note(string map, string stamp, double rawX, double rawY, double gameX, double gameY, double speed, double lagSeconds, double fit, bool on)
+    public static void Note(string map, string stamp, double rawX, double rawY, double gameX, double gameY, double speed, double lagSeconds, double fit, bool on, string setup = "")
     {
         if (!on || string.IsNullOrEmpty(map) || !double.IsFinite(rawX + rawY + gameX + gameY) || Math.Abs(gameX - rawX) > 10_000 || Math.Abs(gameY - rawY) > 10_000)
         {
             return;
         }
 
-        List<(string Map, string Stamp, List<double[]> Points)>? due = null;
+        List<(string Map, string Stamp, string Setup, List<double[]> Points)>? due = null;
         lock (Gate)
         {
             DateTime now = DateTime.UtcNow;
@@ -66,9 +67,9 @@ public static class MapShare
             }
 
             _today++;
-            if (!Waiting.TryGetValue((map, stamp), out List<double[]>? list))
+            if (!Waiting.TryGetValue((map, stamp, setup), out List<double[]>? list))
             {
-                Waiting[(map, stamp)] = list = new List<double[]>();
+                Waiting[(map, stamp, setup)] = list = new List<double[]>();
             }
 
             list.Add(new[]
@@ -92,7 +93,7 @@ public static class MapShare
     /// <summary>What is still waiting goes now (the program closes).</summary>
     public static void Flush()
     {
-        List<(string Map, string Stamp, List<double[]> Points)> due;
+        List<(string Map, string Stamp, string Setup, List<double[]> Points)> due;
         lock (Gate)
         {
             due = TakeLocked();
@@ -106,15 +107,15 @@ public static class MapShare
 
     private static double Metre(double v) => Math.Round(v / 100) * 100;
 
-    private static List<(string Map, string Stamp, List<double[]> Points)> TakeLocked()
+    private static List<(string Map, string Stamp, string Setup, List<double[]> Points)> TakeLocked()
     {
-        var all = Waiting.Where(kv => kv.Value.Count > 0).Select(kv => (kv.Key.Map, kv.Key.Stamp, kv.Value.ToList())).ToList();
+        var all = Waiting.Where(kv => kv.Value.Count > 0).Select(kv => (kv.Key.Map, kv.Key.Stamp, kv.Key.Setup, kv.Value.ToList())).ToList();
         Waiting.Clear();
         return all;
     }
 
     /// <summary>The upload of one map's checks (the site's /meter/api/uploads/map-points).</summary>
-    internal static string Build(string map, string stamp, IReadOnlyList<double[]> points, string anonymousId, DateTime utcNow) =>
+    internal static string Build(string map, string stamp, IReadOnlyList<double[]> points, string anonymousId, DateTime utcNow, string setup = "") =>
         JsonSerializer.Serialize(new
         {
             kind = "map-points",
@@ -124,14 +125,15 @@ public static class MapShare
             day = utcNow.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             map,
             stamp,
+            setup,
             points,
         });
 
-    private static void Send(List<(string Map, string Stamp, List<double[]> Points)> due, bool wait = false)
+    private static void Send(List<(string Map, string Stamp, string Setup, List<double[]> Points)> due, bool wait = false)
     {
         string id = MeterSettings.EnsureAnonymousId();
         DateTime now = DateTime.UtcNow;
-        var jobs = due.Select(d => (Json: Build(d.Map, d.Stamp, d.Points, id, now), d.Points.Count)).ToList();
+        var jobs = due.Select(d => (Json: Build(d.Map, d.Stamp, d.Points, id, now, d.Setup), d.Points.Count)).ToList();
         Task task = Task.Run(async () =>
         {
             foreach (var (json, count) in jobs)

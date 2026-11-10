@@ -600,6 +600,12 @@
                                 <CheckBox x:Name="MeterPopUpForBossBox" Content="{local:Loc Settings.MeterPopUpForBoss}" Margin="20,6,0,0"
                                           ToolTip="{local:Loc Settings.MeterPopUpForBoss.Tooltip}"
                                           IsEnabled="{Binding IsChecked, ElementName=MeterOverlayAutoHideBox}"/>
+                                <CheckBox x:Name="MeterStayInGroupBox" Content="Stay up in dungeons and while in a group" Margin="20,6,0,0"
+                                          ToolTip="Exploration, Conquest, Ludra, any dungeon or party: the meter stays on screen so you can look up your group at any time"
+                                          IsEnabled="{Binding IsChecked, ElementName=MeterOverlayAutoHideBox}"/>
+                                <CheckBox x:Name="MeterAutoGroupBox" Content="Show my group when I join a party or enter a dungeon" Margin="0,6,0,0"
+                                          ToolTip="Find a player opens by itself with your party (their class, server and Combat Power), without taking the keyboard from the game. It folds away when a boss fight starts."
+                                          IsEnabled="{Binding IsChecked, ElementName=MeterOverlayOnBox}"/>
                                 <Grid Margin="0,6,0,2">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="170"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{local:Loc Settings.MeterOverlayHide}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0"/>

@@ -247,9 +247,17 @@ public sealed class SeasonOverlayWindow : MovableOverlay
             Foreground = p.Finished ? new SolidColorBrush(SeasonLook.Muted) : Brushes.White,
         });
         text.Children.Add(top);
-        FrameworkElement bar = SeasonLook.Bar(p.Finished ? 1 : p.Next?.Target is null ? (double)p.Done / p.Mission.Steps.Count : SeasonMissions.Fraction(p), p.Finished ? SeasonLook.Done : SeasonLook.Gold, 4);
+        // the bar eases to its new value from the one it showed last (10 November 2026); a mission done just now glows a moment
+        double share = p.Finished ? 1 : p.Next?.Target is null ? (double)p.Done / p.Mission.Steps.Count : SeasonMissions.Fraction(p);
+        FrameworkElement bar = OverlayMotion.Bar("season|" + p.Mission.Id, share, new SolidColorBrush(p.Finished ? SeasonLook.Done : SeasonLook.Gold),
+            new SolidColorBrush(Color.FromArgb(0x2A, 0xFF, 0xFF, 0xFF)), 4, 2);
         bar.Margin = new Thickness(0, 3, 0, 0);
         text.Children.Add(bar);
+        if (OverlayMotion.BecameTrue("season-done|" + p.Mission.Id, p.Finished))
+        {
+            OverlayMotion.Pulse(row, SeasonLook.Done);
+        }
+
         return row;
     }
 

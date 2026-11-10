@@ -1171,6 +1171,12 @@
       "pt": "Rei dos Espíritos Argo",
       "ja": "精霊王アグロ",
       "ko": "정령왕 아그로"
+     },
+     "fixed": {
+      "kind": "cycle",
+      "base": "10:30",
+      "everyMinutes": 720,
+      "openMinutes": 20
      }
     },
     {
@@ -1283,7 +1289,6 @@
      "fixed": {
       "kind": "weekly",
       "days": [
-       1,
        4,
        6
       ],
@@ -1308,7 +1313,6 @@
      "fixed": {
       "kind": "weekly",
       "days": [
-       1,
        4,
        6
       ],
@@ -1333,7 +1337,6 @@
      "fixed": {
       "kind": "weekly",
       "days": [
-       1,
        4,
        6
       ],

@@ -28,8 +28,12 @@ public sealed class MapRaster
     /// <summary>The map pixel of a world place (100 world units a metre).</summary>
     public (double X, double Y) ToPixel(double worldX, double worldY) => Aion2Maps.ToNative(_map, worldX, worldY);
 
-    /// <summary>The world place of a map pixel.</summary>
-    public (double X, double Y) ToWorld(double pixelX, double pixelY) => ((pixelX - _map.OffsetX) / _map.Scale, (pixelY - _map.OffsetY) / _map.Scale);
+    /// <summary>The world place of a map pixel (with the shift of its tile, <see cref="Aion2MapInfo.Shifts"/>).</summary>
+    public (double X, double Y) ToWorld(double pixelX, double pixelY)
+    {
+        var shift = _map.ShiftAt(pixelX, pixelY);
+        return ((pixelX - _map.OffsetX) / _map.Scale + shift.X, (pixelY - _map.OffsetY) / _map.Scale + shift.Y);
+    }
 
     /// <summary>Map pixels per metre (about 2 on Verteron, 1 on Altgard and the Abyss).</summary>
     public double PixelsPerMetre => _map.Scale * 100;

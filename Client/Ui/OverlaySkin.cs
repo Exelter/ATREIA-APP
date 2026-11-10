@@ -115,8 +115,10 @@ internal static class OverlaySkin
         }
 
         Color ink = color ?? Gold;
-        foreach (string part in parts)
+        foreach (string whole in parts)
         {
+            // the long key names short, as keyboards print them
+            string part = whole switch { "PageUp" => "PgUp", "PageDown" => "PgDn", "Escape" => "Esc", "Delete" => "Del", "Insert" => "Ins", _ => whole };
             line.Children.Add(new Border
             {
                 CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1, 1, 1, 2), Padding = new Thickness(5, 0, 5, 1), Margin = new Thickness(3, 0, 0, 0), MinWidth = 18,

@@ -1060,11 +1060,7 @@
       },
       "windows": [
         {
-          "days": [
-            1,
-            4,
-            6
-          ],
+          "days": [4, 6],
           "start": "21:00",
           "end": "21:30"
         }
@@ -1104,13 +1100,70 @@
       },
       "windows": [
         {
-          "days": [
-            1,
-            4,
-            6
-          ],
+          "days": [4, 6],
           "start": "21:30",
           "end": "22:00"
+        }
+      ]
+    },
+    {
+      "id": "argo_spirit_king",
+      "kind": "world_boss",
+      "icon": "mboss",
+      "sure": "checked",
+      "zones": {
+        "eu": "Europe/Berlin",
+        "nae": "America/New_York",
+        "naw": "America/Los_Angeles",
+        "latam": "America/Sao_Paulo",
+        "asia": "Asia/Tokyo"
+      },
+      "names": {
+        "en": "Argo, the Spirit King",
+        "de": "Geisterfürst Agro",
+        "fr": "Agro le roi des esprits",
+        "es": "Rey Espíritu Agro",
+        "ru": "Король духов Агро",
+        "pt": "Rei dos Espíritos Argo",
+        "ja": "精霊王アグロ",
+        "ko": "정령왕 아그로"
+      },
+      "short": {
+        "en": "Argo",
+        "de": "Agro",
+        "fr": "Agro",
+        "ru": "Агро",
+        "es": "Agro",
+        "pt": "Argo",
+        "ja": "アグロ",
+        "ko": "아그로"
+      },
+      "windows": [
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "start": "10:30",
+          "end": "11:00"
+        },
+        {
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "start": "22:30",
+          "end": "23:00"
         }
       ]
     },

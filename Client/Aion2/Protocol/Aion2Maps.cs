@@ -4,12 +4,19 @@ using System.Text.Json;
 namespace AionDPS.Aion2.Protocol;
 
 /// <summary>One world map of the game as the pet map draws it: its tiles (assets/aion2/maps/&lt;key&gt;), the size of a tile and the grid, and
-/// how a world coordinate becomes a pixel of the whole map (<c>pixel = offset + scale * world</c>, no flip, no rotation).</summary>
+/// how a world coordinate becomes a pixel of the whole map (<c>pixel = offset + scale * world</c>, no flip, no rotation). <see cref="Shifts"/>: tiles of the picture
+/// that lie off on their own, should a map have any (maps.json "tileShift"): per tile (column * 100 + row) how far the land in it lies from where the numbers put
+/// it, in world units (game place minus picture place). Taken only from the checks of several PCs that agree: one PC's readings can be 10 to 20 m off of their
+/// own (10 November 2026: the owner's Altgard checks made its tiles look shifted by up to 80 m each, everyone's together showed one scale and offset off instead).</summary>
 public sealed record Aion2MapInfo(string Key, string Title, string Table, int Tile, int Grid, double Scale, double OffsetX, double OffsetY,
-    IReadOnlyList<string>? Tables = null, IReadOnlyList<int>? Zones = null)
+    IReadOnlyList<string>? Tables = null, IReadOnlyList<int>? Zones = null, IReadOnlyDictionary<int, (double X, double Y)>? Shifts = null)
 {
     /// <summary>An instance (dungeon) map: it belongs to the zone ids of its entrance and not to the open world.</summary>
     public bool Instance => Zones is { Count: > 0 };
+
+    /// <summary>How far the land in the tile at a pixel of the picture lies from where the numbers put it (world units; 0, 0 for a tile that lies right).</summary>
+    public (double X, double Y) ShiftAt(double pixelX, double pixelY) =>
+        Shifts is { Count: > 0 } && pixelX >= 0 && pixelY >= 0 && Shifts.TryGetValue((int)(pixelX / Tile) * 100 + (int)(pixelY / Tile), out var shift) ? shift : (0, 0);
 }
 
 /// <summary>
@@ -102,7 +109,34 @@ public static class Aion2Maps
 
     public static string TileFolder(Aion2MapInfo map) => GameArt.FolderOf("aion2", "maps", map.Key);
 
-    public static (double X, double Y) ToNative(Aion2MapInfo map, double worldX, double worldY) =>
+    /// <summary>The pixel of the picture a world place is drawn at: the map's numbers, then the shift of the tile it falls in (<see cref="Aion2MapInfo.Shifts"/>).</summary>
+    public static (double X, double Y) ToNative(Aion2MapInfo map, double worldX, double worldY)
+    {
+        (double x, double y) = ToNativePlain(map, worldX, worldY);
+        if (map.Shifts is not { Count: > 0 })
+        {
+            return (x, y);
+        }
+
+        // the tile the place falls in once shifted (twice: near a tile's edge the shift can carry it into the next one)
+        var shift = map.ShiftAt(x, y);
+        for (int i = 0; i < 2; i++)
+        {
+            var (sx, sy) = ToNativePlain(map, worldX - shift.X, worldY - shift.Y);
+            var again = map.ShiftAt(sx, sy);
+            if (again == shift)
+            {
+                return (sx, sy);
+            }
+
+            shift = again;
+        }
+
+        return ToNativePlain(map, worldX - shift.X, worldY - shift.Y);
+    }
+
+    /// <summary>The pixel of the picture by the map's numbers alone (where its tiles are laid; the shift of each tile is added where it is drawn).</summary>
+    public static (double X, double Y) ToNativePlain(Aion2MapInfo map, double worldX, double worldY) =>
         (map.OffsetX + map.Scale * worldX, map.OffsetY + map.Scale * worldY);
 
     /// <summary>
@@ -262,7 +296,8 @@ public static class Aion2Maps
                         v.GetProperty("tile").GetInt32(), v.GetProperty("grid").GetInt32(), v.GetProperty("scale").GetDouble(),
                         v.GetProperty("offsetX").GetDouble(), v.GetProperty("offsetY").GetDouble(),
                         v.TryGetProperty("tables", out var tables) ? tables.EnumerateArray().Select(t => t.GetString() ?? "").ToList() : null,
-                        v.TryGetProperty("zones", out var zones) ? zones.EnumerateArray().Select(z => z.GetInt32()).ToList() : null));
+                        v.TryGetProperty("zones", out var zones) ? zones.EnumerateArray().Select(z => z.GetInt32()).ToList() : null,
+                        v.TryGetProperty("tileShift", out var shifts) && shifts.ValueKind == JsonValueKind.Object ? ShiftsOf(shifts) : null));
                 }
             }
         }
@@ -272,6 +307,22 @@ public static class Aion2Maps
         }
 
         return list;
+    }
+
+    /// <summary>The tiles that lie off ("tileShift": {"4_2": [610, 1410]}: column_row, then x and y in world units).</summary>
+    private static Dictionary<int, (double X, double Y)>? ShiftsOf(JsonElement shifts)
+    {
+        var result = new Dictionary<int, (double X, double Y)>();
+        foreach (JsonProperty tile in shifts.EnumerateObject())
+        {
+            string[] cr = tile.Name.Split('_');
+            if (cr.Length == 2 && int.TryParse(cr[0], out int col) && int.TryParse(cr[1], out int row) && tile.Value.ValueKind == JsonValueKind.Array && tile.Value.GetArrayLength() == 2)
+            {
+                result[col * 100 + row] = (tile.Value[0].GetDouble(), tile.Value[1].GetDouble());
+            }
+        }
+
+        return result.Count > 0 ? result : null;
     }
 
     private static Dictionary<string, Dictionary<int, float[]>> Spawns()

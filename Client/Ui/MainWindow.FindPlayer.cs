@@ -188,15 +188,8 @@ public partial class MainWindow
             CloseLauncher(); // the two share the place under the bar
         }
 
-        if (_findRegion.Length == 0)
-        {
-            int server = (_liveSource?.Entities as Aion2EntityDirectory)?.LocalCharacter?.ServerId ?? 0;
-            _findRegion = server > 0 ? FindPlayerClient.RegionOf(server) : "all";
-            _findServersAsmodian = server / 1000 == 2;
-            OverlayFindRegionText.Text = FindPlayerClient.Regions.First(r => r.Code == _findRegion).Name;
-            ShowFindServer();
-        }
-
+        InitFindRegion();
+        _findAuto = false; // opened by the player: it stays until closed
         OverlayFind.Visibility = Visibility.Visible;
         ShowGroupLists(); // the group's players and those fighting with it, a click each, until a name is searched
         StartGroupWatch();
@@ -214,8 +207,24 @@ public partial class MainWindow
         }, System.Windows.Threading.DispatcherPriority.Input);
     }
 
+    /// <summary>The search's region at its first opening: the own server's.</summary>
+    private void InitFindRegion()
+    {
+        if (_findRegion.Length > 0)
+        {
+            return;
+        }
+
+        int server = (_liveSource?.Entities as Aion2EntityDirectory)?.LocalCharacter?.ServerId ?? 0;
+        _findRegion = server > 0 ? FindPlayerClient.RegionOf(server) : "all";
+        _findServersAsmodian = server / 1000 == 2;
+        OverlayFindRegionText.Text = FindPlayerClient.Regions.First(r => r.Code == _findRegion).Name;
+        ShowFindServer();
+    }
+
     private void CloseFindPlayer()
     {
+        _findAuto = false;
         _groupWatch?.Stop();
         _findAsked++; // an answer still on its way is dropped
         OverlayFind.Visibility = Visibility.Collapsed;
@@ -817,9 +826,15 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>One player of the empty box's lists: class icon, name, class · server, and a click to their card.</summary>
+    /// <summary>One player of the empty box's lists: class icon, name, class · server, their Combat Power once looked up, and a click to their card.</summary>
     private Border GroupMateRow(GroupMate mate)
     {
+        FoundPlayer? known = LookedUp(mate);
+        if (mate.ClassName is null && known?.ClassName is { } lookedUpClass)
+        {
+            mate = mate with { ClassName = lookedUpClass };
+        }
+
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -850,10 +865,21 @@ public partial class MainWindow
 
         Grid.SetColumn(who, 1);
         grid.Children.Add(who);
+        var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        if (known?.CombatPower is int cp)
+        {
+            right.Children.Add(new TextBlock
+            {
+                Text = FindPlayerClient.Number(cp), FontSize = 12, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0),
+                Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC3, 0x5A)), ToolTip = "Combat Power" + (known.ItemLevel is int il ? $" · Item Level {FindPlayerClient.Number(il)}" : ""),
+            });
+        }
+
         var go = new TextBlock { Text = "›", FontSize = 15, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 2, 0) };
         go.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
-        Grid.SetColumn(go, 2);
-        grid.Children.Add(go);
+        right.Children.Add(go);
+        Grid.SetColumn(right, 2);
+        grid.Children.Add(right);
 
         // never fully transparent: in the see-through look Windows gives clicks on such pixels to the game
         var rest = new SolidColorBrush(Color.FromArgb(0x0A, 0xFF, 0xFF, 0xFF));
@@ -865,6 +891,16 @@ public partial class MainWindow
         row.MouseLeftButtonUp += (_, ev) =>
         {
             ev.Handled = true;
+            if (LookedUp(picked) is { } found)
+            {
+                // looked up already (the group shown by itself): its card at once
+                _findAuto = false;
+                OverlayFindBox.Text = picked.Name;
+                ShowFindResults(new[] { found });
+                PickFindResult(found);
+                return;
+            }
+
             _ = FindGroupMateAsync(picked);
         };
         return row;
@@ -911,6 +947,130 @@ public partial class MainWindow
         if (players.Count == 1)
         {
             PickFindResult(players[0]);
+        }
+    }
+
+    // ------------------------------------------------------------------ the group by itself
+
+    /// <summary>The roster names other players (the meter stays up then, with "stay up in dungeons and while in a group").</summary>
+    private bool _groupSeen;
+
+    /// <summary>The search was opened by <see cref="AutoShowGroup"/>: it folds away when a boss fight starts.</summary>
+    private bool _findAuto;
+
+    private string _autoGroupKey = "";
+    private ScopeContext _autoGroupContext = ScopeContext.World;
+    private DateTime _autoGroupAt = DateTime.MinValue;
+
+    /// <summary>The party members looked up by themselves (by "name|server"): what the website's search found, and when.</summary>
+    private readonly Dictionary<string, (FoundPlayer Player, DateTime At)> _mateLookups = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _mateLooking = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly TimeSpan MateLookupKept = TimeSpan.FromMinutes(15);
+
+    private static string MateKey(GroupMate mate) => mate.Name + "|" + (mate.ServerId ?? 0).ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>Party members as if looked up already (the pictures).</summary>
+    internal void SeedMateLookups(IEnumerable<FoundPlayer> found)
+    {
+        foreach (FoundPlayer p in found)
+        {
+            _mateLookups[p.Name + "|" + p.ServerId.ToString(CultureInfo.InvariantCulture)] = (p, DateTime.UtcNow);
+        }
+    }
+
+    private FoundPlayer? LookedUp(GroupMate mate) =>
+        _mateLookups.TryGetValue(MateKey(mate), out var found) && DateTime.UtcNow - found.At < MateLookupKept ? found.Player : null;
+
+    /// <summary>
+    /// The group by itself (10 November 2026, the owner: "make the meter auto search and show the party members once in any party, Ludra, exploration,
+    /// Conquest"): once a second, while the meter is up, the roster is read; a new group (someone joined, another party) or going into a dungeon with one opens
+    /// Find a player on the group - never taking the keyboard from the game - and looks the party members up in the background, so their Combat Power shows on
+    /// their rows and a click shows their card at once. Not in a boss fight; folded away when one starts. With "Show my group" off it only notes the group.
+    /// </summary>
+    private void AutoShowGroup(DateTime now)
+    {
+        // a boss fight starting folds the group away: the fight is on the meter then
+        if (_findAuto && OverlayFind.Visibility == Visibility.Visible && now - _lastOwnBossFight < TimeSpan.FromSeconds(3) && OverlayFindBox.Text.Length == 0 && _findShown is null)
+        {
+            CloseFindPlayer();
+        }
+
+        if (now - _autoGroupAt < TimeSpan.FromSeconds(1) || Headless)
+        {
+            return;
+        }
+
+        _autoGroupAt = now;
+        IReadOnlyList<GroupMate> mates = GroupMates();
+        _groupSeen = mates.Count > 0;
+        bool entered = _scopeContext == ScopeContext.Instance && _autoGroupContext != ScopeContext.Instance;
+        _autoGroupContext = _scopeContext;
+        if (!_meterAutoGroup || _meterOverlay is not { IsVisible: true })
+        {
+            return;
+        }
+
+        if (mates.Count == 0)
+        {
+            _autoGroupKey = "";
+            return;
+        }
+
+        string key = string.Join("|", mates.Select(m => m.Name).OrderBy(n => n, StringComparer.Ordinal));
+        if (key == _autoGroupKey && !entered)
+        {
+            return;
+        }
+
+        _autoGroupKey = key;
+        _ = LookUpMatesAsync(mates);
+        bool fighting = now - _lastOwnBossFight < TimeSpan.FromSeconds(10);
+        bool busy = OverlayApps.Visibility == Visibility.Visible || (OverlayFind.Visibility == Visibility.Visible && (OverlayFindBox.Text.Length > 0 || _findShown is not null));
+        if (fighting || busy)
+        {
+            return;
+        }
+
+        InitFindRegion();
+        OverlayFind.Visibility = Visibility.Visible;
+        ShowGroupLists();
+        StartGroupWatch();
+        _findAuto = true;
+    }
+
+    /// <summary>The party members the search hasn't found lately, one after the other (the website's searches are limited: at most ten a minute).</summary>
+    private async Task LookUpMatesAsync(IReadOnlyList<GroupMate> mates)
+    {
+        foreach (GroupMate mate in mates.Take(7))
+        {
+            string key = MateKey(mate);
+            if (LookedUp(mate) is not null || !_mateLooking.Add(key))
+            {
+                continue;
+            }
+
+            try
+            {
+                int server = mate.ServerId is int s && Aion2Servers.IsKnown(s) ? s : 0;
+                string region = server > 0 ? FindPlayerClient.RegionOf(server) : _findRegion.Length > 0 ? _findRegion : "all";
+                FindAnswer answer = await FindPlayerClient.SearchAsync(mate.Name, region);
+                FoundPlayer? found = answer.Players.FirstOrDefault(p => p.Name == mate.Name && (server == 0 || p.ServerId == server))
+                    ?? answer.Players.FirstOrDefault(p => string.Equals(p.Name, mate.Name, StringComparison.OrdinalIgnoreCase) && (server == 0 || p.ServerId == server));
+                if (found is not null)
+                {
+                    _mateLookups[key] = (found, DateTime.UtcNow);
+                    if (OverlayFind.Visibility == Visibility.Visible && OverlayFindBox.Text.Length == 0 && _findShown is null && _findPlayers.Count == 0)
+                    {
+                        ShowGroupLists(); // the row gets its Combat Power
+                    }
+                }
+            }
+            finally
+            {
+                _mateLooking.Remove(key);
+            }
+
+            await Task.Delay(400);
         }
     }
 

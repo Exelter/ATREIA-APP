@@ -100,6 +100,9 @@ public sealed class WorldBossOverlayWindow : MovableOverlay
     {
         _rows.Children.Clear();
         DateTime clock = DateTime.Now;
+        // the meter's look (10 November 2026): a heading with how many are up, then the bosses
+        int up = rows.Count(r => r.Now);
+        _rows.Children.Add(OverlaySkin.Heading(LocalizationManager.Instance["Settings.Nav.Boss"], up > 0 ? up + " up now" : null, OverlaySkin.Good, up > 0 ? OverlaySkin.Good : null));
         foreach (var (name, text, now, boss, status) in rows)
         {
             var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
@@ -113,12 +116,13 @@ public sealed class WorldBossOverlayWindow : MovableOverlay
                 grid.Children.Add(face);
             }
 
-            var n = new TextBlock { Text = name, FontWeight = FontWeights.Bold, FontSize = 12.5, Foreground = Brushes.White, Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center };
+            var n = new TextBlock { Text = name, FontWeight = FontWeights.SemiBold, FontSize = 12, Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center };
+            n.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
             var t = new TextBlock
             {
-                Text = text, FontSize = 11.5, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
-                Foreground = new SolidColorBrush(now ? Color.FromRgb(0x5B, 0xD0, 0x7A) : Color.FromRgb(0xFF, 0xD2, 0x7A)),
-                FontWeight = now ? FontWeights.Bold : FontWeights.Normal,
+                Text = text, FontSize = 11, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
+                Foreground = new SolidColorBrush(now ? OverlaySkin.Good : Color.FromArgb(0xD0, OverlaySkin.Gold.R, OverlaySkin.Gold.G, OverlaySkin.Gold.B)),
+                FontWeight = now ? FontWeights.SemiBold : FontWeights.Normal,
             };
             Grid.SetColumn(n, 1);
             Grid.SetColumn(t, 2);

@@ -11,6 +11,25 @@
       "items": [
         {
           "kind": "new",
+          "area": "Meter",
+          "title": "Your group, the moment you join it",
+          "text": "Join a party or go into a dungeon with one (exploration, Conquest, Ludra …) and the meter opens Find a player with your group by itself, each member with their class, server and Combat Power, looked up for you in the background. A click shows their card at once. It never takes the keyboard from the game, and it folds away when a boss fight starts. The meter also stays up in dungeons and while you're in a group, so you can look someone up any time. Both are on by default and can be switched off in Settings, under the meter.",
+          "example": "Your exploration group fills up: the meter shows Lunessa 171,204, Korrin 189,455 and Valtheris 182,730 before you've even entered."
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "Smoother overlays",
+          "text": "The overlays fade in when they come up, their bars glide to new values instead of jumping, and the moments that matter glow briefly: a season mission done, an event going live, a skill coming off cooldown, a Pure or Radiant resource gathered. Upcoming events on the timers overlay have a thin bar that fills as they come closer."
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "Network, hotkeys, gathering and cooldowns redone",
+          "text": "The network overlay is a small pill now: your ping, a graph of the last minute and a word for how it's going; hold Alt over it for every line. The hotkey overlay is a two-column cheat sheet that shows while you hold Ctrl+Alt. Gathering shows one bar per resource split into its grades, with the counts on one line. Cooldown bars are softer, with a gold fill while they run and a green fade when ready. The overlay menu is grouped into Combat, World, Tools and System, with icons and a tip on each overlay. The meter's colour legend hides itself after your first five sessions. The small network overlay and the hotkeys peek can be switched off on the Overlays page."
+        },
+        {
+          "kind": "new",
           "area": "Overlays",
           "title": "Hold Alt and drag any overlay",
           "text": "Every overlay now moves with the mouse in the game: hold Alt (the game shows the cursor), the overlay under it glows gold, and you drag it where you want it. Let go of Alt and your clicks go to the game again. The meter moves the same way unless you locked it with its padlock. \"Move overlays\" (Ctrl+Alt+V) still unlocks them all at once, with the handles to size them. You can switch Alt + drag off on the Overlays page.",
@@ -67,6 +86,33 @@
           "title": "Daevanion boards node by node",
           "text": "A player's page has a Daevanion tab: pick a board and see it the way the game draws it, every node in its place, the open ones lit. Point at a node to see what it gives, and under the board you see everything the open nodes add up to, stats and skill levels. On the Overview, a click on a board's line opens it. This works for every character, with or without the app.",
           "example": "You open a Templar's page, click Nezekan: 48 of 60 nodes lit, and under it Critical Hit +120, Max HP +1,400 and Shield Bash Lv. +2 from the open nodes."
+        },
+        {
+          "kind": "fixed",
+          "area": "Timers",
+          "title": "Siege and boss timers on the new days",
+          "text": "The timetable follows the game's new schedule: the Artifact Siege and the Artifact bosses (the Executors) now run only on Thursday and Saturday (no more Monday), and Argo, the Spirit King spawns every day at 10:30 and 22:30 on your server's clock. The timers, the in-game timetable and the field boss list all show the new times. The timetable also comes from atreia.app now, so the next change shows up without an update.",
+          "example": "Monday evening on NA East: the timetable no longer counts down to a siege that isn't coming. It shows the next one, Thursday at 21:00, with the Executors at 21:30, and Argo at 22:30 tonight."
+        },
+        {
+          "kind": "improved",
+          "area": "Replay",
+          "title": "Ludra's mechanics where they really land",
+          "text": "The replay draws a boss's attacks in their real shape: circles, rings, cones, lines and crosses, pointing the way the boss faces. For Abyssal Forge: Ludra, the sizes come from 31 recorded Eternal Ludra pulls and the other bosses of the run. Most of Ludra's dangerous attacks come from the things she leaves on the floor, like the pools and the Airborne zones, not from Ludra herself. The replay now shows those in violet for as long as they stay, and their hits on your group count. The map is also the right way up now, with north on top like the game's map. Before, it was upside down.",
+          "example": "You replay a wipe: the violet pool next to your Cleric was there for 12 seconds, and the Airborne zone that killed her lit up a second before she died."
+        },
+        {
+          "kind": "improved",
+          "area": "Meter",
+          "title": "Ludra's attacks timed from the first pull",
+          "text": "The cast bar knows which of Ludra's attacks hit an area and how long after the cast the hit lands, from your very first pull. Before, the meter had to see each attack a few times first.",
+          "example": "First Ludra of the week: the bar marks her attack as an area and counts down to the hit, 1.5 s after the cast ends."
+        },
+        {
+          "kind": "fixed",
+          "area": "Map",
+          "title": "Altgard and Verteron maps line up with the land",
+          "text": "The Altgard map picture was drawn 1.8 % too small, so the further you were from the middle, the further off it was: up to 80 m at the western edge. Verteron's picture sat about 60 m off. Both are now refitted from about 10,000 position checks from 13 PCs. Every PC reads the minimap a little off in its own way, depending on its screen setup, so the refit measures each PC's own offset separately instead of mistaking it for the map's. Once a PC's own offset is taken off, the Altgard map is now within 1 to 4 m everywhere players walked. The app also learns your offset separately for each window size, so switching resolution no longer mixes them up. From this version, the map checks include your game window's size and the minimap's zoom. That lets the next refit correct each resolution from the first second, and the app asks you once to accept the updated privacy note that says so. The Abyss maps were already close. Eltnen, Morheim and Middle Reshanta get the same fix once enough checks come in."
         }
       ]
     },

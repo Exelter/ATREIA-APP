@@ -159,6 +159,8 @@ public partial class SettingsWindow : Window
         CompactClickThroughBox.IsChecked = settings.CompactClickThrough;
         MeterOverlayOnBox.IsChecked = settings.MeterOverlayOn;
         MeterPopUpForBossBox.IsChecked = settings.MeterPopUpForBoss;
+        MeterStayInGroupBox.IsChecked = settings.MeterStayInGroup;
+        MeterAutoGroupBox.IsChecked = settings.MeterAutoGroup;
         MeterOverlayAutoHideBox.IsChecked = settings.MeterOverlayAutoHide;
         SelectNearest(MeterOverlayHideBox, settings.MeterOverlayHideSeconds);
         DummyAutoStartBox.IsChecked = settings.DummyAutoStart;
@@ -1104,6 +1106,8 @@ public partial class SettingsWindow : Window
         _settings.CompactClickThrough = CompactClickThroughBox.IsChecked ?? false;
         _settings.MeterOverlayOn = MeterOverlayOnBox.IsChecked ?? true;
         _settings.MeterPopUpForBoss = MeterPopUpForBossBox.IsChecked ?? true;
+        _settings.MeterStayInGroup = MeterStayInGroupBox.IsChecked ?? true;
+        _settings.MeterAutoGroup = MeterAutoGroupBox.IsChecked ?? true;
         _settings.MeterOverlayAutoHide = MeterOverlayAutoHideBox.IsChecked ?? true;
         _settings.MeterOverlayHideSeconds = int.TryParse((MeterOverlayHideBox.SelectedItem as ComboBoxItem)?.Tag as string, out int hideSeconds) ? hideSeconds : 30;
         _settings.DummyAutoStart = DummyAutoStartBox.IsChecked ?? true;

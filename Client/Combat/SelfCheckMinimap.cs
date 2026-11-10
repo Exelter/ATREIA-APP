@@ -119,14 +119,25 @@ public static class SelfCheckMinimap
         Console.WriteLine($"  -> a reading far from where the game put the player a moment ago is a wrong match, not taken: {ruledOut}");
 
         // the map accuracy upload (Upload/MapShare.cs): the map, its numbers, the day and each check's places to a metre - nothing that names anybody
+        // with the game window's size and the minimap's zoom (every PC reads off by an amount of its own; the refit tells resolutions apart by them)
+        string setup = Ui.MinimapReader.SetupOf("2560x1440", new[] { 2378.0, 236, 165, 145, 0.98314 });
         string json = AionDPS.Upload.MapShare.Build("altgard", "2|0.01|4000|4000", new[] { new[] { 57500.0, -140500, 58300, -139900, 4.2, 0.08, 0.6 } },
-            "0123456789abcdef0123456789abcdef", new DateTime(2026, 11, 5, 9, 30, 0, DateTimeKind.Utc));
+            "0123456789abcdef0123456789abcdef", new DateTime(2026, 11, 5, 9, 30, 0, DateTimeKind.Utc), setup);
         using var doc = System.Text.Json.JsonDocument.Parse(json);
         var root = doc.RootElement;
         bool shared = root.GetProperty("kind").GetString() == "map-points" && root.GetProperty("day").GetString() == "2026-11-05" && root.GetProperty("map").GetString() == "altgard"
-            && root.GetProperty("points")[0].GetArrayLength() == 7 && root.EnumerateObject().Select(prop => prop.Name).Order().SequenceEqual(new[] { "anonymousId", "clientVersion", "day", "formatVersion", "kind", "map", "points", "stamp" });
-        Console.WriteLine($"  -> the map accuracy upload holds the map, its numbers, the day and the places, nothing that names anybody: {shared}");
-        return real && accurate && refused && zoomFound && screen && smooth && calibrated2 && shared && anchored && ruledOut && backToReading;
+            && root.GetProperty("points")[0].GetArrayLength() == 7 && root.GetProperty("setup").GetString() == "2560x1440|0.983"
+            && root.EnumerateObject().Select(prop => prop.Name).Order().SequenceEqual(new[] { "anonymousId", "clientVersion", "day", "formatVersion", "kind", "map", "points", "setup", "stamp" })
+            && Ui.MinimapReader.CalKey(Aion2Maps.All.First(m => m.Key == "altgard"), "2560x1440") != Ui.MinimapReader.CalKey(Aion2Maps.All.First(m => m.Key == "altgard"), "3840x2160");
+        Console.WriteLine($"  -> the map accuracy upload holds the map, its numbers, the window's size and zoom, the day and the places, nothing that names anybody; each window size learns on its own: {shared}");
+        // a window size measured on everyone's checks starts from its offset; once this PC has learnt one report its own counts (Aion2/MinimapSetups.cs)
+        var fresh = new MinimapCalibration();
+        bool before = fresh.Correct("abyss@2560x1440", "s1", 1000, 2000, t0, (500, -300)) == (1500, 1700);
+        fresh.Add("abyss@2560x1440", "s1", 1000, 2000, 1100, 2050, 100, t0);
+        bool after = fresh.Correct("abyss@2560x1440", "s1", 1000, 2000, t0, (500, -300)) is var own && own != (1500, 1700) && Math.Abs(own.X - 1100) < 1 && Math.Abs(own.Y - 2050) < 1;
+        bool setups = before && after && MinimapSetups.PriorFor("123x45", 1.0) == (0, 0) && MinimapSetups.Offsets is not null;
+        Console.WriteLine($"  -> a window size starts from the offset measured for it on everyone's checks, until this PC has learnt its own: {setups}");
+        return real && accurate && refused && zoomFound && screen && smooth && calibrated2 && shared && anchored && ruledOut && backToReading && setups;
     }
 
     /// <summary>
@@ -250,7 +261,7 @@ public static class SelfCheckMinimap
     /// <summary>
     /// The owner's own minimap (the game's top right corner on his 2560 x 1440 window, at Dranactus in Altgard): taken where the game puts the minimap,
     /// its zoom must be found by itself (0.97 map pixels a screen pixel, about a metre) and the fix must land where the match of 2 Nov 2026 put it
-    /// (world 62021, -181822; the network's last exact report was 11 m away).
+    /// (pixel 4747, 2277 of Altgard's picture; the network's last exact report was 11 m away).
     /// </summary>
     private static bool RealMinimap()
     {
@@ -271,7 +282,10 @@ public static class SelfCheckMinimap
             return false;
         }
 
-        (double gx, double gy) = raster.ToPixel(62869, -182578);
+        // on the picture, so the check stays the same when the map's numbers are refitted (10 November 2026): the guess and the place in Altgard's picture pixels
+        // (world 62869, -182578 and 62021, -181822 by the numbers of 2 November)
+        (double gx, double gy) = (4755.33, 2269.57);
+        (double ex, double ey) = (4747.00, 2277.00);
         var zooms = Enumerable.Range(0, 58).Select(i => 0.3 * Math.Pow(1.04, i) * raster.PixelsPerMetre);
         var watch = Stopwatch.StartNew();
         var found = MinimapMatch.Calibrate(mini, zooms, (tw, th) => Around(raster, gx, gy, tw, th), MinimapMatch.DetailMetres * raster.PixelsPerMetre);
@@ -282,8 +296,7 @@ public static class SelfCheckMinimap
             return false;
         }
 
-        (double wx, double wy) = raster.ToWorld(f.Fix.X, f.Fix.Y);
-        double metres = Math.Sqrt(((wx - 62021) * (wx - 62021)) + ((wy + 181822) * (wy + 181822))) / 100;
+        double metres = Math.Sqrt(((f.Fix.X - ex) * (f.Fix.X - ex)) + ((f.Fix.Y - ey) * (f.Fix.Y - ey))) / raster.PixelsPerMetre;
         bool ok = Math.Abs(f.Zoom - 0.97) < 0.02 && metres <= 3;
         Console.WriteLine($"  -> the owner's minimap (Altgard, Dranactus): zoom {f.Zoom:0.000} (0.97), {metres:0.0} m from the place, fit {f.Fix.Score:0.00}, {f.Fix.Agree}/{f.Fix.Pieces} pieces, "
             + $"margin {f.Fix.Margin:0.00}; the zoom searched in {ms:0} ms: {ok}");

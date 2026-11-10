@@ -1,3 +1,5 @@
+using AionDPS.Aion2.Protocol;
+
 namespace AionDPS.Combat;
 
 public enum ReplayRole
@@ -7,6 +9,10 @@ public enum ReplayRole
 
     /// <summary>Another monster the group fought (an add): a small marker that moves, without areas or health.</summary>
     Add,
+
+    /// <summary>An object a boss leaves on the floor (a pool, an orb, the Airborne zones of Eternal Ludra): a small mark, with the reach it hurts in while it stays
+    /// (<see cref="AionDPS.Aion2.Protocol.Aion2MechanicAreas"/>).</summary>
+    Mechanic,
 }
 
 /// <summary>Someone shown on the replay map, with where they were.</summary>
@@ -100,13 +106,19 @@ public sealed record ReplayEntity(int Id, string Name, string ClassName, ReplayR
     public const double MaxGapSeconds = 8;
 }
 
-/// <summary>A skill a boss winds up: its area from where it was wound up, for as long as the windup lasts (<see cref="Start"/> to <see cref="End"/>, seconds from the start of the fight).</summary>
-public sealed record ReplayArea(double Start, double End, int Actor, int SkillId, string SkillName, int Target, double Facing, double X, double Y, double? RadiusCm)
+/// <summary>A skill a boss (or an object of its mechanics) winds up: its area around the spot the windup aims at, for as long as the windup lasts (<see cref="Start"/> to
+/// <see cref="End"/>, seconds from the start of the fight). <see cref="Shape"/>: its shape on the floor (null: a circle); <see cref="Facing"/> the way it points (degrees, atan2 of y and x).
+/// <see cref="Zone"/>: not a windup but the reach of an object on the floor while it stays (it follows <see cref="Actor"/>).</summary>
+public sealed record ReplayArea(double Start, double End, int Actor, int SkillId, string SkillName, int Target, double Facing, double X, double Y, double? RadiusCm,
+    AionDPS.Aion2.Protocol.MechanicArea? Shape = null, bool Zone = false)
 {
     /// <summary>The size of an area nobody has measured yet (drawn dashed).</summary>
     public const double DefaultRadiusCm = 450;
 
-    public double Radius => RadiusCm ?? DefaultRadiusCm;
+    public double Radius => RadiusCm ?? Shape?.RadiusCm ?? DefaultRadiusCm;
+
+    /// <summary>Its size rests on measurements (recorded fights or the hits the meter saw), not on a guess.</summary>
+    public bool Sized => RadiusCm is not null || Shape is { Measured: true };
 }
 
 /// <summary>A boss's hit on a group member.</summary>
@@ -140,8 +152,10 @@ public sealed record ReplayData(
 /// <summary>Works the replay out of a fight's <see cref="FightExtras"/>: who moved where, which boss skills were wound up and what they hit. Pure, so a test can run it.</summary>
 public static class ReplayBuilder
 {
+    /// <param name="npcOf">The NPC id of an entity (null: unknown): an object of a boss's mechanics (<see cref="Aion2MechanicAreas.IsObject"/>) is followed with its reach.</param>
     public static ReplayData Build(string title, FightExtras? extras, IReadOnlyList<DamageEvent> fightEvents, DateTime start, DateTime end,
-        Func<int, (string Name, string ClassName, bool IsPlayer)> describe, Func<int, double?> radiusOf, Func<int, string> skillName, Func<int, bool>? isAdd = null, Func<int, bool>? isSelf = null)
+        Func<int, (string Name, string ClassName, bool IsPlayer)> describe, Func<int, double?> radiusOf, Func<int, string> skillName, Func<int, bool>? isAdd = null, Func<int, bool>? isSelf = null,
+        Func<int, int?>? npcOf = null)
     {
         double duration = Math.Max(1, (end - start).TotalSeconds);
         double Secs(DateTime at) => (at - start).TotalSeconds;
@@ -156,25 +170,45 @@ public static class ReplayBuilder
         foreach (PositionTrack track in tracks.Where(t => t.T.Length >= 1))
         {
             var (name, cls, isPlayer) = describe(track.Entity);
-            bool add = !isPlayer && isAdd?.Invoke(track.Entity) == true;
-            // a walk is asked of everybody but an add (it may stand where it appeared)
-            if (track.T.Length < 2 && !add)
+            bool mechanic = !isPlayer && npcOf?.Invoke(track.Entity) is int npc && Aion2MechanicAreas.IsObject(npc);
+            bool add = !isPlayer && !mechanic && isAdd?.Invoke(track.Entity) == true;
+            // a walk is asked of everybody but an add or an object on the floor (it may stand where it appeared)
+            if (track.T.Length < 2 && !add && !mechanic)
             {
                 continue;
             }
 
             // a monster the group killed is gone from the map from that moment
-            double? died = add && (extras.Deaths ?? Array.Empty<DeathRecord>()).FirstOrDefault(d => d.Entity == track.Entity && d.At >= start) is { Entity: > 0 } death ? Secs(death.At) : null;
-            entities.Add(new ReplayEntity(track.Entity, name, cls, isPlayer ? ReplayRole.Player : add ? ReplayRole.Add : ReplayRole.Boss, track, isPlayer && isSelf?.Invoke(track.Entity) == true, died));
+            double? died = (add || mechanic) && (extras.Deaths ?? Array.Empty<DeathRecord>()).FirstOrDefault(d => d.Entity == track.Entity && d.At >= start) is { Entity: > 0 } death ? Secs(death.At) : null;
+            ReplayRole role = isPlayer ? ReplayRole.Player : mechanic ? ReplayRole.Mechanic : add ? ReplayRole.Add : ReplayRole.Boss;
+            entities.Add(new ReplayEntity(track.Entity, name, cls, role, track, isPlayer && isSelf?.Invoke(track.Entity) == true, died));
         }
 
         var bossIds = entities.Where(e => e.Role == ReplayRole.Boss).Select(e => e.Id).ToHashSet();
         var playerIds = entities.Where(e => e.Role == ReplayRole.Player).Select(e => e.Id).ToHashSet();
+        // the areas of the bosses and of the objects their mechanics leave on the floor (on Eternal Ludra most dangerous attacks are theirs)
+        var casters = entities.Where(e => e.Role is ReplayRole.Boss or ReplayRole.Mechanic).Select(e => e.Id).ToHashSet();
         var areas = (extras.Windups ?? Array.Empty<WindupRecord>())
-            .Where(w => w.HasPosition && bossIds.Contains(w.Actor) && w.At >= start - TimeSpan.FromSeconds(2) && w.At <= end)
-            .Select(w => new ReplayArea(Secs(w.At), Secs(w.At) + w.DurationMs / 1000.0, w.Actor, w.SkillId, skillName(w.SkillId), w.Target, w.Facing, w.X, w.Y, radiusOf(w.SkillId)))
-            .OrderBy(a => a.Start).ToList();
-        var hits = fightEvents.Where(e => !e.IsHeal && !e.IsTick && bossIds.Contains(e.SourceObjectId) && playerIds.Contains(e.TargetObjectId))
+            .Where(w => w.HasPosition && casters.Contains(w.Actor) && w.At >= start - TimeSpan.FromSeconds(2) && w.At <= end)
+            .Select(w => AreaOf(w, Secs(w.At), skillName, radiusOf))
+            .ToList();
+        foreach (ReplayEntity e in entities.Where(e => e.Role == ReplayRole.Mechanic))
+        {
+            if (npcOf?.Invoke(e.Id) is int npc && Aion2MechanicAreas.HazardOf(npc) is { } hazard && e.Track.T.Length > 0)
+            {
+                // the reach of an object on the floor, from when it appeared for as long as such objects stay (or until it is gone)
+                double from = Secs(e.Track.Start);
+                double until = Math.Min(from + hazard.Seconds, e.DiedAt ?? double.MaxValue);
+                if (until > 0 && from < duration)
+                {
+                    areas.Add(new ReplayArea(from, until, e.Id, hazard.Skills.FirstOrDefault(), skillName(hazard.Skills.FirstOrDefault()), 0, 0, e.Track.X[0], e.Track.Y[0], hazard.RadiusCm,
+                        new MechanicArea("circle", hazard.RadiusCm, Seen: hazard.Seen, Measured: true), Zone: true));
+                }
+            }
+        }
+
+        areas = areas.OrderBy(a => a.Start).ToList();
+        var hits = fightEvents.Where(e => !e.IsHeal && !e.IsTick && casters.Contains(e.SourceObjectId) && playerIds.Contains(e.TargetObjectId))
             .Select(e => new ReplayHit(Secs(e.Timestamp), e.SourceObjectId, e.TargetObjectId, e.SkillId)).OrderBy(h => h.At).ToList();
         var deaths = (extras.Deaths ?? Array.Empty<DeathRecord>()).Where(d => playerIds.Contains(d.Entity) && d.At >= start && d.At <= end)
             .Select(d => new ReplayDeath(Secs(d.At), d.Entity, d.RevivedAt is DateTime back ? Secs(back) : null)).OrderBy(d => d.At).ToList();
@@ -182,6 +216,19 @@ public static class ReplayBuilder
         var hp = (extras.Hp ?? Array.Empty<HpSeries>()).Where(h => bossIds.Contains(h.Entity) && h.T.Length >= 2)
             .Select(h => new ReplayHp(h.Entity, h.T.Select(t => Secs(h.Start) + t / 1000.0).ToArray(), h.Permille.Select(p => p / 1000.0).ToArray())).ToList();
         return new ReplayData(title, start, duration, entities, areas, hits, deaths, staggers, hp);
+    }
+
+    /// <summary>A windup as the replay draws it: its shape from what recorded fights measured or the game client's word, its size measured, else learnt by the meter.</summary>
+    public static ReplayArea AreaOf(WindupRecord w, double at, Func<int, string> skillName, Func<int, double?> radiusOf)
+    {
+        MechanicArea? shape = Aion2MechanicAreas.AreaOf(w.SkillId);
+        if (shape is { Shape.Length: 0 })
+        {
+            shape = null; // only the time it lands is known: a circle, as before
+        }
+
+        double? radius = shape is { Measured: true, RadiusCm: double measured } ? measured : radiusOf(w.SkillId);
+        return new ReplayArea(at, at + w.DurationMs / 1000.0, w.Actor, w.SkillId, skillName(w.SkillId), w.Target, w.Facing, w.X, w.Y, radius, shape);
     }
 }
 

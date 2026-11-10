@@ -47,7 +47,7 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
 
         var stack = new DockPanel { LastChildFill = true };
         stack.Children.Add(new Border { Child = _lines, ClipToBounds = true });
-        _panel = new Border { CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 5, 8, 5), Child = stack, LayoutTransform = _scale, BorderThickness = new Thickness(1) };
+        _panel = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 6, 11, 7), Child = stack, LayoutTransform = _scale, BorderThickness = new Thickness(1) };
         _panel.SetResourceReference(Border.BackgroundProperty, "Brush.OverlayBg");
         _panel.MouseLeftButtonDown += (_, e) =>
         {
@@ -207,12 +207,12 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
     internal static StackPanel BuildRow(string pet, string level)
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 1, 0, 1), HorizontalAlignment = HorizontalAlignment.Center };
-        var name = new TextBlock { Text = pet, FontWeight = FontWeights.Bold, FontSize = 13, VerticalAlignment = VerticalAlignment.Center };
+        var name = new TextBlock { Text = pet, FontWeight = FontWeights.SemiBold, FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center };
         name.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
         row.Children.Add(name);
         if (level.Length > 0)
         {
-            var detail = new TextBlock { Text = "· " + level, FontWeight = FontWeights.Bold, FontSize = 13, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+            var detail = new TextBlock { Text = "· " + level, FontSize = 12, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
             detail.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Accent");
             row.Children.Add(detail);
         }

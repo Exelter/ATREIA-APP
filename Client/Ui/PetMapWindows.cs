@@ -364,6 +364,7 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         {
             Show();
             ApplyClickThrough();
+            OverlayMotion.Appear(_frame); // fades in and settles (10 November 2026)
         }
     }
 
@@ -1689,7 +1690,7 @@ public sealed class PetMapWindow : MovableOverlay
         if (opacity > 0 && !landPicture)
         {
             int decode = Math.Min(map.Tile, tileOnScreen > 640 ? 1536 : 768);
-            var (nx, ny) = Aion2Maps.ToNative(map, midX, midY); // the view's middle on the picture
+            var (nx, ny) = Aion2Maps.ToNativePlain(map, midX, midY); // the view's middle on the picture as its tiles are laid (each tile's own shift added below)
             double halfNative = ViewSize / 2 / k; // generous: the tiles beyond the visible part are clipped
             int c0 = Math.Max(0, (int)Math.Floor((nx - halfNative) / map.Tile)), c1 = Math.Min(map.Grid - 1, (int)Math.Floor((nx + halfNative) / map.Tile));
             int r0 = Math.Max(0, (int)Math.Floor((ny - halfNative) / map.Tile)), r1 = Math.Min(map.Grid - 1, (int)Math.Floor((ny + halfNative) / map.Tile));
@@ -1717,8 +1718,10 @@ public sealed class PetMapWindow : MovableOverlay
                     img.Opacity = opacity;
                     img.Width = map.Tile * kx;
                     img.Height = map.Tile * ky;
-                    Canvas.SetLeft(img, cx + (col * map.Tile - nx) * kx);
-                    Canvas.SetTop(img, cy + (row * map.Tile - ny) * ky);
+                    // a tile that lies off on its own is put where its land is (maps.json "tileShift", measured against the game's own reports)
+                    var shift = map.ShiftAt(col * map.Tile + 1, row * map.Tile + 1);
+                    Canvas.SetLeft(img, cx + (col * map.Tile - nx) * kx + shift.X * ppu);
+                    Canvas.SetTop(img, cy + (row * map.Tile - ny) * ky + shift.Y * ppu);
                     img.Visibility = Visibility.Visible;
                 }
             }
@@ -2365,11 +2368,7 @@ public sealed class PetListWindow : MovableOverlay
         stack.Children.Add(_head);
         stack.Children.Add(_rows);
         stack.Children.Add(_shop);
-        var panel = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(0x99, 0x0E, 0x18, 0x20)), BorderBrush = new SolidColorBrush(Color.FromArgb(0x99, 0x29, 0x45, 0x57)),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(10, 6, 10, 6), Child = stack,
-        };
+        Border panel = OverlaySkin.Panel(stack, new Thickness(10, 8, 10, 8)); // the meter's look (10 November 2026)
         Body = panel;
     }
 

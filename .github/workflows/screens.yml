@@ -6,6 +6,8 @@ on:
   push:
     branches: [main]
     paths: ["Client/**", ".github/workflows/screens.yml"]
+  pull_request:
+    paths: ["Client/**", ".github/workflows/screens.yml"]
 
 permissions:
   contents: write
@@ -94,6 +96,12 @@ jobs:
             @('render-tool', 'fps-access.png', 'fps-access'),
             @('render-tool', 'account.png', 'account'),
             @('render-network', 'network.png', '2'),
+            @('render-network', 'network-small.png', '2'),
+            @('render-bossoverlay', 'worldboss-overlay.png', '0'),
+            @('render-combatoverlay', 'combat-overlay.png', 'live', '1'),
+            @('render-petfarm', 'petfarm.png'),
+            @('render-petlist-shop', 'petlist-shop.png'),
+            @('render-craft', 'craft.png'),
             @('render-tool', 'setup-design.png', 'setup-design'),
             @('render-tool', 'setup-columns.png', 'setup-columns'),
             @('render-tool', 'setup-overlays.png', 'setup-overlays'),
@@ -146,7 +154,8 @@ jobs:
             @('render-report', 'report-defense.png', 'Defense'),
             @('render-history', 'history-nightmare.png', 'Nightmare'),
             @('render-history', 'history-bosses.png', 'Boss-fights'),
-            @('render-history', 'history-bests.png', 'Personal-bests')
+            @('render-history', 'history-bests.png', 'Personal-bests'),
+            @('render-replay', 'replay-ludra.png', '12.2')
           )
           foreach ($s in $shots) {
             $out = Join-Path (Resolve-Path screens).Path $s[1]
