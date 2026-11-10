@@ -111,7 +111,7 @@ public partial class MainWindow
             {
                 // the season missions of the character played, where the overlay's missions are picked (☆ Overlay on a mission)
                 var checklist = new ChecklistWindow();
-                if ((_liveSource?.Entities as Aion2EntityDirectory)?.LocalCharacter?.Name is { Length: > 0 } me)
+                if (((_liveSource?.Entities as Aion2EntityDirectory)?.LocalCharacter?.Name ?? Aion2Tickets.CurrentName) is { Length: > 0 } me)
                 {
                     checklist.ShowCharacter(me, ChecklistWindow.Section.Season);
                 }
@@ -168,7 +168,7 @@ public partial class MainWindow
     {
         OverlayApps.Children.Clear();
         var head = new DockPanel { Margin = new Thickness(2, 0, 0, 6) };
-        var close = new Border { Style = (Style)FindResource("OverlayIconButton"), ToolTip = "Close", Child = new TextBlock { Text = "", Style = (Style)FindResource("OverlayIconGlyph"), FontSize = 10 } };
+        var close = new Border { Style = (Style)OverlayApps.FindResource("OverlayIconButton"), ToolTip = "Close", Child = new TextBlock { Text = "", Style = (Style)OverlayApps.FindResource("OverlayIconGlyph"), FontSize = 10 } };
         close.MouseLeftButtonUp += (_, e) =>
         {
             e.Handled = true;
