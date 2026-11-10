@@ -195,6 +195,7 @@ public partial class MainWindow
 
         OverlayFind.Visibility = Visibility.Visible;
         ShowGroupLists(); // the group's players and those fighting with it, a click each, until a name is searched
+        StartGroupWatch();
         _overlayPeekUntil = DateTime.Now + TimeSpan.FromMinutes(2); // the meter stays up while the search is used
         if (_meterOverlay is { IsVisible: true } overlay && !overlay.IsActive)
         {
@@ -211,6 +212,7 @@ public partial class MainWindow
 
     private void CloseFindPlayer()
     {
+        _groupWatch?.Stop();
         _findAsked++; // an answer still on its way is dropped
         OverlayFind.Visibility = Visibility.Collapsed;
         OverlayFindServers.Visibility = Visibility.Collapsed;
@@ -725,7 +727,60 @@ public partial class MainWindow
     }
 
     /// <summary>The empty box's lists: the group, then the players fighting with it.</summary>
-    private void ShowGroupLists() => ShowGroupMates(GroupMates(), AlongsideMates());
+    private void ShowGroupLists()
+    {
+        IReadOnlyList<GroupMate> mates = GroupMates(), alongside = AlongsideMates();
+        _groupListsShown = ListsKey(mates, alongside);
+        ShowGroupMates(mates, alongside);
+    }
+
+    // What the empty box's lists show (names, class and server, in order): drawn again only when this changes.
+    private string _groupListsShown = "";
+    private System.Windows.Threading.DispatcherTimer? _groupWatch;
+
+    private static string ListsKey(IReadOnlyList<GroupMate> mates, IReadOnlyList<GroupMate> alongside) =>
+        string.Join("|", mates.Select(m => $"{m.Name}/{m.ClassName}/{m.ServerId}")) + "#" + string.Join("|", alongside.Select(m => $"{m.Name}/{m.ClassName}/{m.ServerId}"));
+
+    /// <summary>
+    /// The lists follow the group while they are on show (10 November 2026, the owner: "it does not update when new people join the lobby or leave"): every
+    /// 2 s the roster and the fight are read again and the lists drawn anew when someone joined, left, or a class or server came in. Not while a name is searched or
+    /// a card is open, and not once the search is closed.
+    /// </summary>
+    private void StartGroupWatch()
+    {
+        if (Headless)
+        {
+            return;
+        }
+
+        if (_groupWatch is null)
+        {
+            _groupWatch = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _groupWatch.Tick += (_, _) =>
+            {
+                if (OverlayFind.Visibility != Visibility.Visible)
+                {
+                    _groupWatch.Stop();
+                    return;
+                }
+
+                if (OverlayFindBox.Text.Length > 0 || _findShown is not null || _findPlayers.Count > 0)
+                {
+                    return; // a search or a card on show: the lists come back when the box is emptied
+                }
+
+                IReadOnlyList<GroupMate> mates = GroupMates(), alongside = AlongsideMates();
+                string key = ListsKey(mates, alongside);
+                if (key != _groupListsShown)
+                {
+                    _groupListsShown = key;
+                    ShowGroupMates(mates, alongside);
+                }
+            };
+        }
+
+        _groupWatch.Start();
+    }
 
     /// <summary>
     /// Find a player with an empty box (10 November 2026, the owner: "pops up people in your party … and you can click to check them"): the other players of the
