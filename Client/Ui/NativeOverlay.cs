@@ -29,6 +29,33 @@ internal sealed class NativeOverlay : IDisposable
     private static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    /// <summary>
+    /// The app's own windows that belong above the overlays put back above them, after the overlays' once-a-second raise (10 November 2026, a tester: "the
+    /// meter shows over the text now" - a button's tip, a panel or a player's card opened from the meter went under it a second later): the panels, the player
+    /// windows and the overlay editor, then every open tip and drop-down list (a popup window of its own).
+    /// </summary>
+    public static void KeepAppWindowsAbove()
+    {
+        foreach (Window window in Application.Current.Windows)
+        {
+            if (window is GamePanelWindow or PlayerWindow or OverlayEditorWindow && window.IsVisible && window.Topmost)
+            {
+                KeepOnTop(new WindowInteropHelper(window).Handle);
+            }
+        }
+
+        foreach (PresentationSource source in PresentationSource.CurrentSources)
+        {
+            if (source is HwndSource { IsDisposed: false } popup && popup.RootVisual?.GetType().Name == "PopupRoot" && IsWindowVisible(popup.Handle))
+            {
+                KeepOnTop(popup.Handle);
+            }
+        }
+    }
+
+    [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     /// <summary>True while Windows' own screenshot tool (Win+Shift+S) has the screen: raising the
