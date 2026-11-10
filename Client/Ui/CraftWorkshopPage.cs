@@ -140,7 +140,7 @@ public sealed class CraftWorkshopPage : StackPanel
         bool elyos = CraftText.IsElyos(dir);
         List<CraftEntry> entries = CraftPlan.For(crafter);
         string key = string.Join("|", crafter, loggedIn, _tab, _category, _search.Text, _showAll, ExchangePrices.Version, stock.SeenAt?.Ticks, s.CraftCountInventory, s.CraftCountStorage,
-            s.CraftCountAccountStorage, s.CraftCountOtherCharacters, s.CraftResolve, LocalizationManager.Instance.Language,
+            s.CraftCountAccountStorage, s.CraftCountAlts, s.CraftResolve, LocalizationManager.Instance.Language,
             string.Join(",", entries.Select(e => e.Recipe + "x" + e.Count + (e.AccountWide ? "a" : "c"))),
             string.Join(",", stock.Usable.OrderBy(kv => kv.Key).Select(kv => kv.Key + "=" + kv.Value)));
         if (key == _shown)
@@ -205,9 +205,9 @@ public sealed class CraftWorkshopPage : StackPanel
         places.Children.Add(SourceChip("\uE821", "Server storage", s.CraftCountAccountStorage, "The storage every character of the account on this server shares",
             v => Change(x => x.CraftCountAccountStorage = v)));
         string others = stock.Others.Count > 0 ? "Other characters: " + string.Join(", ", stock.Others) : "Other characters";
-        places.Children.Add(SourceChip("\uE716", others, s.CraftCountOtherCharacters,
+        places.Children.Add(SourceChip("\uE716", others, s.CraftCountAlts,
             "What your other characters on this server hold unbound (as their last login left it): they can send it through the server storage. Bound items stay with their owner.",
-            v => Change(x => x.CraftCountOtherCharacters = v)));
+            v => Change(x => x.CraftCountAlts = v)));
         places.Children.Add(SourceChip("\uE8B3", "Break down in-between materials", s.CraftResolve,
             "An ingot, a dust or a thread the plan needs is made from what you have: the list shows the ore and the raw materials", v => Change(x => x.CraftResolve = v)));
         stack.Children.Add(places);

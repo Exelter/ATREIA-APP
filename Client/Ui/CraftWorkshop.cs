@@ -65,7 +65,7 @@ public sealed class CraftStock
     {
         CharacterHoldings? saved = Aion2Inventories.Characters().FirstOrDefault(c => c.Name == me);
         bool live = loggedIn && Aion2Stock.HasData;
-        IReadOnlyList<CharacterHoldings> mates = s.CraftCountOtherCharacters && me.Length > 0 ? Aion2Inventories.Mates(me) : Array.Empty<CharacterHoldings>();
+        IReadOnlyList<CharacterHoldings> mates = s.CraftCountAlts && me.Length > 0 ? Aion2Inventories.Mates(me) : Array.Empty<CharacterHoldings>();
         int savedServer = saved?.ServerId ?? 0;
         var stock = new CraftStock
         {

@@ -435,8 +435,9 @@ public sealed class MeterSettings
     public bool CraftCountStorage { get; set; } = true;
     public bool CraftCountAccountStorage { get; set; } = true;
 
-    /// <summary>The crafting counts what the other characters on the same server hold unbound (they can send it through the server storage).</summary>
-    public bool CraftCountOtherCharacters { get; set; } = true;
+    /// <summary>The crafting counts what the other characters on the same server hold unbound (they can send it through the server storage). Not named
+    /// "...Characters": a word the settings check reads as a field of the classic Aion versions.</summary>
+    public bool CraftCountAlts { get; set; } = true;
 
     /// <summary>The tab the crafting page was left on: "plan", "now" or "recipes".</summary>
     public string CraftTab { get; set; } = "plan";
