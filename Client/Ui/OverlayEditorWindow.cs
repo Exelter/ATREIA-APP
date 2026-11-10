@@ -205,23 +205,16 @@ public sealed class OverlayEditorWindow : Window
 
     /// <summary>
     /// The faint grid over the screen while the editor is open (as in the editor it follows): drawn on a click-through window, so the overlays under it are
-    /// dragged as before.
+    /// dragged as before. With "Snap to the grid" on its lines are the ones the overlays snap to (the cell size of Settings, from the top left corner of the main
+    /// screen); off, a wider one only to line things up by eye.
     /// </summary>
-    public static Window Grid(Rect area)
+    public static Window Grid(Rect area, double cell, bool snapping)
     {
-        var line = new SolidColorBrush(Color.FromArgb(0x16, 0xFF, 0xFF, 0xFF));
-        line.Freeze();
-        var tile = new DrawingBrush
-        {
-            TileMode = TileMode.Tile, Viewport = new Rect(0, 0, 48, 48), ViewportUnits = BrushMappingMode.Absolute,
-            Drawing = new GeometryDrawing(null, new Pen(line, 1), new RectangleGeometry(new Rect(0, 0, 48, 48))),
-        };
-        tile.Freeze();
         var grid = new Window
         {
             Title = "Atreia overlay grid", WindowStyle = WindowStyle.None, AllowsTransparency = true, Background = Brushes.Transparent, Topmost = true, ShowInTaskbar = false,
-            ShowActivated = false, ResizeMode = ResizeMode.NoResize, IsHitTestVisible = false, Focusable = false, Left = area.Left, Top = area.Top, Width = area.Width,
-            Height = area.Height, Content = new Rectangle { Fill = tile, IsHitTestVisible = false },
+            ShowActivated = false, ResizeMode = ResizeMode.NoResize, IsHitTestVisible = false, Focusable = false,
+            Content = new Rectangle { IsHitTestVisible = false },
         };
         AltTabHidden.Apply(grid);
         grid.SourceInitialized += (_, _) =>
@@ -230,6 +223,25 @@ public sealed class OverlayEditorWindow : Window
             native.SetClickThrough(true);
             native.SetNoActivate(true);
         };
+        Redraw(grid, area, cell, snapping);
         return grid;
+    }
+
+    /// <summary>The grid on <paramref name="area"/> again, at <paramref name="cell"/> (another screen, the snapping switched).</summary>
+    public static void Redraw(Window grid, Rect area, double cell, bool snapping)
+    {
+        cell = snapping ? Math.Clamp(cell, 5, 200) : 48;
+        var line = new SolidColorBrush(Color.FromArgb(snapping ? (byte)0x1C : (byte)0x12, 0xFF, 0xFF, 0xFF));
+        line.Freeze();
+        // the lines where the snapping puts the edges: at whole cells counted from the main screen's corner, wherever this screen starts
+        double ox = -(((area.Left % cell) + cell) % cell), oy = -(((area.Top % cell) + cell) % cell);
+        var tile = new DrawingBrush
+        {
+            TileMode = TileMode.Tile, Viewport = new Rect(ox, oy, cell, cell), ViewportUnits = BrushMappingMode.Absolute,
+            Drawing = new GeometryDrawing(null, new Pen(line, 1), new RectangleGeometry(new Rect(0, 0, cell, cell))),
+        };
+        tile.Freeze();
+        ((Rectangle)grid.Content).Fill = tile;
+        (grid.Left, grid.Top, grid.Width, grid.Height) = (area.Left, area.Top, area.Width, area.Height);
     }
 }

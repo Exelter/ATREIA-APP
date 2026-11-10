@@ -440,6 +440,15 @@ public partial class MainWindow : Window
                 startupSettings.Save();
             }
 
+            if (!startupSettings.GridSnapDefaultedOff)
+            {
+                // the grid snapping off for everyone once (10 November 2026, the owner: "this forces overlays to stay on [the grid]"): overlays jumped in steps
+                // while dragged; the overlay editor shows the switch now
+                startupSettings.OverlayGridSnap = false;
+                startupSettings.GridSnapDefaultedOff = true;
+                startupSettings.Save();
+            }
+
             if (!startupSettings.AltDragDefaultedOff)
             {
                 // Alt + drag off for everyone once (10 November 2026): Alt is the game's cursor key, so locked overlays went along with clicks in the game
@@ -1658,12 +1667,13 @@ public partial class MainWindow : Window
             now - _lastOwnCombat, _meterOverlay.Wanted, kept);
         // while it shows the group it stays when a game window opens (10 November 2026, the owner: "the meter shows and disappears quickly every join, we said
         // keep it showing"): rooms are joined in the game's group finder, a game window, which stepped the meter aside a moment after the group came up
-        // ("Show my group", on by default; with it off, while the player has the search open)
-        bool groupUp = _groupSeen && (_meterAutoGroup || OverlayFind.Visibility == Visibility.Visible);
-        // nor in a fight and the minutes after it (10 November 2026, a tester: "on the commend player page the meter disappears, and when you die it
-        // disappears"): the death screen and the page to commend players after a dungeon cover the game's bar like a game window, and they come exactly when
-        // the fight is looked at
-        bool afterFight = now - _lastOwnCombat < MeterStaysAfterFight || now - _lastOwnBossFight < MeterStaysAfterFight;
+        // (the group's list on show: opened by itself with "Show my group", or by the player)
+        bool groupUp = _groupSeen && OverlayFind.Visibility == Visibility.Visible;
+        // nor after a boss fight while it is on the meter (10 November 2026, a tester: "on the commend player page the meter disappears, and when you die it
+        // disappears"): the death screen and the page to commend players cover the game's bar like a game window, and they come exactly when the fight is
+        // looked at. Only with the fight still on the meter, for a few minutes ("it shows after reset too": cleared, it steps aside again), and not for the
+        // folded bar between fights
+        bool afterFight = now - _lastOwnBossFight < MeterStaysAfterFight && _rows.Count > 0 && OverlayBody.Visibility == Visibility.Visible;
         bool gate = _gameGateOpen || ((groupUp || afterFight) && GameWindow.ForegroundIsGameOrSelf(ignoreMenu: true));
         _meterOverlay.ShowOverlay(MeterOverlayActive && gate && inFight);
     }

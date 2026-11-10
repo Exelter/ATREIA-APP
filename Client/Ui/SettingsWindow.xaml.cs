@@ -886,6 +886,7 @@ public partial class SettingsWindow : Window
         _settings.MeterBarDefaulted = onDisk.MeterBarDefaulted;
         _settings.MeterLookDefaulted = onDisk.MeterLookDefaulted;
         _settings.AltDragDefaultedOff = onDisk.AltDragDefaultedOff;
+        _settings.GridSnapDefaultedOff = onDisk.GridSnapDefaultedOff;
         _settings.AltDragOverlays = onDisk.AltDragOverlays; // its switch is on the app's Overlays page
         _settings.AssistHotkeyBack = onDisk.AssistHotkeyBack; // what the hotkeys hid, to bring back
         _settings.AllOverlaysBack = onDisk.AllOverlaysBack;

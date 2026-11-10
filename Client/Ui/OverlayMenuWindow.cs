@@ -18,13 +18,7 @@ public sealed class OverlayMenuWindow : MovableOverlay
 {
     private static readonly Color Gold = Color.FromRgb(0xD9, 0xB3, 0x6A);
     private readonly Border _pill;
-    private readonly TextBlock _chevron;
     private readonly TextBlock _keys;
-    private readonly DispatcherTimer _press = new() { Interval = TimeSpan.FromMilliseconds(15) };
-    private (int X, int Y) _pressAt;
-    private (double Left, double Top) _pressFrom;
-    private double _pressDpi = 1;
-    private bool _moving;
     private readonly Func<Action, FrameworkElement> _build;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(80) };
     private Window? _menu;
@@ -36,27 +30,31 @@ public sealed class OverlayMenuWindow : MovableOverlay
             () => (null, null), (_, _) => { }, OverlayEdgeMode.Uniform)
     {
         _build = build;
-        (_pill, _chevron, _keys) = Pill();
-        Body = new Border { Child = _pill }; // no background of its own: the overlays' opacity setting (which sets the body's) leaves the button as it is drawn
-        // a click opens or closes the menu; a drag moves the button where it is let go (10 November 2026, the owner: "make the middle button movable"). Followed
-        // by a short timer that asks Windows for the mouse: the button never takes the focus, so it can't count on hearing the button let go.
-        _pill.PreviewMouseLeftButtonDown += (_, e) =>
+        (_pill, _keys) = Pill();
+        var column = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+        column.Children.Add(_keys);
+        column.Children.Add(_pill);
+        Body = new Border { Child = column }; // no background of its own: the overlays' opacity setting (which sets the body's) leaves the button as it is drawn
+        // a click opens or closes the menu (10 November 2026, the owner: "moving the overlay button is really buggy/laggy, that should not be changeable the
+        // way it is right now; just a settings button like Questlog's ... smooth to move"): it is moved, and sized at its corner, in the overlay editor, by
+        // Windows' own move like every overlay
+        _pill.MouseLeftButtonUp += (_, e) =>
         {
-            // also unlocked (the overlay editor open): a click is the menu, a drag moves it (10 November 2026, the owner: the button "should be to open the
-            // settings like before" - unlocked, every click dragged it)
-            if (!NativeCursor.TryGet(out int x, out int y))
+            if (!IsLocked)
             {
-                return;
+                return; // being placed (the overlay editor): the frame drags it
             }
 
             e.Handled = true;
-            _pressAt = (x, y);
-            _pressFrom = (Left, Top);
-            _pressDpi = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 is double d and > 0 ? d : 1;
-            _moving = false;
-            _press.Start();
+            if (_menu is null)
+            {
+                OpenMenu();
+            }
+            else
+            {
+                CloseMenu();
+            }
         };
-        _press.Tick += (_, _) => FollowPress();
         _timer.Tick += (_, _) => Tick();
         IsVisibleChanged += (_, _) =>
         {
@@ -75,7 +73,6 @@ public sealed class OverlayMenuWindow : MovableOverlay
         Closed += (_, _) =>
         {
             _timer.Stop();
-            _press.Stop();
             CloseMenu();
         };
         ShowKeys();
@@ -96,56 +93,14 @@ public sealed class OverlayMenuWindow : MovableOverlay
         s.Save();
     }
 
-    /// <summary>The button: the emblem, "Atreia" and a chevron on a dark pill with a thin gold edge, a little brighter under the mouse.</summary>
-    /// <summary>The press on the button followed: let go without moving, a click (the menu); moved further than a few pixels, a drag (the button follows the mouse).</summary>
-    private void FollowPress()
-    {
-        bool held = NativeCursor.LeftButtonHeld();
-        if (NativeCursor.TryGet(out int x, out int y))
-        {
-            int dx = x - _pressAt.X, dy = y - _pressAt.Y;
-            if (!_moving && held && dx * dx + dy * dy > 25)
-            {
-                _moving = true;
-                CloseMenu();
-            }
-
-            if (_moving)
-            {
-                Left = _pressFrom.Left + dx / _pressDpi;
-                Top = _pressFrom.Top + dy / _pressDpi;
-            }
-        }
-
-        if (held)
-        {
-            return;
-        }
-
-        _press.Stop();
-        if (_moving)
-        {
-            _moving = false;
-            PlaceAt(Left, Top, save: true);
-        }
-        else if (_menu is null)
-        {
-            OpenMenu();
-        }
-        else
-        {
-            CloseMenu();
-        }
-    }
-
     /// <summary>The keys of the overlay editor on the button; nothing when there are none.</summary>
     private void ShowKeys()
     {
         HotkeyBinding binding = HotkeyBinding.Parse(MeterSettings.Load().HotkeyMoveOverlays);
         _keys.Text = binding.IsEmpty ? "" : binding.ToString();
         _keys.Visibility = binding.IsEmpty ? Visibility.Collapsed : Visibility.Visible;
-        _pill.ToolTip = "Atreia: click for the overlay menu (every overlay on or off, the hotkeys, the app), drag to move this button"
-            + (binding.IsEmpty ? "." : $". {binding} opens the overlay editor.");
+        _pill.ToolTip = "Overlay settings: click for the overlay menu (every overlay on or off, the hotkeys, the app)"
+            + (binding.IsEmpty ? ". The overlay editor moves and sizes this button." : $". {binding} opens the overlay editor, where this button is moved and sized too.");
     }
 
     /// <summary>A hotkey changed (the overlay editor): the keys on the button and in an open menu again.</summary>
@@ -156,49 +111,28 @@ public sealed class OverlayMenuWindow : MovableOverlay
     }
 
     /// <summary>
-    /// The button (10 November 2026, the owner: "a small square with the icon, movable, with the keys to open the overlay editor"): the keys of "Move overlays"
-    /// small at the top, the Atreia emblem in the middle, a small arrow under it that turns when the menu is open.
+    /// The button (10 November 2026, the owner: "just add a settings button like Questlog instead of the icon, and properly scale it"): a small dark square with
+    /// the settings sliders in gold, the overlay editor's keys small above it. Drawn in shapes and text only, so it stays sharp at any size it is given.
     /// </summary>
-    private static (Border Pill, TextBlock Chevron, TextBlock Keys) Pill()
+    private static (Border Pill, TextBlock Keys) Pill()
     {
-        var column = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         var keys = new TextBlock
         {
             FontSize = 8.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0xF4, 0xE9, 0xCF)), HorizontalAlignment = HorizontalAlignment.Center,
             Margin = new Thickness(0, 0, 0, 2),
         };
-        column.Children.Add(keys);
-        try
-        {
-            var emblem = new BitmapImage();
-            emblem.BeginInit();
-            emblem.UriSource = new Uri(System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "app", "a2h-emblem.png"));
-            emblem.DecodePixelWidth = 48;
-            emblem.CacheOption = BitmapCacheOption.OnLoad;
-            emblem.EndInit();
-            emblem.Freeze();
-            var image = new Image { Source = emblem, Width = 18, Height = 18, HorizontalAlignment = HorizontalAlignment.Center };
-            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-            column.Children.Add(image);
-        }
-        catch (Exception ex) when (ex is System.IO.IOException or NotSupportedException or UriFormatException or InvalidOperationException)
-        {
-            // no emblem file: the letter alone
-            column.Children.Add(new TextBlock { Text = "A", FontSize = 14, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Gold), HorizontalAlignment = HorizontalAlignment.Center });
-        }
-
-        var chevron = new TextBlock
-        {
-            Text = "\uE70D", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 7, Foreground = new SolidColorBrush(Gold),
-            HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 1, 0, 0),
-        };
-        column.Children.Add(chevron);
         var pill = new Border
         {
-            MinWidth = 46, Height = 46, CornerRadius = new CornerRadius(10), Padding = new Thickness(5, 3, 5, 2), BorderThickness = new Thickness(1), Child = column, Cursor = Cursors.Hand,
+            Width = 32, Height = 32, CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Center,
             Background = new SolidColorBrush(Color.FromArgb(0xD0, 0x14, 0x15, 0x1A)), BorderBrush = new SolidColorBrush(Color.FromArgb(0x80, Gold.R, Gold.G, Gold.B)),
+            Child = new TextBlock
+            {
+                Text = "\uE9E9", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 15, Foreground = new SolidColorBrush(Gold),
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            },
         };
-        return (pill, chevron, keys);
+        TextOptions.SetTextFormattingMode(pill, TextFormattingMode.Ideal); // scaled up or down, the glyph is drawn anew rather than its pixels stretched
+        return (pill, keys);
     }
 
     /// <summary>The mouse rests on the button (the game showing the cursor): it takes the clicks for that moment and lights up.</summary>
@@ -219,7 +153,6 @@ public sealed class OverlayMenuWindow : MovableOverlay
         bool lit = _over || _menu is not null;
         _pill.Background = new SolidColorBrush(lit ? Color.FromArgb(0xEE, 0x1E, 0x1F, 0x26) : Color.FromArgb(0xD0, 0x14, 0x15, 0x1A));
         _pill.BorderBrush = new SolidColorBrush(Color.FromArgb(lit ? (byte)0xFF : (byte)0x80, Gold.R, Gold.G, Gold.B));
-        _chevron.Text = _menu is null ? "" : "";
     }
 
     private void Tick()
@@ -262,7 +195,9 @@ public sealed class OverlayMenuWindow : MovableOverlay
     {
         CloseMenu();
         _menuBody = _build(CloseMenu);
-        var scaled = new Border { Child = _menuBody, LayoutTransform = new ScaleTransform(PlaceScale, PlaceScale) };
+        // at the button's size, within reason: a button made big for a 4K screen should not open a menu twice the screen's height
+        double scale = Math.Clamp(PlaceScale, 0.85, 1.35);
+        var scaled = new Border { Child = _menuBody, LayoutTransform = new ScaleTransform(scale, scale) };
         _menu = new Window
         {
             Title = OverlayPlaces.Menu + " (open)", WindowStyle = WindowStyle.None, AllowsTransparency = true, Background = Brushes.Transparent, Topmost = true,

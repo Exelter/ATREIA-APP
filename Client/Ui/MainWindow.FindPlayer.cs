@@ -1018,7 +1018,8 @@ public partial class MainWindow
             return;
         }
 
-        if (!_meterAutoGroup || _meterOverlay is not { IsVisible: true })
+        // opened also while the meter steps aside for a game window (the group finder is one): the list on show is what brings the meter up over it
+        if (!_meterAutoGroup || !MeterOverlayActive)
         {
             return;
         }

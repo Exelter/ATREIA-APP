@@ -23,14 +23,21 @@ internal static class OverlayPictures
 {
     private static readonly Dictionary<string, ImageSource?> Cache = new();
 
-    public static ImageSource? Load(string? path)
+    public static ImageSource? Load(string? path) => Load(path, 0);
+
+    /// <summary>
+    /// A picture read at most <paramref name="width"/> pixels wide (0: as it is): a long list of small pictures (the history's bosses) then holds and draws
+    /// small bitmaps instead of the full ones scaled down on every frame, which made its scrolling stall.
+    /// </summary>
+    public static ImageSource? Load(string? path, int width)
     {
         if (string.IsNullOrEmpty(path))
         {
             return null;
         }
 
-        if (Cache.TryGetValue(path, out ImageSource? known))
+        string key = width > 0 ? path + "@" + width.ToString(System.Globalization.CultureInfo.InvariantCulture) : path;
+        if (Cache.TryGetValue(key, out ImageSource? known))
         {
             return known;
         }
@@ -44,6 +51,11 @@ internal static class OverlayPictures
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.UriSource = new Uri(path, UriKind.Absolute);
+                if (width > 0)
+                {
+                    bitmap.DecodePixelWidth = width;
+                }
+
                 bitmap.EndInit();
                 bitmap.Freeze();
                 image = bitmap;
@@ -54,7 +66,7 @@ internal static class OverlayPictures
             image = null;
         }
 
-        Cache[path] = image;
+        Cache[key] = image;
         return image;
     }
 

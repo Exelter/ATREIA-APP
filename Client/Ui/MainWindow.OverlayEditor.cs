@@ -76,7 +76,7 @@ public partial class MainWindow
 
             Rect area = EditorArea();
             _editorArea = area;
-            _overlayGrid = OverlayEditorWindow.Grid(area);
+            _overlayGrid = OverlayEditorWindow.Grid(area, s.OverlayGridSize, s.OverlayGridSnap);
             _overlayGrid.Show();
             var editor = new OverlayEditorWindow(s);
             editor.Closed += (_, _) => OverlayEditorClosed(editor);
@@ -273,6 +273,17 @@ public partial class MainWindow
         opacityLine.Children.Add(slider);
         root.Children.Add(opacityLine);
 
+        root.Children.Add(EditorSwitch("Snap to the grid", $"While you drag an overlay its edges snap to the grid ({Math.Clamp(s.OverlayGridSize, 5, 200)} px; the size is in "
+            + "Settings, under the overlays). Off, they go exactly where you let go.", s.OverlayGridSnap, on =>
+        {
+            MeterSettings now = MeterSettings.Load();
+            now.OverlayGridSnap = on;
+            now.Save();
+            if (_overlayGrid is { } grid)
+            {
+                OverlayEditorWindow.Redraw(grid, _editorArea, now.OverlayGridSize, on);
+            }
+        }));
         root.Children.Add(EditorSwitch("The Atreia button over the game", "The small button that opens the overlay menu (drag it to move it)", s.ShowOverlayMenu, on =>
         {
             MeterSettings now = MeterSettings.Load();
@@ -496,7 +507,8 @@ public partial class MainWindow
         _editorArea = target;
         if (_overlayGrid is { } grid)
         {
-            (grid.Left, grid.Top, grid.Width, grid.Height) = (target.Left, target.Top, target.Width, target.Height);
+            MeterSettings now = MeterSettings.Load();
+            OverlayEditorWindow.Redraw(grid, target, now.OverlayGridSize, now.OverlayGridSnap);
         }
 
         _overlayEditor?.PlaceOn(target);

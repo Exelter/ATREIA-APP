@@ -38,6 +38,16 @@ internal static class FpsMeter
     private static HashSet<int> _game = new();
     private static DateTime _gameAt = DateTime.MinValue;
 
+    /// <summary>When the newest of the game's frames was handed to the counter (by this PC's clock), and when the session was last asked to hand them over.</summary>
+    private static DateTime _lastFrameArrived = DateTime.MinValue;
+    private static DateTime _flushedAt = DateTime.MinValue;
+
+    /// <summary>
+    /// How long without a frame of the game before the counter says it waits for the game. Windows hands the frames over in batches (each second, or when a
+    /// batch is full), so the newest one can be a second or two old when it comes.
+    /// </summary>
+    private static readonly TimeSpan Quiet = TimeSpan.FromSeconds(3);
+
     public static State Status { get; private set; } = State.Off;
 
     public static string? Error { get; private set; }
@@ -143,6 +153,7 @@ internal static class FpsMeter
         double at = e.TimeStampRelativeMSec;
         lock (Gate)
         {
+            _lastFrameArrived = DateTime.UtcNow;
             Frames.Enqueue(at);
             while (Frames.Count > 0 && at - Frames.Peek() > Kept.TotalMilliseconds)
             {
@@ -169,12 +180,22 @@ internal static class FpsMeter
         }
 
         double last = frames[^1];
-        // the newest frame must be recent: Windows stops telling of frames when the game is minimized, and the queue then only holds old ones
-        double now = _session?.Source is { } source ? (DateTime.Now - source.SessionStartTime).TotalMilliseconds : last;
-        if (now - last > 1500)
+        // Windows stops telling of frames when the game is minimized, and the queue then only holds old ones. Told by when the newest one arrived, not by
+        // comparing its time stamp with the clock (10 November 2026, a tester: "the FPS counter keeps interchanging" between the rate and "waiting for the
+        // game"): the frames come in batches, each up to a second or more behind, and the session's start time is not exactly on the frames' clock, so on
+        // some PCs the newest frame looked older than 1.5 s every other moment while the game ran at 180 frames a second
+        DateTime arrived;
+        lock (Gate)
+        {
+            arrived = _lastFrameArrived;
+        }
+
+        if (DateTime.UtcNow - arrived > Quiet)
         {
             return (null, null);
         }
+
+        AskForFrames();
 
         // the frames of the last second: (frames - 1) spans over the time from the first to the last of them
         double from = last - 1000;
@@ -199,6 +220,26 @@ internal static class FpsMeter
         }
 
         return (fps, low);
+    }
+
+    /// <summary>Asks Windows for the frames it holds (at most twice a second), so the rate shown is no more than a moment behind the game.</summary>
+    private static void AskForFrames()
+    {
+        if (DateTime.UtcNow - _flushedAt < TimeSpan.FromMilliseconds(500) || _session is not { } session)
+        {
+            return;
+        }
+
+        _flushedAt = DateTime.UtcNow;
+        try
+        {
+            session.Flush();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.Runtime.InteropServices.COMException or UnauthorizedAccessException or ObjectDisposedException
+            or System.IO.IOException or ArgumentException)
+        {
+            // the session is ending: the next reading says so
+        }
     }
 
     /// <summary>
