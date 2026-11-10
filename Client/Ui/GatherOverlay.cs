@@ -84,12 +84,7 @@ public sealed class GatherOverlayWindow : MovableOverlay
 
     public GatherOverlayWindow() : base(OverlayPlaces.Gather, new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Left + 40, 560, LoadSize, SaveSize, OverlayEdgeMode.Width)
     {
-        Body = new Border
-        {
-            Background = new LinearGradientBrush(Color.FromArgb(0xC8, 0x15, 0x22, 0x2D), Color.FromArgb(0xC8, 0x0B, 0x13, 0x1A), 90),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x70, 0x4A, 0x66, 0x78)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(12, 8, 12, 9), Child = _rows,
-        };
+        Body = OverlaySkin.Panel(_rows, new Thickness(12, 8, 12, 9)); // the meter's look (10 November 2026)
     }
 
     public new bool HasContent => _rows.Children.Count > 0;
@@ -172,21 +167,9 @@ public sealed class GatherOverlayWindow : MovableOverlay
 
         List<GatherTally> shown = tallies.Take(10).ToList();
 
-        // the head: "Gathered" and the total of all
-        var head = new DockPanel { LastChildFill = true, Margin = new Thickness(0, 0, 0, 3) };
-        var total = new TextBlock
-        {
-            Text = string.Format(culture, loc["Gather.Overlay.Total"], tallies.Sum(t => t.Total).ToString("N0", culture)), FontWeight = FontWeights.SemiBold, FontSize = 12.5,
-            Foreground = Paint(Gold), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(10, 0, 0, 0),
-        };
-        DockPanel.SetDock(total, Dock.Right);
-        head.Children.Add(total);
-        head.Children.Add(new TextBlock
-        {
-            Text = loc["Gather.Overlay.Caption"], FontWeight = FontWeights.Bold, FontSize = 13.5, Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Bottom,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-        });
-        _rows.Children.Add(head);
+        // the head: "Gathered" and the total of all, in the meter's look (10 November 2026)
+        _rows.Children.Add(OverlaySkin.Heading(loc["Gather.Overlay.Caption"],
+            string.Format(culture, loc["Gather.Overlay.Total"], tallies.Sum(t => t.Total).ToString("N0", culture)), OverlaySkin.Gold));
         if (rollLine is not null)
         {
             _rows.Children.Add(rollLine);

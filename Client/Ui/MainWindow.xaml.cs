@@ -8778,12 +8778,22 @@ public partial class MainWindow : Window
         }
     }
 
-    private MenuItem OverlayItem(string header, Action act, bool check = false, bool enabled = true)
+    private MenuItem OverlayItem(string header, Action act, bool check = false, bool enabled = true, string? glyph = null)
     {
         var item = new MenuItem { Header = header, IsChecked = check, IsEnabled = enabled };
         if (TryFindResource(typeof(MenuItem)) is Style itemStyle)
         {
             item.Style = itemStyle;
+        }
+
+        if (glyph is not null && !check)
+        {
+            // a small gold picture before the line, as the meter's launcher has them (10 November 2026)
+            item.Icon = new TextBlock
+            {
+                Text = glyph, FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(0xDC, 0xB8, 0x77)),
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Opacity = enabled ? 1 : 0.4,
+            };
         }
 
         item.Click += (_, _) => act();

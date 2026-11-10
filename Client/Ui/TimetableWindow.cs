@@ -95,7 +95,7 @@ public sealed class TimetableWindow : Window, IOverlayPlace
         stack.Children.Add(_body);
         _panel = new Border
         {
-            Width = PanelWidth, CornerRadius = new CornerRadius(6), Padding = new Thickness(6, 5, 6, 5), Child = stack,
+            Width = PanelWidth, CornerRadius = new CornerRadius(10), Padding = new Thickness(7, 6, 7, 6), Child = stack,
             LayoutTransform = _scale, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
         };
         _panel.SetResourceReference(Border.BackgroundProperty, "Brush.OverlayBg");
@@ -144,7 +144,7 @@ public sealed class TimetableWindow : Window, IOverlayPlace
         _edges.Show(!locked);
         _header.Cursor = locked ? Cursors.Arrow : Cursors.SizeAll;
         _panel.BorderThickness = new Thickness(1);
-        _panel.BorderBrush = locked ? Brushes.Transparent : new SolidColorBrush(Color.FromRgb(0xFF, 0xBA, 0x42));
+        _panel.BorderBrush = locked ? OverlaySkin.SoftEdge : new SolidColorBrush(Color.FromRgb(0xFF, 0xBA, 0x42)); // locked: the soft edge of the meter's look
         ApplyClickThrough();
     }
 

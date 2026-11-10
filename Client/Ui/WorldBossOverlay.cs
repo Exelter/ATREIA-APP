@@ -63,11 +63,7 @@ public sealed class WorldBossOverlayWindow : MovableOverlay
 
     public WorldBossOverlayWindow() : base("Aion DPS World Boss", new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Left + 40, 360, LoadSize, SaveSize, OverlayEdgeMode.Width)
     {
-        Body = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(0x99, 0x0E, 0x18, 0x20)), BorderBrush = new SolidColorBrush(Color.FromArgb(0x99, 0x29, 0x45, 0x57)),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(10, 6, 10, 6), Child = _rows,
-        };
+        Body = OverlaySkin.Panel(_rows, new Thickness(10, 6, 10, 6)); // the meter's look (10 November 2026)
     }
 
     private static (double?, double?) LoadSize()

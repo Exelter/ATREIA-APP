@@ -11,9 +11,9 @@ public static class NetworkOverlayRows
 {
     public static readonly string[] Ids = { "server", "ping", "jitter", "traffic", "loss", "stalls", "gateway", "internet", "connection", "load" };
 
-    private static readonly Color Good = Color.FromRgb(0x5B, 0xD0, 0x7A);
-    private static readonly Color Warn = Color.FromRgb(0xFF, 0xD2, 0x7A);
-    private static readonly Color Bad = Color.FromRgb(0xFF, 0x6B, 0x6B);
+    internal static readonly Color Good = OverlaySkin.Good;
+    internal static readonly Color Warn = OverlaySkin.Warn;
+    internal static readonly Color Bad = OverlaySkin.Bad;
     private static readonly Color Neutral = Color.FromRgb(0xDD, 0xE6, 0xEC);
 
     /// <summary>Values as they look in a game session (the measurements of a real session: a ping around 40 ms on the EU server, no loss), for a view or a frame to place without a connection.</summary>
@@ -147,15 +147,11 @@ public static class NetworkOverlayRows
 /// </summary>
 public sealed class NetworkOverlayWindow : MovableOverlay
 {
-    private readonly StackPanel _rows = new() { MinWidth = 260, MinHeight = 40 };
+    private readonly StackPanel _rows = new() { MinWidth = 280, MinHeight = 40 };
 
     public NetworkOverlayWindow() : base("Aion DPS Network", new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Left + 40, 520, LoadSize, SaveSize, OverlayEdgeMode.Uniform)
     {
-        Body = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(0x99, 0x0E, 0x18, 0x20)), BorderBrush = new SolidColorBrush(Color.FromArgb(0x99, 0x29, 0x45, 0x57)),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(10, 6, 10, 6), Child = _rows,
-        };
+        Body = OverlaySkin.Panel(_rows, new Thickness(10, 9, 10, 8));
     }
 
     private static (double?, double?) LoadSize()
@@ -187,26 +183,30 @@ public sealed class NetworkOverlayWindow : MovableOverlay
         s.Save();
     }
 
+    /// <summary>
+    /// The overlay in the meter's look (10 November 2026): a heading with a dot and a word for the worst line (all good, unsteady, trouble), then the lines, the
+    /// name muted and the value in its colour, every other one on a faint band.
+    /// </summary>
     public void Render(IReadOnlyList<(string Label, string Value, Color Color)> rows)
     {
         _rows.Children.Clear();
+        int worst = rows.Count == 0 ? 0 : rows.Max(r => Severity(r.Color));
+        (string word, Color colour) = worst switch
+        {
+            2 => ("Trouble", NetworkOverlayRows.Bad),
+            1 => ("Unsteady", NetworkOverlayRows.Warn),
+            _ => ("All good", NetworkOverlayRows.Good),
+        };
+        _rows.Children.Add(OverlaySkin.Heading(LocalizationManager.Instance["Settings.Nav.Network"], rows.Count > 0 ? word : null, colour, rows.Count > 0 ? colour : null));
+        bool band = false;
         foreach (var (label, value, color) in rows)
         {
-            var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var n = new TextBlock { Text = label, FontWeight = FontWeights.Bold, FontSize = 12.5, Foreground = Brushes.White, Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center };
-            var t = new TextBlock
-            {
-                Text = value, FontSize = 11.5, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
-                Foreground = new SolidColorBrush(color),
-            };
-            Grid.SetColumn(t, 1);
-            grid.Children.Add(n);
-            grid.Children.Add(t);
-            _rows.Children.Add(grid);
+            _rows.Children.Add(OverlaySkin.Row(label, value, color, band));
+            band = !band;
         }
     }
+
+    private static int Severity(Color c) => c == NetworkOverlayRows.Bad ? 2 : c == NetworkOverlayRows.Warn ? 1 : 0;
 }
 
 /// <summary>Runs the network overlay: once a second it reads the settings and the measurements, and shows the overlay only while the game is in front
