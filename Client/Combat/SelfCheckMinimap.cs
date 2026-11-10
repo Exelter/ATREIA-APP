@@ -119,14 +119,25 @@ public static class SelfCheckMinimap
         Console.WriteLine($"  -> a reading far from where the game put the player a moment ago is a wrong match, not taken: {ruledOut}");
 
         // the map accuracy upload (Upload/MapShare.cs): the map, its numbers, the day and each check's places to a metre - nothing that names anybody
+        // with the game window's size and the minimap's zoom (every PC reads off by an amount of its own; the refit tells resolutions apart by them)
+        string setup = Ui.MinimapReader.SetupOf("2560x1440", new[] { 2378.0, 236, 165, 145, 0.98314 });
         string json = AionDPS.Upload.MapShare.Build("altgard", "2|0.01|4000|4000", new[] { new[] { 57500.0, -140500, 58300, -139900, 4.2, 0.08, 0.6 } },
-            "0123456789abcdef0123456789abcdef", new DateTime(2026, 11, 5, 9, 30, 0, DateTimeKind.Utc));
+            "0123456789abcdef0123456789abcdef", new DateTime(2026, 11, 5, 9, 30, 0, DateTimeKind.Utc), setup);
         using var doc = System.Text.Json.JsonDocument.Parse(json);
         var root = doc.RootElement;
         bool shared = root.GetProperty("kind").GetString() == "map-points" && root.GetProperty("day").GetString() == "2026-11-05" && root.GetProperty("map").GetString() == "altgard"
-            && root.GetProperty("points")[0].GetArrayLength() == 7 && root.EnumerateObject().Select(prop => prop.Name).Order().SequenceEqual(new[] { "anonymousId", "clientVersion", "day", "formatVersion", "kind", "map", "points", "stamp" });
-        Console.WriteLine($"  -> the map accuracy upload holds the map, its numbers, the day and the places, nothing that names anybody: {shared}");
-        return real && accurate && refused && zoomFound && screen && smooth && calibrated2 && shared && anchored && ruledOut && backToReading;
+            && root.GetProperty("points")[0].GetArrayLength() == 7 && root.GetProperty("setup").GetString() == "2560x1440|0.983"
+            && root.EnumerateObject().Select(prop => prop.Name).Order().SequenceEqual(new[] { "anonymousId", "clientVersion", "day", "formatVersion", "kind", "map", "points", "setup", "stamp" })
+            && Ui.MinimapReader.CalKey(Aion2Maps.All.First(m => m.Key == "altgard"), "2560x1440") != Ui.MinimapReader.CalKey(Aion2Maps.All.First(m => m.Key == "altgard"), "3840x2160");
+        Console.WriteLine($"  -> the map accuracy upload holds the map, its numbers, the window's size and zoom, the day and the places, nothing that names anybody; each window size learns on its own: {shared}");
+        // a window size measured on everyone's checks starts from its offset; once this PC has learnt one report its own counts (Aion2/MinimapSetups.cs)
+        var fresh = new MinimapCalibration();
+        bool before = fresh.Correct("abyss@2560x1440", "s1", 1000, 2000, t0, (500, -300)) == (1500, 1700);
+        fresh.Add("abyss@2560x1440", "s1", 1000, 2000, 1100, 2050, 100, t0);
+        bool after = fresh.Correct("abyss@2560x1440", "s1", 1000, 2000, t0, (500, -300)) is var own && own != (1500, 1700) && Math.Abs(own.X - 1100) < 1 && Math.Abs(own.Y - 2050) < 1;
+        bool setups = before && after && MinimapSetups.PriorFor("123x45", 1.0) == (0, 0) && MinimapSetups.Offsets is not null;
+        Console.WriteLine($"  -> a window size starts from the offset measured for it on everyone's checks, until this PC has learnt its own: {setups}");
+        return real && accurate && refused && zoomFound && screen && smooth && calibrated2 && shared && anchored && ruledOut && backToReading && setups;
     }
 
     /// <summary>

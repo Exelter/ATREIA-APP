@@ -124,11 +124,17 @@ public sealed class MinimapCalibration
     }
 
     /// <summary>A reading put right: the map's line, then what is left near the last reports.</summary>
-    public (double X, double Y) Correct(string map, string stamp, double rawX, double rawY, DateTime now)
+    /// <param name="prior">What a reading on this PC's window size is put right by while nothing is learnt here yet (<see cref="MinimapSetups"/>).</param>
+    public (double X, double Y) Correct(string map, string stamp, double rawX, double rawY, DateTime now, (double X, double Y) prior = default)
     {
         lock (_gate)
         {
-            return CorrectLocked(map, stamp, rawX, rawY, now);
+            if (!_maps.TryGetValue(map, out MapCal? cal) || cal.Stamp != stamp || cal.Pairs.Count == 0)
+            {
+                return (rawX + prior.X, rawY + prior.Y);
+            }
+
+            return CorrectLocked(map, stamp, rawX, rawY, now, prior);
         }
     }
 
@@ -154,14 +160,16 @@ public sealed class MinimapCalibration
         }
     }
 
-    private (double X, double Y) CorrectLocked(string map, string stamp, double rawX, double rawY, DateTime now)
+    private (double X, double Y) CorrectLocked(string map, string stamp, double rawX, double rawY, DateTime now, (double X, double Y) prior = default)
     {
         if (!_maps.TryGetValue(map, out MapCal? cal) || cal.Stamp != stamp)
         {
-            return (rawX, rawY);
+            return (rawX + prior.X, rawY + prior.Y);
         }
 
-        (double x, double y) = Global(cal, rawX, rawY);
+        // before the map's line is fitted (five reports), the window size's offset stands in for it (what is left near the reports is added as ever)
+        (double X, double Y) Base(double bx, double by) => cal.Pairs.Count < 5 ? (bx + prior.X, by + prior.Y) : Global(cal, bx, by);
+        (double x, double y) = Base(rawX, rawY);
         double sw = 0, sx = 0, sy = 0;
         foreach (var p in cal.Local)
         {
@@ -172,7 +180,7 @@ public sealed class MinimapCalibration
             }
 
             // what the map's line leaves there now
-            (double lx0, double ly0) = Global(cal, p.X, p.Y);
+            (double lx0, double ly0) = Base(p.X, p.Y);
             double d2 = ((p.X - rawX) * (p.X - rawX)) + ((p.Y - rawY) * (p.Y - rawY));
             double w = Math.Exp(-d2 / (Reach * Reach)) * Math.Exp(-Math.Max(0, age) / (LocalAge / 2));
             sw += w;

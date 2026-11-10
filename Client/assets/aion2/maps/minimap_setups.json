@@ -1,0 +1,8 @@
+{
+ "_note": [
+  "How far the minimap reading is off per game window size, before a PC has learnt its own offset (Aion2/MinimapSetups.cs): minimap pixels, x then y,",
+  "game place minus reading. Measured on everyone's map checks by Tools/maps/fit_maps.py (\"resolution ...\" lines, divided by the setups' metres a pixel).",
+  "Empty until the checks carry the window size (from 1.21.8): the checks before 1.21.8 show each PC's own offset but not its resolution."
+ ],
+ "offsets": {}
+}
