@@ -3985,8 +3985,10 @@ internal static class Program
                     places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Server, null, have)));
                     break;
                 default:
-                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Storage, null, (have + 2) / 3)));
-                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Character, "Arkhel", have - (have + 2) / 3)));
+                    // a bound item never lies with another character (it would not count there)
+                    bool bound = Aion2.Aion2Inventories.IsBound(needs[i].Item);
+                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Storage, null, bound ? have : (have + 2) / 3)));
+                    places.Add((needs[i].Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Character, "Arkhel", bound ? 0 : have - (have + 2) / 3)));
                     break;
             }
         }
