@@ -1341,6 +1341,11 @@
                     <Border x:Name="OverlayFindButton" DockPanel.Dock="Right" Style="{StaticResource OverlayIconButton}" MouseLeftButtonUp="OnOverlayFindClicked" ToolTip="Find a player">
                         <TextBlock Text="&#xE721;" Style="{StaticResource OverlayIconGlyph}"/>
                     </Border>
+                    <!-- Everything from the meter (MainWindow.GamePanels.cs): Characters, CP calculator, Journey, Legion, Items, Gathering, Season missions, Timers, Map, History. -->
+                    <Border x:Name="OverlayAppsButton" DockPanel.Dock="Right" Style="{StaticResource OverlayIconButton}" MouseLeftButtonUp="OnOverlayAppsClicked"
+                            ToolTip="Everything from the meter: characters, CP calculator, journey, legion, items, gathering, season missions, timers, map, history">
+                        <TextBlock Text="&#xE8A9;" Style="{StaticResource OverlayIconGlyph}"/>
+                    </Border>
                     <!-- What is measured: a pill with its name, the menu (DPS, rDPS, healing, tanked, buffs, all in one, the dummy parse, Grind) opens under it. -->
                     <Border x:Name="OverlayModeButton" DockPanel.Dock="Right" Height="22" Margin="4,0,4,0" Padding="9,0,7,0" CornerRadius="6" BorderThickness="1"
                             BorderBrush="#40DCB877" Background="#14DCB877" Cursor="Hand" VerticalAlignment="Center" MouseLeftButtonUp="OnOverlayModeMenuClicked"
@@ -1433,6 +1438,8 @@
                     <StackPanel x:Name="OverlayFindResults" Margin="0,5,0,0"/>
                     <Border x:Name="OverlayFindCard" Visibility="Collapsed" Margin="0,6,0,0"/>
                 </StackPanel>
+                <!-- The launcher (MainWindow.GamePanels.cs): a tile per tool, opening its page over the game; the tools with an overlay switch it on their tile. -->
+                <StackPanel x:Name="OverlayApps" Visibility="Collapsed" Margin="10,0,8,8" Background="#01000000"/>
                 <!-- The body: the fight. Folded away while no boss fight, dummy parse or Grind view is on (UpdateOverlayFold). -->
                 <StackPanel x:Name="OverlayBody">
                     <Rectangle Height="1" Fill="#16FFFFFF" Margin="0,0,0,5"/>

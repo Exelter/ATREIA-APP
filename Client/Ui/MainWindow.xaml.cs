@@ -1633,7 +1633,7 @@ public partial class MainWindow : Window
         }
 
         DateTime now = DateTime.Now;
-        bool kept = now < _overlayPeekUntil || _meterOverlay.IsMouseOver || _overlayMenuOpen || OverlayFind.Visibility == Visibility.Visible
+        bool kept = now < _overlayPeekUntil || _meterOverlay.IsMouseOver || _overlayMenuOpen || OverlayFind.Visibility == Visibility.Visible || OverlayApps.Visibility == Visibility.Visible
             || _dummy?.Model.State is DummyState.Armed or DummyState.Running or DummyState.Finished;
         bool inFight = MeterOverlayRule.Shown(_meterOverlayAutoHide, _meterPopUpForBoss, _meterOverlayHideAfter, now - _lastOwnBossFight, now - _lastBossFight,
             now - _lastOwnCombat, _meterOverlay.Wanted, kept);
@@ -2207,6 +2207,7 @@ public partial class MainWindow : Window
         if (!e.Cancel)
         {
             PopOutWindow.Exiting = true; // the pop-out windows close with the meter: they are to come back at the next start
+            GamePanelWindow.CloseAll(); // the meter's in-game panels go with it (their places are kept)
         }
     }
 

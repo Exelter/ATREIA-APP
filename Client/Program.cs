@@ -1284,6 +1284,39 @@ internal static class Program
             Announcements.NewsClient.UseForPictures(Ui.MainWindow.SampleNews());
             var window = new Ui.MainWindow { Title = Brand.AppName };
             window.BuildShell();
+            if (page.StartsWith("panel:", StringComparison.Ordinal))
+            {
+                // an in-game panel of the meter's launcher ("panel:<group>:<page>"): its frame and tabs with the app's page in it, over a game-coloured backdrop
+                string[] parts = page.Split(':');
+                System.Windows.FrameworkElement panel = window.GamePanelPicture(parts[1], parts.Length > 2 ? parts[2] : parts[1]);
+                const int pw = 980;
+                int ph = Math.Clamp(height, 400, 4000);
+                var backdrop = new System.Windows.Controls.Border
+                {
+                    Padding = new System.Windows.Thickness(18), Child = panel,
+                    Background = new System.Windows.Media.LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x4a, 0x56, 0x3a), System.Windows.Media.Color.FromRgb(0x22, 0x2c, 0x30), 60),
+                };
+                for (int pass = 0; pass < 3; pass++)
+                {
+                    backdrop.Measure(new System.Windows.Size(pw, ph));
+                    backdrop.Arrange(new System.Windows.Rect(0, 0, pw, ph));
+                    backdrop.UpdateLayout();
+                    System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+                }
+
+                var panelShot = Shot(pw, ph, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                panelShot.Render(backdrop);
+                var panelEncoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                panelEncoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(panelShot));
+                using (var panelFile = File.Create(path))
+                {
+                    panelEncoder.Save(panelFile);
+                }
+
+                Console.WriteLine("render-app: wrote " + path);
+                return;
+            }
+
             window.ShowShellPage(page.StartsWith("updates", StringComparison.Ordinal) ? "home" : page);
             if (page.StartsWith("updates", StringComparison.Ordinal))
             {
@@ -1705,6 +1738,13 @@ internal static class Program
                     new Ui.MainWindow.GroupMate("Dakkon", "Ranger", 2302),
                     new Ui.MainWindow.GroupMate("Ilvane", null, null),
                 });
+            }
+            else if (kind == "apps")
+            {
+                // the launcher under the bar: a tile per tool, the overlays' switches on theirs
+                window.OverlayBody.Visibility = System.Windows.Visibility.Collapsed;
+                window.OverlayTimeText.Visibility = System.Windows.Visibility.Collapsed;
+                window.ShowLauncher();
             }
             else if (kind == "findservers")
             {

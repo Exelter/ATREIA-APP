@@ -184,6 +184,11 @@ public partial class MainWindow
     /// <summary>Opens the search under the bar, the region the own server's, the box ready for typing (the meter's window takes the keyboard for it).</summary>
     private void ShowFindPlayer()
     {
+        if (OverlayApps.Visibility == Visibility.Visible)
+        {
+            CloseLauncher(); // the two share the place under the bar
+        }
+
         if (_findRegion.Length == 0)
         {
             int server = (_liveSource?.Entities as Aion2EntityDirectory)?.LocalCharacter?.ServerId ?? 0;
