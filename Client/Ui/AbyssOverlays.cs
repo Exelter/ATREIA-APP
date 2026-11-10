@@ -400,10 +400,16 @@ public sealed class DeathRecapWindow : MovableOverlay
             grid.Children.Add(pct);
             stack.Children.Add(grid);
             stack.Children.Add(ShareBar(share, s.Player ? Red : Color.FromRgb(0xC8, 0x9B, 0x5A)));
-            string skills = string.Join("  ·  ", s.Skills.Take(3).Select(k => $"{k.Name} ×{k.Hits} {k.Amount.ToString("N0", CultureInfo.CurrentCulture)}"));
+            // his two heaviest skills on the card; all of them on hover
+            static string SkillText(RecapSkill k) => $"{k.Name} ×{k.Hits} {k.Amount.ToString("N0", CultureInfo.CurrentCulture)}";
+            string skills = string.Join("  ·  ", s.Skills.Take(2).Select(SkillText));
             if (skills.Length > 0)
             {
-                stack.Children.Add(new TextBlock { Text = skills, FontSize = 10.5, Foreground = new SolidColorBrush(Faint), TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 1, 0, 3) });
+                stack.Children.Add(new TextBlock
+                {
+                    Text = skills, FontSize = 10.5, Foreground = new SolidColorBrush(Faint), TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 1, 0, 3),
+                    ToolTip = s.Skills.Count > 2 ? string.Join("\n", s.Skills.Select(SkillText)) : null,
+                });
             }
         }
 
