@@ -946,6 +946,8 @@ public partial class SettingsWindow : Window
         _settings.CraftCountAlts = onDisk.CraftCountAlts;
         _settings.CraftTab = onDisk.CraftTab;
         _settings.CraftShowAll = onDisk.CraftShowAll; // the crafting page's "Show every material"
+        _settings.ChecklistFolded = onDisk.ChecklistFolded; // the Characters page: the parts folded away and the tab of all characters
+        _settings.ChecklistRosterTab = onDisk.ChecklistRosterTab;
         _settings.OverlayOpacities[OverlayPlaces.Craft] = onDisk.OverlayOpacities.GetValueOrDefault(OverlayPlaces.Craft, 0.6);
         // the gathering overlay is switched on, locked and placed outside this window (its card, the overlays page, dragging it): the file's values stand
         _settings.ShowGatherOverlay = onDisk.ShowGatherOverlay;

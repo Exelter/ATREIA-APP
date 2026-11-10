@@ -203,7 +203,7 @@ internal static class Program
             // render-checklist <out.png> [language | roster | character | character-season | character-supply | character-inventory]: the page of all characters
             // (roster) or of one (character: its counters; or one other part of its page)
             string third = args.Length > 2 ? args[2] : "";
-            bool page = third is "roster" || third.StartsWith("character", StringComparison.Ordinal);
+            bool page = third is "roster" or "roster8" || third.StartsWith("character", StringComparison.Ordinal);
             RunRenderChecklistMode(args[1], page ? "" : third, page ? third : "");
             return;
         }
@@ -2042,11 +2042,48 @@ internal static class Program
             });
         }
 
+        if (page == "roster8")
+        {
+            // eight characters on one server (some players have that many, 10 November 2026): one of every class, each with its own day and week - Nightmare one
+            // short of full or full (part of the refill lost at the reset), a full daily dungeon, a full Odyle bar, Ludra done or not, the daily tasks in or not
+            Aion2.Aion2Tickets.Reset();
+            Aion2.Aion2Tickets.TryParseList(Convert.FromHexString(Combat.SelfCheckTickets.SampleLogin), out var eight);
+            var e0 = DateTime.Now;
+            var roster = new (string Name, int Class, int Odyle, int Charged, int Nightmare, int Fafnium, int Balaur, int Ascension, int Ludra, int LudraBoss, int Tasks)[]
+            {
+                ("Kaivhan", 5, 655, 120, 13, 7, 3, 3, 4, 1, 5), ("Aerin", 9, 840, 0, 5, 2, 7, 0, 2, 0, 5), ("Nyxelle", 13, 300, 55, 14, 1, 2, 1, 0, 0, 3),
+                ("Vesh", 17, 120, 600, 2, 7, 7, 3, 4, 1, 0), ("Lumiael", 21, 450, 0, 11, 0, 4, 2, 1, 0, 5), ("Seraphyne", 25, 780, 300, 8, 4, 1, 0, 3, 1, 2),
+                ("Draegor", 29, 60, 0, 13, 6, 5, 3, 4, 1, 5), ("Selvane", 33, 520, 900, 0, 3, 6, 1, 0, 0, 1),
+            };
+            int at = 0;
+            foreach (var r in roster)
+            {
+                Aion2.Aion2Tickets.ReceiveList(eight, e0.AddSeconds(at));
+                Aion2.Aion2Tickets.NoteCharacter(r.Name, 2302, e0.AddSeconds(at + 4), level: 45);
+                foreach ((int id, int value, int bonus) in new[] { (Aion2.Aion2Tickets.OdyleId, r.Odyle, r.Charged), (4, r.Nightmare, 0), (103, r.Fafnium, 0), (102, r.Balaur, 0),
+                             (80000001, r.Ascension, 0), (90000001, r.Ludra, 0), (90000002, r.LudraBoss, 0), (Aion2.Aion2Tickets.MissionsId, r.Tasks, r.Tasks) })
+                {
+                    Aion2.Aion2Tickets.ReceiveUpdate(new Aion2.TicketReading(id, new Aion2.TicketValue(value, bonus, 0)), e0.AddSeconds(at + 6));
+                }
+
+                Aion2.Aion2Tickets.ReceiveUpdate(new Aion2.TicketReading(Aion2.Aion2Tickets.PremiumId, new Aion2.TicketValue(0, 0, DateTimeOffset.UtcNow.AddDays(20).ToUnixTimeMilliseconds())),
+                    e0.AddSeconds(at + 6));
+                at += 10;
+            }
+
+            long seen8 = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeMilliseconds();
+            Aion2.Aion2Tickets.NoteListedCharacters(null, roster.Select(r => new Aion2.AccountCharacter(r.Name, r.Class, 1, 45, 2700, "Dawnbreakers", seen8, seen8, 2302, 100 + r.Class)).ToList());
+        }
+
         int scale = int.TryParse(Environment.GetEnvironmentVariable("AIONDPS_RENDER_SCALE"), out int sc) && sc is >= 1 and <= 4 ? sc : 1; // 2 = a sharp picture for the website
         var window = new Ui.ChecklistWindow();
-        if (page == "roster")
+        if (page is "roster" or "roster8")
         {
             window.ShowRoster();
+            if (page == "roster8")
+            {
+                window.Width = 960; // about the app's width for the page: eight columns have to fit there
+            }
         }
         else if (page.StartsWith("character", StringComparison.Ordinal))
         {

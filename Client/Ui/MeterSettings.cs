@@ -442,6 +442,13 @@ public sealed class MeterSettings
     /// <summary>The tab the crafting page was left on: "plan", "now" or "recipes".</summary>
     public string CraftTab { get; set; } = "plan";
 
+    /// <summary>The parts of the Characters page folded away ("board.daily", "card.weekly"...): kept from one start to the next (10 November 2026, a tester: "let
+    /// me fold sections and keep in memory which i folded").</summary>
+    public List<string> ChecklistFolded { get; set; } = new();
+
+    /// <summary>The tab the page of all characters was left on: "board" (every character side by side), "season" or "inventory".</summary>
+    public string ChecklistRosterTab { get; set; } = "board";
+
     /// <summary>The enemy card (EnemyCard.cs): the player selected in the Abyss - class, level, Combat Power, item level - over the game. On from the start: it
     /// shows only while an enemy player is selected.</summary>
     public bool ShowEnemyCard { get; set; } = true;
