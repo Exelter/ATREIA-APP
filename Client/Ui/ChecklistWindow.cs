@@ -780,7 +780,7 @@ public sealed partial class ChecklistWindow : Window
 
         head.Children.Add(SectionTitle(def.NameIn(language), 15, locked ? "Brush.TextSubtle" : "Brush.Text"));
         stack.Children.Add(head);
-        stack.Children.Add(OdyleLine(loc["Checklist.OdyleBase"] + (now is { Estimated: true } ? "  ~" : ""), basic, Math.Max(premium ? def.SubscribeMax : def.Max, basic), locked));
+        stack.Children.Add(OdyleLine(loc["Checklist.OdyleBase"], basic, Math.Max(premium ? def.SubscribeMax : def.Max, basic), locked, estimated: now is { Estimated: true }));
         stack.Children.Add(OdyleLine(loc["Checklist.OdyleCharged"], value.Bonus, Math.Max(OdyleChargedMax, value.Bonus), locked));
         AddOdyleItems(stack, value, language, character);
         return Card(stack);
@@ -842,7 +842,7 @@ public sealed partial class ChecklistWindow : Window
 
     private const int OdyleChargedMax = 2000;
 
-    private static UIElement OdyleLine(string label, int value, int cap, bool locked = false)
+    private static UIElement OdyleLine(string label, int value, int cap, bool locked = false, bool estimated = false)
     {
         var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -850,7 +850,7 @@ public sealed partial class ChecklistWindow : Window
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         TextBlock name = Label(label, locked ? "Brush.TextSubtle" : "Brush.Text", 13);
-        TextBlock numbers = Label($"{value:N0} / {cap:N0}", value > 0 && !locked ? "Brush.Accent" : "Brush.TextSubtle", 13, bold: true);
+        TextBlock numbers = Label($"{(estimated ? "~" : "")}{value:N0} / {cap:N0}", value > 0 && !locked ? "Brush.Accent" : "Brush.TextSubtle", 13, bold: true);
         Grid.SetColumn(numbers, 1);
         var bar = new ProgressBar { Minimum = 0, Maximum = Math.Max(1, cap), Value = Math.Min(value, cap), Height = 6, Margin = new Thickness(0, 3, 0, 0) };
         bar.SetResourceReference(Control.ForegroundProperty, "Brush.Accent");
@@ -984,7 +984,7 @@ public sealed partial class ChecklistWindow : Window
         AddTableRow(grid, row, name, count, Math.Max(CapOf(def), count + own.Bonus), count != own.Count, countsUp: false, bonus: own.Bonus);
         int lost = !warn || locked ? 0 : Aion2Tickets.LostAtNextRefill(def, count, _premium);
         CultureInfo culture = loc.Culture;
-        string At(DateTime when) => (when.Date != now.Date ? when.ToString("ddd", culture) + " " : "") + when.ToString("t", culture);
+        string At(DateTime when) => When(when, now, culture);
         UIElement? badge = null;
         if (lost > 0 && Aion2Tickets.NextReset(def, now) is { } refill)
         {

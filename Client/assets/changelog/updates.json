@@ -117,6 +117,25 @@
           "area": "Sharing",
           "title": "Share cards for Discord",
           "text": "One click turns a fight into a clean picture, ready to paste into Discord with Ctrl+V: right-click a fight in History, pick it from the meter's menu, or press Share on a grind session. The picture is also kept in your Pictures folder, under Atreia App."
+        },
+        {
+          "kind": "new",
+          "area": "Characters",
+          "title": "Every character on one board",
+          "text": "All characters shows every counter as a row and every character as a column, so you see at a glance which alt has what: Odyle Energy (with all of it together and how many runs it makes), the daily tasks, Nightmare and the daily dungeons, the keys your server's characters share, this week's Ascension Trial, Subjugation, Ludra and the other raids with their boss, the dungeon rewards and the Abyss Corridors. A counter turns red when it's so full that part of the next refill is lost, and amber when the week's tickets are about to reset unused. Sections fold and stay folded. Eight characters fit side by side. Season missions and the inventory have tabs of their own.",
+          "example": "Kaivhan's Nightmare is at 13/14 with +2 coming at 08:00: the cell is red and says −1 at 08:00."
+        },
+        {
+          "kind": "improved",
+          "area": "Characters",
+          "title": "A clearer page for each character",
+          "text": "The Odyle Energy card shows all your energy together at the top (basic, charged and in items) and how many runs it makes. Every other row is shaded, the two small daily dungeons say they're daily dungeons, warnings say exactly what you'd lose and when, and every card folds and stays folded. Characters are picked from a bar at the top."
+        },
+        {
+          "kind": "improved",
+          "area": "Journey",
+          "title": "Pick any character, dates in the app's language",
+          "text": "Journey shows your characters as chips under the title, in the app and over the game, and every character the meter knows can be picked. Days and months are named in the app's language, and the columns of your days line up on every PC."
         }
       ]
     },

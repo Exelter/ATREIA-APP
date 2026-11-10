@@ -350,7 +350,7 @@ public sealed partial class ChecklistWindow
             Tone.Muted => "Brush.TextSubtle",
             _ => "Brush.Text",
         };
-        var stack = new StackPanel { Margin = new Thickness(10, 7, 10, 7), VerticalAlignment = VerticalAlignment.Center };
+        var stack = new StackPanel { Margin = new Thickness(8, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center };
         var line = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         var main = new System.Windows.Documents.Run(cell.Main) { FontSize = 13.5, FontWeight = FontWeights.SemiBold };
         main.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, brush);
@@ -393,17 +393,17 @@ public sealed partial class ChecklistWindow
 
         if (cell.Sub is { Length: > 0 } sub)
         {
-            TextBlock small = Label(sub, cell.Tone is Tone.Lost or Tone.Warn ? brush : "Brush.TextSubtle", 10.5, bold: cell.Tone is Tone.Lost or Tone.Warn);
+            TextBlock small = Label(sub, cell.Tone is Tone.Lost or Tone.Warn ? brush : "Brush.TextSubtle", 10.5);
             small.TextTrimming = TextTrimming.CharacterEllipsis;
             small.Margin = new Thickness(0, 1, 0, 0);
             stack.Children.Add(small);
         }
 
         var box = new Border { Child = stack, ToolTip = cell.Tip, Background = Brushes.Transparent };
-        if (cell.Tone is Tone.Lost or Tone.Warn)
+        if (cell.Tone == Tone.Lost)
         {
-            box.Background = Tint(Resource(cell.Tone == Tone.Lost ? "Brush.Danger" : "Brush.Warning", cell.Tone == Tone.Lost ? Color.FromRgb(0xE5, 0x5B, 0x5B) : Color.FromRgb(0xF0, 0xB7, 0x1C)),
-                cell.Tone == Tone.Lost ? (byte)0x2E : (byte)0x1E);
+            // what is lost gets a wash of red; amber (left this week) says it with its line and bar only, so the last day of a week isn't a wall of colour
+            box.Background = Tint(Resource("Brush.Danger", Color.FromRgb(0xE5, 0x5B, 0x5B)), 0x2E);
         }
 
         return box;
@@ -427,7 +427,8 @@ public sealed partial class ChecklistWindow
         if (Seen(Aion2Tickets.OdyleId))
         {
             string odyleName = Aion2Tickets.Find(Aion2Tickets.OdyleId)?.NameIn(language) ?? "Odyle Energy";
-            energy.Add(new BoardRow(odyleName, loc["Checklist.Board.OdyleHint"], null, c => OdyleCell(c, odyle.GetValueOrDefault(c.Name), utcNow, culture)));
+            bool roomy = all.Count <= 5; // eight columns have no room for the charged energy beside the basic one
+            energy.Add(new BoardRow(odyleName, loc["Checklist.Board.OdyleHint"], null, c => OdyleCell(c, odyle.GetValueOrDefault(c.Name), utcNow, culture, roomy)));
             int per = OdyleClaim;
             energy.Add(new BoardRow(loc["Checklist.Board.Total"], loc["Checklist.Board.TotalHint"], null, c =>
             {
@@ -517,7 +518,7 @@ public sealed partial class ChecklistWindow
 
         // the Abyss: the corridors open to the side since the last siege, the hours of access left
         var abyss = new List<BoardRow>();
-        if (Aion2Corridors.WindowAt(now) is { } corridors)
+        if (Aion2Corridors.WindowAt(now) is { } corridors && all.Any(c => Aion2Corridors.Of(c, all, corridors) is not null))
         {
             abyss.Add(new BoardRow(Aion2.Protocol.Aion2Zones.NameOf(Aion2Corridors.ZoneId, language) ?? loc["Checklist.Corridor"], loc["Checklist.Board.CorridorHint"], loc["Checklist.CorridorTip"],
                 c => CorridorCell(c, all, corridors)));
@@ -562,6 +563,11 @@ public sealed partial class ChecklistWindow
         return kind is null ? refill : refill is null ? kind : kind + "  ·  " + refill;
     }
 
+    /// <summary>When, as short as a cell needs it: the time within a day, else the day and the time (<paramref name="dayOnly"/>: the day alone, the counters refill
+    /// at the reset's time anyway).</summary>
+    private static string When(DateTime at, DateTime now, CultureInfo culture, bool dayOnly = false) =>
+        at - now < TimeSpan.FromDays(1) ? at.ToString("t", culture) : dayOnly ? at.ToString("ddd", culture) : at.ToString("ddd", culture) + " " + at.ToString("t", culture);
+
     private static BoardCell Unknown(TicketCharacter c, int id)
     {
         LocalizationManager loc = LocalizationManager.Instance;
@@ -592,7 +598,7 @@ public sealed partial class ChecklistWindow
         double? fill = cap > 0 ? count / (double)cap : null;
         string tip = def.NameIn(loc.Language) + ": " + count.ToString(CultureInfo.CurrentCulture) + " / " + cap.ToString(CultureInfo.CurrentCulture);
         DateTime? next = Aion2Tickets.NextReset(def, now);
-        string At(DateTime when) => (when.Date != now.Date ? when.ToString("ddd", culture) + " " : "") + when.ToString("t", culture);
+        string At(DateTime when) => When(when, now, culture);
 
         int lost = Aion2Tickets.LostAtNextRefill(def, count, premium);
         if (lost > 0 && next is { } refill)
@@ -619,7 +625,7 @@ public sealed partial class ChecklistWindow
         if (def.DailyCount > 0 && count < cap && next is { } first)
         {
             int refills = (cap - count + def.DailyCount - 1) / def.DailyCount;
-            sub = string.Format(CultureInfo.CurrentCulture, loc["Checklist.Board.FullAt"], At(first.AddDays(refills - 1)));
+            sub = string.Format(CultureInfo.CurrentCulture, loc["Checklist.Board.FullAt"], When(first.AddDays(refills - 1), now, culture, dayOnly: true));
         }
 
         return new BoardCell(main, extra, "/" + cap, fill, sub, Tone.Plain, tip);
@@ -660,7 +666,7 @@ public sealed partial class ChecklistWindow
     }
 
     /// <summary>The basic Odyle Energy against its cap with the charged energy on top; red once it is full (its recharge goes nowhere), amber in the last hours.</summary>
-    private static BoardCell OdyleCell(TicketCharacter c, Aion2Tickets.OdyleState? o, DateTime utcNow, CultureInfo culture)
+    private static BoardCell OdyleCell(TicketCharacter c, Aion2Tickets.OdyleState? o, DateTime utcNow, CultureInfo culture, bool roomy)
     {
         LocalizationManager loc = LocalizationManager.Instance;
         if (o is null)
@@ -669,7 +675,7 @@ public sealed partial class ChecklistWindow
         }
 
         string main = (o.Estimated ? "~" : "") + o.Count.ToString("N0", CultureInfo.CurrentCulture);
-        string? extra = o.Bonus > 0 ? "+" + o.Bonus.ToString("N0", CultureInfo.CurrentCulture) : null;
+        string? extra = o.Bonus > 0 && roomy ? "+" + o.Bonus.ToString("N0", CultureInfo.CurrentCulture) : null;
         string cap = "/" + o.Cap.ToString("N0", CultureInfo.CurrentCulture);
         double fill = o.Cap > 0 ? o.Count / (double)o.Cap : 0;
         string tip = string.Format(CultureInfo.CurrentCulture, loc["Checklist.RosterOdyleLine"], o.Count, o.Cap, o.Bonus, o.PerTick)
@@ -684,7 +690,8 @@ public sealed partial class ChecklistWindow
             DateTime local = at.ToLocalTime();
             bool soon = at - utcNow < TimeSpan.FromHours(6);
             string when = soon ? string.Format(CultureInfo.CurrentCulture, loc["Checklist.Board.FullIn"], SpanText(at - utcNow))
-                : string.Format(CultureInfo.CurrentCulture, loc["Checklist.Board.FullAt"], (local.Date != DateTime.Today ? local.ToString("ddd", culture) + " " : "") + local.ToString("t", culture));
+                : string.Format(CultureInfo.CurrentCulture, loc["Checklist.Board.FullAt"], When(local, utcNow.ToLocalTime(), culture, dayOnly: true));
+            tip += "\n" + string.Format(CultureInfo.CurrentCulture, loc["Checklist.Board.FullAt"], local.ToString("ddd", culture) + " " + local.ToString("t", culture));
             return new BoardCell(main, extra, cap, fill, when, soon ? Tone.Warn : Tone.Plain, tip);
         }
 
