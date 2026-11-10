@@ -4052,7 +4052,8 @@ internal static class Program
         }
 
         Aion2.Aion2Stock.Reset();
-        if (recording.Length > 0)
+        // a recording only when one is given (the pictures workflow passes the picture's name again where no other argument follows)
+        if (recording.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase) && File.Exists(recording))
         {
             using var source = new Aion2.Aion2PacketCombatSource(Aion2.Protocol.Aion2Protocol.Load());
             foreach (Aion2.Capture.TcpSegment segment in Aion2.Capture.SegmentRecording.Read(recording))
