@@ -82,8 +82,9 @@ public sealed class TimetableWindow : Window, IOverlayPlace
             Hide();
         };
         DockPanel.SetDock(close, Dock.Right);
-        var title = new TextBlock { FontWeight = FontWeights.Bold, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Tag = "title" };
-        title.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
+        // the heading as the other overlays have it (10 November 2026): small gold capitals
+        var title = new TextBlock { FontWeight = FontWeights.SemiBold, FontSize = 10.5, VerticalAlignment = VerticalAlignment.Center, Tag = "title", Margin = new Thickness(3, 1, 0, 1),
+            Foreground = new SolidColorBrush(OverlaySkin.Gold) };
         header.Children.Add(close);
         header.Children.Add(title);
         _header = header;
@@ -282,7 +283,7 @@ public sealed class TimetableWindow : Window, IOverlayPlace
         if (loc.Language != _language)
         {
             _language = loc.Language;
-            _title.Text = loc["Timers.Title"];
+            _title.Text = loc["Timers.Title"].ToUpper(CultureInfo.CurrentCulture);
             _dirty = true;
         }
 
