@@ -29,9 +29,9 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
 
         int id = target.EntityId;
         string? theirs = dir.FactionOf(id);
-        string? mine = dir.LocalPlayerId >= 0 ? dir.FactionOf(dir.LocalPlayerId) : null;
-        mine ??= dir.LocalCharacter is { ServerId: > 0 } me ? (me.ServerId / 1000 == 1 ? "Elyos" : me.ServerId / 1000 == 2 ? "Asmodian" : null) : null;
-        bool enemy = theirs is not null && mine is not null && theirs != mine;
+        string? mine = OwnFaction(dir);
+        // a player who traded hits with the own character is an enemy whatever is known of his faction (11 November 2026: in the Abyss most had no server)
+        bool enemy = dir.IsHostile(id) || (theirs is not null && mine is not null && theirs != mine);
         if (!enemy && !allies)
         {
             return null;
@@ -45,6 +45,25 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
         int serverId = dir.ServerIdOf(id) ?? 0;
         return new EnemyCardData(name, className, profile?.Level, server, dir.GuildOf(id), power, profile?.ItemLevel is > 0 ? profile.ItemLevel : null,
             enemy, ownPower, ServerId: serverId, Rival: Aion2Pvp.RivalOf(name, serverId));
+    }
+
+    /// <summary>The own faction: that of the own server, else the other side of a player in view who traded hits with the own character; null when not known.</summary>
+    public static string? OwnFaction(Aion2EntityDirectory dir)
+    {
+        string? mine = dir.LocalPlayerId >= 0 ? dir.FactionOf(dir.LocalPlayerId) : null;
+        mine ??= dir.LocalCharacter is { ServerId: > 0 } me ? (me.ServerId / 1000 == 1 ? "Elyos" : me.ServerId / 1000 == 2 ? "Asmodian" : null) : null;
+        if (mine is null)
+        {
+            foreach ((int other, _) in dir.PlayersInView())
+            {
+                if (dir.IsHostile(other) && dir.FactionOf(other) is { } theirs)
+                {
+                    return theirs == "Elyos" ? "Asmodian" : "Elyos";
+                }
+            }
+        }
+
+        return mine;
     }
 
     /// <summary>What the card shows while it is placed with nobody selected.</summary>
@@ -71,6 +90,7 @@ public sealed class EnemyCardWindow : MovableOverlay
         SystemParameters.WorkArea.Top + 90, LoadSize, SaveSize, OverlayEdgeMode.Width)
     {
         Body = _content;
+        OverlaySkin.SolidBackground(this, OverlayPlaces.EnemyCard);
     }
 
     private static (double?, double?) LoadSize()
@@ -277,6 +297,10 @@ public sealed class EnemyCardController : IDisposable
         {
             _settings = MeterSettings.Load();
             _settingsAt = DateTime.UtcNow;
+            if (_overlay is not null)
+            {
+                OverlaySkin.SolidBackground(_overlay, OverlayPlaces.EnemyCard);
+            }
         }
 
         if (!_settings.ShowEnemyCard)
@@ -309,10 +333,20 @@ public sealed class EnemyCardController : IDisposable
             return; // the window is made the first time there is something to show
         }
 
+        // a game window the screen reader thinks open does not hide it (11 November 2026: it took the Abyss's own bars for one, for two minutes of a fight)
+        bool mayShow = GameWindow.OverlayMayShow(ignoreMenu: true);
+        if (dir?.OwnTarget is { } target && dir.IsPlayer(target.EntityId) && target.EntityId != dir.LocalPlayerId)
+        {
+            string who = dir.NameFor(target.EntityId) ?? "a player";
+            string state = card is null || card.Sample ? $"{who} selected: not taken for an enemy (faction {dir.FactionOf(target.EntityId) ?? "unknown"}, own {EnemyCardData.OwnFaction(dir) ?? "unknown"})"
+                : mayShow ? $"{who} shown" : $"{who} hidden: the game is not the window in front";
+            PvpLog.Note("card", state, state);
+        }
+
         _overlay ??= new EnemyCardWindow();
         _overlay.ApplyLockedIfChanged(locked);
         _overlay.Render(card);
-        _overlay.ShowOverlay(card is not null && GameWindow.OverlayMayShow());
+        _overlay.ShowOverlay(card is not null && mayShow);
     }
 
     /// <summary>

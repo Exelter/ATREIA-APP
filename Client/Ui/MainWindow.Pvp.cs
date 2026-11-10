@@ -22,7 +22,13 @@ public partial class MainWindow
         IReadOnlySet<string> party = dir.PartyNames;
         Aion2Pvp.Feed(damage, deaths, local, ResolveDisplayName, id => ClassOfPlayer(dir, id), dir.IsPlayer, id => dir.ServerIdOf(id) ?? 0,
             id => dir.SeenProfileOf(id)?.CombatPower is int cp and > 0 and not 397228 ? cp : null,
-            id => dir.NameFor(id) is { } name && party.Contains(name));
+            id => dir.NameFor(id) is { } name && party.Contains(name), id =>
+            {
+                dir.NoteHostile(id);
+                // trading hits with a player is fighting: the game's HUD is up, whatever the screen reader made of the Abyss's own bars (11 November 2026:
+                // it took the Abyss for a game window for two minutes and the PvP overlays stepped aside)
+                _menuWatcher?.NoteOwnHit();
+            });
     }
 
     /// <summary>A player's class: the one his "player appeared" frame told, else the one his skills show; null for a monster.</summary>

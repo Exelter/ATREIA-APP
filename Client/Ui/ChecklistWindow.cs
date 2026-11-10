@@ -16,7 +16,7 @@ namespace AionDPS.Ui;
 /// </summary>
 public sealed partial class ChecklistWindow : Window
 {
-    private readonly WrapPanel _characters = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+    private readonly StackPanel _characters = new();
     private readonly TextBlock _seen = new();
     private readonly StackPanel _body = new();
     /// <summary>Not in the daily list (the user's choice): the reward counts of the conquest dungeons (alone and in pairs) and the Shugofesta keys.</summary>
@@ -95,9 +95,11 @@ public sealed partial class ChecklistWindow : Window
         UIElement pageHead = PageHead();
         DockPanel.SetDock(pageHead, Dock.Top);
         root.Children.Add(pageHead);
-        // the characters as a bar of chips over the page (10 November 2026: the column on the left took the width the board of eight characters needs)
-        DockPanel.SetDock(_characters, Dock.Top);
-        root.Children.Add(_characters);
+        // the characters as a column of cards on the left (Stacy's fork has the idea: class icon, name in the class colour, class and level below); back again
+        // after a day as a bar of chips over the page (11 November 2026, the owner: "go back to old design")
+        var sidebar = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Width = 200, Margin = new Thickness(0, 0, 12, 0), Content = _characters };
+        DockPanel.SetDock(sidebar, Dock.Left);
+        root.Children.Add(sidebar);
         // the "Stand: date" line is no longer shown (_seen is still kept up to date)
 
         var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = _body };
@@ -193,7 +195,7 @@ public sealed partial class ChecklistWindow : Window
         _characters.Children.Clear();
         if (roster)
         {
-            _characters.Children.Add(RosterChip(wanted == RosterKey, all.Count(c => c.Tickets.Count > 0), () =>
+            _characters.Children.Add(RosterCard(wanted == RosterKey, all.Count(c => c.Tickets.Count > 0), () =>
             {
                 _selected = RosterKey;
                 Refresh();
@@ -203,7 +205,7 @@ public sealed partial class ChecklistWindow : Window
         foreach (TicketCharacter c in all)
         {
             string name = c.Name;
-            _characters.Children.Add(CharacterChip(c, name == wanted, name == current, () =>
+            _characters.Children.Add(CharacterCard(c, name == wanted, name == current, () =>
             {
                 _selected = name;
                 Refresh();
@@ -244,6 +246,116 @@ public sealed partial class ChecklistWindow : Window
         }
 
         return c.Level > 0 ? string.Format(CultureInfo.CurrentCulture, loc["Checklist.Level"], c.Level) : null;
+    }
+
+    /// <summary>
+    /// One character of the column on the left: the class icon, the name in the class colour (a dot when it is the one logged in), the class, level and server below and, in
+    /// small type, when it was last online. The form is Stacy's (her fork, 17 October 2026: alts with close names were hard to tell apart); smaller type than hers.
+    /// </summary>
+    private static UIElement CharacterCard(TicketCharacter c, bool active, bool online, Action choose)
+    {
+        LocalizationManager loc = LocalizationManager.Instance;
+        string language = loc.Language;
+        string? className = c.ClassCode > 0 ? Aion2.Protocol.Aion2SkillNames.ClassFromCode(c.ClassCode) : null;
+        Color accent = className is not null ? ClassBrushes.ClassColor(className) : Resource("Brush.Accent", Color.FromRgb(0xE0, 0xB6, 0x4A));
+        var lines = new StackPanel();
+        var top = new DockPanel();
+        if (online)
+        {
+            var dot = new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = loc["Checklist.OnlineNow"] };
+            dot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Brush.Heal");
+            DockPanel.SetDock(dot, Dock.Right);
+            top.Children.Add(dot);
+        }
+
+        if (className is not null && new ClassIconConverter().Convert(className, typeof(ImageSource), null, CultureInfo.CurrentCulture) is ImageSource icon)
+        {
+            var image = new Image { Source = icon, Width = 22, Height = 22, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+            DockPanel.SetDock(image, Dock.Left);
+            top.Children.Add(image);
+        }
+
+        var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        TextBlock title = Label(c.Name, c.Tickets.Count > 0 ? "Brush.Text" : "Brush.TextSubtle", 13, bold: true);
+        title.TextTrimming = TextTrimming.CharacterEllipsis;
+        if (className is not null)
+        {
+            title.Foreground = ClassBrushes.Text(className);
+        }
+
+        words.Children.Add(title);
+        var parts = new List<string>();
+        if (Strength(c, loc) is { } strength)
+        {
+            parts.Add(strength);
+        }
+
+        if (c.ServerId > 0)
+        {
+            parts.Add(Aion2.Protocol.Aion2Servers.NameOf(c.ServerId).Replace("Europe - ", "", StringComparison.Ordinal));
+        }
+
+        if (parts.Count > 0)
+        {
+            TextBlock info = Label(string.Join(" \u00b7 ", parts), "Brush.TextSubtle", 10.5);
+            info.TextTrimming = TextTrimming.CharacterEllipsis;
+            words.Children.Add(info);
+        }
+
+        top.Children.Add(words);
+        lines.Children.Add(top);
+
+        // its Odyle Energy as a thin bar (full: in the warning colour)
+        if (c.Tickets.Count > 0 && Aion2Tickets.OdyleNow(c, DateTime.UtcNow, online) is { } o && o.Cap > 0)
+        {
+            var track = new Grid { Height = 3, Margin = new Thickness(30, 6, 2, 0),
+                ToolTip = string.Format(CultureInfo.CurrentCulture, loc["Checklist.RosterOdyleLine"], o.Count, o.Cap, o.Bonus, o.PerTick) };
+            var under = new Border { CornerRadius = new CornerRadius(2) };
+            under.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+            track.Children.Add(under);
+            var fill = new Border { CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Left };
+            fill.SetResourceReference(Border.BackgroundProperty, o.Full ? "Brush.Warning" : "Brush.Accent");
+            double share = Math.Clamp(o.Count / (double)o.Cap, 0, 1);
+            track.SizeChanged += (_, e) => fill.Width = e.NewSize.Width * share;
+            track.Children.Add(fill);
+            lines.Children.Add(track);
+        }
+
+        // the legion and when it was online last, small, for the one picked or under the mouse it is all in the tool tip
+        var tip = new List<string> { c.Name };
+        if (className is not null)
+        {
+            tip.Add(ClassCatalog.DisplayName(className, language));
+        }
+
+        if (!string.IsNullOrEmpty(c.Legion))
+        {
+            tip.Add("<" + c.Legion + ">");
+        }
+
+        if (!online && c.LastOnlineMs > 0)
+        {
+            tip.Add(string.Format(CultureInfo.CurrentCulture, loc["Checklist.LastOnline"], DateTimeOffset.FromUnixTimeMilliseconds(c.LastOnlineMs).LocalDateTime.ToString("g", CultureInfo.CurrentCulture)));
+        }
+
+        var card = new Border
+        {
+            CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 8, 10, 8), Margin = new Thickness(0, 0, 0, 4), BorderThickness = new Thickness(1),
+            Child = lines, Cursor = System.Windows.Input.Cursors.Hand, Background = Brushes.Transparent, BorderBrush = Brushes.Transparent, ToolTip = string.Join("\n", tip),
+        };
+        if (active)
+        {
+            card.Background = Tint(accent, 0x22);
+            card.BorderBrush = Tint(accent, 0x90);
+        }
+        else
+        {
+            card.MouseEnter += (_, _) => card.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+            card.MouseLeave += (_, _) => card.Background = Brushes.Transparent;
+        }
+
+        card.MouseLeftButtonDown += (_, _) => choose();
+        return card;
     }
 
     private void Render()
@@ -524,6 +636,10 @@ public sealed partial class ChecklistWindow : Window
 
     private const string RosterKey = "\u0001roster";
 
+    /// <summary>The counters of the roster's table after the Odyle energy and the daily tasks: Shugo Festival, Dimensional Invasion, Nightmare, Ascension Trial
+    /// (the overview's), then the daily dungeon's weekly entries.</summary>
+    private static readonly int[] RosterTickets = { 1, 8, 4, 80000001, DailyDungeonTicket };
+
     /// <summary>Opens the window on the roster (the meter's menu) or on one character.</summary>
     public void ShowRoster()
     {
@@ -542,6 +658,40 @@ public sealed partial class ChecklistWindow : Window
     {
         _section = section;
         ShowCharacter(name);
+    }
+
+    private static UIElement RosterCard(bool active, int characters, Action choose)
+    {
+        LocalizationManager loc = LocalizationManager.Instance;
+        var lines = new StackPanel();
+        var title = new StackPanel { Orientation = Orientation.Horizontal };
+        TextBlock glyph = Label("", "Brush.Accent", 13);
+        glyph.FontFamily = new FontFamily("Segoe MDL2 Assets");
+        glyph.Margin = new Thickness(0, 0, 8, 0);
+        title.Children.Add(glyph);
+        title.Children.Add(Label(loc["Checklist.Roster"], "Brush.Text", 12.5, bold: true));
+        lines.Children.Add(title);
+        TextBlock info = Label(string.Format(CultureInfo.CurrentCulture, loc["Checklist.RosterCount"], characters), "Brush.TextSubtle", 10.5);
+        info.Margin = new Thickness(0, 2, 0, 0);
+        lines.Children.Add(info);
+        var card = new Border
+        {
+            CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 8, 10, 8), Margin = new Thickness(0, 0, 0, 10), BorderThickness = new Thickness(1),
+            Child = lines, Cursor = Cursors.Hand, Background = Brushes.Transparent,
+        };
+        card.SetResourceReference(Border.BorderBrushProperty, active ? "Brush.Accent" : "Brush.Border");
+        if (active)
+        {
+            card.SetResourceReference(Border.BackgroundProperty, "Brush.ControlRaised");
+        }
+        else
+        {
+            card.MouseEnter += (_, _) => card.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+            card.MouseLeave += (_, _) => card.Background = Brushes.Transparent;
+        }
+
+        card.MouseLeftButtonDown += (_, _) => choose();
+        return card;
     }
 
     /// <summary>"in 5 h 20 m", "in 2 d 4 h", "in 12 m".</summary>
@@ -682,38 +832,21 @@ public sealed partial class ChecklistWindow : Window
             _body.Children.Add(Scoreboard(cells));
         }
 
-        // every character side by side, their season missions and what they hold as tabs (10 November 2026, the owner: "put seasons in a tab and inventory")
-        string tab = MeterSettings.Load().ChecklistRosterTab;
-        tab = tab is "season" or "inventory" ? tab : "board";
-        _body.Children.Add(RosterTabs(tab));
-        int before = _body.Children.Count;
-        switch (tab)
-        {
-            case "season":
-                if ((all.FirstOrDefault(c => c.Name == online) ?? all.FirstOrDefault()) is { } seasonFirst)
-                {
-                    AddSeason(seasonFirst, language); // its box of characters picks whose missions show, the one online first
-                }
+        // every character as a card of its energy and counters; what the numbers are in the "i"
+        TicketDef?[] defs = RosterTickets.Select(Aion2Tickets.Find).ToArray();
+        var title = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 12) };
+        title.Children.Add(SectionTitle(string.Format(CultureInfo.CurrentCulture, loc["Checklist.TilesTitle"], all.Count)));
+        title.Children.Add(InfoMark(loc["Checklist.RosterNote"]));
+        _body.Children.Add(title);
+        _body.Children.Add(RosterTable(all, odyle, inItems, defs, online, now, utcNow, language));
 
-                break;
-            case "inventory":
-                AddRosterInventories(); // every server's characters together: what they hold unbound and the server storage
-                break;
-            default:
-                _body.Children.Add(Board(all, odyle, inItems, online, now, utcNow, language));
-                TextBlock legend = Label(loc["Checklist.Board.Legend"], "Brush.TextSubtle", 11);
-                legend.TextWrapping = TextWrapping.Wrap;
-                legend.Margin = new Thickness(4, 0, 4, 4);
-                _body.Children.Add(legend);
-                break;
+        // the season missions of every character: its box of characters (weekly points, missions done) picks whose missions show, the one online first
+        if ((all.FirstOrDefault(c => c.Name == online) ?? all.FirstOrDefault()) is { } seasonFirst)
+        {
+            AddSeason(seasonFirst, language);
         }
 
-        if (_body.Children.Count == before)
-        {
-            TextBlock none = Label(loc[tab == "season" ? "Checklist.Board.NoSeason" : "Checklist.Board.NoInventory"], "Brush.TextMuted", 13);
-            none.TextWrapping = TextWrapping.Wrap;
-            _body.Children.Add(Card(none));
-        }
+        AddRosterInventories(); // every server's characters together: what they hold unbound and the server storage
 
         // the same roster on the phone: the site keeps it for the player's own Discord account (the meter's Atreia sign-in)
         var sync = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4, 10, 4, 0) };

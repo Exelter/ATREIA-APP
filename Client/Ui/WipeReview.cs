@@ -70,16 +70,45 @@ public sealed record WipeReview(string Boss, DateTime Start, TimeSpan Length, in
             head.Children.Add(compare);
         }
 
-        string title = "WIPE" + (w.Try is int n ? $"  ·  TRY {n}" : "") + (w.HpLeft is double hp ? $"  ·  {hp:P0} LEFT" : "");
+        // (11 November 2026, a player after Ludra: "it listed people's names and a timer on the right, is that when they died or when we wiped? it said 75% left,
+        // I can't tell what that is": the review says what it is, whose health is left, and what each column means)
+        string title = "WIPE REVIEW" + (w.Try is int n ? $"  ·  TRY {n}" : "");
         head.Children.Add(new TextBlock { Text = title, FontSize = 10.5, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(red), VerticalAlignment = VerticalAlignment.Center });
         stack.Children.Add(head);
+        string about = (w.HpLeft is double hp ? $"{w.Boss} was left at {hp:P0} health" : $"{w.Boss} survived") + $"  ·  the try lasted {Clock(w.Length)}";
+        stack.Children.Add(new TextBlock { Text = about, FontSize = 11, Foreground = new SolidColorBrush(muted), Margin = new Thickness(0, -2, 0, 5), TextTrimming = TextTrimming.CharacterEllipsis });
+        if (w.Deaths.Count > 0)
+        {
+            // what the columns are
+            var caption = new Grid { Margin = new Thickness(0, 0, 0, 1) };
+            caption.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            caption.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            caption.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.3, GridUnitType.Star) });
+            TextBlock Caption(string text, int column, TextAlignment align = TextAlignment.Left)
+            {
+                var t = new TextBlock { Text = text, FontSize = 9, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(faint), TextAlignment = align };
+                Grid.SetColumn(t, column);
+                caption.Children.Add(t);
+                return t;
+            }
+
+            Caption("DIED, IN ORDER", 0);
+            Caption("AT", 1).Margin = new Thickness(8, 0, 8, 0);
+            Caption("KILLED BY", 2, TextAlignment.Right);
+            stack.Children.Add(caption);
+        }
 
         // the deaths in order: 1. Lunessa  2:14  Searing Breath 12.4K
         int i = 0;
         foreach (WipeDeath d in w.Deaths.Take(6))
         {
             i++;
-            var grid = new Grid { Margin = new Thickness(0, 1, 0, 1) };
+            var grid = new Grid
+            {
+                Margin = new Thickness(0, 1, 0, 1), Background = Brushes.Transparent,
+                ToolTip = $"{d.Name} died {Clock(d.At)} into the try" + (d.Skill is { } sk ? $": {sk} ({d.Amount:N0})" + (d.Killer is { } by ? $" from {by}" : "") : ", no hit seen before it")
+                    + (d.Taken > 0 ? $"; took {d.Taken:N0} in the last seconds" : ""),
+            };
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -93,8 +122,7 @@ public sealed record WipeReview(string Boss, DateTime Start, TimeSpan Length, in
             at.SetValue(System.Windows.Documents.Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);
             Grid.SetColumn(at, 2);
             grid.Children.Add(at);
-            var blow = new TextBlock { FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, TextAlignment = TextAlignment.Right,
-                ToolTip = d.Killer is { } k ? $"{k}: {d.Skill} {d.Amount:N0} (took {d.Taken:N0} in the last seconds)" : null };
+            var blow = new TextBlock { FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, TextAlignment = TextAlignment.Right };
             blow.Inlines.Add(new System.Windows.Documents.Run(d.Skill ?? "no hit seen") { Foreground = new SolidColorBrush(d.Skill == w.Mechanic && w.MechanicDeaths > 1 ? red : muted) });
             if (d.Amount > 0)
             {
@@ -113,8 +141,7 @@ public sealed record WipeReview(string Boss, DateTime Start, TimeSpan Length, in
 
         // what went wrong, in one line
         string summary = w.Mechanic is { } m && w.MechanicDeaths > 1 ? $"{m} took down {w.MechanicDeaths} of {Math.Max(w.Players, w.Deaths.Count)}"
-            : w.Deaths.Count > 0 ? $"First down {Clock(w.Deaths[0].At)} into the try" : "No deaths seen";
-        summary += $"  ·  the try lasted {Clock(w.Length)}";
+            : w.Deaths.Count > 0 ? $"The first went down {Clock(w.Deaths[0].At)} into the try" : "No deaths seen";
         stack.Children.Add(new TextBlock { Text = summary, FontSize = 10.5, Foreground = new SolidColorBrush(faint), Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap });
         return new Border
         {

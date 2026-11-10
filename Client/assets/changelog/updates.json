@@ -6,6 +6,45 @@
   ],
   "versions": [
     {
+      "version": "2.0.1",
+      "date": "2026-11-11",
+      "headline": "The Abyss radar becomes a round war map, and the PvP overlays show in the Abyss",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Abyss",
+          "title": "The radar is a map of everyone around you",
+          "text": "Every player in view sits on a disc around you, north up, 50 m to the edge: enemies in red with a haze where they gather and the strongest one named, your party in blue, your legion in violet and the rest of your faction in green. Under it you see who has the numbers within 25 m, your kills, assists and deaths in this zone, and the three strongest enemies with their Combat Power against yours.",
+          "example": "\"Outnumbered · 4 v 11 within 25 m\" as a group comes over the ridge, Kraeger named in red at its front."
+        },
+        {
+          "kind": "fixed",
+          "area": "Abyss",
+          "title": "The enemy card, the radar and the death recap show in the Abyss",
+          "text": "Many enemies in the Abyss came with no server, so they weren't taken for enemies; anyone who trades hits with you now counts as one. The app also mistook the Abyss's own bars for an open game window and hid the overlays during fights. If one still doesn't show, pvp-log.txt beside your settings says why."
+        },
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "Solid backgrounds for the PvP overlays",
+          "text": "The enemy card, the radar and the death recap no longer let the game show through. Each overlay's own opacity setting still changes it."
+        },
+        {
+          "kind": "improved",
+          "area": "Characters",
+          "title": "The Characters page as it was",
+          "text": "Your characters are a column on the left again, and All characters is the table it was, with the season missions and the inventory under it. Each character's own page keeps what 2.0 gave it: all your Odyle Energy together at the top, cards that fold and stay folded, and warnings that say what you'd lose and when."
+        },
+        {
+          "kind": "improved",
+          "area": "Bosses",
+          "title": "The wipe review says what it shows",
+          "text": "It now reads Wipe review, names the boss and the health it was left at, labels its columns (who died, in order, when, and what killed them), and tells the whole story when you point at a name.",
+          "example": "Ultimate Berk was left at 31% health · Draegor died 2:14 into the try: Searing Breath (12,400)."
+        }
+      ]
+    },
+    {
       "version": "2.0.0",
       "date": "2026-11-11",
       "headline": "Atreia App 2.0 (beta): crafting, Grind, Abyss tools and all your characters on one board. The new tools are still in beta, so tell us in the Atreia Discord what breaks",
