@@ -447,6 +447,9 @@ public static class SelfCheckAion2
             (56.8, "008DCE8D0102010093DD010000000000"),  // Berk 122,259
             (57.0, "008DCF19030201900A000003D89E01000100BD24000000000000"), // player 3279: 9,405 among 4-byte stats
             (57.1, "008DCF19030508CD0700000A60B201000BF04902000CA08601000D00E2040001075B1B000000000000"), // no current HP
+            (58.0, "008DCF8D010201001027000000000000"),  // a monster beside him, 10,000
+            (59.0, "008DCF8D010201000000000000000000"),  // ... down to 0: a death
+            (59.5, "008DCF8D010201000000000000000000"),  // 0 again: the same death
         };
 
         using var source = new Aion2PacketCombatSource(Aion2Protocol.Load());
@@ -469,12 +472,16 @@ public static class SelfCheckAion2
         bool oneReset = dir.HitPoints.ResetsOf(Berk) is [var reset] && reset == t.AddSeconds(34.8);
         var player = dir.HitPoints.SamplesAround(3279, t, t.AddMinutes(1));
         bool playerHp = player.Count == 1 && player[0].Hp == 9_405;
+        // the game sends no kill message: hit points read at 0 are the death the kill counts, the recap and the wipe review go by, once
+        var deaths = source.DrainDeaths();
+        bool death = deaths.Count == 1 && deaths[0].Entity == 18127 && deaths[0].At == t.AddSeconds(59) && source.DrainDeaths().Count == 0;
 
         Console.WriteLine($"  -> Berk's readings 122,120 / 98,804 / 123,000 / 122,259: {readings}");
         Console.WriteLine($"  -> highest seen = its full health, 123,000: {maximum}");
         Console.WriteLine($"  -> exactly one reset, when it came back to full for the retry: {oneReset}");
         Console.WriteLine($"  -> a player's hit points behind 4-byte stats (9,405), a stats-only frame adds nothing: {playerHp}");
-        return readings && maximum && oneReset && playerHp;
+        Console.WriteLine($"  -> a monster's hit points down to 0 are one death, a second 0 adds none, and drained it is gone: {death}");
+        return readings && maximum && oneReset && playerHp && death;
     }
 
     /// <summary>
@@ -843,7 +850,7 @@ public static class SelfCheckAion2
     /// </summary>
     private static bool RunAion2OwnTargetScenario()
     {
-        Console.WriteLine("[selftest] Aion 2 own selection (a player selected, then cleared):");
+        Console.WriteLine("[selftest] Aion 2 own selection and the players in view (a player selected, then cleared; in view, then gone):");
         using var source = new Aion2PacketCombatSource(Aion2Protocol.Load());
         var dir = (Aion2EntityDirectory)source.Entities;
         uint seq = 9000;
@@ -871,8 +878,21 @@ public static class SelfCheckAion2
         bool kept = dir.OwnTarget?.EntityId == 16372;
         Send(new byte[] { 0x34, 0x38, 0x00, 0x00, 0x00, 0x00 });
         bool cleared = dir.OwnTarget is null;
-        Console.WriteLine($"  -> a player selected: {selected}; another form leaves it: {kept}; cleared: {cleared}");
-        return selected && kept && cleared;
+        bool inView = dir.PlayersInView().Any(p => p.Id == 16372) && dir.IsPlayer(16372);
+
+        // no word of her for five minutes (the game's "player left" now and then never comes): off the list; she moves: back on it
+        DateTime clock = DateTime.UtcNow;
+        dir.Clock = () => clock;
+        clock = clock.Add(Aion2EntityDirectory.InViewQuiet).AddSeconds(30);
+        bool quiet = dir.PlayersInView().Count == 0;
+        dir.NoteAround(16372, 1000, 2000);
+        bool moved = dir.PlayersInView().Any(p => p.Id == 16372);
+
+        Send(new byte[] { 0x47, 0x36, 0xF4, 0x7F, 0x01, 0x00 }); // she leaves the view
+        bool left = dir.PlayersInView().Count == 0;
+        Console.WriteLine($"  -> a player selected: {selected}; another form leaves it: {kept}; cleared: {cleared}; in view: {inView}, then gone (0x4736): {left}; "
+            + $"five quiet minutes leave her off: {quiet}, back once she moves: {moved}");
+        return selected && kept && cleared && inView && left && quiet && moved;
     }
 
     /// <summary>

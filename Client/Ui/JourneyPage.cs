@@ -43,7 +43,9 @@ internal sealed class JourneyPage : Grid
     {
         _directory = directory;
         Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = _root });
-        _characters = MainWindow.Headless ? new List<JourneyWho> { new("Aerin", 2302, "Templar") } : JourneyData.Characters(directory());
+        _characters = MainWindow.Headless
+            ? new List<JourneyWho> { new("Aerin", 2302, "Templar"), new("Nyxelle", 2302, "Ranger"), new("Draegor", 2302, "Cleric"), new("Lumiael", 2302, "Spiritmaster") }
+            : JourneyData.Characters(directory());
         _who = _characters.FirstOrDefault();
         Load();
         if (!MainWindow.Headless)
@@ -213,44 +215,81 @@ internal sealed class JourneyPage : Grid
 
     private UIElement Head()
     {
-        var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 16) };
-        if (_characters.Count > 1)
-        {
-            var pick = new ComboBox { MinWidth = 220, VerticalAlignment = VerticalAlignment.Center };
-            foreach (JourneyWho w in _characters)
-            {
-                pick.Items.Add(w.Name + (w.Class is { } c ? " · " + c : "") + " (" + Aion2Servers.NameOf(w.ServerId) + ")");
-            }
-
-            pick.SelectedIndex = Math.Max(0, _who is null ? 0 : _characters.FindIndex(w => w.Key == _who.Key));
-            pick.SelectionChanged += (_, _) =>
-            {
-                if (pick.SelectedIndex >= 0 && pick.SelectedIndex < _characters.Count && _characters[pick.SelectedIndex].Key != _who?.Key)
-                {
-                    _who = _characters[pick.SelectedIndex];
-                    _report = null;
-                    Load();
-                }
-            };
-            DockPanel.SetDock(pick, Dock.Right);
-            dock.Children.Add(pick);
-        }
-
-        var words = new StackPanel();
+        var head = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
         TextBlock title = Text(Loc["Journey.Title"], "Brush.Text", 26);
         ThemeManager.UseTitleFont(title);
-        words.Children.Add(title);
+        head.Children.Add(title);
         TextBlock lede = Text(Loc["Journey.Lede"], "Brush.TextMuted", 13);
         lede.Margin = new Thickness(0, 4, 0, 0);
-        words.Children.Add(lede);
-        dock.Children.Add(words);
-        return dock;
+        head.Children.Add(lede);
+
+        // the characters as chips under the title, in the app and over the game alike (10 November 2026, the owner: "ensure you can select character for journey
+        // in the app as well", "the bar which you select characters isn't just white and properly designed": a drop-down list in the system's white before)
+        if (_characters.Count > 1)
+        {
+            var chips = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+            foreach (JourneyWho w in _characters)
+            {
+                chips.Children.Add(WhoChip(w, w.Key == _who?.Key));
+            }
+
+            head.Children.Add(chips);
+        }
+
+        return head;
+    }
+
+    /// <summary>A character to pick: its emblem and name in its class colour, the server small; lit in its colour while it is the one shown.</summary>
+    private UIElement WhoChip(JourneyWho w, bool active)
+    {
+        Color accent = w.Class is { } cls ? ClassBrushes.ClassColor(cls) : Color.FromRgb(0xE0, 0xB6, 0x4A);
+        var line = new StackPanel { Orientation = Orientation.Horizontal };
+        if (w.Class is { } named && new ClassIconConverter().Convert(named, typeof(ImageSource), null, CultureInfo.CurrentCulture) is ImageSource icon)
+        {
+            line.Children.Add(new Image { Source = icon, Width = 18, Height = 18, Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center });
+        }
+
+        TextBlock name = Text(w.Name, "Brush.Text", 12.5, bold: true);
+        name.VerticalAlignment = VerticalAlignment.Center;
+        if (w.Class is { } c)
+        {
+            name.Foreground = ClassBrushes.Text(c);
+        }
+
+        line.Children.Add(name);
+        TextBlock server = Text(Aion2Servers.NameOf(w.ServerId).Replace("Europe - ", "", StringComparison.Ordinal), "Brush.TextSubtle", 11);
+        server.Margin = new Thickness(7, 1, 0, 0);
+        server.VerticalAlignment = VerticalAlignment.Center;
+        line.Children.Add(server);
+        var chip = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 6, 12, 6), Margin = new Thickness(0, 0, 6, 6), BorderThickness = new Thickness(1),
+            Child = line, Cursor = System.Windows.Input.Cursors.Hand, ToolTip = w.Name + (w.Class is { } t ? "  ·  " + t : "") + "  ·  " + Aion2Servers.NameOf(w.ServerId) };
+        if (active)
+        {
+            chip.Background = new SolidColorBrush(Color.FromArgb(0x24, accent.R, accent.G, accent.B));
+            chip.BorderBrush = new SolidColorBrush(Color.FromArgb(0xA0, accent.R, accent.G, accent.B));
+        }
+        else
+        {
+            chip.SetResourceReference(Border.BackgroundProperty, "Brush.Panel");
+            chip.SetResourceReference(Border.BorderBrushProperty, "Brush.Border");
+            chip.MouseEnter += (_, _) => chip.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+            chip.MouseLeave += (_, _) => chip.SetResourceReference(Border.BackgroundProperty, "Brush.Panel");
+            chip.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                _who = w;
+                _report = null;
+                Load();
+            };
+        }
+
+        return chip;
     }
 
     private static string Dates(DateTime from, DateTime to)
     {
         DateTime last = to.TimeOfDay == TimeSpan.Zero && to > from ? to.AddDays(-1) : to;
-        string a = from.ToString("d MMM", CultureInfo.CurrentCulture), b = last.ToString("d MMM", CultureInfo.CurrentCulture);
+        string a = from.ToString("d MMM", Loc.Culture), b = last.ToString("d MMM", Loc.Culture);
         return from.Date == last.Date ? a : a + " – " + b;
     }
 
@@ -477,7 +516,7 @@ internal sealed class JourneyPage : Grid
         var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         words.Children.Add(new TextBlock
         {
-            Text = Dates(r.From, r.To).ToUpper(CultureInfo.CurrentCulture), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(accent),
+            Text = Dates(r.From, r.To).ToUpper(Loc.Culture), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(accent),
         });
         var headline = new TextBlock { Text = Headline(r), FontSize = 30, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 10) };
         ThemeManager.UseTitleFont(headline);
@@ -509,7 +548,7 @@ internal sealed class JourneyPage : Grid
             UIElement icon = DropIcon(drop, 64);
             ((FrameworkElement)icon).HorizontalAlignment = HorizontalAlignment.Center;
             medal.Children.Add(icon);
-            medal.Children.Add(new TextBlock { Text = Loc["Journey.BestDropTitle"].ToUpper(CultureInfo.CurrentCulture), FontSize = 10.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0x9A, 0xA3, 0xB0)), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) });
+            medal.Children.Add(new TextBlock { Text = Loc["Journey.BestDropTitle"].ToUpper(Loc.Culture), FontSize = 10.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0x9A, 0xA3, 0xB0)), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) });
             medal.Children.Add(new TextBlock { Text = drop.Name, FontSize = 13, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(LootStats.GradeColor(Math.Max(1, drop.Grade))), TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Center });
             if (drop.Worth > 0)
             {
@@ -583,7 +622,7 @@ internal sealed class JourneyPage : Grid
             var stack = new StackPanel();
             var top = new StackPanel { Orientation = Orientation.Horizontal };
             top.Children.Add(new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Fill = new SolidColorBrush(colour), Margin = new Thickness(0, 1, 7, 0), VerticalAlignment = VerticalAlignment.Center });
-            top.Children.Add(Text(label.ToUpper(CultureInfo.CurrentCulture), "Brush.TextMuted", 10.5, bold: true));
+            top.Children.Add(Text(label.ToUpper(Loc.Culture), "Brush.TextMuted", 10.5, bold: true));
             stack.Children.Add(top);
             var figure = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
             figure.Children.Add(Text(value, "Brush.Text", 24, bold: true));
@@ -636,9 +675,11 @@ internal sealed class JourneyPage : Grid
         var table = new Grid();
         table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
         table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-        table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(58) });
-        table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(72) });
+        // the figures' columns as wide as their widest text, title or figure (10 November 2026: on a tester's PC "BOSSES" was wider than its fixed 58 pixels and
+        // stood out of line with the figures under it)
+        table.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 64 });
+        table.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 58 });
+        table.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 66 });
         table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
         int row = 0;
         void Put(UIElement e, int column, HorizontalAlignment align = HorizontalAlignment.Left)
@@ -647,6 +688,10 @@ internal sealed class JourneyPage : Grid
             {
                 f.HorizontalAlignment = align;
                 f.VerticalAlignment = VerticalAlignment.Center;
+                if (column is >= 2 and <= 4)
+                {
+                    f.Margin = new Thickness(14, 0, 0, 0); // room between the figures' columns
+                }
             }
 
             Grid.SetRow(e, row);
@@ -663,8 +708,8 @@ internal sealed class JourneyPage : Grid
             row++;
             table.RowDefinitions.Add(new RowDefinition { Height = new GridLength(38) });
             var label = new StackPanel { Orientation = Orientation.Horizontal };
-            label.Children.Add(Text(weeks ? Loc["Journey.WeekShort"] : d.Day.ToString("ddd", CultureInfo.CurrentCulture), "Brush.Text", 12.5, bold: true));
-            TextBlock date = Text(" " + d.Day.ToString("d MMM", CultureInfo.CurrentCulture), "Brush.TextMuted", 12);
+            label.Children.Add(Text(weeks ? Loc["Journey.WeekShort"] : d.Day.ToString("ddd", Loc.Culture), "Brush.Text", 12.5, bold: true));
+            TextBlock date = Text(" " + d.Day.ToString("d MMM", Loc.Culture), "Brush.TextMuted", 12);
             label.Children.Add(date);
             Put(label, 0);
 
@@ -693,7 +738,7 @@ internal sealed class JourneyPage : Grid
             }
 
             track.Children.Add(parts);
-            track.ToolTip = string.Format(CultureInfo.CurrentCulture, Loc["Journey.DayTip"], d.Day.ToString("dddd d MMM", CultureInfo.CurrentCulture), Hours(total));
+            track.ToolTip = string.Format(CultureInfo.CurrentCulture, Loc["Journey.DayTip"], d.Day.ToString("dddd d MMM", Loc.Culture), Hours(total));
             Put(track, 1, HorizontalAlignment.Stretch);
 
             Put(Text(total > 0 ? Hours(total) : "–", total > 0 ? "Brush.Text" : "Brush.TextSubtle", 12.5), 2, HorizontalAlignment.Right);
@@ -813,7 +858,7 @@ internal sealed class JourneyPage : Grid
         if (n.BestDrop is { } drop && drop.Worth > 0)
         {
             list.Add(Finding(string.Format(CultureInfo.CurrentCulture, Loc["Journey.Up.Drop"], drop.Name),
-                string.Format(CultureInfo.CurrentCulture, Loc["Journey.Up.DropWorth"], Kinah(drop.Worth), drop.At.ToString("ddd d MMM", CultureInfo.CurrentCulture)), Gold, ""));
+                string.Format(CultureInfo.CurrentCulture, Loc["Journey.Up.DropWorth"], Kinah(drop.Worth), drop.At.ToString("ddd d MMM", Loc.Culture)), Gold, ""));
         }
 
         UIElement content = list.Count == 0 ? Wrapped(Loc["Journey.Up.None"], "Brush.TextMuted", 12.5) : Pairs(list);
@@ -977,7 +1022,7 @@ internal sealed class JourneyPage : Grid
             Text = string.Join("  ·  ", new[] { r.Who.Class, Aion2Servers.NameOf(r.Who.ServerId) }.Where(t => t is { Length: > 0 })), FontSize = 15,
             Foreground = new SolidColorBrush(accent), Margin = new Thickness(0, 2, 0, 0),
         });
-        words.Children.Add(new TextBlock { Text = Loc["Journey.Title"].ToUpper(CultureInfo.CurrentCulture) + "  ·  " + Dates(r.From, r.To), FontSize = 12.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0x9A, 0xA3, 0xB0)), Margin = new Thickness(0, 6, 0, 16) });
+        words.Children.Add(new TextBlock { Text = Loc["Journey.Title"].ToUpper(Loc.Culture) + "  ·  " + Dates(r.From, r.To), FontSize = 12.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0x9A, 0xA3, 0xB0)), Margin = new Thickness(0, 6, 0, 16) });
         var figures = new UniformGrid { Columns = 3 };
         figures.Children.Add(CardFigure(n.BestBossDps > 0 ? PlayerRow.Compact((long)n.BestBossDps) : "–", Loc["Journey.Card.BestDps"], accent));
         figures.Children.Add(CardFigure(n.BossKills.ToString(CultureInfo.CurrentCulture), Loc["Journey.Card.Bosses"], accent));

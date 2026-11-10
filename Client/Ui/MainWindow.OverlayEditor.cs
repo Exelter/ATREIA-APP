@@ -537,6 +537,8 @@ public partial class MainWindow
         "season" => "Season missions",
         "hotkeys" => "Hotkey sheet",
         "enemy" => "Enemy card",
+        "radar" => "Enemy radar",
+        "deathrecap" => "Death recap",
         _ => def.Name,
     };
 

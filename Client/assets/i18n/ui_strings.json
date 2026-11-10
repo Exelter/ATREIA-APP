@@ -11448,7 +11448,7 @@
     "fr": "Semaine {0} / {1}"
   },
   "Checklist.WarnLegend": {
-    "en": "▲ full: the next daily refill is wasted unless you use some first (rest the mouse on it for how many)",
+    "en": "Red: full, part of the next refill is lost unless you use some first. Amber: left this week, the weekly reset doesn't keep them. Rest the mouse on one for more.",
     "de": "▲ voll: die nächste tägliche Auffüllung verfällt, wenn du vorher nichts verbrauchst (mit der Maus darauf siehst du, wie viele)",
     "fr": "▲ plein : la prochaine recharge quotidienne est perdue si vous n'en utilisez pas avant (survolez pour voir combien)",
     "es": "▲ lleno: la próxima recarga diaria se pierde si no usas algunos antes (pasa el ratón por encima para ver cuántos)",
@@ -21744,7 +21744,7 @@
     "en": "{0} bosses down this period."
   },
   "Journey.Head.Glance": {
-    "en": "Your period at a glance."
+    "en": "Your play at a glance."
   },
   "Journey.BestDrop": {
     "en": "best drop"
@@ -22917,5 +22917,116 @@
     "pt": "Pular",
     "ja": "スキップ",
     "ko": "건너뛰기"
+  },
+  "Checklist.Tab.Board": {
+    "en": "Every character"
+  },
+  "Checklist.Fold": {
+    "en": "Click to fold"
+  },
+  "Checklist.Unfold": {
+    "en": "Click to unfold"
+  },
+  "Checklist.OdyleInAll": {
+    "en": "in all · {0} runs of {1}"
+  },
+  "Checklist.Board.Playing": {
+    "en": "Playing"
+  },
+  "Checklist.Board.Resets": {
+    "en": "resets {0} · in {1}"
+  },
+  "Checklist.Board.Energy": {
+    "en": "Energy"
+  },
+  "Checklist.Board.OdyleHint": {
+    "en": "+15 every 3 h"
+  },
+  "Checklist.Board.Total": {
+    "en": "All energy"
+  },
+  "Checklist.Board.TotalHint": {
+    "en": "with charged and in items"
+  },
+  "Checklist.Board.Runs": {
+    "en": "{0} runs of {1}"
+  },
+  "Checklist.Board.TotalTip": {
+    "en": "{0} basic + {1} charged + {2} in items"
+  },
+  "Checklist.Board.Daily": {
+    "en": "Today"
+  },
+  "Checklist.Board.OfDay": {
+    "en": "{0} a day"
+  },
+  "Checklist.Board.Shared": {
+    "en": "Shared by the server's characters"
+  },
+  "Checklist.Board.Weekly": {
+    "en": "This week"
+  },
+  "Checklist.Board.Abyss": {
+    "en": "Abyss"
+  },
+  "Checklist.Board.CorridorHint": {
+    "en": "since the last siege"
+  },
+  "Checklist.Board.PerDay": {
+    "en": "+{0} a day"
+  },
+  "Checklist.Board.PerWeek": {
+    "en": "{0} a week"
+  },
+  "Checklist.Board.DailyDungeon": {
+    "en": "daily dungeon"
+  },
+  "Checklist.Board.Raid": {
+    "en": "raid"
+  },
+  "Checklist.Board.Locked": {
+    "en": "Lv {0}"
+  },
+  "Checklist.Board.LostAt": {
+    "en": "−{0} at {1}"
+  },
+  "Checklist.Board.LostTip": {
+    "en": "Full: {0} of the refill at {1} (+{2}) is lost. Use some before then."
+  },
+  "Checklist.Board.UseBy": {
+    "en": "use by {0}"
+  },
+  "Checklist.Board.UseByTip": {
+    "en": "{0} left: the weekly reset on {1} sets it back to {2}, what isn't used is lost."
+  },
+  "Checklist.Board.NextAt": {
+    "en": "+{0} at {1}"
+  },
+  "Checklist.Board.FullAt": {
+    "en": "full {0}"
+  },
+  "Checklist.Board.FullIn": {
+    "en": "full in {0}"
+  },
+  "Checklist.Board.BossLeft": {
+    "en": "boss reward: {0} left"
+  },
+  "Checklist.Board.BossDone": {
+    "en": "boss done"
+  },
+  "Checklist.Board.AllIn": {
+    "en": "all handed in"
+  },
+  "Checklist.Board.OdyleFull": {
+    "en": "full now"
+  },
+  "Checklist.Board.NoSeason": {
+    "en": "No season missions yet: log in with your characters while the meter runs."
+  },
+  "Checklist.Board.NoInventory": {
+    "en": "Nothing held is known yet: log in with your characters while the meter runs."
+  },
+  "Checklist.Board.Legend": {
+    "en": "\"~\" = worked out from the refills since the character was last seen. Red: full, so part of the next refill is lost. Amber: left this week, the weekly reset doesn't keep them. Click a character for all of its counters."
   }
 }

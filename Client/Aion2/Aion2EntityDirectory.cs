@@ -1653,6 +1653,8 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
             _target = null;
             _lastHit = null;
             _ownTarget = null;
+            _inView.Clear();
+            _inViewHeard.Clear();
             _zoneEpoch++;
         }
     }
@@ -4034,7 +4036,67 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
         }
     }
 
-    /// <summary>True once the object has been seen using a class skill - i.e. it is a player.</summary>
+    /// <summary>The other players in view, with the moment each came (the frame's time).</summary>
+    private readonly Dictionary<int, DateTime> _inView = new();
+
+    // when each player in view came, on the directory's clock (Now), against his last move (_around)
+    private readonly Dictionary<int, DateTime> _inViewHeard = new();
+
+    /// <summary>A player came into view (his "player appeared" frame, 0x4536).</summary>
+    public void NotePlayerInView(int id, DateTime at)
+    {
+        lock (_gate)
+        {
+            _inView[id] = at;
+            _inViewHeard[id] = Now;
+        }
+    }
+
+    /// <summary>A player left the view (0x4736: <c>opcode | entity id (varint) | 2 bytes</c>; on the recording of 8 November 2026, 110 of 133 players who came into view
+    /// again had it as the last frame about them in between).</summary>
+    public void NotePlayerGone(int id)
+    {
+        lock (_gate)
+        {
+            _inView.Remove(id);
+            _inViewHeard.Remove(id);
+        }
+    }
+
+    /// <summary>A player in view this long without a word of him (no "player left", no move) is taken to be gone: on the recording of 8 November 2026 about one
+    /// in twenty went without the game's "player left". He is back as soon as he moves.</summary>
+    public static readonly TimeSpan InViewQuiet = TimeSpan.FromMinutes(5);
+
+    /// <summary>The other players in view now (since a zone change), with the moment each came.</summary>
+    public IReadOnlyList<(int Id, DateTime Since)> PlayersInView()
+    {
+        lock (_gate)
+        {
+            // on the directory's own clock (the arrival's moment is the frame's, local time): the arrival or the last move, whichever came later
+            DateTime now = Now;
+            return _inView.Where(kv =>
+                {
+                    DateTime heard = _inViewHeard.TryGetValue(kv.Key, out DateTime came) ? came : now;
+                    if (_around.TryGetValue(kv.Key, out var moved) && moved.At > heard)
+                    {
+                        heard = moved.At;
+                    }
+
+                    return now - heard <= InViewQuiet;
+                })
+                .Select(kv => (kv.Key, kv.Value)).ToList();
+        }
+    }
+
+    /// <summary>Whether an id is another player's: his skills were seen, or the game announced him ("player appeared").</summary>
+    public bool IsPlayer(int id)
+    {
+        lock (_gate)
+        {
+            return _classVotes.ContainsKey(id) || _seen.ContainsKey(id) || _inView.ContainsKey(id) || _factionById.ContainsKey(id);
+        }
+    }
+
     public bool IsKnownPlayer(int id)
     {
         lock (_gate)

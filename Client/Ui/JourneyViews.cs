@@ -243,9 +243,9 @@ internal static class JourneyViews
             }
 
             bar.Children.Add(stack);
-            bar.ToolTip = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Instance["Journey.DayTip"], d.Day.ToString("dddd d MMM", CultureInfo.CurrentCulture), Hours(total));
+            bar.ToolTip = string.Format(CultureInfo.CurrentCulture, LocalizationManager.Instance["Journey.DayTip"], d.Day.ToString("dddd d MMM", LocalizationManager.Instance.Culture), Hours(total));
             column.Children.Add(bar);
-            TextBlock day = Text(d.Day.ToString("ddd", CultureInfo.CurrentCulture).ToUpperInvariant(), "Brush.TextMuted", 11, bold: true);
+            TextBlock day = Text(d.Day.ToString("ddd", LocalizationManager.Instance.Culture).ToUpperInvariant(), "Brush.TextMuted", 11, bold: true);
             day.HorizontalAlignment = HorizontalAlignment.Center;
             day.Margin = new Thickness(0, 8, 0, 0);
             column.Children.Add(day);

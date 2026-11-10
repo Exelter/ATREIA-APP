@@ -25,6 +25,7 @@ public sealed class Aion2PacketCombatSource : ICombatSource
     private readonly System.Collections.Concurrent.ConcurrentQueue<DamageEvent> _pending = new();
     private readonly System.Collections.Concurrent.ConcurrentQueue<ZoneChange> _zones = new();
     private readonly System.Collections.Concurrent.ConcurrentQueue<EnrageMark> _enrages = new();
+    private readonly System.Collections.Concurrent.ConcurrentQueue<(int Entity, DateTime At)> _deaths = new();
     private readonly string? _adapterId;
     private Capture.NpcapCaptureService? _capture;
     private SourceStatus _status = new(SourceState.Idle, "");
@@ -164,6 +165,19 @@ public sealed class Aion2PacketCombatSource : ICombatSource
         }
     }
 
+    /// <summary>The deaths read since the last call (monsters and players: hit points at 0), oldest first. Apart from <see cref="Poll"/>: they are no kills of the
+    /// session (who killed is not known), only what the loot log, the grind, the death recap and the wipe review go by.</summary>
+    public IReadOnlyList<(int Entity, DateTime At)> DrainDeaths()
+    {
+        var list = new List<(int Entity, DateTime At)>();
+        while (_deaths.TryDequeue(out var death))
+        {
+            list.Add(death);
+        }
+
+        return list;
+    }
+
     public CombatBatch Poll(bool paused)
     {
         ReportLiveCounters();
@@ -271,6 +285,15 @@ public sealed class Aion2PacketCombatSource : ICombatSource
             foreach (EnrageMark mark in _decoder.DrainEnrages())
             {
                 _enrages.Enqueue(mark);
+            }
+
+            foreach ((int Entity, DateTime At) death in _decoder.DrainDeaths())
+            {
+                _deaths.Enqueue(death);
+                while (_deaths.Count > 2000 && _deaths.TryDequeue(out _))
+                {
+                    // nobody drains them (a replay, a check): the oldest go
+                }
             }
 
             foreach ((string actor, string skill) in _decoder.DrainSkillUses())

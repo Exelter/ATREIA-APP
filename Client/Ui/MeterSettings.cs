@@ -442,6 +442,13 @@ public sealed class MeterSettings
     /// <summary>The tab the crafting page was left on: "plan", "now" or "recipes".</summary>
     public string CraftTab { get; set; } = "plan";
 
+    /// <summary>The parts of the Characters page folded away ("board.daily", "card.weekly"...): kept from one start to the next (10 November 2026, a tester: "let
+    /// me fold sections and keep in memory which i folded").</summary>
+    public List<string> ChecklistFolded { get; set; } = new();
+
+    /// <summary>The tab the page of all characters was left on: "board" (every character side by side), "season" or "inventory".</summary>
+    public string ChecklistRosterTab { get; set; } = "board";
+
     /// <summary>The enemy card (EnemyCard.cs): the player selected in the Abyss - class, level, Combat Power, item level - over the game. On from the start: it
     /// shows only while an enemy player is selected.</summary>
     public bool ShowEnemyCard { get; set; } = true;
@@ -455,6 +462,26 @@ public sealed class MeterSettings
     public double EnemyCardScale { get; set; } = 1.0;
     public double? EnemyCardWidth { get; set; }
     public double? EnemyCardHeight { get; set; }
+
+    /// <summary>The enemy radar (AbyssOverlays.cs): the enemy players in view, the strongest first. On from the start: it shows only with enemies around.</summary>
+    public bool ShowEnemyRadar { get; set; } = true;
+
+    public bool EnemyRadarLocked { get; set; } = true;
+    public double? EnemyRadarLeft { get; set; }
+    public double? EnemyRadarTop { get; set; }
+    public double EnemyRadarScale { get; set; } = 1.0;
+    public double? EnemyRadarWidth { get; set; }
+    public double? EnemyRadarHeight { get; set; }
+
+    /// <summary>The death recap (AbyssOverlays.cs): who killed the own character and how, for half a minute after a death. On from the start.</summary>
+    public bool ShowDeathRecap { get; set; } = true;
+
+    public bool DeathRecapLocked { get; set; } = true;
+    public double? DeathRecapLeft { get; set; }
+    public double? DeathRecapTop { get; set; }
+    public double DeathRecapScale { get; set; } = 1.0;
+    public double? DeathRecapWidth { get; set; }
+    public double? DeathRecapHeight { get; set; }
 
     public double? FpsOverlayLeft { get; set; }
     public double? FpsOverlayTop { get; set; }

@@ -550,8 +550,11 @@ public partial class MainWindow
 
     // ---- Overlays ----
 
+    /// <summary>A second switch of an overlay, a link beside its "Reset place" ("Show allies too: off").</summary>
+    private sealed record OverlayOption(string Text, Func<MeterSettings, bool> Get, Action<MeterSettings, bool> Set);
+
     private sealed record OverlayDef(string Name, string What, Func<MeterSettings, bool> Get, Action<MeterSettings, bool> Set, string? Page, Action? Reset = null,
-        Func<MeterSettings, string>? Keys = null, string Id = "");
+        Func<MeterSettings, string>? Keys = null, string Id = "", OverlayOption? Option = null);
 
     /// <summary>Every overlay over the game, the main ones first: its switch, what it shows and where its settings are.</summary>
     private List<OverlayDef> OverlayDefs()
@@ -575,7 +578,12 @@ public partial class MainWindow
             new("FPS counter", "The game's frames per second and its 1% low, from Windows' own frame timing (nothing touches the game).", s => s.ShowFpsOverlay,
                 (s, v) => s.ShowFpsOverlay = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Fps), null, "fps"),
             new("Enemy card", "Select an enemy player in the Abyss: his class, level, Combat Power and item level, and how his Combat Power compares with yours.",
-                s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyCard), null, "enemy"),
+                s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyCard), null, "enemy",
+                new OverlayOption("Players of your side too", s => s.EnemyCardAllies, (s, v) => s.EnemyCardAllies = v)),
+            new("Enemy radar", "Every enemy player in view, the strongest first, with class, Combat Power and your record against each; a warning when a much stronger one comes.",
+                s => s.ShowEnemyRadar, (s, v) => s.ShowEnemyRadar = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyRadar), null, "radar"),
+            new("Death recap", "When you die: who hit you, with which skills, how much, and over how many seconds.",
+                s => s.ShowDeathRecap, (s, v) => s.ShowDeathRecap = v, null, () => OverlayPlaces.Reset(OverlayPlaces.DeathRecap), null, "deathrecap"),
             new(loc["Shell.OvHotkeys"], loc["Shell.OvHotkeysWhat"], s => s.ShowHotkeyOverlay, (s, v) => s.ShowHotkeyOverlay = v, null, null, s => s.HotkeyHotkeyOverlay, "hotkeys"),
             // the button at the top of the screen that opens the overlay menu (with its switch here, the way back once it is switched off)
             new(loc["Shell.OvMenu"], loc["Shell.OvMenuWhat"], s => s.ShowOverlayMenu, (s, v) => s.ShowOverlayMenu = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Menu), null, "menu"),
@@ -695,6 +703,23 @@ public partial class MainWindow
                 links.Children.Add(back);
             }
 
+            if (def.Option is { } option)
+            {
+                // a second switch as a link: its state in the text, a click turns it
+                TextBlock? opt = null;
+                void Show() => opt!.Text = option.Text + ": " + (option.Get(MeterSettings.Load()) ? "on" : "off");
+                opt = ShellLink("", () =>
+                {
+                    var settings = MeterSettings.Load();
+                    option.Set(settings, !option.Get(settings));
+                    settings.Save();
+                    Show();
+                });
+                Show();
+                opt.Margin = new Thickness(links.Children.Count > 0 ? 16 : 0, 0, 0, 0);
+                links.Children.Add(opt);
+            }
+
             if (links.Children.Count > 0)
             {
                 text.Children.Add(links);
@@ -773,6 +798,8 @@ public partial class MainWindow
             OverlayPlaces.Network => s.ShowNetworkOverlay ? loc["Settings.Nav.Network"] : null,
             OverlayPlaces.Fps => s.ShowFpsOverlay ? "FPS counter" : null,
             OverlayPlaces.EnemyCard => s.ShowEnemyCard ? "Enemy card" : null,
+            OverlayPlaces.EnemyRadar => s.ShowEnemyRadar ? "Enemy radar" : null,
+            OverlayPlaces.DeathRecap => s.ShowDeathRecap ? "Death recap" : null,
             OverlayPlaces.Hotkeys => s.ShowHotkeyOverlay ? loc["Shell.OvHotkeys"] : null,
             OverlayPlaces.Dummy => s.ShowDummyOverlay ? loc["Shell.Dummy"] : null,
             OverlayPlaces.Menu => s.ShowOverlayMenu ? loc["Shell.OvMenu"] : null,
@@ -792,6 +819,7 @@ public partial class MainWindow
         (s => s.NetworkOverlayLocked, (s, v) => s.NetworkOverlayLocked = v), (s => s.DummyOverlayLocked, (s, v) => s.DummyOverlayLocked = v),
         (s => s.HotkeyOverlayLocked ?? s.PetFarmLocked, (s, v) => s.HotkeyOverlayLocked = v), (s => s.OverlayMenuLocked, (s, v) => s.OverlayMenuLocked = v),
         (s => s.FpsOverlayLocked, (s, v) => s.FpsOverlayLocked = v), (s => s.EnemyCardLocked, (s, v) => s.EnemyCardLocked = v),
+        (s => s.EnemyRadarLocked, (s, v) => s.EnemyRadarLocked = v), (s => s.DeathRecapLocked, (s, v) => s.DeathRecapLocked = v),
     };
 
     private static bool OverlaysMovable(MeterSettings s) => OverlayLocks.All(l => !l.Get(s));
@@ -899,7 +927,8 @@ public partial class MainWindow
     private void ResetAllOverlayPlaces()
     {
         foreach (string title in new[] { OverlayPlaces.Assist, OverlayPlaces.Effects, OverlayPlaces.Network, OverlayPlaces.Dummy, OverlayPlaces.WorldBoss, OverlayPlaces.Hotkeys, OverlayPlaces.Timetable,
-                     OverlayPlaces.PetMap, OverlayPlaces.PetList, OverlayPlaces.PetInfo, OverlayPlaces.Loot, OverlayPlaces.Gather, OverlayPlaces.Season, OverlayPlaces.Craft, OverlayPlaces.BossCast, OverlayPlaces.BossHp, OverlayPlaces.TargetOfTarget, OverlayPlaces.Fps, OverlayPlaces.EnemyCard })
+                     OverlayPlaces.PetMap, OverlayPlaces.PetList, OverlayPlaces.PetInfo, OverlayPlaces.Loot, OverlayPlaces.Gather, OverlayPlaces.Season, OverlayPlaces.Craft, OverlayPlaces.BossCast, OverlayPlaces.BossHp, OverlayPlaces.TargetOfTarget, OverlayPlaces.Fps, OverlayPlaces.EnemyCard,
+                     OverlayPlaces.EnemyRadar, OverlayPlaces.DeathRecap })
         {
             OverlayPlaces.Reset(title);
         }

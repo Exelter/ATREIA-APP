@@ -56,6 +56,10 @@ public partial class MainWindow
     {
         CompactOverlayRowsArea.Visibility = _overlayGrind || _overlayStagger ? Visibility.Collapsed : Visibility.Visible;
         OverlayGrindCard.Visibility = _overlayGrind ? Visibility.Visible : Visibility.Collapsed;
+        // the tiles carry the numbers: the header's big figure would only repeat the Kinah an hour
+        Visibility figure = _overlayGrind ? Visibility.Collapsed : Visibility.Visible;
+        OverlayTotalRateText.Visibility = figure;
+        OverlayTotalUnitText.Visibility = figure;
         UpdateScopeControls();
     }
 

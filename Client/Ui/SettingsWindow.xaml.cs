@@ -945,6 +945,9 @@ public partial class SettingsWindow : Window
         _settings.CraftCountAccountStorage = onDisk.CraftCountAccountStorage;
         _settings.CraftCountAlts = onDisk.CraftCountAlts;
         _settings.CraftTab = onDisk.CraftTab;
+        _settings.CraftShowAll = onDisk.CraftShowAll; // the crafting page's "Show every material"
+        _settings.ChecklistFolded = onDisk.ChecklistFolded; // the Characters page: the parts folded away and the tab of all characters
+        _settings.ChecklistRosterTab = onDisk.ChecklistRosterTab;
         _settings.OverlayOpacities[OverlayPlaces.Craft] = onDisk.OverlayOpacities.GetValueOrDefault(OverlayPlaces.Craft, 0.6);
         // the gathering overlay is switched on, locked and placed outside this window (its card, the overlays page, dragging it): the file's values stand
         _settings.ShowGatherOverlay = onDisk.ShowGatherOverlay;
@@ -954,6 +957,29 @@ public partial class SettingsWindow : Window
         _settings.GatherOverlayScale = onDisk.GatherOverlayScale;
         _settings.GatherOverlayWidth = onDisk.GatherOverlayWidth;
         _settings.GatherOverlayHeight = onDisk.GatherOverlayHeight;
+        // the enemy card, the enemy radar and the death recap: switched, locked and placed on the Overlays page, in the overlay editor and by dragging them
+        _settings.ShowEnemyCard = onDisk.ShowEnemyCard;
+        _settings.EnemyCardAllies = onDisk.EnemyCardAllies;
+        _settings.EnemyCardLocked = onDisk.EnemyCardLocked;
+        _settings.EnemyCardLeft = onDisk.EnemyCardLeft;
+        _settings.EnemyCardTop = onDisk.EnemyCardTop;
+        _settings.EnemyCardScale = onDisk.EnemyCardScale;
+        _settings.EnemyCardWidth = onDisk.EnemyCardWidth;
+        _settings.EnemyCardHeight = onDisk.EnemyCardHeight;
+        _settings.ShowEnemyRadar = onDisk.ShowEnemyRadar;
+        _settings.EnemyRadarLocked = onDisk.EnemyRadarLocked;
+        _settings.EnemyRadarLeft = onDisk.EnemyRadarLeft;
+        _settings.EnemyRadarTop = onDisk.EnemyRadarTop;
+        _settings.EnemyRadarScale = onDisk.EnemyRadarScale;
+        _settings.EnemyRadarWidth = onDisk.EnemyRadarWidth;
+        _settings.EnemyRadarHeight = onDisk.EnemyRadarHeight;
+        _settings.ShowDeathRecap = onDisk.ShowDeathRecap;
+        _settings.DeathRecapLocked = onDisk.DeathRecapLocked;
+        _settings.DeathRecapLeft = onDisk.DeathRecapLeft;
+        _settings.DeathRecapTop = onDisk.DeathRecapTop;
+        _settings.DeathRecapScale = onDisk.DeathRecapScale;
+        _settings.DeathRecapWidth = onDisk.DeathRecapWidth;
+        _settings.DeathRecapHeight = onDisk.DeathRecapHeight;
         _settings.ShowSeasonOverlay = onDisk.ShowSeasonOverlay; // the checklist's season card and the Overlays page set these
         _settings.SeasonOverlayLocked = onDisk.SeasonOverlayLocked;
         _settings.SeasonOverlayLeft = onDisk.SeasonOverlayLeft;

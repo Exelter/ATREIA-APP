@@ -1529,6 +1529,9 @@
                     </Border>
                     <!-- The boss's health over the lines (MainWindow.BossBar.cs): its name, what is left, and when it dies at the group's pace against its enrage. -->
                     <Border x:Name="OverlayBossBar" Visibility="Collapsed" Margin="10,0,10,6"/>
+                    <!-- The wipe review (MainWindow.Wipe.cs, WipeReview.MeterView): after a boss try without the kill, who died in order and to what, the skill that took
+                         down most of the group, the health left against the best try; until the next pull, a few minutes or its ✕. -->
+                    <Border x:Name="OverlayWipeCard" Visibility="Collapsed" Margin="10,0,10,6"/>
                     <!-- The Stagger view (the scope switch's "Stagger"; MainWindow.Stagger.cs, StaggerCardView.MeterView): in place of the lines, the boss's latest
                          stagger check - its mechanic and how it went, who took how much off it and with which skills (hover them) - and its earlier checks. -->
                     <Border x:Name="OverlayStaggerCard" Visibility="Collapsed" Margin="10,0,10,6" Padding="9,6,9,7" CornerRadius="7"

@@ -100,13 +100,20 @@ public static class GrindView
             foot.Children.Add(again);
         }
 
-        string where = s.Zone != 0 ? "  ·  " + LootText.MapName(s.Zone) : "";
-        foot.Children.Add(new TextBlock
+        // the time farmed and the map are in the meter's header already: the foot only says when the clock stopped
+        if (f.Over)
         {
-            Text = (f.Over ? "Paused  ·  " : "Farmed ") + f.FarmedText + where, FontSize = 10.5, Foreground = new SolidColorBrush(Faint), TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center, ToolTip = "The time farmed: pauses of more than five minutes are left out, so the hourly numbers stay honest",
-        });
-        stack.Children.Add(foot);
+            foot.Children.Add(new TextBlock
+            {
+                Text = "Ended: the next kill starts a new session", FontSize = 10.5, Foreground = new SolidColorBrush(Faint), TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center, ToolTip = "Half an hour without a kill ends a session; it stays on the Grind page",
+            });
+        }
+
+        if (foot.Children.Count > 0)
+        {
+            stack.Children.Add(foot);
+        }
         return stack;
     }
 
@@ -162,6 +169,23 @@ internal static class GrindSample
             Id = "b", Character = "Arkhel", Start = now.AddDays(-2).AddHours(-5), End = now.AddDays(-2).AddHours(-4), ActiveSeconds = 58 * 60, Kinah = 1_480_000, Kills = 466,
             ZoneKills = new() { [103] = 466 }, Items = new() { [511360003] = 31, [610620013] = 120 },
         },
+    };
+
+    /// <summary>Four monsters of two maps with their drops and the Kinah after their kills.</summary>
+    public static IReadOnlyList<LootMob> Mobs() => new[]
+    {
+        new LootMob { NpcId = 2090168, Kills = 120, Zones = new() { 22 }, Items = new() { new LootMobItem { ItemId = 511351001, Count = 30, Kills = 28 }, new LootMobItem { ItemId = 511900001, Count = 3, Kills = 3 } } },
+        new LootMob { NpcId = 2000053, Kills = 94, Zones = new() { 22 }, Items = new() { new LootMobItem { ItemId = 510116011, Count = 40, Kills = 31 }, new LootMobItem { ItemId = 511351002, Count = 6, Kills = 6 } } },
+        new LootMob { NpcId = 2100217, Kills = 260, Zones = new() { 103 }, Items = new() { new LootMobItem { ItemId = 610620013, Count = 210, Kills = 150 }, new LootMobItem { ItemId = 511360003, Count = 22, Kills = 22 } } },
+        new LootMob { NpcId = 2100066, Kills = 310, Zones = new() { 103 }, Items = new() { new LootMobItem { ItemId = 610620013, Count = 95, Kills = 80 } } },
+    };
+
+    public static IReadOnlyList<MobYield> Yields() => new[]
+    {
+        new MobYield { NpcId = 2090168, Kills = 120, Kinah = 410_000, AbyssPoints = 11_400 },
+        new MobYield { NpcId = 2000053, Kills = 94, Kinah = 352_000, AbyssPoints = 7_900 },
+        new MobYield { NpcId = 2100217, Kills = 260, Kinah = 1_010_000 },
+        new MobYield { NpcId = 2100066, Kills = 310, Kinah = 690_000 },
     };
 
     public static MarketBook Book()

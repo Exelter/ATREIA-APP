@@ -586,10 +586,21 @@ public static class SelfCheckCraft
         Aion2Grind.NoteInventory(Balance(kina, 50_000, 0), t.AddMinutes(21), "Other");  // another character: its balance is a start, not a gain
         Aion2Grind.NoteKill(210010000, t.AddMinutes(21));
         bool other = Aion2Grind.Current is { Kinah: 0, Kills: 1, Character: "Other" } && Aion2Grind.Sessions.Count == 1 && Aion2Grind.Sessions[0].Kinah == 600;
+
+        // a pack: two monsters down at once; the first pays its Kinah, then its Abyss Points, then the second its Kinah - each to its own monster
+        DateTime u = t.AddMinutes(22);
+        Aion2Grind.NoteInventory(Balance(ap, 1000, 1), u.AddSeconds(-1), "Other");      // the first Abyss Points seen: the start only
+        Aion2Grind.NoteKill(210010000, u, 2090666);
+        Aion2Grind.NoteKill(210010000, u.AddSeconds(0.5), 2300104);
+        Aion2Grind.NoteInventory(Balance(kina, 50_300, 0), u.AddSeconds(1), "Other");   // the first one's Kinah
+        Aion2Grind.NoteInventory(Balance(ap, 1040, 1), u.AddSeconds(1.2), "Other");     // the first one's Abyss Points
+        Aion2Grind.NoteInventory(Balance(kina, 50_500, 0), u.AddSeconds(1.5), "Other"); // the second one's Kinah
+        MobYield? first = Aion2Grind.MobYields.FirstOrDefault(y => y.NpcId == 2090666), second = Aion2Grind.MobYields.FirstOrDefault(y => y.NpcId == 2300104);
+        bool perMonster = first is { Kills: 1, Kinah: 300, AbyssPoints: 40 } && second is { Kills: 1, Kinah: 200, AbyssPoints: 0 };
         Aion2Grind.ResetForCheck();
         Console.WriteLine($"  -> grind: nothing before a kill: {idle}; Kinah +600, Abyss Points +60, 2 kills, the loot without Kinah: {amounts}; 60 s farmed (the pause left out), "
-            + $"36,000 Kinah an hour, none before a minute: {time}; another character starts its own: {other}");
-        return idle && amounts && time && other;
+            + $"36,000 Kinah an hour, none before a minute: {time}; another character starts its own: {other}; a pack's Kinah and points each to its own monster: {perMonster}");
+        return idle && amounts && time && other && perMonster;
     }
 
     private static bool SeasonCoins()

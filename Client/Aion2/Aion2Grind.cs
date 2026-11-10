@@ -34,6 +34,15 @@ public sealed class GrindSession
     public double? PerHour(double amount, double activeSeconds) => activeSeconds >= 60 ? amount * 3600 / activeSeconds : null;
 }
 
+/// <summary>What one monster (NPC id) gave over every grind: the kills, and the Kinah and Abyss Points that came right after them.</summary>
+public sealed class MobYield
+{
+    public int NpcId { get; set; }
+    public int Kills { get; set; }
+    public long Kinah { get; set; }
+    public long AbyssPoints { get; set; }
+}
+
 /// <summary>
 /// The grind tracker (10 November 2026, the owner: "switch to grind on the meter while farming mobs: how much Kinah, how much Abyss Points you farm, and what
 /// you're going to get per hour - changes on average: kill a marshal and it goes off, then drops steadily"). Kinah and Abyss Points come from the inventory
@@ -59,6 +68,9 @@ public static class Aion2Grind
     private const int MaxSessions = 40;
     private static readonly object Gate = new();
     private static readonly List<GrindSession> Stored = new();   // the ended sessions, newest first
+    private static readonly Dictionary<int, MobYield> Yields = new();   // per monster, over every grind
+    // the kills of the last seconds, for the Kinah and the Abyss Points that follow them (a kill pays each once: its Kinah and its points apart)
+    private static readonly List<(int Npc, DateTime At, bool PaidKinah, bool PaidAp)> RecentKills = new();
     private static readonly Dictionary<int, long> Balances = new();
     private static GrindSession? _current;
     private static string _character = "";
@@ -143,13 +155,29 @@ public static class Aion2Grind
                 }
 
                 Touch(now);
+                long gain = balance - before;
                 if (item == AbyssPoints)
                 {
-                    _current!.AbyssPoints += balance - before;
+                    _current!.AbyssPoints += gain;
                 }
                 else
                 {
-                    _current!.Kinah += balance - before;
+                    _current!.Kinah += gain;
+                }
+
+                // the monster it came from: the oldest kill of the last five seconds that paid nothing yet, else the latest one (a pack killed at once pays
+                // one after the other)
+                if (PayingKill(now, item == AbyssPoints) is int npc && npc > 0)
+                {
+                    MobYield y = YieldOf(npc);
+                    if (item == AbyssPoints)
+                    {
+                        y.AbyssPoints += gain;
+                    }
+                    else
+                    {
+                        y.Kinah += gain;
+                    }
                 }
 
                 changed = true;
@@ -168,14 +196,22 @@ public static class Aion2Grind
         }
     }
 
-    /// <summary>A kill the loot log counted (the player hit the monster, or picked up its drop).</summary>
-    public static void NoteKill(int zone, DateTime at)
+    /// <summary>A kill the loot log counted (the player hit the monster, or picked up its drop) of monster <paramref name="npc"/> (its NPC id, 0 = not known).</summary>
+    public static void NoteKill(int zone, DateTime at, int npc = 0)
     {
         lock (Gate)
         {
-            Touch(Local(at));
+            DateTime now = Local(at);
+            Touch(now);
             _current!.Kills++;
             _current.ZoneKills[zone] = _current.ZoneKills.GetValueOrDefault(zone) + 1;
+            if (npc > 0)
+            {
+                YieldOf(npc).Kills++;
+                RecentKills.Add((npc, now, false, false));
+                RecentKills.RemoveAll(k => now - k.At > TimeSpan.FromSeconds(5));
+            }
+
             _dirty = true;
             Save(force: false);
         }
@@ -243,6 +279,8 @@ public static class Aion2Grind
         {
             Stored.Clear();
             Balances.Clear();
+            Yields.Clear();
+            RecentKills.Clear();
             _current = null;
             _character = "";
         }
@@ -272,6 +310,46 @@ public static class Aion2Grind
 
             _current.End = now;
         }
+    }
+
+    /// <summary>What each monster gave over every grind (copies), the most killed first.</summary>
+    public static IReadOnlyList<MobYield> MobYields
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return Yields.Values.OrderByDescending(y => y.Kills)
+                    .Select(y => new MobYield { NpcId = y.NpcId, Kills = y.Kills, Kinah = y.Kinah, AbyssPoints = y.AbyssPoints }).ToList();
+            }
+        }
+    }
+
+    // Under the lock.
+    private static MobYield YieldOf(int npc)
+    {
+        if (!Yields.TryGetValue(npc, out MobYield? y))
+        {
+            Yields[npc] = y = new MobYield { NpcId = npc };
+        }
+
+        return y;
+    }
+
+    // Under the lock: the monster a gain at <paramref name="now"/> came from (null: no kill in the last five seconds): the oldest kill of them that hasn't paid
+    // this currency yet (a kill's Kinah and its Abyss Points come one after the other, a pack's kills each in turn).
+    private static int? PayingKill(DateTime now, bool abyssPoints)
+    {
+        int index = RecentKills.FindIndex(k => !(abyssPoints ? k.PaidAp : k.PaidKinah) && now - k.At <= TimeSpan.FromSeconds(5) && now >= k.At.AddSeconds(-1));
+        if (index >= 0)
+        {
+            (int npc, DateTime at, bool paidKinah, bool paidAp) = RecentKills[index];
+            RecentKills[index] = (npc, at, paidKinah || !abyssPoints, paidAp || abyssPoints);
+            return npc;
+        }
+
+        int latest = RecentKills.FindLastIndex(k => now - k.At <= TimeSpan.FromSeconds(5));
+        return latest >= 0 ? RecentKills[latest].Npc : null;
     }
 
     // Under the lock: the session goes to the ended ones (when there is something to it).
@@ -314,6 +392,11 @@ public static class Aion2Grind
                     }
 
                     _character = _current?.Character ?? "";
+                    Yields.Clear();
+                    foreach (MobYield y in store.Mobs.Where(y => y.NpcId > 0))
+                    {
+                        Yields[y.NpcId] = y;
+                    }
                 }
             }
             catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
@@ -346,7 +429,7 @@ public static class Aion2Grind
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(StorePath)!);
-            AionDPS.AtomicFile.WriteAllText(StorePath, JsonSerializer.Serialize(new GrindStore { Current = _current, Sessions = Stored }));
+            AionDPS.AtomicFile.WriteAllText(StorePath, JsonSerializer.Serialize(new GrindStore { Current = _current, Sessions = Stored, Mobs = Yields.Values.ToList() }));
             _dirty = false;
             _savedAt = DateTime.UtcNow;
         }
@@ -360,5 +443,6 @@ public static class Aion2Grind
     {
         public GrindSession? Current { get; set; }
         public List<GrindSession> Sessions { get; set; } = new();
+        public List<MobYield> Mobs { get; set; } = new();
     }
 }

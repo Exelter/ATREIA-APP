@@ -11,7 +11,7 @@ namespace AionDPS.Ui;
 
 /// <summary>Who the selected player is, as the game showed him: name, class, level, server, legion, Combat Power and item level, and whether he is an enemy.</summary>
 public sealed record EnemyCardData(string Name, string? ClassName, int? Level, string? Server, string? Legion, int? CombatPower, int? ItemLevel, bool Enemy, int? OwnPower,
-    bool Sample = false, int ServerId = 0, bool Looking = false)
+    bool Sample = false, int ServerId = 0, bool Looking = false, Rival? Rival = null)
 {
     /// <summary>Whether something the card shows is not known yet (it is then looked up).</summary>
     public bool Incomplete => CombatPower is null || ItemLevel is null || ClassName is null || Level is null;
@@ -22,7 +22,7 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
     /// <summary>The card of the player the local player has selected, when it is a player (an enemy only unless <paramref name="allies"/>); null otherwise.</summary>
     public static EnemyCardData? Of(Aion2EntityDirectory dir, bool allies, int? ownPower)
     {
-        if (dir.OwnTarget is not { } target || !dir.IsKnownPlayer(target.EntityId) || target.EntityId == dir.LocalPlayerId)
+        if (dir.OwnTarget is not { } target || !dir.IsPlayer(target.EntityId) || target.EntityId == dir.LocalPlayerId)
         {
             return null;
         }
@@ -41,12 +41,15 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
         string? className = profile?.ClassId is int classId ? Aion2SkillNames.ClassFromCode(4 * classId + 1) : dir.ClassOf(id);
         string? server = dir.ServerIdOf(id) is int sid && Aion2Servers.IsKnown(sid) ? Aion2Servers.NameOf(sid) : null;
         int? power = profile?.CombatPower is int cp and > 0 and not 397228 ? cp : null; // 397228: the fixed number of the 10 against 10 arena
-        return new EnemyCardData(dir.NameFor(id) ?? "Unknown player", className, profile?.Level, server, dir.GuildOf(id), power, profile?.ItemLevel is > 0 ? profile.ItemLevel : null,
-            enemy, ownPower, ServerId: dir.ServerIdOf(id) ?? 0);
+        string name = dir.NameFor(id) ?? "Unknown player";
+        int serverId = dir.ServerIdOf(id) ?? 0;
+        return new EnemyCardData(name, className, profile?.Level, server, dir.GuildOf(id), power, profile?.ItemLevel is > 0 ? profile.ItemLevel : null,
+            enemy, ownPower, ServerId: serverId, Rival: Aion2Pvp.RivalOf(name, serverId));
     }
 
     /// <summary>What the card shows while it is placed with nobody selected.</summary>
-    public static EnemyCardData SampleCard(int? ownPower) => new("Kraeger", "Templar", 45, "Nezekan", "Iron Oath", 2_418_300, 3_120, true, ownPower ?? 2_160_000, Sample: true);
+    public static EnemyCardData SampleCard(int? ownPower) => new("Kraeger", "Templar", 45, "Nezekan", "Iron Oath", 231_400, 3_120, true, ownPower ?? 206_600, Sample: true,
+        Rival: new Rival { Name = "Kraeger", Met = 4, Kills = 2, Deaths = 2, KilledBy = 1 });
 }
 
 /// <summary>
@@ -104,7 +107,7 @@ public sealed class EnemyCardWindow : MovableOverlay
     public void Render(EnemyCardData? card)
     {
         string key = card is null ? "" : string.Join("|", card.Name, card.ClassName, card.Level, card.Server, card.Legion, card.CombatPower, card.ItemLevel, card.Enemy, card.OwnPower, card.Sample,
-            card.Looking);
+            card.Looking, card.Rival?.Met, card.Rival?.Kills, card.Rival?.Deaths);
         if (key == _shown)
         {
             return;
@@ -161,7 +164,10 @@ public sealed class EnemyCardWindow : MovableOverlay
         numbers.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var power = new StackPanel();
         power.Children.Add(Caption("COMBAT POWER"));
-        power.Children.Add(Big(card.CombatPower is int cp ? cp.ToString("N0", CultureInfo.CurrentCulture) : card.Looking ? "…" : "?", OverlaySkin.Gold));
+        TextBlock powerText = Big(card.CombatPower is int cp ? PlayerRow.Compact(cp) : card.Looking ? "…" : "?", OverlaySkin.Gold);
+        // short like the meter's own CP (231.4K); the exact figure on hover
+        powerText.ToolTip = card.CombatPower is int exact ? exact.ToString("N0", CultureInfo.CurrentCulture) : null;
+        power.Children.Add(powerText);
         if (card.Against is double against)
         {
             bool stronger = against > 0.005;
@@ -182,6 +188,25 @@ public sealed class EnemyCardWindow : MovableOverlay
         Grid.SetColumn(items, 1);
         numbers.Children.Add(items);
         stack.Children.Add(numbers);
+
+        // the record against him (the rivals): how often fought, the kills and the deaths
+        if (card.Rival is { Met: > 0 } r)
+        {
+            stack.Children.Add(OverlaySkin.Divider(7, 5));
+            var record = new TextBlock { FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis };
+            record.Inlines.Add(new System.Windows.Documents.Run(r.Met == 1 ? "Fought once" : $"Fought {r.Met}×") { Foreground = new SolidColorBrush(Muted) });
+            record.Inlines.Add(new System.Windows.Documents.Run("  ·  ") { Foreground = new SolidColorBrush(Muted) });
+            record.Inlines.Add(new System.Windows.Documents.Run($"{r.Kills} {(r.Kills == 1 ? "kill" : "kills")}") { FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(OverlaySkin.Good) });
+            record.Inlines.Add(new System.Windows.Documents.Run("  ·  ") { Foreground = new SolidColorBrush(Muted) });
+            record.Inlines.Add(new System.Windows.Documents.Run($"{r.Deaths} {(r.Deaths == 1 ? "death" : "deaths")}") { FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Enemy) });
+            if (r.KilledBy > 0)
+            {
+                record.Inlines.Add(new System.Windows.Documents.Run(r.KilledBy == 1 ? "  ·  killed you once" : $"  ·  killed you {r.KilledBy}×") { Foreground = new SolidColorBrush(Muted) });
+            }
+
+            stack.Children.Add(record);
+        }
+
         return OverlaySkin.Panel(stack, new Thickness(12, 10, 12, 10));
     }
 
@@ -220,6 +245,25 @@ public sealed class EnemyCardController : IDisposable
     }
 
     public void RaiseToFront() => _overlay?.RaiseToFront();
+
+    /// <summary>
+    /// What a lookup found of a player the game's frame told too little of, null while none did; a lookup is started when none was made yet (or the last is old),
+    /// a few at a time - the radar asks for the enemies in view this way, the card for the one selected.
+    /// </summary>
+    public (int? Power, int? Items)? Lookup(string name, int serverId, int ownServer, bool enemy)
+    {
+        string key = name + "|" + serverId.ToString(CultureInfo.InvariantCulture);
+        _looked.TryGetValue(key, out var got);
+        bool complete = got.CombatPower is not null && got.ItemLevel is not null;
+        TimeSpan age = got.At == default ? TimeSpan.MaxValue : DateTime.UtcNow - got.At;
+        if ((got.At == default || age > LookedKept || (!complete && age > NotFoundRetry)) && name.Length > 0 && name != "Unknown player" && _looking.Count < 3
+            && _looking.Add(key))
+        {
+            _ = LookUpAsync(key, name, serverId, ownServer, enemy);
+        }
+
+        return got.CombatPower is not null || got.ItemLevel is not null ? (got.CombatPower, got.ItemLevel) : null;
+    }
 
     public void Dispose()
     {

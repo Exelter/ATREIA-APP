@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.ComponentModel;
 using System.IO;
 using System.Text.Json;
@@ -76,6 +77,57 @@ public sealed class LocalizationManager : INotifyPropertyChanged
             _language = value;
             Aion2.Protocol.Aion2SkillNames.Language = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(Binding.IndexerName));
+        }
+    }
+
+    private CultureInfo? _culture;
+    private string _cultureFor = "";
+
+    /// <summary>
+    /// Dates in the app's language (10 November 2026, a tester: "this shows date in local language not in app language" - Polish day and month names in the
+    /// English app): the system's own order of day, month and year, its clock and its numbers, with the day and month names of the language the app speaks.
+    /// </summary>
+    public CultureInfo Culture
+    {
+        get
+        {
+            CultureInfo system = CultureInfo.CurrentCulture;
+            string key = _language + "|" + system.Name;
+            if (_culture is not null && _cultureFor == key)
+            {
+                return _culture;
+            }
+
+            CultureInfo spoken;
+            try
+            {
+                spoken = CultureInfo.GetCultureInfo(_language switch { "zh" => "zh-CN", "pt" => "pt-BR", _ => _language });
+            }
+            catch (CultureNotFoundException)
+            {
+                spoken = CultureInfo.InvariantCulture;
+            }
+
+            CultureInfo mixed = system;
+            if (!string.Equals(system.TwoLetterISOLanguageName, spoken.TwoLetterISOLanguageName, StringComparison.OrdinalIgnoreCase))
+            {
+                mixed = (CultureInfo)system.Clone();
+                DateTimeFormatInfo to = mixed.DateTimeFormat, from = spoken.DateTimeFormat;
+                if (to.Calendar.GetType() == from.Calendar.GetType())
+                {
+                    to.DayNames = from.DayNames;
+                    to.AbbreviatedDayNames = from.AbbreviatedDayNames;
+                    to.ShortestDayNames = from.ShortestDayNames;
+                    to.MonthNames = from.MonthNames;
+                    to.AbbreviatedMonthNames = from.AbbreviatedMonthNames;
+                    to.MonthGenitiveNames = from.MonthGenitiveNames;
+                    to.AbbreviatedMonthGenitiveNames = from.AbbreviatedMonthGenitiveNames;
+                }
+            }
+
+            _culture = mixed;
+            _cultureFor = key;
+            return mixed;
         }
     }
 

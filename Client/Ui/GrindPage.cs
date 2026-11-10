@@ -29,6 +29,9 @@ public sealed class GrindPage : StackPanel
     private string _tab = "grind";
     private string _shown = "";
 
+    /// <summary>For the pictures of the tool: the monsters' drop tables and yields in place of the live ones.</summary>
+    public static (IReadOnlyList<LootMob> Mobs, IReadOnlyList<MobYield> Yields)? PictureMobs { get; set; }
+
     /// <summary>For the pictures of the tool: the session going on, the earlier ones and the market, in place of the live ones.</summary>
     public static (GrindSession? Current, IReadOnlyList<GrindSession> Earlier, MarketBook? Book, DateTime Now)? Picture { get; set; }
 
@@ -96,7 +99,149 @@ public sealed class GrindPage : StackPanel
             _grind.Children.Add(LootCard(f.Session, book));
         }
 
+        _grind.Children.Add(BestMobs(book));
         _grind.Children.Add(Earlier(earlier, book));
+    }
+
+    // ------------------------------------------------------------------ the best monsters to farm
+
+    /// <summary>A monster's worth per kill: the Kinah and Abyss Points that came right after its kills, and its drops at the market.</summary>
+    public sealed record MobValue(int NpcId, IReadOnlyList<int> Zones, int Kills, double? KinahPerKill, double? ApPerKill, double? LootPerKill)
+    {
+        public double PerKill => (KinahPerKill ?? 0) + (LootPerKill ?? 0);
+    }
+
+    /// <summary>
+    /// The monsters killed at least five times, the best paying per kill first (10 November 2026, the owner picked: "best mob to farm - Kinah plus loot value per
+    /// kill for each monster, so you know which pack actually pays"): the Kinah that came right after its kills (the grind tracker), and its drops over all time
+    /// at the market of the own server.
+    /// </summary>
+    public static List<MobValue> Ranked(IReadOnlyList<LootMob> mobs, IReadOnlyList<MobYield> yields, MarketBook? book)
+    {
+        var byNpc = yields.ToDictionary(y => y.NpcId);
+        var list = new List<MobValue>();
+        foreach (LootMob mob in mobs.Where(m => m.NpcId > 0))
+        {
+            byNpc.TryGetValue(mob.NpcId, out MobYield? y);
+            int kills = Math.Max(mob.Kills, y?.Kills ?? 0);
+            if (kills < 5)
+            {
+                continue;
+            }
+
+            double? loot = book is null || mob.Kills == 0 ? null : mob.Items.Sum(i => (double)(CraftWorkshop.PriceOf(book, i.ItemId) ?? 0) * i.Count) / mob.Kills;
+            double? kinah = y is { Kills: >= 3 } ? (double)y.Kinah / y.Kills : null;
+            double? ap = y is { Kills: >= 3 } && y.AbyssPoints > 0 ? (double)y.AbyssPoints / y.Kills : null;
+            list.Add(new MobValue(mob.NpcId, mob.Zones, kills, kinah, ap, loot));
+        }
+
+        foreach (MobYield y in yields.Where(y => y.Kills >= 5 && mobs.All(m => m.NpcId != y.NpcId)))
+        {
+            list.Add(new MobValue(y.NpcId, Array.Empty<int>(), y.Kills, (double)y.Kinah / y.Kills, y.AbyssPoints > 0 ? (double)y.AbyssPoints / y.Kills : null, null));
+        }
+
+        return list.OrderByDescending(m => m.PerKill).ThenByDescending(m => m.ApPerKill ?? 0).ThenByDescending(m => m.Kills).ToList();
+    }
+
+    private FrameworkElement BestMobs(MarketBook? book)
+    {
+        IReadOnlyList<LootMob> mobs = PictureMobs?.Mobs ?? Aion2Loot.Mobs;
+        IReadOnlyList<MobYield> yields = PictureMobs?.Yields ?? Aion2Grind.MobYields;
+        List<MobValue> ranked = Ranked(mobs, yields, book);
+        var card = Card(new Thickness(8, 12, 8, 8));
+        card.Margin = new Thickness(0, 12, 0, 0);
+        var stack = new StackPanel();
+        card.Child = stack;
+        stack.Children.Add(Text("BEST MONSTERS TO FARM", 10.5, "Brush.TextMuted", bold: true, margin: new Thickness(10, 0, 10, 2)));
+        stack.Children.Add(Text("Kinah plus drops at your server's market, per kill. Monsters killed five times or more.", 11.5,
+            "Brush.TextMuted", margin: new Thickness(10, 0, 10, 8)));
+        if (ranked.Count == 0)
+        {
+            stack.Children.Add(Text("Kill a few packs and the monsters that pay best show here.", 12.5, "Brush.TextMuted", margin: new Thickness(10, 0, 10, 8)));
+            return card;
+        }
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        for (int c = 1; c < 6; c++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        }
+
+        int row = 0;
+        void Cell(UIElement e, int column)
+        {
+            Grid.SetRow(e, row);
+            Grid.SetColumn(e, column);
+            grid.Children.Add(e);
+        }
+
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        string[] titles = { "MONSTER", "KILLS", "KINAH / KILL", "AP / KILL", "LOOT / KILL", "TOTAL / KILL" };
+        for (int i = 0; i < titles.Length; i++)
+        {
+            TextBlock t = Text(titles[i], 10, "Brush.TextMuted", bold: true, margin: new Thickness(10, 0, 10, 4));
+            if (i > 0)
+            {
+                t.TextTrimming = TextTrimming.None;
+                t.HorizontalAlignment = HorizontalAlignment.Right;
+            }
+
+            Cell(t, i);
+        }
+
+        double best = ranked[0].PerKill;
+        foreach (MobValue m in ranked.Take(12))
+        {
+            row++;
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            if (row % 2 == 1)
+            {
+                var band = new Border { CornerRadius = new CornerRadius(8) };
+                band.SetResourceReference(Border.BackgroundProperty, "Brush.RowAlt");
+                Grid.SetColumnSpan(band, 6);
+                Cell(band, 0);
+            }
+
+            var name = new StackPanel { Margin = new Thickness(10, 5, 10, 5) };
+            var title = new StackPanel { Orientation = Orientation.Horizontal };
+            title.Children.Add(Text(LootText.MobName(m.NpcId), 13, "Brush.Text", bold: true));
+            if (row == 1 && m.PerKill > 0)
+            {
+                title.Children.Add(new Border
+                {
+                    Margin = new Thickness(8, 0, 0, 0), Padding = new Thickness(6, 0, 7, 1), CornerRadius = new CornerRadius(7), VerticalAlignment = VerticalAlignment.Center,
+                    Background = new SolidColorBrush(Color.FromArgb(0x26, Good.R, Good.G, Good.B)),
+                    Child = new TextBlock { Text = "PAYS BEST", FontSize = 9.5, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Good) },
+                });
+            }
+
+            name.Children.Add(title);
+            if (m.Zones.Count > 0)
+            {
+                name.Children.Add(Text(string.Join(", ", m.Zones.Take(2).Select(LootText.MapName)), 11.5, "Brush.TextMuted"));
+            }
+
+            Cell(name, 0);
+            Cell(Number(m.Kills.ToString("N0", CultureInfo.CurrentCulture), null), 1);
+            Cell(Number(m.KinahPerKill is double k ? GrindView.Short(k) : "–", GrindView.KinahColour), 2);
+            Cell(Number(m.ApPerKill is double a ? GrindView.Short(a) : "–", GrindView.ApColour), 3);
+            Cell(Number(m.LootPerKill is double l ? GrindView.Short(l) : "–", GrindView.LootColour), 4);
+            var total = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 10, 0), MinWidth = 90 };
+            var totalText = Number(m.PerKill > 0 ? GrindView.Short(m.PerKill) : "–", null);
+            totalText.Margin = new Thickness(0);
+            total.Children.Add(totalText);
+            double share = best > 0 ? Math.Clamp(m.PerKill / best, 0, 1) : 0;
+            var bar = new Grid { Height = 3, Margin = new Thickness(0, 3, 0, 0) };
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(share, GridUnitType.Star) });
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1 - share, GridUnitType.Star) });
+            bar.Children.Add(new Border { CornerRadius = new CornerRadius(1.5), Background = new SolidColorBrush(Gold) });
+            total.Children.Add(new Border { Child = bar, CornerRadius = new CornerRadius(1.5), Background = new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)), ClipToBounds = true });
+            Cell(total, 5);
+        }
+
+        stack.Children.Add(grid);
+        return card;
     }
 
     // ------------------------------------------------------------------ the tabs
@@ -168,26 +313,59 @@ public sealed class GrindPage : StackPanel
         }
 
         GrindSession s = f.Session;
-        var head = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 0, 0, 14) };
-        var left = new StackPanel { Orientation = Orientation.Horizontal };
-        left.Children.Add(StatePill(f.Over));
-        left.Children.Add(Text(s.Zone != 0 ? LootText.MapName(s.Zone) : "This session", 17, "Brush.Text", bold: true, margin: new Thickness(10, 0, 0, 0)));
-        string who = (s.Character.Length > 0 ? "  ·  " + s.Character : "") + "  ·  since " + s.Start.ToString("HH:mm", CultureInfo.CurrentCulture) + "  ·  farmed " + f.FarmedText;
-        left.Children.Add(Text(who, 12.5, "Brush.TextMuted", margin: new Thickness(4, 2, 0, 0)));
-        head.Children.Add(left);
-        if (Picture is null)
+        // the head: the state and the map, who and since when under them; the buttons on the right (first, so they keep their room on a narrow page)
+        var head = new DockPanel { Margin = new Thickness(0, 0, 0, 14) };
+        Border again = ActionButton("\uE72C", "New session", () =>
         {
-            Border again = ActionButton("\uE72C", "New session", () =>
+            if (Picture is not null)
             {
-                Aion2Grind.NewSession();
-                _shown = "";
-                Refresh();
-            });
-            again.ToolTip = "Start counting again from the next kill: this session goes to the earlier ones";
-            DockPanel.SetDock(again, Dock.Right);
-            head.Children.Add(again);
-        }
+                return;
+            }
 
+            Aion2Grind.NewSession();
+            _shown = "";
+            Refresh();
+        });
+        again.ToolTip = "Start counting again from the next kill: this session goes to the earlier ones";
+        again.VerticalAlignment = VerticalAlignment.Top;
+        DockPanel.SetDock(again, Dock.Right);
+        head.Children.Add(again);
+        GrindFigures figures = f;
+        Border? share = null;
+        share = ActionButton("\uE72D", "Share", () =>
+        {
+            bool copied = ShareCard.Copy(ShareCard.Grind(figures), "Grind " + (figures.Session.Zone != 0 ? LootText.MapName(figures.Session.Zone) : ""), out _);
+            if (share?.Child is StackPanel { Children.Count: 2 } line && line.Children[1] is TextBlock label)
+            {
+                // a moment of "Copied", then the button as it was
+                label.Text = copied ? "Copied" : "Try again";
+                var back = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+                back.Tick += (_, _) =>
+                {
+                    back.Stop();
+                    label.Text = "Share";
+                };
+                back.Start();
+            }
+        });
+        share.ToolTip = "Copy this session as an image to paste in Discord (also kept in Pictures\\Atreia App)";
+        share.Margin = new Thickness(0, 0, 8, 0);
+        share.VerticalAlignment = VerticalAlignment.Top;
+        DockPanel.SetDock(share, Dock.Right);
+        head.Children.Add(share);
+
+        var title = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+        var name = new StackPanel { Orientation = Orientation.Horizontal };
+        name.Children.Add(StatePill(f.Over));
+        TextBlock map = Text(s.Zone != 0 ? LootText.MapName(s.Zone) : "This session", 17, "Brush.Text", bold: true, margin: new Thickness(10, 0, 0, 0));
+        map.TextTrimming = TextTrimming.CharacterEllipsis;
+        name.Children.Add(map);
+        title.Children.Add(name);
+        string who = (s.Character.Length > 0 ? s.Character + "  ·  " : "") + "since " + s.Start.ToString("HH:mm", CultureInfo.CurrentCulture) + "  ·  farmed " + f.FarmedText;
+        TextBlock whoText = Text(who, 12.5, "Brush.TextMuted", margin: new Thickness(0, 5, 0, 0));
+        whoText.TextTrimming = TextTrimming.CharacterEllipsis;
+        title.Children.Add(whoText);
+        head.Children.Add(title);
         stack.Children.Add(head);
         var tiles = new UniformGrid { Columns = 4 };
         tiles.Children.Add(Tile("KINAH / HOUR", f.KinahPerHour is double k ? GrindView.Short(k) : "…", "+" + GrindView.Short(s.Kinah) + " this session", GrindView.KinahColour));
@@ -195,7 +373,7 @@ public sealed class GrindPage : StackPanel
         tiles.Children.Add(Tile("KILLS / HOUR", f.KillsPerHour is double kh ? kh.ToString("N0", CultureInfo.CurrentCulture) : "…", s.Kills.ToString("N0", CultureInfo.CurrentCulture) + " killed",
             GrindView.KillColour));
         tiles.Children.Add(Tile("LOOT / HOUR", f.LootPerHour is double lh ? GrindView.Short(lh) : f.Items == 0 ? "–" : "…",
-            f.LootWorth is long w ? $"{f.Items:N0} items, ~{GrindView.Short(w)} at the market" : $"{f.Items:N0} items", GrindView.LootColour));
+            f.LootWorth is long w ? $"{f.Items:N0} items  ·  ~{GrindView.Short(w)}" : $"{f.Items:N0} items", GrindView.LootColour));
         stack.Children.Add(tiles);
         TextBlock note = Text(f.KinahPerHour is null ? "The hourly numbers come after the first minute farmed." :
             "Per hour is this session's average over the time farmed: a big kill lifts it at once, and it settles again as the minutes go by. Pauses of more than five minutes don't count.",

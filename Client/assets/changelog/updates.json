@@ -6,7 +6,7 @@
   ],
   "versions": [
     {
-      "version": "2.0.0",
+      "version": "2.0.0-beta",
       "date": "2026-11-10",
       "items": [
         {
@@ -71,7 +71,71 @@
           "kind": "new",
           "area": "Abyss",
           "title": "Enemy card",
-          "text": "Tab onto an enemy player and a card shows their class, level, server, legion, Combat Power and item level, and how their Combat Power compares with yours. If the game didn't send their numbers (for example the app started while they were already nearby), the card looks them up from their character page. Place it where you like in the overlay editor; it only shows while an enemy is selected."
+          "text": "Tab onto an enemy player and a card shows their class, level, server, legion, Combat Power and item level, and how their Combat Power compares with yours. If the game didn't send their numbers (for example the app started while they were already nearby), the card looks them up from their character page. Place it where you like in the overlay editor; it only shows while an enemy is selected. On the Overlays page you can have it show players of your own side too."
+        },
+        {
+          "kind": "new",
+          "area": "Abyss",
+          "title": "Enemy radar",
+          "text": "A small list over the game of every enemy player around you, the strongest first, with their class and Combat Power against yours. When someone at least 20% stronger than you shows up, they appear in red at the top for a few seconds, so you can back off before they reach you. Numbers the game didn't send are looked up, like on the enemy card. It only shows while enemies are in view.",
+          "example": "Kaelith (Gladiator) 412K, 38% stronger than you, just came into view."
+        },
+        {
+          "kind": "new",
+          "area": "Abyss",
+          "title": "Death recap",
+          "text": "When you die, a card shows what killed you: the last 15 seconds of damage you took, by player and skill, the blow that finished you, and the healing you got in that time. It stays for 30 seconds, then clears itself."
+        },
+        {
+          "kind": "new",
+          "area": "Abyss",
+          "title": "Rivals",
+          "text": "The app remembers the enemy players you fight: how often you met, how many times you killed them and how many times they killed you. The record shows on their enemy card and on the radar the next time you run into them.",
+          "example": "Vorrin: fought 6×, 4 kills, 2 deaths."
+        },
+        {
+          "kind": "new",
+          "area": "Grind",
+          "title": "The best monsters to farm",
+          "text": "The Grind tool ranks the monsters you've killed at least five times by what each kill brings you on average: its Kinah plus the market value of its drops on your server, with the Abyss Points next to it. So you know which pack actually pays."
+        },
+        {
+          "kind": "improved",
+          "area": "Grind",
+          "title": "Kills count even without a drop",
+          "text": "Grind and Loot used to count a kill only when you picked something up from it. Every monster you take down counts now, so the kills an hour and the averages per monster are right."
+        },
+        {
+          "kind": "new",
+          "area": "Bosses",
+          "title": "Wipe review",
+          "text": "After a try that ends without the kill, the meter shows who died first and when, what killed each of them, the skill that took down the most of the group, and how much health the boss had left against your best try of the last hours. It goes away by itself after a few minutes or when you pull again.",
+          "example": "Try 4: Lyra died first at 1:42 to Shadow Burst. The boss was at 18%, your best try today got it to 9%."
+        },
+        {
+          "kind": "new",
+          "area": "Sharing",
+          "title": "Share cards for Discord",
+          "text": "One click turns a fight into a clean picture, ready to paste into Discord with Ctrl+V: right-click a fight in History, pick it from the meter's menu, or press Share on a grind session. The picture is also kept in your Pictures folder, under Atreia App."
+        },
+        {
+          "kind": "new",
+          "area": "Characters",
+          "title": "Every character on one board",
+          "text": "All characters shows every counter as a row and every character as a column, so you see at a glance which alt has what: Odyle Energy (with all of it together and how many runs it makes), the daily tasks, Nightmare and the daily dungeons, the keys your server's characters share, this week's Ascension Trial, Subjugation, Ludra's Abyssal Forge with its boss, the Conquest and Transcendence rewards and the Abyss Corridors. Only what the Global servers have is listed. A counter turns red when it's so full that part of the next refill is lost, and amber when the week's tickets are about to reset unused. Sections fold and stay folded. Eight characters fit side by side. Season missions and the inventory have tabs of their own.",
+          "example": "Kaivhan's Nightmare is at 13/14 with +2 coming at 08:00: the cell is red and says −1 at 08:00."
+        },
+        {
+          "kind": "improved",
+          "area": "Characters",
+          "title": "A clearer page for each character",
+          "text": "The Odyle Energy card shows all your energy together at the top (basic, charged and in items) and how many runs it makes. Every other row is shaded, the two small daily dungeons say they're daily dungeons, warnings say exactly what you'd lose and when, and every card folds and stays folded. Characters are picked from a bar at the top."
+        },
+        {
+          "kind": "improved",
+          "area": "Journey",
+          "title": "Pick any character, dates in the app's language",
+          "text": "Journey shows your characters as chips under the title, in the app and over the game, and every character the meter knows can be picked. Days and months are named in the app's language, and the columns of your days line up on every PC."
         }
       ]
     },
