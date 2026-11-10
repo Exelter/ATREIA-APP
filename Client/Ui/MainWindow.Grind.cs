@@ -103,6 +103,7 @@ public partial class MainWindow
             OverlayGrindCard.Visibility = Visibility.Visible;
         }
 
+        OverlayBarLegend.Visibility = Visibility.Collapsed; // the bar's colours belong to the lines
         OverlayTotalRateText.Text = f?.KinahPerHour is double perHour ? GrindView.Short(perHour) : "–";
         OverlayTotalUnitText.Text = "Kinah/h";
         OverlayTargetText.Text = session is { Zone: not 0 } s ? "Grind · " + LootText.MapName(s.Zone) : "Grind";

@@ -300,11 +300,13 @@ public sealed class GrindPage : StackPanel
             return card;
         }
 
+        // the session's name takes what is left; the numbers as wide as they and their titles are (never cut)
         var grid = new Grid();
-        double[] widths = { 2.2, 1, 1, 1, 1, 1, 0.9 };
-        foreach (double w in widths)
+        int columns = 7;
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        for (int c = 1; c < columns; c++)
         {
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(w, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         }
 
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
@@ -321,6 +323,7 @@ public sealed class GrindPage : StackPanel
         for (int i = 0; i < titles.Length; i++)
         {
             TextBlock t = Text(titles[i], 10, "Brush.TextMuted", bold: true, margin: new Thickness(10, 0, 10, 4));
+            t.TextTrimming = i > 0 ? TextTrimming.None : TextTrimming.CharacterEllipsis;
             if (i > 0)
             {
                 t.TextAlignment = TextAlignment.Right;
@@ -339,7 +342,7 @@ public sealed class GrindPage : StackPanel
             {
                 var band = new Border { CornerRadius = new CornerRadius(8) };
                 band.SetResourceReference(Border.BackgroundProperty, "Brush.RowAlt");
-                Grid.SetColumnSpan(band, widths.Length + 1);
+                Grid.SetColumnSpan(band, columns + 1);
                 Cell(band, 0);
             }
 
@@ -349,7 +352,7 @@ public sealed class GrindPage : StackPanel
             Cell(name, 0);
             Cell(Number(f.FarmedText, null), 1);
             Cell(Number(f.KinahPerHour is double k ? GrindView.Short(k) : "–", GrindView.KinahColour), 2);
-            Cell(Number(f.ApPerHour is double a ? GrindView.Short(a) : "–", GrindView.ApColour), 3);
+            Cell(Number(s.AbyssPoints > 0 && f.ApPerHour is double a ? GrindView.Short(a) : "–", GrindView.ApColour), 3);
             Cell(Number(f.KillsPerHour is double kh ? kh.ToString("N0", CultureInfo.CurrentCulture) : "–", null), 4);
             Cell(Number(f.LootPerHour is double lh ? GrindView.Short(lh) : "–", GrindView.LootColour), 5);
             Cell(Number("+" + GrindView.Short(s.Kinah), null), 6);
@@ -365,7 +368,7 @@ public sealed class GrindPage : StackPanel
                     _shown = "";
                     Refresh();
                 };
-                Cell(remove, widths.Length);
+                Cell(remove, columns);
             }
         }
 
