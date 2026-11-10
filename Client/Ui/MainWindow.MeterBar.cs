@@ -64,11 +64,11 @@ public partial class MainWindow
             _overlayHadFight = true;
         }
 
-        bool open = !s.MeterFoldIdle || _dummyHeader || atDummy || (_overlayHadFight && lines) || s.MeterGrind || _overlayBuffs || _overlayStagger || _historyMode || _pvpOnly
+        bool open = !s.MeterFoldIdle || _dummyHeader || atDummy || (_overlayHadFight && lines) || s.MeterGrind || _overlayBuffs || _overlayStagger || _overlayGrind || _historyMode || _pvpOnly
             || (_overlayBossShown && lines) || _overlayPinned;
         Show(OverlayBody, open);
         Show(OverlayDummyCard, dummy);
-        Show(CompactOverlayRowsArea, !dummy);
+        Show(CompactOverlayRowsArea, !dummy && !_overlayStagger && !_overlayGrind); // the Stagger and the Grind view stand in for the lines
         Show(OverlayTotalLine, _meterShowTotal && !dummy);
         Show(OverlayTargetText, !dummy && OverlayTargetText.Text.Length > 0);
         bool timed = open && OverlayTimeText.Text.Length > 0;

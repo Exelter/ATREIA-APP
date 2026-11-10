@@ -557,6 +557,12 @@ public partial class MainWindow : Window
         }
 
         RestoreWindowGeometry(settings);
+        if (settings.MeterGrindView)
+        {
+            // the Grind view stays on from one start to the next, like the mode
+            Dispatcher.BeginInvoke(new Action(() => SetGrindView(true, save: false)), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
         StartCapture(settings);
         DeleteLegacyFightHistory();
         RefreshCharacterSettings(settings);
@@ -2766,11 +2772,20 @@ public partial class MainWindow : Window
         {
             SetStaggerView(!_overlayStagger); // not a scope: the Stagger view in place of the lines (MainWindow.Stagger.cs); clicked again, the lines
         }
+        else if (sender is FrameworkElement { Tag: "Grind" })
+        {
+            SetGrindView(!_overlayGrind); // not a scope either: the Grind view (MainWindow.Grind.cs); clicked again, the lines
+        }
         else if (sender is FrameworkElement { Tag: string tag } && Enum.TryParse(tag, out MeterScope scope))
         {
             if (_overlayStagger)
             {
                 SetStaggerView(false);
+            }
+
+            if (_overlayGrind)
+            {
+                SetGrindView(false);
             }
 
             SetScope(scope);
@@ -2785,7 +2800,8 @@ public partial class MainWindow : Window
         ClientScopeBox.Visibility = MeterOverlayActive ? Visibility.Visible : Visibility.Collapsed;
         foreach (Border segment in OverlayScopeSwitch.Children.OfType<Border>().Concat(ClientScopeSwitch.Children.OfType<Border>()))
         {
-            bool selected = _overlayStagger && segment.Parent == OverlayScopeSwitch ? segment.Tag as string == "Stagger" : segment.Tag as string == ShownScope.ToString();
+            bool selected = (_overlayStagger || _overlayGrind) && segment.Parent == OverlayScopeSwitch ? segment.Tag as string == (_overlayGrind ? "Grind" : "Stagger")
+                : segment.Tag as string == ShownScope.ToString();
             // the chosen one: a gold-tinted pill with gold text; the others quiet words (the site's switches)
             segment.Background = selected ? ScopeOnBrush : Brushes.Transparent;
             if (segment.Child is TextBlock text)
@@ -8253,6 +8269,7 @@ public partial class MainWindow : Window
         AnnounceBlackCloudRenewal();
         UpdateOverlayBossCallout();
         UpdateOverlayStagger();
+        UpdateOverlayGrind();
         UpdateOverlayCubeCallout();
         UpdateOverlayBuffAlert();
         UpdateOverlayIdentity();
@@ -8934,6 +8951,11 @@ public partial class MainWindow : Window
                 SetStaggerView(false);
             }
 
+            if (_overlayGrind)
+            {
+                SetGrindView(false);
+            }
+
             _dummyCardHidden = _dummyHeader;
             SetMode(mode);
             UpdateOverlayFold();
@@ -8956,12 +8978,18 @@ public partial class MainWindow : Window
                     SetStaggerView(false);
                 }
 
+                if (_overlayGrind)
+                {
+                    SetGrindView(false);
+                }
+
                 _overlayBuffs = true;
                 _overlayBuffsAt = DateTime.MinValue;
                 _dummyCardHidden = _dummyHeader;
                 RefreshRows();
             }, !card && _overlayBuffs, !restricted),
             OverlayItem("All in one", () => Pick(MeterMode.All), !card && !_overlayBuffs && !_overlayStagger && _mode == MeterMode.All, !restricted),
+            OverlayItem("Grind: Kinah, Abyss Points and loot per hour", () => SetGrindView(true), !card && _overlayGrind),
             new Separator(),
         };
 
@@ -9236,7 +9264,7 @@ public partial class MainWindow : Window
         }
 
         // a dummy parse owns the header's time and name (its countdown, see UpdateOverlayDummy)
-        if (!_dummyHeader)
+        if (!_dummyHeader && !_overlayGrind)
         {
             OverlayTargetText.Text = _pvpOnly ? "PvP"
                 : _selectedTargetId is int targetId ? ResolveDisplayName(targetId)
@@ -9258,7 +9286,7 @@ public partial class MainWindow : Window
             double? ping = capturing && !Headless ? Aion2.Capture.NetworkStats.Snapshot().PingMs : null;
             OverlayPingText.Text = ping is double ms and >= 1 ? $"{ms:0} ms" : ""; // none yet reads 0: nothing then
         }
-        if (!_dummyHeader)
+        if (!_dummyHeader && !_overlayGrind)
         {
             OverlayTimeText.Text = summary is { Count: > 1 } sum ? (sum.Last - sum.First).ToString(@"m\:ss")
                 : summary is null && shownHits.Count > 1 ? (shownHits.Max(h => h.Timestamp) - shownHits.Min(h => h.Timestamp)).ToString(@"m\:ss")
@@ -9269,9 +9297,9 @@ public partial class MainWindow : Window
 
         // the header's mode word and the group's total in big
         string unit = _healMode ? "HPS" : _takenMode ? "DTPS" : _mode == MeterMode.Raid && !_pvpOnly ? "rDPS" : "DPS";
-        string measured = _overlayStagger ? "Stagger" : _overlayBuffs ? "Buffs" : _allMode || _allCompactMode ? "All" : _takenMode ? "Tank" : _healMode ? "Heal" : _mode == MeterMode.Raid ? "rDPS" : "DPS";
+        string measured = _overlayGrind ? "Grind" : _overlayStagger ? "Stagger" : _overlayBuffs ? "Buffs" : _allMode || _allCompactMode ? "All" : _takenMode ? "Tank" : _healMode ? "Heal" : _mode == MeterMode.Raid ? "rDPS" : "DPS";
         OverlayModeShort.Text = _dummyHeader && !_dummyCardHidden ? "Dummy" : _gateSettings.MeterGrind ? measured + " · Grind" : measured;
-        if (!_overlayBuffs && !_overlayStagger)
+        if (!_overlayBuffs && !_overlayStagger && !_overlayGrind)
         {
             double total = _rows.Where(r => !r.IsEnemy).Sum(r => (r.RdpsView ? r.Rdps ?? r.Dps : r.Dps) ?? 0);
             OverlayTotalRateText.Text = PlayerRow.Compact((long)Math.Round(total));

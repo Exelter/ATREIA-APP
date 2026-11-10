@@ -689,6 +689,9 @@ public sealed class MeterSettings
     /// <summary>The Grind view: the meter stays open for every fight, the monsters of the open world and the trash of a dungeon too (the mode menu).</summary>
     public bool MeterGrind { get; set; }
 
+    /// <summary>The meter shows the Grind view (Kinah, Abyss Points, kills and loot per hour) in place of the lines; kept from one start to the next.</summary>
+    public bool MeterGrindView { get; set; }
+
     /// <summary>The own counters at the meter's foot: Odyle Energy (and the time to its next refill), Shugo Festival, Dimensional Invasion, Nightmare, the
     /// daily dungeon and Ascension Trial.</summary>
     public bool MeterShowTickets { get; set; } = true;

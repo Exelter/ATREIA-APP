@@ -41,6 +41,10 @@ public partial class MainWindow
         {
             _overlayBuffs = false;
             _dummyCardHidden = _dummyHeader;
+            if (_overlayGrind)
+            {
+                SetGrindView(false);
+            }
         }
 
         ApplyStaggerView();
@@ -52,7 +56,7 @@ public partial class MainWindow
     /// <summary>The lines or the Stagger view, and the switch marking it.</summary>
     private void ApplyStaggerView()
     {
-        CompactOverlayRowsArea.Visibility = _overlayStagger ? Visibility.Collapsed : Visibility.Visible;
+        CompactOverlayRowsArea.Visibility = _overlayStagger || _overlayGrind ? Visibility.Collapsed : Visibility.Visible;
         if (!_overlayStagger)
         {
             OverlayStaggerCard.Visibility = Visibility.Collapsed;

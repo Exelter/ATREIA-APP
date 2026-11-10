@@ -1460,6 +1460,11 @@
                                         ToolTip="The boss's stagger checks: who took how much off its stagger bar, with which skills (hover them)">
                                     <TextBlock FontSize="11" FontWeight="SemiBold" Text="Stagger"/>
                                 </Border>
+                                <!-- Not a scope either: the Grind view in place of the lines (MainWindow.Grind.cs). -->
+                                <Border x:Name="OverlayScopeGrind" Tag="Grind" Padding="7,0" CornerRadius="4" Cursor="Hand" MouseLeftButtonDown="OnOverlayScopeClicked"
+                                        ToolTip="Grind: the Kinah, Abyss Points, kills and loot you farm, and what that makes an hour">
+                                    <TextBlock FontSize="11" FontWeight="SemiBold" Text="Grind"/>
+                                </Border>
                                 <Border x:Name="OverlayScopeCorps" Tag="Corps" Padding="7,0" CornerRadius="4" Cursor="Hand" MouseLeftButtonDown="OnOverlayScopeClicked">
                                     <TextBlock FontSize="11" FontWeight="SemiBold" Text="{local:Loc Main.Scope.Corps}"/>
                                 </Border>
@@ -1528,6 +1533,9 @@
                          stagger check - its mechanic and how it went, who took how much off it and with which skills (hover them) - and its earlier checks. -->
                     <Border x:Name="OverlayStaggerCard" Visibility="Collapsed" Margin="10,0,10,6" Padding="9,6,9,7" CornerRadius="7"
                             Background="#0E6F9FD8" BorderBrush="#336F9FD8" BorderThickness="1"/>
+                    <!-- The Grind view (the scope switch's "Grind"; MainWindow.Grind.cs, GrindView.MeterView): in place of the lines, the Kinah, Abyss Points, kills and
+                         loot of the grind going on, each with what it makes an hour. -->
+                    <Border x:Name="OverlayGrindCard" Visibility="Collapsed" Margin="10,0,10,6"/>
                     <Grid Visibility="Collapsed">
                         <TextBlock x:Name="OverlayRateHeader" Text="DPS"/>
                         <TextBlock x:Name="OverlayShareHeader" Text="%"/>
