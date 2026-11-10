@@ -67,6 +67,27 @@ public static class SelfCheckProfileStats
             && summed.Sheet is { Exact: false, Offense.Count: 0, Defense.Count: 0 } s && s.Effects["Might"].Count == 1;
         Console.WriteLine($"  -> the window shows the game's numbers with their time, and none that weren't sent by the character's own app: {window}");
         ok &= window;
+        // the Daevanion boards (10 November 2026): a board with its nodes as the website sends them, one without (the bar), and the open nodes added up
+        PlayerPage boards = PlayerClient.Read(JsonDocument.Parse("""
+            {"character":{"name":"Ashveil"},"daevanion":[
+            {"name":"Nezekan","open":2,"total":60,"id":61,"nodes":[{"r":8,"c":8,"t":"Start","g":"Common","o":true,"fx":[]},
+              {"r":7,"c":8,"t":"Stat","g":"Rare","o":true,"fx":[{"name":"Critical Hit","value":"+12"}]},{"r":6,"c":8,"t":"Stat","g":"Legend","o":true,"fx":[{"name":"Critical Hit","value":"+8"}]},
+              {"r":9,"c":8,"t":"Stat","g":"Common","o":false,"fx":[{"name":"Max HP","value":"+100"}]},{"r":8,"c":9,"t":"SkillLevel","g":"Unique","o":true,"fx":[{"name":"Flame Bolt","value":"Lv. +1"}]}],
+              "stats":[{"name":"Critical Hit","value":"+20"}],"skills":[{"name":"Flame Bolt","value":"Lv. +1"}]},
+            {"name":"Zikel","open":0,"total":60}]}
+            """).RootElement, who);
+        PlayerBoard nezekan = boards.Daevanion[0];
+        IReadOnlyList<PlayerEffect> summedUp = Ui.PlayerView.SumEffects(nezekan.Nodes!.Where(n => n.Open && n.Type == "Stat"));
+        IReadOnlyList<PlayerEffect> mixed = Ui.PlayerView.SumEffects(new[]
+        {
+            new PlayerBoardNode(0, 0, "Stat", "Rare", true, new[] { new PlayerEffect("Attack", "+1.5%"), new PlayerEffect("Accuracy", "+10") }),
+            new PlayerBoardNode(0, 1, "Stat", "Rare", true, new[] { new PlayerEffect("Attack", "+2%"), new PlayerEffect("Accuracy", "-4") }),
+        });
+        bool daevanion = nezekan.Nodes is { Count: 5 } && nezekan.Nodes[0] is { Type: "Start", Open: true } && !nezekan.Nodes[3].Open && nezekan.Stats!.Single().Value == "+20"
+            && nezekan.Skills!.Single().Name == "Flame Bolt" && boards.Daevanion[1].Nodes is null
+            && summedUp.Single() is { Name: "Critical Hit", Value: "+20" } && mixed[0].Value == "+3.5%" && mixed[1].Value == "+6";
+        Console.WriteLine($"  -> the Daevanion boards node by node (a board the website didn't read keeps its bar), the open nodes added up: {daevanion}");
+        ok &= daevanion;
         return ok;
     }
 }

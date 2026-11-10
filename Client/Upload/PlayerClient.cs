@@ -16,7 +16,14 @@ public sealed record PlayerPiece(string Slot, string Name, string Grade, int Enc
 
 public sealed record PlayerSkill(string Name, int? Level, string Category, bool Equipped, string? Icon);
 
-public sealed record PlayerBoard(string Name, int Open, int Total);
+public sealed record PlayerBoard(string Name, int Open, int Total, IReadOnlyList<PlayerBoardNode>? Nodes = null, IReadOnlyList<PlayerEffect>? Stats = null,
+    IReadOnlyList<PlayerEffect>? Skills = null);
+
+/// <summary>One thing a Daevanion node or a board gives: "Max HP" "+100", "Rending Blow" "Lv. +1".</summary>
+public sealed record PlayerEffect(string Name, string Value);
+
+/// <summary>A node of a Daevanion board as the character's official page lists it: its place, type (Start, Stat, SkillLevel), grade, whether it is open, and what it gives.</summary>
+public sealed record PlayerBoardNode(int Row, int Col, string Type, string Grade, bool Open, IReadOnlyList<PlayerEffect> Effects);
 
 public sealed record PlayerParse(string Boss, double? Dps, int Pct, int Rank, int Of);
 
@@ -100,7 +107,8 @@ public static class PlayerClient
         JsonElement titles = root.TryGetProperty("titles", out JsonElement t) && t.ValueKind == JsonValueKind.Object ? t : default;
         (string, int?)? pet = root.TryGetProperty("pet", out JsonElement p) && p.ValueKind == JsonValueKind.Object && Str(p, "name") is { Length: > 0 } pn ? (pn, Int(p, "level")) : null;
         (string, string)? wing = root.TryGetProperty("wing", out JsonElement w) && w.ValueKind == JsonValueKind.Object && Str(w, "name") is { Length: > 0 } wn ? (wn, Str(w, "grade") ?? "") : null;
-        var boards = Items(root, "daevanion").Select(b => new PlayerBoard(Str(b, "name") ?? "", Int(b, "open") ?? 0, Int(b, "total") ?? 0)).Where(b => b.Name.Length > 0).ToList();
+        var boards = Items(root, "daevanion").Select(b => new PlayerBoard(Str(b, "name") ?? "", Int(b, "open") ?? 0, Int(b, "total") ?? 0, BoardNodes(b),
+            Effects(b, "stats"), Effects(b, "skills"))).Where(b => b.Name.Length > 0).ToList();
         var parses = Items(root, "parses").Select(x => new PlayerParse(Str(x, "boss") ?? "", Dbl(x, "dps"), Int(x, "pct") ?? 0, Int(x, "rank") ?? 0, Int(x, "of") ?? 0))
             .Where(x => x.Boss.Length > 0).ToList();
         PlayerAppData? app = null;
@@ -148,6 +156,18 @@ public static class PlayerClient
                 && DateTime.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out DateTime read) ? read : null,
             sheet);
     }
+
+    /// <summary>A board's nodes (the website's "nodes": r, c, t, g, o, fx), null when the website sent none (its detail was not read; websites before 10 November 2026).</summary>
+    private static IReadOnlyList<PlayerBoardNode>? BoardNodes(JsonElement b)
+    {
+        var nodes = Items(b, "nodes").Where(n => Int(n, "r") is not null && Int(n, "c") is not null)
+            .Select(n => new PlayerBoardNode(Int(n, "r")!.Value, Int(n, "c")!.Value, Str(n, "t") ?? "", Str(n, "g") ?? "", Bool(n, "o"), Effects(n, "fx")))
+            .Where(n => n.Row is >= 0 and <= 40 && n.Col is >= 0 and <= 40).Take(300).ToList();
+        return nodes.Count > 0 ? nodes : null;
+    }
+
+    private static IReadOnlyList<PlayerEffect> Effects(JsonElement e, string key) => Items(e, key)
+        .Select(x => new PlayerEffect(Str(x, "name") ?? "", Str(x, "value") ?? "")).Where(x => x.Name.Length > 0).ToList();
 
     private static IReadOnlyList<PlayerLine> Lines(JsonElement e, string key) => Items(e, key)
         .Select(l => new PlayerLine(Str(l, "name") ?? "", Str(l, "value") ?? "", Str(l, "grade"), Icon(l), Str(l, "desc"))).Where(l => l.Name.Length > 0).ToList();

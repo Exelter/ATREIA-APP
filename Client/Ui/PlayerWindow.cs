@@ -72,7 +72,7 @@ public sealed class PlayerView : Border
 {
     private static readonly Color[] GenusGrades = { Color.FromRgb(0x8A, 0x93, 0x9E), Color.FromRgb(0xD8, 0xDD, 0xE3), Color.FromRgb(0x5B, 0xD3, 0x6B), Color.FromRgb(0x4A, 0xA8, 0xFF),
         Color.FromRgb(0xFF, 0xC9, 0x4D), Color.FromRgb(0xFF, 0x8A, 0x3D) };
-    private static readonly string[] TabNames = { "Overview", "Gear", "Stats", "Skills", "Genus & Pets" };
+    private static readonly string[] TabNames = { "Overview", "Gear", "Stats", "Skills", "Daevanion", "Genus & Pets" };
 
     private FoundPlayer _who;
     private PlayerPage? _page;
@@ -173,6 +173,7 @@ public sealed class PlayerView : Border
         _who = who;
         _page = null;
         _tab = "Overview";
+        _board = 0;
         DrawHeader();
         DrawTabs();
         await OpenAsync();
@@ -314,6 +315,11 @@ public sealed class PlayerView : Border
                 continue; // only the player's own app knows them
             }
 
+            if (tab == "Daevanion" && _page is { Daevanion.Count: 0 })
+            {
+                continue;
+            }
+
             bool on = tab == _tab;
             var pill = new Border
             {
@@ -374,6 +380,7 @@ public sealed class PlayerView : Border
             "Gear" => GearTab(p),
             "Stats" => StatsTab(p),
             "Skills" => SkillsTab(p),
+            "Daevanion" when p.Daevanion.Count > 0 => DaevanionTab(p),
             "Genus & Pets" when p.App is { } app => GenusTab(app),
             _ => OverviewTab(p),
         };
@@ -381,6 +388,220 @@ public sealed class PlayerView : Border
     }
 
     // ------------------------------------------------------------------ tabs
+
+    private int _board;
+
+    /// <summary>The board on show in the Daevanion tab (the pictures).</summary>
+    internal void SelectBoard(int index)
+    {
+        _board = index;
+        DrawBody();
+    }
+
+    /// <summary>
+    /// The Daevanion boards as the game draws them (10 November 2026, the owner: "the actual boards and what's equipped on them, not just a simple board"): a
+    /// board picked from the row above, its nodes in their places, open ones lit, each node's effect on pointing at it, and what the open nodes add up to
+    /// (the totals of the character's official page). A board whose nodes the website did not read keeps its bar.
+    /// </summary>
+    private UIElement DaevanionTab(PlayerPage p)
+    {
+        var stack = new StackPanel { Margin = new Thickness(0, 2, 0, 8) };
+        _board = Math.Clamp(_board, 0, p.Daevanion.Count - 1);
+        var picker = new WrapPanel { Margin = new Thickness(0, 8, 0, 8) };
+        for (int i = 0; i < p.Daevanion.Count; i++)
+        {
+            PlayerBoard b = p.Daevanion[i];
+            bool on = i == _board;
+            var chip = new Border
+            {
+                CornerRadius = new CornerRadius(7), Padding = new Thickness(10, 4, 10, 5), Margin = new Thickness(0, 0, 5, 5), Cursor = Cursors.Hand, BorderThickness = new Thickness(1),
+                BorderBrush = new SolidColorBrush(on ? Color.FromArgb(0x99, 0xDC, 0xB8, 0x77) : Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)),
+                Background = new SolidColorBrush(on ? Color.FromArgb(0x2A, 0xDC, 0xB8, 0x77) : Color.FromArgb(0x0C, 0xFF, 0xFF, 0xFF)),
+            };
+            var label = new StackPanel();
+            var name = Text(b.Name, 12, on ? "Brush.OverlayText" : "Brush.TextMuted");
+            name.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
+            label.Children.Add(name);
+            label.Children.Add(Text($"{b.Open} / {b.Total}", 10.5, "Brush.TextSubtle"));
+            chip.Child = label;
+            int which = i;
+            chip.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                SelectBoard(which);
+            };
+            picker.Children.Add(chip);
+        }
+
+        stack.Children.Add(picker);
+        PlayerBoard board = p.Daevanion[_board];
+        if (board.Nodes is not { Count: > 0 } nodes)
+        {
+            stack.Children.Add(BoardBar(board));
+            stack.Children.Add(Muted("The nodes of this board haven't been read from the character's page yet. Refresh the character (top right) to read them."));
+            return stack;
+        }
+
+        stack.Children.Add(BoardMap(nodes, p.ClassName));
+        var legend = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 6, 0, 0) };
+        legend.Children.Add(Text($"{board.Open} of {board.Total} nodes open  ·  point at a node to see what it gives", 11, "Brush.TextSubtle"));
+        stack.Children.Add(legend);
+
+        IReadOnlyList<PlayerEffect> stats = board.Stats is { Count: > 0 } given ? given : SumEffects(nodes.Where(n => n.Open && n.Type != "SkillLevel" && n.Type != "Start"));
+        IReadOnlyList<PlayerEffect> skills = board.Skills is { Count: > 0 } givenSkills ? givenSkills : SumEffects(nodes.Where(n => n.Open && n.Type == "SkillLevel"));
+        stack.Children.Add(Heading("From the open nodes"));
+        if (stats.Count == 0 && skills.Count == 0)
+        {
+            stack.Children.Add(Muted("No node of this board is open yet."));
+        }
+
+        var columns = new UniformGrid { Columns = 2 };
+        foreach (PlayerEffect e in stats)
+        {
+            columns.Children.Add(EffectRow(e, null));
+        }
+
+        stack.Children.Add(columns);
+        if (skills.Count > 0)
+        {
+            stack.Children.Add(Heading("Skill levels"));
+            var skillColumns = new UniformGrid { Columns = 2 };
+            foreach (PlayerEffect e in skills)
+            {
+                skillColumns.Children.Add(EffectRow(e, Color.FromRgb(0x8F, 0xC8, 0xFF)));
+            }
+
+            stack.Children.Add(skillColumns);
+        }
+
+        return stack;
+    }
+
+    private static Grid EffectRow(PlayerEffect e, Color? colour)
+    {
+        var row = Row();
+        row.Margin = new Thickness(0, 1, 14, 1);
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Put(row, 0, Text(e.Name, 12, "Brush.TextMuted"));
+        var value = Right(Text(e.Value, 12.5, "Brush.OverlayText"));
+        value.FontWeight = FontWeights.SemiBold;
+        if (colour is Color c)
+        {
+            value.Foreground = new SolidColorBrush(c);
+        }
+
+        Put(row, 1, value);
+        return row;
+    }
+
+    /// <summary>The open nodes' effects added up by name ("+12" and "+8" make "+20", "+1.5%" and "+2%" make "+3.5%"), for a board whose totals the website
+    /// did not send; a value that is not a plain number is kept as it is, once.</summary>
+    internal static IReadOnlyList<PlayerEffect> SumEffects(IEnumerable<PlayerBoardNode> nodes)
+    {
+        var order = new List<string>();
+        var sums = new Dictionary<string, (double Sum, string Unit, string Prefix, bool Plain, string Raw)>(StringComparer.Ordinal);
+        foreach (PlayerEffect e in nodes.SelectMany(n => n.Effects))
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(e.Value, @"^(Lv\. )?([+-]?\d+(?:\.\d+)?)(%?)$");
+            double value = m.Success ? double.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture) : 0;
+            string unit = m.Success ? m.Groups[3].Value : "", prefix = m.Success ? m.Groups[1].Value : "";
+            if (!sums.TryGetValue(e.Name, out var known))
+            {
+                order.Add(e.Name);
+                sums[e.Name] = (value, unit, prefix, m.Success, e.Value);
+            }
+            else if (known.Plain && m.Success && known.Unit == unit)
+            {
+                sums[e.Name] = known with { Sum = known.Sum + value };
+            }
+        }
+
+        return order.Select(name =>
+        {
+            var x = sums[name];
+            return new PlayerEffect(name, x.Plain ? x.Prefix + (x.Sum >= 0 ? "+" : "") + x.Sum.ToString("0.##", CultureInfo.InvariantCulture) + x.Unit : x.Raw);
+        }).ToList();
+    }
+
+    /// <summary>A board as the game draws it: each node on its place, its grade's tile, lit when open, the class's own start tile in the middle.</summary>
+    private FrameworkElement BoardMap(IReadOnlyList<PlayerBoardNode> nodes, string className)
+    {
+        int r0 = nodes.Min(n => n.Row), r1 = nodes.Max(n => n.Row), c0 = nodes.Min(n => n.Col), c1 = nodes.Max(n => n.Col);
+        int rows = r1 - r0 + 1, cols = c1 - c0 + 1;
+        double cell = Math.Min(32, Math.Floor(470.0 / Math.Max(rows, cols)));
+        var grid = new Grid { Width = cols * cell, Height = rows * cell };
+        for (int r = 0; r < rows; r++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(cell) });
+        }
+
+        for (int c = 0; c < cols; c++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(cell) });
+        }
+
+        foreach (PlayerBoardNode node in nodes)
+        {
+            bool start = node.Type == "Start";
+            bool on = node.Open || start;
+            string grade = node.Grade.ToLowerInvariant() switch { var g when g.Contains("unique") => "unique", var g when g.Contains("legend") => "legend",
+                var g when g.Contains("rare") => "rare", _ => "common" };
+            string art = start ? Aion2Artwork.BoardStartTile(className) : grade + (on ? "" : "-off");
+            FrameworkElement tile = OverlayPictures.Load(Aion2Artwork.BoardTilePath(art) ?? (start ? Aion2Artwork.BoardTilePath("start") : null)) is { } image
+                ? new Image { Source = image, Stretch = Stretch.Uniform, Margin = new Thickness(1.5) }
+                : new Border { Margin = new Thickness(3), CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1),
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(on ? (byte)0xCC : (byte)0x40, GradeColour(grade).R, GradeColour(grade).G, GradeColour(grade).B)),
+                    Background = new SolidColorBrush(on ? Color.FromArgb(0x88, GradeColour(grade).R, GradeColour(grade).G, GradeColour(grade).B) : Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)) };
+            if (!on)
+            {
+                tile.Opacity = 0.55;
+            }
+
+            tile.ToolTip = start ? "Start"
+                : (node.Effects.Count > 0 ? string.Join("\n", node.Effects.Select(e => (e.Name + " " + e.Value).Trim())) : node.Type)
+                  + "\n" + (on ? "Open" : "Locked") + "  ·  " + char.ToUpperInvariant(grade[0]) + grade[1..];
+            ToolTipService.SetInitialShowDelay(tile, 80);
+            Grid.SetRow(tile, node.Row - r0);
+            Grid.SetColumn(tile, node.Col - c0);
+            grid.Children.Add(tile);
+        }
+
+        return new Border
+        {
+            Padding = new Thickness(10), CornerRadius = new CornerRadius(10), HorizontalAlignment = HorizontalAlignment.Center, BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF)), Background = new SolidColorBrush(Color.FromArgb(0x66, 0x00, 0x00, 0x00)), Child = grid,
+        };
+    }
+
+    private static Color GradeColour(string grade) => grade switch
+    {
+        "unique" => Color.FromRgb(0xE8, 0xC3, 0x5A),
+        "legend" => Color.FromRgb(0x4A, 0xA8, 0xFF),
+        "rare" => Color.FromRgb(0x5B, 0xD3, 0x6B),
+        _ => Color.FromRgb(0xD8, 0xDD, 0xE3),
+    };
+
+    /// <summary>A board's line of the overview: its name, how far it is opened, open of all.</summary>
+    private static Grid BoardBar(PlayerBoard b)
+    {
+        var row = Row();
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64) });
+        Put(row, 0, Text(b.Name, 12.5, "Brush.OverlayText"));
+        double share = b.Total > 0 ? Math.Clamp((double)b.Open / b.Total, 0, 1) : 0;
+        var track = new Grid { Height = 6, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 8, 0) };
+        track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(share, GridUnitType.Star) });
+        track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1 - share, GridUnitType.Star) });
+        var groove = new Border { CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)) };
+        Grid.SetColumnSpan(groove, 2);
+        track.Children.Add(groove);
+        track.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromRgb(0xC9, 0xA4, 0x6E)) });
+        Put(row, 1, track);
+        Put(row, 2, Right(Text($"{b.Open} / {b.Total}", 11.5, "Brush.TextMuted")));
+        return row;
+    }
 
     private UIElement OverviewTab(PlayerPage p)
     {
@@ -412,23 +633,20 @@ public sealed class PlayerView : Border
         if (p.Daevanion.Count > 0)
         {
             stack.Children.Add(Heading("Daevanion"));
-            foreach (PlayerBoard b in p.Daevanion)
+            for (int i = 0; i < p.Daevanion.Count; i++)
             {
-                var row = Row();
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64) });
-                Put(row, 0, Text(b.Name, 12.5, "Brush.OverlayText"));
-                double share = b.Total > 0 ? Math.Clamp((double)b.Open / b.Total, 0, 1) : 0;
-                var track = new Grid { Height = 6, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 8, 0) };
-                track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(share, GridUnitType.Star) });
-                track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1 - share, GridUnitType.Star) });
-                var groove = new Border { CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)) };
-                Grid.SetColumnSpan(groove, 2);
-                track.Children.Add(groove);
-                track.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromRgb(0xC9, 0xA4, 0x6E)) });
-                Put(row, 1, track);
-                Put(row, 2, Right(Text($"{b.Open} / {b.Total}", 11.5, "Brush.TextMuted")));
+                // a click on a board's line: the board itself in the Daevanion tab
+                Grid row = BoardBar(p.Daevanion[i]);
+                row.Background = new SolidColorBrush(Color.FromArgb(0x01, 0xFF, 0xFF, 0xFF));
+                row.Cursor = Cursors.Hand;
+                row.ToolTip = "Show the board";
+                int which = i;
+                row.MouseLeftButtonUp += (_, e) =>
+                {
+                    e.Handled = true;
+                    _board = which;
+                    SelectTab("Daevanion");
+                };
                 stack.Children.Add(row);
             }
         }
