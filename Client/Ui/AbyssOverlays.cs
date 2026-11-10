@@ -335,7 +335,7 @@ public sealed class DeathRecapWindow : MovableOverlay
 
     public void Render(DeathRecap? recap, bool sample)
     {
-        string key = recap is null ? "" : recap.At.Ticks + "|" + recap.Victim + "|" + sample;
+        string key = recap is null ? "" : sample ? "sample" : recap.At.Ticks + "|" + recap.Victim; // the sample is made anew each tick: drawn once
         if (key == _shown)
         {
             return;
