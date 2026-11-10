@@ -128,6 +128,28 @@ public static class SelfCheckCraft
         bool faction = twin is { Elyos: false } && twin.Category == hammer.Category && twin.Level == hammer.Level && Aion2CraftData.ForFaction(twin.Id, true)?.Id == hammer.Id;
         Console.WriteLine($"  -> a recipe of one faction finds its twin of the other and back: {faction}");
 
+        // the workshop: the ingot's materials twice in the bag and once in the server storage cover 3 crafts; a plan of 5 lacks 2 crafts' worth, bought at the market
+        var held = new List<(int Item, Ui.CraftPlace Place)>();
+        var prices = new Dictionary<int, Upload.MarketPrice> { [smelt.Product] = new Upload.MarketPrice(1000, 1000, 3, 1000) };
+        foreach (CraftComponent c in smelt.Components)
+        {
+            held.Add((c.Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Bag, null, c.Count * 2)));
+            held.Add((c.Item, new Ui.CraftPlace(Ui.CraftPlaceKind.Server, null, c.Count)));
+            prices[c.Item] = new Upload.MarketPrice(100, 100, 3, 100);
+        }
+
+        Ui.CraftStock stock = Ui.CraftStock.Made("Smith", 1301, Array.Empty<string>(), held);
+        var market = new Upload.MarketBook(1301, "Check", DateTime.UtcNow, prices);
+        Ui.CraftPlanLine planned = Ui.CraftWorkshop.Plan(new[] { new CraftEntry { Recipe = smelt.Id, Count = 5 } }, stock, true, true, market)[0];
+        long perCraft = smelt.Components.Sum(c => (long)c.Count) * 100;
+        bool numbers = planned.ToBuy == perCraft * 2 && planned.MaterialsWorth == perCraft * 5 && planned.Worth == 1000L * smelt.Count * 5 && planned.Profit == planned.Worth - planned.MaterialsWorth
+            && planned.Unpriced == 0;
+        bool where = stock.PlacesOf(smelt.Components[0].Item) is [{ Kind: Ui.CraftPlaceKind.Bag }, { Kind: Ui.CraftPlaceKind.Server }];
+        int times = Ui.CraftWorkshop.CanCraft(stock, true, market).FirstOrDefault(c => c.Recipe.Id == smelt.Id)?.Times ?? 0;
+        bool kinah = Ui.CraftWorkshop.Kinah(84_000) == "84K" && Ui.CraftWorkshop.Kinah(950) == "950";
+        bool workshop = numbers && where && times == 3 && kinah;
+        Console.WriteLine($"  -> the workshop: a plan's worth, materials and what is left to buy at the market: {numbers}; the places of a material: {where}; the stock covers the ingot {times} times: {times == 3}");
+
         // the learned recipes: the list frame 0x7e8d (n, then id + 0 each); the twin of the other faction counts as learned too
         Aion2Recipes.Reset();
         bool noList = Aion2Recipes.IsKnown(hammer);
@@ -265,7 +287,7 @@ public static class SelfCheckCraft
         Console.WriteLine($"  -> the privacy answer: uploads only with the current version accepted, older or never asked is asked, declined is not asked again, eight tools stay: {consent}");
 
         Aion2Stock.Reset();
-        return consent && pointFirst && pointQuiet && pointAgain && pointCapped && ranked && points && legion && chain && login && one && gone && loot && sort && moved && unseen && gained && oreAsked && plain && used && first && faction && known;
+        return workshop && consent && pointFirst && pointQuiet && pointAgain && pointCapped && ranked && points && legion && chain && login && one && gone && loot && sort && moved && unseen && gained && oreAsked && plain && used && first && faction && known;
     }
 
     /// <summary>

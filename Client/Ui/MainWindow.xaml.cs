@@ -7455,7 +7455,7 @@ public partial class MainWindow : Window
 
             case "craft":
             {
-                var craftPage = new CraftPage(() => _liveSource?.Entities as Aion2EntityDirectory);
+                var craftPage = new CraftWorkshopPage(() => _liveSource?.Entities as Aion2EntityDirectory);
                 CraftConfigWindow? craftConfig = null;
                 Action openCraftConfig = () =>
                 {
@@ -7469,7 +7469,10 @@ public partial class MainWindow : Window
                     craftConfig.Closed += (_, _) => craftConfig = null;
                     craftConfig.Show();
                 };
-                var craftModule = new ModulePage("", craftPage, s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v, s => s.HotkeyCraft, hotkeys, openCraftConfig, applied, null, craftPage.ModeBar);
+                var craftModule = new ModulePage(loc["Main.MenuTools.Craft"], craftPage, s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v, s => s.HotkeyCraft, hotkeys, openCraftConfig, applied)
+                {
+                    FitWidth = true,
+                };
                 return new ToolPage { Content = craftModule, Cleanup = () => { craftModule.Stop(); craftPage.Stop(); } };
             }
 
