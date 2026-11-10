@@ -7085,16 +7085,16 @@
     "zh-TW": "硬直中"
   },
   "Replay.Early": {
-    "en": "Early test: the places are the game's own readings (it sends them with movements and skills, not on a regular beat); the size of an area is learnt from who it hit, dashed = still a guess.",
-    "de": "Früher Test: Die Orte sind die Messwerte des Spiels (es sendet sie bei Bewegungen und Skills, nicht in festem Takt); die Größe einer Fläche wird aus den Getroffenen gelernt, gestrichelt = noch geschätzt.",
-    "fr": "Test préliminaire : les positions sont les relevés du jeu (envoyés lors des déplacements et des compétences, pas à intervalle régulier) ; la taille d'une zone est apprise d'après les personnes touchées, en pointillés = encore estimée.",
-    "es": "Prueba temprana: las posiciones son las lecturas del propio juego (las envía con los movimientos y las habilidades, no a intervalos fijos); el tamaño de un área se aprende de a quién golpea, a trazos = aún una estimación.",
-    "ru": "Ранний тест: положения - это показания самой игры (она шлёт их при движениях и умениях, а не с равным интервалом); размер области определяется по тем, кого она задела, пунктир = пока оценка.",
-    "zh": "早期测试：位置来自游戏自身的读数（随移动和技能发送，而非固定间隔）；范围大小根据被命中的玩家学习得出，虚线 = 仍为估计。",
-    "pt": "Teste inicial: as posições são as leituras do próprio jogo (enviadas com movimentos e habilidades, não em intervalos fixos); o tamanho de uma área é aprendido de quem ela atinge, tracejado = ainda uma estimativa.",
-    "ja": "先行テスト：位置はゲーム自身の読み取り値です（移動やスキルに合わせて送られ、一定間隔ではありません）。範囲の大きさは当たった相手から学習し、破線はまだ推定です。",
-    "ko": "초기 테스트: 위치는 게임 자체의 측정값입니다(이동과 스킬에 맞춰 전송되며 일정한 간격이 아닙니다). 범위의 크기는 맞은 대상에서 학습하며 점선은 아직 추정입니다.",
-    "zh-TW": "早期測試：位置來自遊戲本身的讀數（隨移動和技能傳送，而非固定間隔）；範圍大小依據被命中的玩家學習而得，虛線 = 仍為估計。"
+    "en": "Early test: the places are the game's own readings (it sends them with movements and skills, not on a regular beat); the size of an area is learnt from who it hit, dashed = still a guess; violet = what a boss leaves on the floor, while it stays.",
+    "de": "Früher Test: Die Orte sind die Messwerte des Spiels (es sendet sie bei Bewegungen und Skills, nicht in festem Takt); die Größe einer Fläche wird aus den Getroffenen gelernt, gestrichelt = noch geschätzt; violett = was ein Boss auf dem Boden hinterlässt, solange es bleibt.",
+    "fr": "Test préliminaire : les positions sont les relevés du jeu (envoyés lors des déplacements et des compétences, pas à intervalle régulier) ; la taille d'une zone est apprise d'après les personnes touchées, en pointillés = encore estimée ; en violet = ce qu'un boss laisse au sol, tant que cela reste.",
+    "es": "Prueba temprana: las posiciones son las lecturas del propio juego (las envía con los movimientos y las habilidades, no a intervalos fijos); el tamaño de un área se aprende de a quién golpea, a trazos = aún una estimación; violeta = lo que un jefe deja en el suelo, mientras permanece.",
+    "ru": "Ранний тест: положения - это показания самой игры (она шлёт их при движениях и умениях, а не с равным интервалом); размер области определяется по тем, кого она задела, пунктир = пока оценка; фиолетовым - то, что босс оставляет на земле, пока оно держится.",
+    "zh": "早期测试：位置来自游戏自身的读数（随移动和技能发送，而非固定间隔）；范围大小根据被命中的玩家学习得出，虚线 = 仍为估计；紫色 = 首领留在地面上的东西，存在期间显示。",
+    "pt": "Teste inicial: as posições são as leituras do próprio jogo (enviadas com movimentos e habilidades, não em intervalos fixos); o tamanho de uma área é aprendido de quem ela atinge, tracejado = ainda uma estimativa; violeta = o que um chefe deixa no chão, enquanto permanece.",
+    "ja": "先行テスト：位置はゲーム自身の読み取り値です（移動やスキルに合わせて送られ、一定間隔ではありません）。範囲の大きさは当たった相手から学習し、破線はまだ推定です。紫はボスが床に残したもので、残っている間表示されます。",
+    "ko": "초기 테스트: 위치는 게임 자체의 측정값입니다(이동과 스킬에 맞춰 전송되며 일정한 간격이 아닙니다). 범위의 크기는 맞은 대상에서 학습하며 점선은 아직 추정입니다. 보라색은 보스가 바닥에 남긴 것으로, 남아 있는 동안 표시됩니다.",
+    "zh-TW": "早期測試：位置來自遊戲本身的讀數（隨移動和技能傳送，而非固定間隔）；範圍大小依據被命中的玩家學習而得，虛線 = 仍為估計；紫色 = 首領留在地面上的東西，存在期間顯示。"
   },
   "Combat.Element.TargetIcon": {
     "en": "Picture",
