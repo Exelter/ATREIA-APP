@@ -504,7 +504,17 @@ internal static class Program
                 return;
             }
 
-            RunRenderCraftMode(args[1], args.Length > 2 ? args[2] : "", args.Length > 3 ? args[3] : "");
+            try
+            {
+                RunRenderCraftMode(args[1], args.Length > 2 ? args[2] : "", args.Length > 3 ? args[3] : "");
+            }
+            catch (Exception ex)
+            {
+                // what went wrong, beside the picture that is not there (the pictures workflow keeps no console output)
+                File.WriteAllText(Path.ChangeExtension(args[1], null) + "-error.txt", ex.ToString());
+                throw;
+            }
+
             return;
         }
 
