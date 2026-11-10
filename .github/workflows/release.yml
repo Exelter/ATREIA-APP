@@ -209,8 +209,10 @@ jobs:
           }
 
       # The whole release for the website, as the run's artifact: download it from the run's page, unzip it, and run the site's tools/app-release.mjs on
-      # the folder (see the top of this file).
+      # the folder (see the top of this file). Not for a test release that is on atreia.app already: the repository is public, so anyone could take the
+      # beta from the run's page; the beta is handed to the Contributors by /beta in the Atreia Discord (the site's src/beta.js).
       - name: Keep the release as the run's artifact
+        if: steps.version.outputs.channel == 'stable' || env.R2_ENDPOINT == ''
         uses: actions/upload-artifact@v6
         with:
           name: Atreia-App-${{ steps.tag.outputs.name }}
@@ -224,7 +226,9 @@ jobs:
         run: |
           {
             echo "### Atreia App ${{ steps.tag.outputs.name }} (channel ${{ steps.version.outputs.channel }})"
-            if [ -n "$R2_ENDPOINT" ]; then
+            if [ -n "$R2_ENDPOINT" ] && [ "${{ steps.version.outputs.channel }}" != "stable" ]; then
+              echo "It is on atreia.app already, for testers only: the Contributors get it with /beta in the Atreia Discord, and installed betas find it at their next update check."
+            elif [ -n "$R2_ENDPOINT" ]; then
               echo "It is on atreia.app already: installed apps find it at their next update check, and the download button gives it."
             else
               echo "Download the artifact **Atreia-App-${{ steps.tag.outputs.name }}** below and drag it onto APP-RELEASE.bat in the website's folder, then run DEPLOY."
