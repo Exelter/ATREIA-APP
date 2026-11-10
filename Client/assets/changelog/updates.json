@@ -6,8 +6,9 @@
   ],
   "versions": [
     {
-      "version": "2.0.0-beta",
-      "date": "2026-11-10",
+      "version": "2.0.0",
+      "date": "2026-11-11",
+      "headline": "Atreia App 2.0 (beta): crafting, Grind, Abyss tools and all your characters on one board. The new tools are still in beta, so tell us in the Atreia Discord what breaks",
       "items": [
         {
           "kind": "new",
@@ -136,19 +137,6 @@
           "area": "Journey",
           "title": "Pick any character, dates in the app's language",
           "text": "Journey shows your characters as chips under the title, in the app and over the game, and every character the meter knows can be picked. Days and months are named in the app's language, and the columns of your days line up on every PC."
-        }
-      ]
-    },
-    {
-      "version": "1.21.13",
-      "date": "2026-11-11",
-      "items": [
-        {
-          "kind": "new",
-          "area": "Updates",
-          "title": "Contributors get the betas by themselves",
-          "text": "If you have the Contributor role in the Atreia Discord and the app is signed in with that Discord (App menu → Atreia account), the app now takes each beta by itself, like any update. Everyone else stays on the normal updates. A beta moves on to the full version by itself once that is out.",
-          "example": "Ylva has the Contributor role and the app signed in: the 2.0 beta downloads while she plays, and the next start runs it."
         }
       ]
     },
