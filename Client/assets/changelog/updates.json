@@ -38,6 +38,12 @@
           "area": "History",
           "title": "Smooth scrolling through your fights",
           "text": "Ranks and pictures coming in no longer redraw the whole list while you scroll, the pictures are read at the size they're shown, and the list shows the newest 60 fights first with a button for older ones."
+        },
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "Tips and windows stay above the meter",
+          "text": "Once a second every overlay goes back to the front so the game can't cover it, and that also put the meter over its own button tips, over a player's card and over the panels you open from it. These now go back to the front after the overlays."
         }
       ]
     },
