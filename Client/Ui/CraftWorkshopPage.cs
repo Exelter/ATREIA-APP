@@ -441,7 +441,7 @@ public sealed class CraftWorkshopPage : StackPanel
         titles.Children.Add(new TextBlock { Text = CraftText.RecipeName(r.Recipe), FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(CraftText.GradeColor(r.Recipe.Product)),
             TextTrimming = TextTrimming.CharacterEllipsis });
         string makes = r.Recipe.Count > 1 ? $" · makes {r.Recipe.Count} each" : "";
-        titles.Children.Add(Text($"{CategoryName(r.Recipe.Category)} · Lv {r.Recipe.Level}{makes}", 12, "Brush.TextMuted", margin: new Thickness(0, 2, 0, 0)));
+        titles.Children.Add(Text($"{KindOf(r.Recipe)}{makes}", 12, "Brush.TextMuted", margin: new Thickness(0, 2, 0, 0)));
         Grid.SetColumn(titles, 1);
         head.Children.Add(titles);
         var stepper = Stepper(entry);
@@ -505,7 +505,7 @@ public sealed class CraftWorkshopPage : StackPanel
         if (lines.Count > 0)
         {
             var table = new Grid { Margin = new Thickness(62, 12, 0, 0) };
-            foreach (GridLength w in new[] { new GridLength(1, GridUnitType.Star), new GridLength(70), new GridLength(70), new GridLength(1.2, GridUnitType.Star), new GridLength(130) })
+            foreach (GridLength w in new[] { new GridLength(2, GridUnitType.Star), new GridLength(64), new GridLength(64), new GridLength(1.3, GridUnitType.Star), GridLength.Auto })
             {
                 table.ColumnDefinitions.Add(new ColumnDefinition { Width = w });
             }
@@ -536,12 +536,13 @@ public sealed class CraftWorkshopPage : StackPanel
 
                 Grid.SetColumnSpan(band, 5);
                 Cell(band, 0);
-                var name = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 5) };
+                var name = new DockPanel { Margin = new Thickness(0, 5, 0, 5) }; // a dock, not a row: a long name ends in "…" at the column's edge
                 Border mi = CraftText.IconTile(m.Item, 26);
                 mi.Margin = new Thickness(0, 0, 10, 0);
+                DockPanel.SetDock(mi, Dock.Left);
                 name.Children.Add(mi);
                 name.Children.Add(new TextBlock { Text = CraftText.ItemName(m.Item), FontSize = 13, Foreground = new SolidColorBrush(CraftText.GradeColor(m.Item)), VerticalAlignment = VerticalAlignment.Center,
-                    TextTrimming = TextTrimming.CharacterEllipsis });
+                    TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = CraftText.ItemName(m.Item) });
                 Cell(name, 0);
                 Cell(Right(Text(m.Needed.ToString("N0", CultureInfo.CurrentCulture), 13, "Brush.Text")), 1);
                 var haveText = Right(Text(m.Have.ToString("N0", CultureInfo.CurrentCulture), 13, "Brush.Text", bold: true));
@@ -562,6 +563,7 @@ public sealed class CraftWorkshopPage : StackPanel
                     buyBlock.Foreground = new SolidColorBrush(Gold);
                 }
 
+                buyBlock.Margin = new Thickness(14, 0, 0, 0);
                 Cell(buyBlock, 4);
             }
 
@@ -658,7 +660,7 @@ public sealed class CraftWorkshopPage : StackPanel
         var stack = new StackPanel();
         stack.Children.Add(new TextBlock { Text = CraftText.RecipeName(c.Recipe), FontSize = 14, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(CraftText.GradeColor(c.Recipe.Product)),
             TextTrimming = TextTrimming.CharacterEllipsis });
-        stack.Children.Add(Text($"{CategoryName(c.Recipe.Category)} · Lv {c.Recipe.Level}", 11.5, "Brush.TextMuted", margin: new Thickness(0, 1, 0, 6)));
+        stack.Children.Add(Text(KindOf(c.Recipe), 11.5, "Brush.TextMuted", margin: new Thickness(0, 1, 0, 6)));
         var numbers = new WrapPanel();
         numbers.Children.Add(Pill($"Can craft {c.Times:N0}×", Good, "As often as everything you hold covers it (materials in between made from it too)"));
         if (c.ProfitEach is long p)
@@ -737,7 +739,7 @@ public sealed class CraftWorkshopPage : StackPanel
         names.Children.Add(new TextBlock { Text = CraftText.RecipeName(r), FontSize = 13.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(CraftText.GradeColor(r.Product)),
             TextTrimming = TextTrimming.CharacterEllipsis });
         string learned = Aion2Recipes.HasData && !Aion2Recipes.IsKnown(r) ? " · not learned yet" : "";
-        names.Children.Add(Text($"{CategoryName(r.Category)} · Lv {r.Level}{(r.Count > 1 ? $" · makes {r.Count}" : "")}{learned}", 11.5, "Brush.TextMuted"));
+        names.Children.Add(Text($"{KindOf(r)}{(r.Count > 1 ? $" · makes {r.Count}" : "")}{learned}", 11.5, "Brush.TextMuted"));
         Grid.SetColumn(names, 1);
         grid.Children.Add(names);
         var price = Right(Text(CraftWorkshop.PriceOf(book, r.Product) is long p ? CraftWorkshop.Kinah(p * r.Count) : book is null ? "…" : "no price", 13, "Brush.TextSubtle"));
@@ -799,6 +801,9 @@ public sealed class CraftWorkshopPage : StackPanel
     }
 
     // ------------------------------------------------------------------ small parts
+
+    /// <summary>"Alchemy · Lv 55"; the level left out where the recipe has none (0).</summary>
+    private static string KindOf(CraftRecipe recipe) => CategoryName(recipe.Category) + (recipe.Level > 0 ? $" · Lv {recipe.Level}" : "");
 
     private static string CategoryName(string category)
     {
