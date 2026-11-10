@@ -208,6 +208,9 @@ public sealed class MeterSettings
     /// closed with its X is not open any more; its place is kept for the next time).</summary>
     public Dictionary<string, PopOutPlace> PopOuts { get; set; } = new();
 
+    /// <summary>The meter's in-game panels (GamePanelWindow): place, size and the page each was left on, by panel ("characters", "legion" …).</summary>
+    public Dictionary<string, GamePanelPlace> GamePanels { get; set; } = new();
+
     /// <summary>How many minutes ahead the timetable overlay lists events that are about to start, 0 to 60 (0 = none).</summary>
     public int TimetableLookaheadMinutes { get; set; } = 60;
 
@@ -1434,6 +1437,16 @@ public sealed class CombatElementLayout
 }
 
 /// <summary>Place and size of one popped-out tool window, in device-independent pixels of the whole desktop (a second monitor has coordinates beyond the first).</summary>
+/// <summary>Where an in-game panel of the meter was, how big, and on which page.</summary>
+public sealed class GamePanelPlace
+{
+    public double Left { get; set; }
+    public double Top { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
+    public string? Tab { get; set; }
+}
+
 public sealed class PopOutPlace
 {
     public double Left { get; set; }
