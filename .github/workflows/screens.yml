@@ -46,6 +46,7 @@ jobs:
             @('render-overlay', 'stagger-failed.png', 'stagger-failed'),
             @('render-overlay', 'stagger-tip.png', 'stagger-tip'),
             @('render-overlay', 'findservers.png', 'findservers'),
+            @('render-overlay', 'findgroup.png', 'findgroup'),
             @('render-player', 'player.png', 'en'),
             @('render-privacy', 'wizard-small.png', 'wizard:1s'),
             @('render-privacy', 'wizard-small-policy.png', 'wizard:2s'),

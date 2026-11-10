@@ -16,6 +16,7 @@ namespace AionDPS.Ui;
 /// its list, sound alerts, clearing the fight, the history), the short "…" (where everything is, the Ko-fi page, exit), and Find a player:
 /// a name and a region, the characters the website's search finds, then a card of the one picked (class, server, Combat Power, Item Level, the best parse
 /// of a public fight) with its full page in Character Lookup one click away. The full page stays on the website, the one place it is kept up to date.
+/// With the box empty it lists the other players of the own group (the game's party roster), each a click away from its card (10 November 2026).
 /// </summary>
 public partial class MainWindow
 {
@@ -192,6 +193,7 @@ public partial class MainWindow
         }
 
         OverlayFind.Visibility = Visibility.Visible;
+        ShowGroupMates(GroupMates()); // the group's players, a click each, until a name is searched
         _overlayPeekUntil = DateTime.Now + TimeSpan.FromMinutes(2); // the meter stays up while the search is used
         if (_meterOverlay is { IsVisible: true } overlay && !overlay.IsActive)
         {
@@ -216,8 +218,15 @@ public partial class MainWindow
         OverlayFindStatus.Visibility = Visibility.Collapsed;
     }
 
-    private void OnOverlayFindTextChanged(object sender, TextChangedEventArgs e) =>
+    private void OnOverlayFindTextChanged(object sender, TextChangedEventArgs e)
+    {
         OverlayFindHint.Visibility = OverlayFindBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (OverlayFindBox.Text.Length == 0 && OverlayFind.Visibility == Visibility.Visible)
+        {
+            _findAsked++; // a search still on its way no longer replaces the group
+            ShowGroupMates(GroupMates()); // the box emptied: the group again
+        }
+    }
 
     private void OnOverlayFindKey(object sender, KeyEventArgs e)
     {
@@ -622,6 +631,131 @@ public partial class MainWindow
         }
 
         ShowFindCard(player with { CombatPower = player.CombatPower ?? cp, ItemLevel = player.ItemLevel ?? il }, asked: true);
+    }
+
+    /// <summary>A player of the own group, as the game's party roster lists them: the name, the class and the server when the roster gave them.</summary>
+    internal readonly record struct GroupMate(string Name, string? ClassName, int? ServerId);
+
+    /// <summary>The other players of the own group (the party roster the meter's Group view reads too), in the roster's order; empty out of a group.</summary>
+    private IReadOnlyList<GroupMate> GroupMates()
+    {
+        if (_liveSource?.Entities is not Aion2EntityDirectory directory)
+        {
+            return Array.Empty<GroupMate>();
+        }
+
+        string? own = directory.LocalCharacter?.Name;
+        return directory.PartyNames.Where(n => n != own)
+            .Select(n => new GroupMate(n, directory.PartyClassOfName(n), directory.ServerIdOfName(n)))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Find a player with an empty box (10 November 2026, the owner: "pops up people in your party … and you can click to check them"): the other players of the
+    /// group, one click each to their card, with no name to type. Nothing out of a group.
+    /// </summary>
+    internal void ShowGroupMates(IReadOnlyList<GroupMate> mates)
+    {
+        OverlayFindResults.Children.Clear();
+        OverlayFindCard.Visibility = Visibility.Collapsed;
+        _findShown = null;
+        _findPlayers = Array.Empty<FoundPlayer>();
+        ShowFindStatus(mates.Count > 0 ? "In your group:" : null);
+        foreach (GroupMate mate in mates)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.Children.Add(new Image { Width = 20, Height = 20, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center,
+                Source = mate.ClassName is { } cls ? new ClassIconConverter().Convert(cls, typeof(ImageSource), null, CultureInfo.CurrentCulture) as ImageSource : null });
+            var who = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            var nameText = new TextBlock { Text = mate.Name, FontSize = 12, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
+            nameText.Foreground = mate.ClassName is { } c ? ClassBrushes.Text(c) : (Brush)FindResource("Brush.OverlayText");
+            who.Children.Add(nameText);
+            var parts = new List<string>();
+            if (mate.ClassName is { Length: > 0 } className)
+            {
+                parts.Add(className);
+            }
+
+            if (mate.ServerId is int server && Aion2Servers.IsKnown(server))
+            {
+                parts.Add(Aion2Servers.NameOf(server));
+            }
+
+            if (parts.Count > 0)
+            {
+                var line = new TextBlock { Text = string.Join("  ·  ", parts), FontSize = 10.5, TextTrimming = TextTrimming.CharacterEllipsis };
+                line.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+                who.Children.Add(line);
+            }
+
+            Grid.SetColumn(who, 1);
+            grid.Children.Add(who);
+            var go = new TextBlock { Text = "›", FontSize = 15, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 2, 0) };
+            go.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+            Grid.SetColumn(go, 2);
+            grid.Children.Add(go);
+
+            // never fully transparent: in the see-through look Windows gives clicks on such pixels to the game
+            var rest = new SolidColorBrush(Color.FromArgb(0x0A, 0xFF, 0xFF, 0xFF));
+            var row = new Border { Child = grid, Padding = new Thickness(7, 4, 7, 4), CornerRadius = new CornerRadius(6), Background = rest, Cursor = Cursors.Hand,
+                Margin = new Thickness(0, 0, 0, 2), ToolTip = $"{mate.Name}'s card" };
+            row.MouseEnter += (_, _) => row.Background = new SolidColorBrush(Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF));
+            row.MouseLeave += (_, _) => row.Background = rest;
+            GroupMate picked = mate;
+            row.MouseLeftButtonUp += (_, ev) =>
+            {
+                ev.Handled = true;
+                _ = FindGroupMateAsync(picked);
+            };
+            OverlayFindResults.Children.Add(row);
+        }
+    }
+
+    /// <summary>A group member clicked: the website's search for the name in the region of the member's server, kept to that server, then the card of the one found
+    /// (several of the name on an unknown server: the list to pick from, as a typed search shows it).</summary>
+    private async Task FindGroupMateAsync(GroupMate mate)
+    {
+        int asked = ++_findAsked;
+        OverlayFindBox.Text = mate.Name;
+        OverlayFindResults.Children.Clear();
+        OverlayFindCard.Visibility = Visibility.Collapsed;
+        ShowFindStatus("Searching…");
+        int server = mate.ServerId is int s && Aion2Servers.IsKnown(s) ? s : 0;
+        string region = server > 0 ? FindPlayerClient.RegionOf(server) : _findRegion.Length > 0 ? _findRegion : "all";
+        FindAnswer answer = await FindPlayerClient.SearchAsync(mate.Name, region);
+        if (asked != _findAsked)
+        {
+            return;
+        }
+
+        if (answer.Error is { } error)
+        {
+            ShowFindStatus(error);
+            return;
+        }
+
+        IReadOnlyList<FoundPlayer> players = answer.Players.Where(p => p.Name == mate.Name && (server == 0 || p.ServerId == server)).ToList();
+        if (players.Count == 0)
+        {
+            players = answer.Players.Where(p => server == 0 || p.ServerId == server).ToList(); // the website writes the name otherwise (capitals, accents)
+        }
+
+        if (players.Count == 0)
+        {
+            ShowFindStatus(server > 0
+                ? $"The website can't find {mate.Name} on {Aion2Servers.NameOf(server)} yet."
+                : $"The website can't find {mate.Name} yet.");
+            return;
+        }
+
+        ShowFindResults(players);
+        if (players.Count == 1)
+        {
+            PickFindResult(players[0]);
+        }
     }
 
     private Border Tile(string title, string value, Color? colour, string? tip)
