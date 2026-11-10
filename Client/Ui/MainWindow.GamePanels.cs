@@ -47,13 +47,13 @@ public partial class MainWindow
             new(loc["Main.MenuTools.CpCalc"], "Your CP and the cheapest upgrades", "", "characters", "cpcalc"),
             new(loc["Main.MenuTools.Journey"], "Your play over time", "", "characters", "journey"),
             new(loc["Main.MenuTools.Legion"], "Members, power, who's online", "", "legion", "legion"),
-            new(loc["Shell.HubItems"], "Loot overlay · drops, rates, cubes", "", "items", "loot", s => s.ShowLootOverlay, (s, v) => s.ShowLootOverlay = v, "the loot overlay"),
-            new(loc["Settings.Nav.Gather"], "Tally overlay · what you gathered", "", "gather", "petmap.gather", s => s.ShowGatherOverlay, (s, v) => s.ShowGatherOverlay = v,
+            new(loc["Shell.HubItems"], "Drops, rates, cubes", "", "items", "loot", s => s.ShowLootOverlay, (s, v) => s.ShowLootOverlay = v, "the loot overlay"),
+            new(loc["Settings.Nav.Gather"], "What you gathered", "", "gather", "petmap.gather", s => s.ShowGatherOverlay, (s, v) => s.ShowGatherOverlay = v,
                 "the gathering overlay"),
-            new(loc["Checklist.Season"], "Overlay · pick its missions", "", "season", "season", s => s.ShowSeasonOverlay, (s, v) => s.ShowSeasonOverlay = v,
+            new(loc["Checklist.Season"], "Pick the overlay's missions", "", "season", "season", s => s.ShowSeasonOverlay, (s, v) => s.ShowSeasonOverlay = v,
                 "the season missions overlay"),
-            new(loc["Timers.Title"], "Overlay · events, world bosses", "", "timers", "timetable", s => s.ShowTimetable, (s, v) => s.ShowTimetable = v, "the timers overlay"),
-            new(loc["Shell.HubMap"], "Map overlay · pets, cubes", "", "map", "petmap", s => s.ShowPetMap, (s, v) => s.ShowPetMap = v, "the map over the game"),
+            new(loc["Timers.Title"], "Events, world bosses", "", "timers", "timetable", s => s.ShowTimetable, (s, v) => s.ShowTimetable = v, "the timers overlay"),
+            new(loc["Shell.HubMap"], "Pets, gathering, cubes", "", "map", "petmap", s => s.ShowPetMap, (s, v) => s.ShowPetMap = v, "the map over the game"),
             new(loc["Shell.History"], "Every fight, your bests", "", "history", "history"),
         };
     }
