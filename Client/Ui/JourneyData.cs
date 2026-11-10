@@ -96,6 +96,25 @@ internal static class JourneyData
             }
         }
 
+        // every character the meter knows of the account too (the Characters page's), so each can be picked before it has a fight or a session of play here; and
+        // the class where the fights left it out
+        foreach (TicketCharacter c in Aion2Tickets.Snapshot().Where(c => c.Name.Length > 0 && c.ServerId > 0))
+        {
+            string key = JourneyLog.Key(c.Name, c.ServerId);
+            string? cls = c.ClassCode > 0 ? Aion2SkillNames.ClassFromCode(c.ClassCode) : null;
+            if (seen.TryGetValue(key, out var had))
+            {
+                if (had.Who.Class is null && cls is not null)
+                {
+                    seen[key] = (had.Who with { Class = cls }, had.Last);
+                }
+            }
+            else
+            {
+                seen[key] = (new JourneyWho(c.Name, c.ServerId, cls), c.SavedAt.ToLocalTime());
+            }
+        }
+
         var list = seen.Values.OrderByDescending(v => v.Last).Select(v => v.Who).ToList();
         if (dir?.LocalCharacter is { Name.Length: > 0 } me && me.ServerId > 0)
         {
