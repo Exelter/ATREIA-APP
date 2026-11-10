@@ -77,6 +77,23 @@ public static class ToolRender
                 break;
             }
 
+            case "enemycard":
+            {
+                // the enemy card over the game: an enemy stronger than you, and one of your own side (allies switched on)
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.Add(new Border { Width = 290, Child = EnemyCardWindow.View(new EnemyCardData("Kraeger", "Templar", 45, "Nezekan", "Iron Oath", 2_418_300, 3_120, true, 2_160_000)) });
+                row.Children.Add(new Border { Width = 290, Margin = new Thickness(20, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top,
+                    Child = EnemyCardWindow.View(new EnemyCardData("Seliora", "Cleric", 45, "Siel", null, 1_902_450, 2_874, false, 2_160_000)) });
+                shown = new Border
+                {
+                    Padding = new Thickness(24), Background = new LinearGradientBrush(Color.FromRgb(0x3a, 0x4a, 0x3a), Color.FromRgb(0x24, 0x30, 0x40), 45),
+                    Child = new Border { Child = row, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top },
+                };
+                width = 0;
+                height = 0;
+                break;
+            }
+
             case "fps":
             case "fps-access":
             {
@@ -254,9 +271,11 @@ public static class ToolRender
                     "dummy" => DummyPage(what is "dummy-analyse" or "dummy-runs", what == "dummy-analyse"),
                     "timetable" => TimetablePage(loc, none, applied),
                     "stream" => StreamPage(loc, none, applied),
+                    "loot" => GrindToolPage(loc, what == "grind-loot"),
                     _ => ChecklistPage(),
                 };
-                string tool = what is "dummy" or "dummy-analyse" or "dummy-runs" or "timetable" or "stream" ? (what.StartsWith("dummy", StringComparison.Ordinal) ? "dummy" : what) : "checklist";
+                string tool = what is "grind" or "grind-loot" ? "loot"
+                    : what is "dummy" or "dummy-analyse" or "dummy-runs" or "timetable" or "stream" ? (what.StartsWith("dummy", StringComparison.Ordinal) ? "dummy" : what) : "checklist";
                 var toolsWindow = new ToolsWindow(ToolsWindow.Groups(), build, _ => { });
                 toolsWindow.Select(tool);
                 shown = (FrameworkElement)toolsWindow.Content;
@@ -294,6 +313,19 @@ public static class ToolRender
 
         Console.WriteLine($"render-tool: wrote {path} ({what}, {width}x{height} at x{scale})");
         Environment.Exit(0);
+    }
+
+    /// <summary>The Grind tool with a made-up session going on, two earlier ones and a market (the loot log's tab when <paramref name="loot"/>).</summary>
+    private static ToolPage GrindToolPage(LocalizationManager loc, bool loot)
+    {
+        DateTime now = DateTime.Now;
+        GrindPage.Picture = (GrindSample.Current(now), GrindSample.Earlier(now), GrindSample.Book(), now);
+        var lootPage = new LootPage();
+        var grind = new GrindPage(lootPage, () => null);
+        grind.ShowTab(loot ? "loot" : "grind");
+        var page = new ModulePage(loc["Main.MenuTools.Grind"], grind, _ => true, (_, _) => { }, _ => "Ctrl+Alt+L", () => { }, () => { }, _ => { },
+            masterLabel: loc["Main.MenuTools.Loot"] + " · " + loc["Settings.Overlay.Master"]) { FitWidth = true };
+        return new ToolPage { Content = page };
     }
 
     /// <summary>The checklist with made-up tickets of two characters, the way the render-checklist picture has it.</summary>

@@ -37,6 +37,7 @@ public static class SelfCheckAion2
         ok &= RunAion2NamedSummonScenario();
         ok &= RunAion2RosterReplacesPartyScenario();
         ok &= RunAion2LeftRoomScenario();
+        ok &= RunAion2OwnTargetScenario();
         ok &= RunAion2RosterFiguresScenario();
         ok &= RunAion2GuildScenario();
         ok &= RunAion2PartyByClassScenario();
@@ -834,6 +835,44 @@ public static class SelfCheckAion2
         Console.WriteLine($"  -> joined {joined}, another room closed {otherClosed}, left {left}, own room closed {closed}, the list naming the room {listedOwn}, " +
             $"naming none {listedNone}, taken out {taken}");
         return ok;
+    }
+
+    /// <summary>
+    /// The own selection (0x3438) follows players: Miliria's real nickname frame (16372, server 1303), then the selection of her (<c>34 38 00 00 00 F4 7F</c>),
+    /// a selection of another form (<c>34 38 00 17 3A 00</c>, left alone), and the cleared selection (<c>34 38 00 00 00 00</c>).
+    /// </summary>
+    private static bool RunAion2OwnTargetScenario()
+    {
+        Console.WriteLine("[selftest] Aion 2 own selection (a player selected, then cleared):");
+        using var source = new Aion2PacketCombatSource(Aion2Protocol.Load());
+        var dir = (Aion2EntityDirectory)source.Entities;
+        uint seq = 9000;
+        void Send(byte[] body)
+        {
+            var wire = new List<byte>();
+            int length = body.Length + 4;
+            while (length >= 0x80)
+            {
+                wire.Add((byte)(length & 0x7f | 0x80));
+                length >>= 7;
+            }
+
+            wire.Add((byte)length);
+            wire.AddRange(body);
+            source.Ingest(Segment(seq, wire.ToArray()));
+            seq += (uint)wire.Count;
+            source.Poll(false);
+        }
+
+        Send(Convert.FromHexString("4536F47F0320A00107074D696C697269611E00000001028012869FD3C63950104700CB0947753F804366B601F142F1420A0C00000A0C00000000000000000000B0940100B094010000000000F049020001000000A0860100A086010084DE010000E2040001000000017FD3CC011705EA000000000017050C436F6E76C3A87267656E636501000200"));
+        Send(new byte[] { 0x34, 0x38, 0x00, 0x00, 0x00, 0xF4, 0x7F });
+        bool selected = dir.OwnTarget?.EntityId == 16372 && dir.NameFor(16372) == "Miliria";
+        Send(new byte[] { 0x34, 0x38, 0x00, 0x17, 0x3A, 0x00 });
+        bool kept = dir.OwnTarget?.EntityId == 16372;
+        Send(new byte[] { 0x34, 0x38, 0x00, 0x00, 0x00, 0x00 });
+        bool cleared = dir.OwnTarget is null;
+        Console.WriteLine($"  -> a player selected: {selected}; another form leaves it: {kept}; cleared: {cleared}");
+        return selected && kept && cleared;
     }
 
     /// <summary>

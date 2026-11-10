@@ -442,6 +442,20 @@ public sealed class MeterSettings
     /// <summary>The tab the crafting page was left on: "plan", "now" or "recipes".</summary>
     public string CraftTab { get; set; } = "plan";
 
+    /// <summary>The enemy card (EnemyCard.cs): the player selected in the Abyss - class, level, Combat Power, item level - over the game. On from the start: it
+    /// shows only while an enemy player is selected.</summary>
+    public bool ShowEnemyCard { get; set; } = true;
+
+    /// <summary>The enemy card shows for a player of the own side too.</summary>
+    public bool EnemyCardAllies { get; set; }
+
+    public bool EnemyCardLocked { get; set; } = true;
+    public double? EnemyCardLeft { get; set; }
+    public double? EnemyCardTop { get; set; }
+    public double EnemyCardScale { get; set; } = 1.0;
+    public double? EnemyCardWidth { get; set; }
+    public double? EnemyCardHeight { get; set; }
+
     public double? FpsOverlayLeft { get; set; }
     public double? FpsOverlayTop { get; set; }
     public double FpsOverlayScale { get; set; } = 1.0;
@@ -688,6 +702,9 @@ public sealed class MeterSettings
 
     /// <summary>The Grind view: the meter stays open for every fight, the monsters of the open world and the trash of a dungeon too (the mode menu).</summary>
     public bool MeterGrind { get; set; }
+
+    /// <summary>The meter shows the Grind view (Kinah, Abyss Points, kills and loot per hour) in place of the lines; kept from one start to the next.</summary>
+    public bool MeterGrindView { get; set; }
 
     /// <summary>The own counters at the meter's foot: Odyle Energy (and the time to its next refill), Shugo Festival, Dimensional Invasion, Nightmare, the
     /// daily dungeon and Ascension Trial.</summary>

@@ -1726,6 +1726,12 @@ internal static class Program
                     window.OverlayBody.Children.Insert(at + 1, tip);
                 }
             }
+            else if (kind == "grind")
+            {
+                // the meter's Grind view (its switch after Stagger): 34 minutes farmed in the Abyss, Kinah and Abyss Points an hour in big, kills and loot under them
+                DateTime now = DateTime.Now;
+                window.ShowGrindView(Ui.GrindSample.Current(now), now, Ui.GrindSample.Book());
+            }
             else if (kind == "bossbar")
             {
                 // the boss bar over the lines: a boss at 62 %, dying in 1:23 at the group's pace, its enrage in 2:10

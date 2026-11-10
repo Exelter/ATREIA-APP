@@ -898,6 +898,7 @@ public partial class SettingsWindow : Window
         _settings.AutoScope = onDisk.AutoScope;
         _settings.OverlayBossTimers = onDisk.OverlayBossTimers;
         _settings.MeterGrind = onDisk.MeterGrind;
+        _settings.MeterGrindView = onDisk.MeterGrindView;
         _settings.MeterShowTickets = onDisk.MeterShowTickets;
         _settings.MuteSounds = onDisk.MuteSounds;
         _settings.OdylePerRun = onDisk.OdylePerRun; // the Characters page's switch

@@ -301,6 +301,11 @@ public static class Aion2Stock
 
     private readonly record struct Record(int Kind, int Container, int Slot, int Item, long Quantity);
 
+    /// <summary>The records of an inventory frame (0x1B56 or the login's), for a reader of its own (the grind tracker's Kinah and Abyss Points): kind (0 new,
+    /// 1 changed, 2 gone), container, item and the quantity the slot holds now.</summary>
+    public static IReadOnlyList<(int Kind, int Container, int Item, long Quantity)> RecordsOf(ReadOnlySpan<byte> frame) =>
+        Read(frame).Select(r => (r.Kind, r.Container, r.Item, r.Quantity)).ToList();
+
     /// <summary>The records of a frame (opcode, then the body), found by their anchor; see the class remarks.</summary>
     private static List<Record> Read(ReadOnlySpan<byte> frame)
     {

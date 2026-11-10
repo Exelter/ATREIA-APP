@@ -536,6 +536,7 @@ public partial class MainWindow
         "network" => "Network",
         "season" => "Season missions",
         "hotkeys" => "Hotkey sheet",
+        "enemy" => "Enemy card",
         _ => def.Name,
     };
 

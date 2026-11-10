@@ -53,6 +53,25 @@
           "area": "Crafting",
           "title": "A clearer crafting overlay",
           "text": "The overlay over the game shows how far your plan is, each recipe with a bar, what is still missing, what buying it costs, and where the part you have is lying when it isn't in your bag."
+        },
+        {
+          "kind": "new",
+          "area": "Grind",
+          "title": "Grind: Kinah and Abyss Points per hour",
+          "text": "Switch the meter to Grind (next to Stagger) while you farm. It shows how much Kinah and how many Abyss Points you're making an hour, in big, with your kills and the loot you picked up and what it's worth at the market. The hourly numbers are your session's average: a big kill lifts them right away, then they settle as the minutes go by. Breaks of more than five minutes don't count against you.",
+          "example": "34 minutes in Chaotic Middle Reshanta: 1.25M Kinah an hour, 32.8K Abyss Points an hour, 376 kills an hour."
+        },
+        {
+          "kind": "improved",
+          "area": "Grind",
+          "title": "The Loot tool is now Grind",
+          "text": "The tool shows your grind going on and your earlier sessions side by side, so you can compare maps and characters. The loot log you know is still there, as the second tab."
+        },
+        {
+          "kind": "new",
+          "area": "Abyss",
+          "title": "Enemy card",
+          "text": "Tab onto an enemy player and a card shows their class, level, server, legion, Combat Power and item level, and how their Combat Power compares with yours. If the game didn't send their numbers (for example the app started while they were already nearby), the card looks them up from their character page. Place it where you like in the overlay editor; it only shows while an enemy is selected."
         }
       ]
     },

@@ -9273,6 +9273,18 @@
     "ja": "戦利品",
     "ko": "전리품"
   },
+  "Main.MenuTools.Grind": {
+    "en": "Grind",
+    "de": "Grinden",
+    "fr": "Farm",
+    "es": "Farmeo",
+    "ru": "Фарм",
+    "zh": "刷怪",
+    "zh-TW": "刷怪",
+    "pt": "Farm",
+    "ja": "狩り",
+    "ko": "사냥"
+  },
   "Main.MenuTools.Attributes": {
     "en": "Main Stats",
     "de": "Attribute",

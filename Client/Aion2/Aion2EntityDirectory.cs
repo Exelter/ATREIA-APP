@@ -1652,6 +1652,7 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
         {
             _target = null;
             _lastHit = null;
+            _ownTarget = null;
             _zoneEpoch++;
         }
     }
@@ -1667,6 +1668,32 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
             {
                 return _target is { } t ? (t.EntityId, _npcIds.TryGetValue(t.EntityId, out int npc) ? npc : null, t.At) : null;
             }
+        }
+    }
+
+    private (int EntityId, DateTime At)? _ownTarget;
+
+    /// <summary>
+    /// What the local player has selected right now (tab or click), from the game's own selection message (0x3438): players too, and null once the selection
+    /// is cleared or the selected one left (died, out of view, another zone). <see cref="LocalTarget"/> follows monsters only and keeps the last one.
+    /// </summary>
+    public (int EntityId, DateTime At)? OwnTarget
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _ownTarget;
+            }
+        }
+    }
+
+    /// <summary>The local player selected <paramref name="entityId"/> (null: cleared the selection).</summary>
+    public void SetOwnTarget(int? entityId)
+    {
+        lock (_gate)
+        {
+            _ownTarget = entityId is int id and > 0 ? (id, DateTime.UtcNow) : null;
         }
     }
 
@@ -1712,6 +1739,11 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
             if (_target is { } t && t.EntityId == entityId)
             {
                 _target = null;
+            }
+
+            if (_ownTarget is { } own && own.EntityId == entityId)
+            {
+                _ownTarget = null;
             }
         }
     }
