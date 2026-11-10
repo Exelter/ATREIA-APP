@@ -3635,6 +3635,27 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
         }
     }
 
+    // Party member name -> Item Level and Combat Power, from the room's roster (the group finder's room shows them).
+    private readonly Dictionary<string, (int? ItemLevel, int? CombatPower)> _partyFigures = new(StringComparer.Ordinal);
+
+    /// <summary>Notes a room member's Item Level and Combat Power, as the roster gives them.</summary>
+    public void NotePartyFigures(string name, int? itemLevel, int? combatPower)
+    {
+        lock (_gate)
+        {
+            _partyFigures[name] = (itemLevel, combatPower);
+        }
+    }
+
+    /// <summary>A party member's Item Level and Combat Power as the room's roster last gave them; nulls when it gave none.</summary>
+    public (int? ItemLevel, int? CombatPower) PartyFiguresOfName(string name)
+    {
+        lock (_gate)
+        {
+            return _partyFigures.TryGetValue(name, out var figures) ? figures : (null, null);
+        }
+    }
+
     /// <summary>Notes a party member's class, as the roster gives it.</summary>
     public void NotePartyClass(string name, string className)
     {

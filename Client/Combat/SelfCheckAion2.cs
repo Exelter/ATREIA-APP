@@ -37,6 +37,7 @@ public static class SelfCheckAion2
         ok &= RunAion2NamedSummonScenario();
         ok &= RunAion2RosterReplacesPartyScenario();
         ok &= RunAion2LeftRoomScenario();
+        ok &= RunAion2RosterFiguresScenario();
         ok &= RunAion2GuildScenario();
         ok &= RunAion2PartyByClassScenario();
         ok &= RunAion2AccentAndLeftoverSummonScenario();
@@ -707,6 +708,60 @@ public static class SelfCheckAion2
         bool classes = dir.PartyClassOfName("Skeeve") == "Cleric" && dir.PartyClassOfName("Chumley") is null;
         Console.WriteLine($"  -> three members listed: {three}; the next frame names the local player alone, the others are gone: {alone}; a member's class by name: {classes}");
         return three && alone && classes;
+    }
+
+    /// <summary>
+    /// The room's roster carries each member's Item Level and Combat Power (the layout of the recordings of 8 to 10 November, see
+    /// Aion2FrameDecoder.RosterFiguresBehindName): read for a member laid out plainly, for one with the marker byte before the server, and none for one whose
+    /// bytes behind the name are cut short.
+    /// </summary>
+    private static bool RunAion2RosterFiguresScenario()
+    {
+        Console.WriteLine("[selftest] Aion 2 group finder room: each member's Item Level and Combat Power from the roster:");
+        using var source = new Aion2PacketCombatSource(Aion2Protocol.Load());
+        var dir = (Aion2EntityDirectory)source.Entities;
+        var body = new List<byte> { 0x02, 0x97, 0x11, 0x22, 0x33, 0x00, 4 };
+        body.AddRange("Fast"u8.ToArray());
+        body.AddRange(new byte[] { 0x05, 0xCD, 0x27, 0x09, 0x00, 0x00 });
+
+        void Member(string name, int server, int itemLevel, int combatPower, bool marker)
+        {
+            body.AddRange(BitConverter.GetBytes((ushort)server));
+            body.Add((byte)name.Length);
+            body.AddRange(System.Text.Encoding.UTF8.GetBytes(name));
+            body.AddRange(new byte[] { 0x20, 0, 0, 0, 45, 0, 0, 0 });
+            body.AddRange(BitConverter.GetBytes(itemLevel));
+            if (marker)
+            {
+                body.Add(0x1F);
+            }
+
+            body.AddRange(BitConverter.GetBytes((ushort)server));
+            body.AddRange(BitConverter.GetBytes((ushort)server));
+            body.Add(0x04);
+            body.AddRange(BitConverter.GetBytes(combatPower));
+            body.AddRange(new byte[] { 0, 0, 0, 0 });
+        }
+
+        Member("Aahz", 2302, 2914, 182444, marker: false);
+        Member("Skeeve", 1302, 3044, 185379, marker: true);
+        var wire = new List<byte>();
+        int length = body.Count + 4;
+        while (length >= 0x80)
+        {
+            wire.Add((byte)(length & 0x7f | 0x80));
+            length >>= 7;
+        }
+
+        wire.Add((byte)length);
+        wire.AddRange(body);
+        source.Ingest(Segment(7000, wire.ToArray()));
+        source.Poll(false);
+        var aahz = dir.PartyFiguresOfName("Aahz");
+        var skeeve = dir.PartyFiguresOfName("Skeeve");
+        bool ok = aahz == (2914, 182444) && skeeve == (3044, 185379) && dir.PartyFiguresOfName("Chumley") == (null, null);
+        Console.WriteLine($"  -> Aahz {aahz.ItemLevel} / {aahz.CombatPower}, Skeeve (marker before the server) {skeeve.ItemLevel} / {skeeve.CombatPower}");
+        return ok;
     }
 
     /// <summary>

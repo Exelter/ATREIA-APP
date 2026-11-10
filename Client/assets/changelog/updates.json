@@ -10,6 +10,13 @@
       "date": "2026-11-10",
       "items": [
         {
+          "kind": "new",
+          "area": "Meter",
+          "title": "Everyone's Combat Power in your group at once",
+          "text": "The game's group finder tells each member's Combat Power and Item Level, so the meter now shows them on your group's rows the moment someone joins, without waiting for the website. The list is sorted strongest first, in Ludra, Conquest, exploration and any other group, and so is the list of players fighting with you.",
+          "example": "You join a Conquest room: Torvan 194,214, Lysse 175,232 and Oriel 171,271 show up top to bottom before anyone has said a word."
+        },
+        {
           "kind": "improved",
           "area": "Overlays",
           "title": "A settings button over the game",
