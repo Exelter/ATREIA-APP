@@ -6,6 +6,36 @@
   ],
   "versions": [
     {
+      "version": "1.21.12",
+      "date": "2026-11-10",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Overlays",
+          "title": "A settings button over the game",
+          "text": "The Atreia button is now a small settings button with the overlay editor's keys above it. A click opens the overlay menu. It no longer moves when you drag it, which was laggy: move it and size it in the overlay editor, with Windows' own smooth move like every other overlay. Its menu keeps a sensible size when you make the button bigger or smaller."
+        },
+        {
+          "kind": "fixed",
+          "area": "Overlays",
+          "title": "The FPS counter stays on",
+          "text": "On some PCs the counter switched between the frame rate and \"waiting for the game\" every moment. Windows hands over the game's frames in batches, and the counter took a late batch for a stopped game. It now asks for the frames twice a second and only says it's waiting after three seconds without any."
+        },
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "The meter steps aside in game windows again",
+          "text": "The meter stays over the game's windows only while it shows your group, or for a few minutes after a boss fight while that fight is still on it (for the death screen and the page to commend players). Reset it, or let it fold to its bar, and it steps aside in the skill window and the rest as before."
+        },
+        {
+          "kind": "fixed",
+          "area": "History",
+          "title": "Smooth scrolling through your fights",
+          "text": "Ranks and pictures coming in no longer redraw the whole list while you scroll, the pictures are read at the size they're shown, and the list shows the newest 60 fights first with a button for older ones."
+        }
+      ]
+    },
+    {
       "version": "1.21.11",
       "date": "2026-11-10",
       "items": [

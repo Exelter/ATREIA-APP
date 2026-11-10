@@ -106,7 +106,29 @@ public sealed class HistoryWindow : Window
         Content = _root;
         ThemedChrome.Apply(this);
 
-        Action onChanged = () => Dispatcher.BeginInvoke(new Action(Draw));
+        // the list scrolled lately: what comes in from the background (a rank, a picture, a fight's players) waits until it rests (10 November 2026, the owner:
+        // "the lag in the fights tab: when scrolling it sometimes stops, lags out, delays and continues" - every rank that came in drew the whole list anew
+        // under the wheel)
+        _listView.ScrollChanged += (_, e) =>
+        {
+            if (e.VerticalChange != 0)
+            {
+                _scrolledAt = DateTime.UtcNow;
+            }
+        };
+        _listView.PreviewMouseWheel += (_, _) => _scrolledAt = DateTime.UtcNow;
+        _drawLater.Tick += (_, _) =>
+        {
+            if (DateTime.UtcNow - _scrolledAt >= ScrollRest)
+            {
+                _drawLater.Stop();
+                if (_reportView is null)
+                {
+                    Draw();
+                }
+            }
+        };
+        Action onChanged = () => Dispatcher.BeginInvoke(new Action(RequestDraw));
         FightLog.Changed += onChanged;
         // ranks come from the website one fight at a time: the page is drawn again once they stop coming for a moment
         var rankWait = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
@@ -115,7 +137,7 @@ public sealed class HistoryWindow : Window
             rankWait.Stop();
             if (_reportView is null)
             {
-                Draw();
+                RequestDraw();
             }
         };
         Action onRank = () => Dispatcher.BeginInvoke(new Action(() =>
@@ -129,13 +151,14 @@ public sealed class HistoryWindow : Window
         {
             if (_reportView is null)
             {
-                Draw();
+                RequestDraw();
             }
         }));
         AionDPS.Update.ImagePack.Arrived += onPictures;
         _searchWait.Tick += (_, _) =>
         {
             _searchWait.Stop();
+            _rowsShown = RowBudget;
             CloseReport();
             Draw();
         };
@@ -144,6 +167,7 @@ public sealed class HistoryWindow : Window
         Closed += (_, _) =>
         {
             _searchWait.Stop();
+            _drawLater.Stop();
             FightLog.Changed -= onChanged;
             FightRanks.Changed -= onRank;
             AionDPS.Update.ImagePack.Arrived -= onPictures;
@@ -153,6 +177,47 @@ public sealed class HistoryWindow : Window
         Draw();
     }
 
+    // the list's scrolling (see RequestDraw) and how much of it is drawn (see RowBudget)
+    private DateTime _scrolledAt = DateTime.MinValue;
+    private readonly System.Windows.Threading.DispatcherTimer _drawLater = new() { Interval = TimeSpan.FromMilliseconds(300) };
+    private static readonly TimeSpan ScrollRest = TimeSpan.FromSeconds(1.2);
+
+    /// <summary>
+    /// How many fights (or dungeon visits) the list draws before "Show older fights": hundreds of them drawn at once made a long page to lay out and scroll,
+    /// and the newest are what is looked at. Each press adds as many again.
+    /// </summary>
+    private const int RowBudget = 60;
+    private int _rowsShown = RowBudget;
+
+    /// <summary>The list drawn anew now, or once the scrolling has rested a moment (what comes from the background never moves the page under the wheel).</summary>
+    private void RequestDraw()
+    {
+        if (DateTime.UtcNow - _scrolledAt < ScrollRest)
+        {
+            _drawLater.Start();
+            return;
+        }
+
+        Draw();
+    }
+
+    /// <summary>The button under the list while older fights are left out: a press draws the next ones too.</summary>
+    private FrameworkElement MoreButton(int left)
+    {
+        var text = new TextBlock { Text = $"Show older fights ({left.ToString("N0", En)} more)", FontSize = 13, FontWeight = FontWeights.SemiBold };
+        text.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Accent");
+        var button = new Border { Child = text, Padding = new Thickness(16, 9, 16, 10), Margin = new Thickness(0, 14, 0, 0), CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1), Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left };
+        button.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+        button.SetResourceReference(Border.BorderBrushProperty, "Brush.Border");
+        button.MouseLeftButtonUp += (_, _) =>
+        {
+            _rowsShown += RowBudget;
+            Draw();
+        };
+        return button;
+    }
+
     /// <summary>The page itself, inside the window's scroll viewer and chrome (the picture mode takes it out and draws it).</summary>
     internal StackPanel PageContent => _page;
 
@@ -160,6 +225,7 @@ public sealed class HistoryWindow : Window
     {
         CloseReport();
         _tab = Tabs.Contains(tab) ? tab : Tabs[0];
+        _rowsShown = RowBudget;
         Draw();
     }
 
@@ -235,8 +301,15 @@ public sealed class HistoryWindow : Window
             return;
         }
 
+        int drawn = 0;
         foreach (var day in entries.GroupBy(e => e.Start.Date))
         {
+            if (drawn >= _rowsShown)
+            {
+                _list.Children.Add(MoreButton(entries.Count - drawn));
+                break;
+            }
+
             _list.Children.Add(Muted(day.Key.ToString("MMM d, yyyy", En).ToUpperInvariant(), 11.5, new Thickness(2, 16, 0, 8), semibold: true));
             var card = new StackPanel();
             bool first = true;
@@ -244,6 +317,7 @@ public sealed class HistoryWindow : Window
             {
                 card.Children.Add(Row(entry, first, best: false));
                 first = false;
+                drawn++;
             }
 
             _list.Children.Add(Card(card));
@@ -447,6 +521,7 @@ public sealed class HistoryWindow : Window
         chip.MouseLeftButtonUp += (_, _) =>
         {
             _character = value;
+            _rowsShown = RowBudget;
             Draw();
         };
         return chip;
@@ -459,8 +534,17 @@ public sealed class HistoryWindow : Window
     /// show even when no boss of theirs was saved (Nightmare, where the meter often finds no boss); such a visit shows the stay itself as its row.</summary>
     private void DrawVisits(List<FightLogEntry> bosses, List<FightLogEntry> runs, List<FightLogEntry> stays)
     {
+        int drawn = 0;
         foreach (DateTime day in bosses.Concat(stays).Select(e => e.Start.Date).Distinct().OrderByDescending(d => d))
         {
+            if (drawn >= _rowsShown)
+            {
+                // the fights of the days left out, for the button
+                int left = bosses.Count(e => e.Start.Date <= day) + stays.Count(e => e.Start.Date <= day);
+                _list.Children.Add(MoreButton(left));
+                break;
+            }
+
             var dayBosses = bosses.Where(e => e.Start.Date == day).ToList();
             List<Visit> visits = Visits(dayBosses, runs);
             foreach (FightLogEntry stay in stays.Where(e => e.Start.Date == day && !visits.Any(v => v.Run?.Id == e.Id)))
@@ -474,6 +558,7 @@ public sealed class HistoryWindow : Window
             foreach (Visit visit in visits.OrderByDescending(v => v.Bosses.Count > 0 ? v.Bosses.Max(b => b.Start) : v.Run!.Start))
             {
                 _list.Children.Add(VisitCard(visit));
+                drawn += Math.Max(1, visit.Bosses.Count);
             }
         }
     }
@@ -1073,7 +1158,8 @@ public sealed class HistoryWindow : Window
 
     private static string Short(double v) => v >= 1_000_000 ? (v / 1_000_000).ToString("0.0#", En) + "M" : v >= 1000 ? (v / 1000).ToString("0.0", En) + "K" : v.ToString("0", En);
 
-    private static ImageSource? Picture(string? path) => path is not null && File.Exists(path) ? OverlayPictures.Load(path) : null;
+    /// <summary>A picture of the list, read small (the boxes are 40 to 56 wide; twice that for sharp screens): see <see cref="OverlayPictures.Load(string?, int)"/>.</summary>
+    private static ImageSource? Picture(string? path) => path is not null && File.Exists(path) ? OverlayPictures.Load(path, 120) : null;
 
     /// <summary>
     /// A fight's picture: the boss's for a boss fight, your class's emblem for anything else (a dungeon run, the dummy). A boss without a picture of its
