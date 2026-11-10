@@ -124,6 +124,7 @@ public sealed class TimetableWindow : Window, IOverlayPlace
         OverlayPlaces.WasReset += onReset;
         Closed += (_, _) => OverlayPlaces.WasReset -= onReset;
         OverlayDocking.Attach(this, SavePosition);
+        OverlayAltDrag.Register(this, () => !_isView, ApplyClickThrough); // Alt + drag moves it in the game (10 November 2026)
     }
 
     /// <summary>Place, width and scale from the settings again (after "reset size and position").</summary>
