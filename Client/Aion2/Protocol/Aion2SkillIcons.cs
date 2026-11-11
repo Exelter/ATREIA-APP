@@ -28,6 +28,9 @@ public static class Aion2SkillIcons
         return File.Exists(path) ? path : null;
     }
 
+    /// <summary>The icon's name in the table (ICON_CL_SKILL_047), whether or not its picture is on this PC; null when the skill has none.</summary>
+    internal static string? TokenOf(int skillId) => skillId > 0 && Tokens().TryGetValue(skillId / 10000, out string? token) ? token : null;
+
     private static IReadOnlyDictionary<(string? Class, string Name), string>? _byName;
 
     /// <summary>

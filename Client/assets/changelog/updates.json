@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "2.0.7",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Skills",
+          "title": "The right icons for the Cleric's skills",
+          "text": "Several Cleric skills showed the wrong icon in the skill list, the meter's breakdown and the overlays: Benevolence had another skill's, and Salvation, Power Burst, Absolution, Voice of Doom, Prayer of Amplification, Noble Aura and some passives each showed the one of the skill next to them. They all show their own icon now, as in the game. The same was fixed for a few Gladiator, Templar, Ranger, Sorcerer and Chanter skills, and skills that had no icon at all, like Comrade in Arms and Defiance, have one now.",
+          "example": "Benevolence shows its own golden circle now, and Noble Aura is no longer a copy of Prayer of Amplification."
+        }
+      ]
+    },
+    {
       "version": "2.0.6",
       "date": "2026-11-11",
       "items": [
