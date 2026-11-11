@@ -46,3 +46,19 @@ jobs:
         shell: pwsh
         timeout-minutes: 40
         run: pwsh Tools/release/build-release.ps1 -Version 1.0.0 -Out releases -NoDelta
+      # The installer players download, run the way a player would but without the clicks: the setup wizard (silent here) runs Velopack's installer,
+      # and the app must then be in its place.
+      - name: Install it
+        shell: pwsh
+        run: |
+          $p = Start-Process releases/Atreia-App-Setup.exe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/LOG=wizard.log' -Wait -PassThru
+          $info = (Get-Item releases/Atreia-App-Setup.exe).VersionInfo
+          "Installer: $($info.FileDescription), $($info.ProductName) $($info.ProductVersion) by $($info.CompanyName); exit code $($p.ExitCode)"
+          $exe = Join-Path $env:LOCALAPPDATA 'AtreiaApp\current\AtreiaApp.exe'
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $exe)) {
+            if (Test-Path wizard.log) { Get-Content wizard.log -Tail 40 }
+            $velopack = Join-Path $env:TEMP 'Atreia-App-install.log'
+            if (Test-Path $velopack) { Get-Content $velopack -Tail 40 }
+            throw 'The installer did not install the app.'
+          }
+          "Installed: $exe"
