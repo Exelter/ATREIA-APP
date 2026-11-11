@@ -37,7 +37,8 @@ public partial class MainWindow
             HotkeyBinding binding = HotkeyBinding.Parse(hotkey);
             if (!binding.IsEmpty)
             {
-                tips.Add(new HomeTip(string.Format(CultureInfo.CurrentCulture, loc[text], binding.ToString()), page));
+                // the way to the page only to one there is in this mode (the restricted mode has no Map)
+                tips.Add(new HomeTip(string.Format(CultureInfo.CurrentCulture, loc[text], binding.ToString()), page is not null && pages.ContainsKey(page) ? page : null));
             }
         }
 
