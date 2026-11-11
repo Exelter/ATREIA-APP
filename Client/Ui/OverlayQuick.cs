@@ -141,7 +141,7 @@ public sealed class OverlayQuickWindow : Window
         // locked or free
         var lockRow = new CheckBox
         {
-            Content = new TextBlock { Text = "Locked in place (clicks go through to the game)", TextWrapping = TextWrapping.Wrap }, IsChecked = overlay.IsLocked,
+            Content = new TextBlock { Text = "Locked: clicks go through to the game", TextWrapping = TextWrapping.Wrap, MaxWidth = 232 }, IsChecked = overlay.IsLocked,
             Margin = new Thickness(0, 6, 0, 2), FontSize = 12.5,
         };
         lockRow.SetResourceReference(Control.ForegroundProperty, "Brush.Text");

@@ -248,7 +248,7 @@ public sealed class PetFarmWindow : Window, IOverlayQuick
     /// <summary>One line of the overlay: the pet's name and, in the accent colour, what is known about its level.</summary>
     internal static StackPanel BuildRow(string pet, string level)
     {
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 1, 0, 1), HorizontalAlignment = HorizontalAlignment.Center };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 1, 0, 1), HorizontalAlignment = HorizontalAlignment.Left }; // left: the pictures line up
         // the pet's picture before its name (11 November 2026)
         if (MonsterArt.PictureOfName(pet) is { } picture)
         {
