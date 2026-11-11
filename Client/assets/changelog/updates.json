@@ -6,6 +6,31 @@
   ],
   "versions": [
     {
+      "version": "2.0.5",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Meter",
+          "title": "How the kill went against your best",
+          "text": "When a boss dies, the boss line on the meter now shows how long the kill took and your DPS against your best kill of that boss before it: green with \"new best\" when you beat it, or \"first kill\" the first time. It stays until the next pull or for three minutes.",
+          "example": "Killed Watchdog Kwapo in 1:05 · ▲ 12% vs your best 26.8k · new best 30.0k"
+        },
+        {
+          "kind": "fixed",
+          "area": "Find a player",
+          "title": "Your group's list folds away in the dungeon",
+          "text": "The list of your group that opens by itself while you get a group together now goes away when you enter the dungeon or raid, and doesn't open again by itself inside. You can still open Find a player yourself any time."
+        },
+        {
+          "kind": "fixed",
+          "area": "Uploads",
+          "title": "Crowded world bosses upload again",
+          "text": "A world boss with more than 64 players was refused whole by atreia.app. The upload now takes you and the 63 players with the most damage, like any other fight."
+        }
+      ]
+    },
+    {
       "version": "2.0.4",
       "date": "2026-11-11",
       "items": [

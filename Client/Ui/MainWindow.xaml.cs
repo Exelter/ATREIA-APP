@@ -2144,7 +2144,10 @@ public partial class MainWindow : Window
 
                 foreach (var job in jobs)
                 {
-                    FightLog.Save(job.Kind, job.Input, job.Detail, zoneId, job.Fights, serverId, job.HpLeft);
+                    if (FightLog.Save(job.Kind, job.Input, job.Detail, zoneId, job.Fights, serverId, job.HpLeft) is { } saved)
+                    {
+                        NoteKill(saved); // a kill: how it went against the own best, on the meter's boss line
+                    }
                 }
 
                 // a try without the kill and with deaths in it: the wipe review on the meter (the latest one)
@@ -4264,8 +4267,10 @@ public partial class MainWindow : Window
             : participants.Select(p => absorbed.TryGetValue(p.Name, out long amount) ? p with { DamageAbsorbed = amount } : p).ToList();
     }
 
-    /// <summary>The backend's ceiling for the players of one upload (uploadSchema.ts). Not applied to a world boss: the whole map is on it, and a cut would drop the players who matter for the damage total.</summary>
-    private const int MaxUploadParticipants = 300;
+    /// <summary>Atreia's ceiling for the players of one upload (the website's meter.js MAX_PLAYERS): the own character and the biggest by damage, also on a
+    /// world boss (11 November 2026: Watcher Kaira with 118 players was refused whole, "At most 64 players in one fight"). The kill is proven on every hit
+    /// before the cut (<see cref="BossNotKilledReason"/>), so the cut costs no upload.</summary>
+    private const int MaxUploadParticipants = 64;
 
     /// <summary>Whether the target is a world boss of the field maps (see Aion2HitAverages.IsEstimatedBoss): proven by its NPC id from the game's own traffic.</summary>
     private bool IsWorldBossTarget(int targetId) =>
@@ -4424,12 +4429,12 @@ public partial class MainWindow : Window
 
         // More players than the upload takes (a world boss): the biggest by damage and the own character are worked out in full, nobody else.
         IEnumerable<PlayerRow> uploadRows = _rows;
-        if (_rows.Count > MaxUploadParticipants && !IsWorldBossTarget(targetId))
+        if (_rows.Count > MaxUploadParticipants)
         {
             uploadRows = _rows.Where(r => _source?.Entities.IsLocalPlayer(r.ObjectId) == true || (ownName is not null && r.Name == ownName))
                 .Concat(_rows.Where(r => !(_source?.Entities.IsLocalPlayer(r.ObjectId) == true || (ownName is not null && r.Name == ownName)))
-                    .OrderByDescending(r => hitsBySource.TryGetValue(r.ObjectId, out List<DamageEvent>? h) ? h.Sum(e => e.Amount) : 0)
-                    .Take(MaxUploadParticipants))
+                    .OrderByDescending(r => hitsBySource.TryGetValue(r.ObjectId, out List<DamageEvent>? h) ? h.Sum(e => e.Amount) : 0))
+                .Take(MaxUploadParticipants)
                 .ToList();
         }
 
@@ -4523,8 +4528,8 @@ public partial class MainWindow : Window
                     : null));
         }
 
-        // The backend takes at most 300 players of an instance fight: the biggest by damage, the own character always. A world boss has no cut.
-        if (participants.Count > MaxUploadParticipants && !IsWorldBossTarget(targetId))
+        // Atreia takes at most 64 players of a fight: the biggest by damage, the own character always (a world boss too).
+        if (participants.Count > MaxUploadParticipants)
         {
             participants = participants.Where(p => p.IsSelf).Concat(participants.Where(p => !p.IsSelf).OrderByDescending(p => p.TotalDamage))
                 .Take(MaxUploadParticipants).ToList();

@@ -33,13 +33,88 @@ public partial class MainWindow
             return; // the pictures fill it themselves
         }
 
-        if (!_gateSettings.MeterBossLine || CurrentBoss() is not { } boss)
+        if (!_gateSettings.MeterBossLine)
         {
             OverlayBossBar.Visibility = Visibility.Collapsed;
             return;
         }
 
+        if (CurrentBoss() is not { } boss)
+        {
+            // the boss is dead: how the kill went against the own best, until the next pull or a few minutes
+            if (_killResult is { } k && DateTime.Now - k.At < KillResultShown && _lastOwnBossFight <= k.At.AddSeconds(5))
+            {
+                ShowKillResult(k.Boss, k.Took, k.Dps, k.Best);
+            }
+            else
+            {
+                OverlayBossBar.Visibility = Visibility.Collapsed;
+            }
+
+            return;
+        }
+
         ShowBossBar(boss.Name, boss.Hp, boss.Max, boss.Kill, boss.Rage, PaceNow(boss.Npc), TriesNow(boss.Npc, boss.Hp, boss.Max));
+    }
+
+    // ---- after a kill: the own DPS against the own best before it (11 November 2026, a player: "it doesn't show how much better i did" - the pace was there
+    // during the fight only, and the line went with the boss) ----
+    private (string Boss, TimeSpan Took, double Dps, double? Best, DateTime At)? _killResult;
+    private static readonly TimeSpan KillResultShown = TimeSpan.FromMinutes(3);
+
+    /// <summary>A boss fight of the own character was saved as a kill (the history, just after it): its result goes on the boss line.</summary>
+    private void NoteKill(History.FightLogEntry saved)
+    {
+        if (saved is not { Kind: History.FightLogKind.Boss, Killed: true, YourDps: > 0, You: { Length: > 0 } me, BossNpcId: int npc }
+            || DateTime.Now - saved.Start.AddSeconds(saved.Seconds) > TimeSpan.FromMinutes(2))
+        {
+            return; // not a kill, no own DPS, or saved long after it (as the stay ended)
+        }
+
+        double? best = History.FightLog.Entries().Where(e => e.Kind == History.FightLogKind.Boss && e.Killed == true && e.BossNpcId == npc && e.You == me
+            && e.Id != saved.Id && e.YourDps > 0).Select(e => (double?)e.YourDps).DefaultIfEmpty(null).Max();
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            _killResult = (saved.Title, TimeSpan.FromSeconds(saved.Seconds), saved.YourDps, best, DateTime.Now);
+            UpdateOverlayBossBar();
+        }));
+    }
+
+    /// <summary>The line after a kill (also the pictures of the meter): the boss killed and how long it took; under it the own DPS against the own best kill
+    /// of it before this one, "new best" when it beat it, or that it was the first kill.</summary>
+    internal void ShowKillResult(string boss, TimeSpan took, double dps, double? best)
+    {
+        if (_bossNumbers is null)
+        {
+            BuildBossBar();
+        }
+
+        var green = new SolidColorBrush(Color.FromRgb(0x6C, 0xD4, 0x8A));
+        _bossNumbers!.Text = "Killed";
+        _bossName!.Text = boss;
+        _bossKill!.Text = "in " + (took.TotalHours >= 1 ? $"{(int)took.TotalHours}:{took.Minutes:00}:{took.Seconds:00}" : $"{(int)took.TotalMinutes}:{took.Seconds:00}");
+        _bossKill.Foreground = green;
+        _bossKill.ToolTip = null;
+        _bossRage!.Visibility = Visibility.Collapsed;
+        if (best is double before && before > 0)
+        {
+            double change = (dps - before) / before;
+            bool better = change >= 0;
+            _bossPace!.Text = (better ? "▲ " : "▼ ") + Math.Abs(change * 100).ToString(Math.Abs(change) < 0.1 ? "0.#" : "0", CultureInfo.CurrentCulture) + "% vs your best "
+                + PlayerRow.Compact((long)before) + (better ? " · new best " + PlayerRow.Compact((long)dps) : " · you did " + PlayerRow.Compact((long)dps));
+            _bossPace.Foreground = better ? green : Math.Abs(change) < 0.05 ? OverlayPictures.Amber : OverlayPictures.Red;
+        }
+        else
+        {
+            _bossPace!.Text = "First kill on this character: " + PlayerRow.Compact((long)dps) + " DPS";
+            _bossPace.Foreground = green;
+        }
+
+        _bossPace.ToolTip = "Your DPS in this kill against your best kill of this boss before it, on this character (History)";
+        _bossPace.Visibility = Visibility.Visible;
+        _bossTries!.Visibility = Visibility.Collapsed;
+        _bossSecond!.Visibility = Visibility.Visible;
+        OverlayBossBar.Visibility = Visibility.Visible;
     }
 
     // ---- the pace against the own best, and the tries (10 November 2026, the owner: "live pace against your best: during a boss fight, whether you're ahead of

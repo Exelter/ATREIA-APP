@@ -975,7 +975,6 @@ public partial class MainWindow
     private bool _findAuto;
 
     private string _autoGroupKey = "";
-    private ScopeContext _autoGroupContext = ScopeContext.World;
     private DateTime _autoGroupAt = DateTime.MinValue;
 
     /// <summary>The party members looked up by themselves (by "name|server"): what the website's search found, and when.</summary>
@@ -999,9 +998,11 @@ public partial class MainWindow
 
     /// <summary>
     /// The group by itself (10 November 2026, the owner: "make the meter auto search and show the party members once in any party, Ludra, exploration,
-    /// Conquest"): once a second, while the meter is up, the roster is read; a new group (someone joined, another party) or going into a dungeon with one opens
-    /// Find a player on the group - never taking the keyboard from the game - and looks the party members up in the background, so their Combat Power shows on
-    /// their rows and a click shows their card at once. Not in a boss fight; folded away when one starts. With "Show my group" off it only notes the group.
+    /// Conquest"): once a second, while the meter is up, the roster is read; a new group (someone joined, another party) opens Find a player on the group - never
+    /// taking the keyboard from the game - and looks the party members up in the background, so their Combat Power shows on their rows and a click shows their
+    /// card at once. Not in a boss fight; folded away when one starts. Going into a dungeon or raid folds it away too, and in one it does not open by itself
+    /// (11 November 2026, a player: "pls make that this goes away once you enter the dungeon ... it sits there all the time until you x it"). With "Show my
+    /// group" off it only notes the group.
     /// </summary>
     private void AutoShowGroup(DateTime now)
     {
@@ -1019,8 +1020,12 @@ public partial class MainWindow
         _autoGroupAt = now;
         IReadOnlyList<GroupMate> mates = GroupMates();
         _groupSeen = mates.Count > 0;
-        bool entered = _scopeContext == ScopeContext.Instance && _autoGroupContext != ScopeContext.Instance;
-        _autoGroupContext = _scopeContext;
+        bool inside = _scopeContext == ScopeContext.Instance;
+        if (inside && _findAuto && OverlayFind.Visibility == Visibility.Visible && OverlayFindBox.Text.Length == 0 && _findShown is null)
+        {
+            CloseFindPlayer(); // in the dungeon: the group list it opened goes (one the player is using stays)
+        }
+
         if (mates.Count == 0)
         {
             _autoGroupKey = "";
@@ -1041,7 +1046,7 @@ public partial class MainWindow
         }
 
         string key = string.Join("|", mates.Select(m => m.Name).OrderBy(n => n, StringComparer.Ordinal));
-        if (key == _autoGroupKey && !entered)
+        if (key == _autoGroupKey)
         {
             return;
         }
@@ -1050,9 +1055,9 @@ public partial class MainWindow
         _ = LookUpMatesAsync(mates);
         bool fighting = now - _lastOwnBossFight < TimeSpan.FromSeconds(10);
         bool busy = OverlayApps.Visibility == Visibility.Visible || (OverlayFind.Visibility == Visibility.Visible && (OverlayFindBox.Text.Length > 0 || _findShown is not null));
-        if (fighting || busy)
+        if (fighting || busy || inside)
         {
-            return;
+            return; // the party members are still looked up: their rows on the meter get their Combat Power
         }
 
         InitFindRegion();
