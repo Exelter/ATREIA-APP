@@ -16,7 +16,7 @@ namespace AionDPS.Upload;
 public static class HistoryUpload
 {
     /// <summary>The backend's ceiling for the players of one upload (as the live upload).</summary>
-    private const int MaxParticipants = 300;
+    private const int MaxParticipants = 64; // Atreia's ceiling (the website's meter.js MAX_PLAYERS)
 
     /// <summary>Above this many players the effects are not cut per player (a crowded world boss), as the live upload.</summary>
     private const int MaxBuffRows = 60;
