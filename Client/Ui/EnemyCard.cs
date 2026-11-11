@@ -32,7 +32,7 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
         string? mine = OwnFaction(dir);
         // a player who traded hits with the own character is an enemy whatever is known of his faction (11 November 2026: in the Abyss most had no server)
         // a member of the own group is never an enemy (11 November 2026)
-        bool enemy = !(dir.NameFor(id) is { } name && dir.PartyNames.Contains(name)) && (dir.IsHostile(id) || (theirs is not null && mine is not null && theirs != mine));
+        bool enemy = !(dir.NameFor(id) is { } named && dir.PartyNames.Contains(named)) && (dir.IsHostile(id) || (theirs is not null && mine is not null && theirs != mine));
         if (!enemy && !allies)
         {
             return null;
