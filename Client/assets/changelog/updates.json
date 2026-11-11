@@ -10,6 +10,13 @@
       "date": "2026-11-11",
       "items": [
         {
+          "kind": "new",
+          "area": "Installer",
+          "title": "A proper setup wizard",
+          "text": "The installer is now a setup wizard: it says what the app does and needs before it installs, offers to open the Npcap download page when Npcap is missing, and can start the app at the end. The app installs and updates exactly as before.",
+          "example": "New players see what Atreia is before anything is installed, instead of a quick splash."
+        },
+        {
           "kind": "fixed",
           "area": "Overlays",
           "title": "Closing an overlay's settings no longer closes the app",
