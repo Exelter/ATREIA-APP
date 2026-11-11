@@ -370,7 +370,7 @@ public partial class MainWindow
         void DrawPreview(MeterSettings s)
         {
             MeterLook look = MeterLook.From(s);
-            MeterBarParts.Apply(samples, rdpsView: false, look.BarParts, seconds: 120);
+            MeterBarParts.Apply(samples, rdpsView: false, look.BarBuffs, look.BarHeals, seconds: 120);
             preview.Children.Clear();
             previewHost.Width = look.PanelWidth;
             // the head: the clock, the boss, and the buttons (dimmed when they show only under the mouse)
@@ -654,8 +654,10 @@ public partial class MainWindow
 
         left.Children.Add(Section(loc["Look.Bars"],
             Choices(MeterLook.Bars, MeterLook.From(now).Bar, BarTile, bar => Change(s => s.MeterBarStyle = bar)),
-            Check("Buffs and healing on the bar", "After a player's own damage the bar goes on in grey for what their buffs added to the others' damage and in green for their healing on the others, with the + figures beside the rate. In the rDPS view the bar is rDPS + healing.",
-                now.MeterBarParts, on => Change(s => s.MeterBarParts = on))));
+            Check("Buffs on the bar (grey part)", "After a player's own damage the bar goes on in grey for what their buffs added to the others' damage, with its + figure beside the rate. Off: no grey part; in the rDPS view the whole rDPS is in the class colour.",
+                now.BarBuffsOn, on => Change(s => s.MeterBarBuffs = on)),
+            Check("Healing on the bar (green part and + healing)", "After that the bar goes on in green for the player's healing on the others, with the green + figure beside the rate. Off: no green part and no + healing.",
+                now.BarHealsOn, on => Change(s => s.MeterBarHeals = on))));
 
         // lines
         left.Children.Add(Section(loc["Look.Lines"],

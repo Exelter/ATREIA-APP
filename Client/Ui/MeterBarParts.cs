@@ -39,39 +39,39 @@ public static class MeterBarParts
 
     /// <summary>
     /// A row's parts. <paramref name="rdpsView"/>: the bars by rate (own = nDPS where rDPS is known, else the rate shown); otherwise by the damage, the given
-    /// part being the buffs' rate over <paramref name="seconds"/> (the span rDPS was worked out over). <paramref name="on"/> false: the own part alone, as
-    /// the bars always were.
+    /// part being the buffs' rate over <paramref name="seconds"/> (the span rDPS was worked out over). <paramref name="buffs"/> false: no grey part (in the
+    /// rDPS view the own part is then the whole rDPS, so the bars still follow the order); <paramref name="heals"/> false: no green part. Both false: the own
+    /// part alone, as the bars always were.
     /// </summary>
-    public static Parts Of(PlayerRow row, bool rdpsView, bool on, double seconds)
+    public static Parts Of(PlayerRow row, bool rdpsView, bool buffs, bool heals, double seconds)
     {
-        bool split = on && !row.IsEnemy;
+        buffs &= !row.IsEnemy;
+        heals &= !row.IsEnemy;
         if (rdpsView)
         {
             bool known = row.Rdps is not null && row.Ndps is not null;
             double whole = row.Rdps ?? row.Dps ?? 0;
-            if (!split)
-            {
-                return new Parts(whole, 0, 0);
-            }
-
-            double given = known ? Math.Max(0, row.Given ?? 0) : 0;
-            double own = known ? Math.Max(0, row.Ndps!.Value) : whole;
-            return new Parts(own, given, Math.Max(0, row.HealOthersRate ?? 0));
+            double healRate = heals ? Math.Max(0, row.HealOthersRate ?? 0) : 0;
+            return buffs && known
+                ? new Parts(Math.Max(0, row.Ndps!.Value), Math.Max(0, row.Given ?? 0), healRate)
+                : new Parts(whole, 0, healRate);
         }
 
-        if (!split)
-        {
-            return new Parts(row.Damage, 0, 0);
-        }
-
-        double lent = seconds > 0 && row.Given is double rate && rate > 0 ? rate * seconds : 0;
-        return new Parts(row.Damage, lent, Math.Max(0, row.HealOthers));
+        double lent = buffs && seconds > 0 && row.Given is double rate && rate > 0 ? rate * seconds : 0;
+        return new Parts(row.Damage, lent, heals ? Math.Max(0, row.HealOthers) : 0);
     }
 
-    /// <summary>Sets every row's three bar ends and its "+" figures, all measured against the longest whole bar of <paramref name="rows"/>.</summary>
-    public static void Apply(IEnumerable<PlayerRow> rows, bool rdpsView, bool on, double seconds)
+    /// <summary>Both parts on (<paramref name="on"/>) or neither.</summary>
+    public static Parts Of(PlayerRow row, bool rdpsView, bool on, double seconds) => Of(row, rdpsView, on, on, seconds);
+
+    /// <summary>Both parts on (<paramref name="on"/>) or neither.</summary>
+    public static void Apply(IEnumerable<PlayerRow> rows, bool rdpsView, bool on, double seconds) => Apply(rows, rdpsView, on, on, seconds);
+
+    /// <summary>Sets every row's three bar ends and its "+" figures, all measured against the longest whole bar of <paramref name="rows"/>; a part that is
+    /// switched off (<paramref name="buffs"/>, <paramref name="heals"/>) has neither its colour nor its "+" figure.</summary>
+    public static void Apply(IEnumerable<PlayerRow> rows, bool rdpsView, bool buffs, bool heals, double seconds)
     {
-        var parts = rows.Select(r => (Row: r, Parts: Of(r, rdpsView, on, seconds))).ToList();
+        var parts = rows.Select(r => (Row: r, Parts: Of(r, rdpsView, buffs, heals, seconds))).ToList();
         double longest = parts.Count > 0 ? parts.Max(p => p.Parts.Whole) : 0;
         double Percent(double value) => longest > 0 ? Math.Clamp(100.0 * value / longest, 0, 100) : 0;
         foreach (var (row, p) in parts)
@@ -121,9 +121,19 @@ public static class MeterBarParts
         classes.GradientStops.Add(new GradientStop(ClassBrushes.ClassColor("Ranger"), 0.67));
         classes.GradientStops.Add(new GradientStop(ClassBrushes.ClassColor("Ranger"), 1.0));
         Item(classes, "own damage");
-        Item(new SolidColorBrush(GivenColor) { Opacity = 0.8 }, "buffs for others");
-        Item(new SolidColorBrush(HealColor) { Opacity = 0.85 }, "healing on others");
-        var whole = new TextBlock { Text = rdpsView ? "bar = rDPS + healing" : "bar = damage + buffs + healing", FontSize = look.TinySize, VerticalAlignment = VerticalAlignment.Center };
+        // only the parts that are switched on (11 November 2026)
+        if (look.BarBuffs)
+        {
+            Item(new SolidColorBrush(GivenColor) { Opacity = 0.8 }, "buffs for others");
+        }
+
+        if (look.BarHeals)
+        {
+            Item(new SolidColorBrush(HealColor) { Opacity = 0.85 }, "healing on others");
+        }
+
+        string bar = rdpsView ? "bar = rDPS" : "bar = damage" + (look.BarBuffs ? " + buffs" : "");
+        var whole = new TextBlock { Text = bar + (look.BarHeals ? " + healing" : ""), FontSize = look.TinySize, VerticalAlignment = VerticalAlignment.Center };
         whole.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
         line.Children.Add(whole);
         return line;

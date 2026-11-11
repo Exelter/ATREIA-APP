@@ -3003,7 +3003,7 @@ public partial class MainWindow : Window
             }
 
             // the bar in parts: nDPS, the buffs given (to rDPS), the healing on the others; or rDPS alone as before
-            MeterBarParts.Apply(_rows, rdpsView: true, BarPartsOn, _rdpsSeconds);
+            MeterBarParts.Apply(_rows, rdpsView: true, BarBuffsOn, BarHealsOn, _rdpsSeconds);
             UpdateBarLegend();
             return;
         }
@@ -3024,7 +3024,7 @@ public partial class MainWindow : Window
         if (BarPartsOn)
         {
             // the damage, the damage the buffs gave the others, the healing on the others, against the longest of those bars
-            MeterBarParts.Apply(_rows, rdpsView: false, on: true, _rdpsSeconds);
+            MeterBarParts.Apply(_rows, rdpsView: false, BarBuffsOn, BarHealsOn, _rdpsSeconds);
         }
         else
         {
@@ -3039,6 +3039,11 @@ public partial class MainWindow : Window
 
     /// <summary>The bars are drawn in parts (MeterBarParts): in the damage views (DPS, rDPS, All in One) outside PvP, when the look has them (Meter look).</summary>
     private bool BarPartsOn => _meterLook.BarParts && !_pvpOnly && _mode is MeterMode.Damage or MeterMode.Raid or MeterMode.All or MeterMode.AllCompact;
+
+    /// <summary>The grey part (buffs given) and the green part (healing on the others), each with its own switch in Meter look.</summary>
+    private bool BarBuffsOn => BarPartsOn && _meterLook.BarBuffs;
+
+    private bool BarHealsOn => BarPartsOn && _meterLook.BarHeals;
 
     /// <summary>The span the last rDPS was worked out over: the given part of a damage bar is the buffs' rate over it.</summary>
     private double _rdpsSeconds;
@@ -3058,7 +3063,7 @@ public partial class MainWindow : Window
     internal void ShowSampleBarParts(bool rdpsView, double seconds)
     {
         _rdpsSeconds = seconds;
-        MeterBarParts.Apply(_rows, rdpsView, BarPartsOn, seconds);
+        MeterBarParts.Apply(_rows, rdpsView, BarBuffsOn, BarHealsOn, seconds);
         UpdateBarLegend();
     }
 
