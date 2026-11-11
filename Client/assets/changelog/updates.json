@@ -6,6 +6,33 @@
   ],
   "versions": [
     {
+      "version": "2.0.9",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Overlays",
+          "title": "The Abyss radar stays out of dungeons, also when the meter missed the way in",
+          "text": "The radar, the enemy card and the death recap already stayed out of dungeons and raids, by the zone the game names when you enter. When the meter didn't catch that moment (it was started or updated inside, or the game changed servers too fast), it still thought you were outside, and the radar could come up in Exploration, Conquest or Ludra. Now the monsters around tell it too: a dungeon's boss, or its monsters where they stand only in that dungeon. And a member of your own group is never taken for an enemy.",
+          "example": "Updated the meter in the middle of a Fire Temple run? The radar no longer pops up at Black Smoke Murute."
+        },
+        {
+          "kind": "new",
+          "area": "Pets",
+          "title": "Untick a genus and its Black Cloud pets follow",
+          "text": "On the Pets page, unticking a genus for the alerts (Fera, Varian ...) now also unticks that genus's pets in the Black Cloud Merchant list; ticking it again ticks back the ones a character still needs. Ticking one pet of a genus that is off turns the genus back on for it.",
+          "example": "Don't care about Fera pets? Untick Fera once instead of every Fera pet in the list."
+        },
+        {
+          "kind": "new",
+          "area": "App",
+          "title": "Full size for the app and its windows",
+          "text": "The app and its windows (Timers, the pages opened in a window of their own, History ...) have a full size button beside minimise, and a double click on the title bar does the same. Full size keeps the taskbar in sight.",
+          "example": "Open the Timers window, press the square beside the minus: it fills the screen."
+        }
+      ]
+    },
+    {
       "version": "2.0.8",
       "date": "2026-11-11",
       "items": [

@@ -92,8 +92,9 @@ public sealed record RadarView(IReadOnlyList<RadarEnemy> Enemies, RadarEnemy? Wa
             players++;
             string? theirs = dir.FactionOf(id);
             noFaction += theirs is null ? 1 : 0;
-            bool enemy = dir.IsHostile(id) || (theirs is not null && mine is not null && theirs != mine);
             string name = dir.NameFor(id) ?? "Unknown player";
+            // a member of the own group is never an enemy, whatever is read of his faction (11 November 2026: one came up as an enemy in a dungeon)
+            bool enemy = !party.Contains(name) && (dir.IsHostile(id) || (theirs is not null && mine is not null && theirs != mine));
             RadarSide side = enemy ? RadarSide.Enemy : party.Contains(name) ? RadarSide.Party : legion.Contains(name) ? RadarSide.Legion
                 : theirs is not null && theirs == mine ? RadarSide.Ally : RadarSide.Unknown;
             RadarEnemy? e = null;
@@ -634,10 +635,10 @@ public sealed class EnemyRadarController : IDisposable
         }
 
         // never in a dungeon or raid (only its sample while it is being placed)
-        bool pve = dir is not null && Aion2.Protocol.Aion2Zones.IsPveInstance(dir.ZoneId);
+        bool pve = dir is not null && Aion2.Protocol.Aion2Zones.IsPveHere(dir.ZoneId, dir.LiveMobs);
         if (pve)
         {
-            PvpLog.Note("radar", "pve", $"hidden: in a dungeon or raid (zone {dir!.ZoneId})");
+            PvpLog.Note("radar", "pve", $"hidden: in a dungeon or raid (zone {dir!.ZoneId}{(Aion2.Protocol.Aion2Zones.IsPveInstance(dir.ZoneId) ? "" : ", told by the monsters around")})");
         }
 
         RadarView? view = dir is null || pve ? null
@@ -648,7 +649,7 @@ public sealed class EnemyRadarController : IDisposable
             string state = view.Enemies.Count == 0 ? (view.InView > 0 && view.Faction is null ? "no enemies: own faction unknown" : "no enemies in view")
                 : mayShow ? "shown" : "hidden: the game is not the window in front";
             PvpLog.Note("radar", state, $"{state} ({view.InView} players in view, {view.NoFaction} without a faction, {view.Enemies.Count} enemies, {view.Allies} allies, "
-                + $"{view.Dots.Count} placed, own faction {view.Faction ?? "unknown"}, own place {(view.Placed ? "known" : "unknown")})");
+                + $"{view.Dots.Count} placed, own faction {view.Faction ?? "unknown"}, own place {(view.Placed ? "known" : "unknown")}, zone {dir!.ZoneId})");
         }
 
         if ((view is null || view.Enemies.Count == 0) && !locked)
@@ -863,7 +864,7 @@ public sealed class DeathRecapController : IDisposable
     private void OnDied(DeathRecap recap)
     {
         // a death in a dungeon or raid gets no recap (the PvP overlays stay out of them)
-        if (_directory() is { } dir && Aion2.Protocol.Aion2Zones.IsPveInstance(dir.ZoneId))
+        if (_directory() is { } dir && Aion2.Protocol.Aion2Zones.IsPveHere(dir.ZoneId, dir.LiveMobs))
         {
             PvpLog.Write($"death: {recap.VictimName} died in a dungeon or raid (zone {dir.ZoneId}): no recap");
             return;

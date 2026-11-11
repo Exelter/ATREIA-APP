@@ -149,6 +149,27 @@ public static class Aion2Maps
         return best is null ? null : All.First(m => m.Key == best);
     }
 
+    /// <summary>How many of the monsters stand (within 40 m) at a spawn point of their kind in an instance's map (any of its tables): a dungeon, when no open map has them.</summary>
+    public static int InstanceVotes(IReadOnlyList<(int NpcId, float X, float Y)> mobs)
+    {
+        var spawns = Spawns();
+        int votes = 0;
+        foreach ((int npc, float x, float y) in mobs)
+        {
+            foreach (Aion2MapInfo map in Instances)
+            {
+                IEnumerable<string> tables = map.Tables is { Count: > 0 } all ? all : new[] { map.Table };
+                if (tables.Any(t => spawns.TryGetValue(t, out var table) && table.TryGetValue(npc, out float[]? points) && Near(points, x, y, 4000f)))
+                {
+                    votes++;
+                    break;
+                }
+            }
+        }
+
+        return votes;
+    }
+
     /// <summary>Per open map, how many of the monsters stand (within 40 m) at a spawn point of their kind on it.</summary>
     public static Dictionary<string, int> Votes(IReadOnlyList<(int NpcId, float X, float Y)> mobs)
     {

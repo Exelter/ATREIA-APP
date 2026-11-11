@@ -1567,6 +1567,8 @@ public partial class MainWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        MaximizeFit.Attach(this); // full size stays inside the work area (the window draws its own frame)
+        StateChanged += (_, _) => ShowMaximizeState();
         _overlay = new NativeOverlay(this);
         CreateTrayIcon();
         _hotkeys = new GlobalHotkeys(this);
@@ -8154,10 +8156,25 @@ public partial class MainWindow : Window
 
     private void OnTitleBarMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.LeftButton == MouseButtonState.Pressed)
+        if (e.ClickCount == 2 && _shellBuilt)
+        {
+            MaximizeFit.Toggle(this); // a double click on the title bar, as on any window
+        }
+        else if (e.LeftButton == MouseButtonState.Pressed)
         {
             DragMove();
         }
+    }
+
+    /// <summary>Full size and back (11 November 2026, a player: "there's no fullscreen"); the window stays inside the screen's work area (MaximizeFit).</summary>
+    private void OnMaximizeClicked(object sender, RoutedEventArgs e) => MaximizeFit.Toggle(this);
+
+    /// <summary>The maximise button shows "restore" while the window is full size.</summary>
+    private void ShowMaximizeState()
+    {
+        bool full = WindowState == WindowState.Maximized;
+        MaximizeGlyph.Data = Geometry.Parse(full ? MaximizeFit.RestoreGlyph : MaximizeFit.MaximizeGlyph);
+        MaximizeButton.ToolTip = full ? "Back to its size" : "Full size";
     }
 
     private void OnCloseClicked(object sender, RoutedEventArgs e)
