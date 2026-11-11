@@ -96,6 +96,7 @@ jobs:
             @('render-tool', 'overlay-button.png', 'overlay-button'),
             @('render-tool', 'fps.png', 'fps'),
             @('render-tool', 'fps-access.png', 'fps-access'),
+            @('render-tool', 'overlay-quick.png', 'overlay-quick'),
             @('render-tool', 'enemycard.png', 'enemycard'),
             @('render-tool', 'radar.png', 'radar'),
             @('render-tool', 'deathrecap.png', 'deathrecap'),

@@ -3823,7 +3823,7 @@ internal static class Program
         Ui.ThemeManager.Apply(app, settings);
         Ui.MainWindow.Headless = true;
         var loc = Ui.LocalizationManager.Instance;
-        string[] pets = { "Sylph", "Kibelisk" };
+        string[] pets = { "Young Ursus", "Cave Bat" }; // two pets of the game: their pictures show
         string[] levels = { string.Format(loc["PetFarm.Level"], 7) + " (12/25)", loc["PetFarm.NotOwned"] };
         var lines = new System.Windows.Controls.StackPanel();
         for (int i = 0; i < pets.Length; i++)

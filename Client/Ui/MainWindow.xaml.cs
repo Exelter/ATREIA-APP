@@ -368,6 +368,16 @@ public partial class MainWindow : Window
         _mobBossAllTag = _mobBossAllItem.Tag;
         Loaded += OnWindowLoaded;
         SizeChanged += (_, _) => UpdateOverlayWidth();
+        // an overlay's own buttons (11 November 2026): a lock or switch changed there is put on everywhere at once; "All settings" opens its page here
+        Action<MeterSettings> quickChanged = settings => Dispatcher.BeginInvoke(() => ApplySettingsEverywhere(settings));
+        Action<string> quickPage = page => Dispatcher.BeginInvoke(() => OpenTool(page));
+        OverlayQuick.Changed += quickChanged;
+        OverlayQuick.PageAsked += quickPage;
+        Closed += (_, _) =>
+        {
+            OverlayQuick.Changed -= quickChanged;
+            OverlayQuick.PageAsked -= quickPage;
+        };
 
         // Version in the title, read back from the assembly rather than typed here a second time:
         // AionDPS.csproj's <Version> is the only place it is written. Needed because builds are

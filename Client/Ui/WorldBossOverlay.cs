@@ -103,8 +103,13 @@ public sealed class WorldBossOverlayWindow : MovableOverlay
         // the meter's look (10 November 2026): a heading with how many are up, then the bosses
         int up = rows.Count(r => r.Now);
         _rows.Children.Add(OverlaySkin.Heading(LocalizationManager.Instance["Settings.Nav.Boss"], up > 0 ? up + " up now" : null, OverlaySkin.Good, up > 0 ? OverlaySkin.Good : null));
+        // a boss not known yet reads as a muted dash, with one line under them all saying why (11 November 2026: the same orange sentence on every row was noise)
+        string unknownText = LocalizationManager.Instance["Boss.Unknown"];
+        bool anyUnknown = false;
         foreach (var (name, text, now, boss, status) in rows)
         {
+            bool unknown = text == unknownText && boss is not null;
+            anyUnknown |= unknown;
             var grid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -120,15 +125,26 @@ public sealed class WorldBossOverlayWindow : MovableOverlay
             n.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
             var t = new TextBlock
             {
-                Text = text, FontSize = 11, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
-                Foreground = new SolidColorBrush(now ? OverlaySkin.Good : Color.FromArgb(0xD0, OverlaySkin.Gold.R, OverlaySkin.Gold.G, OverlaySkin.Gold.B)),
+                Text = unknown ? "–" : text, FontSize = 11, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
+                Foreground = new SolidColorBrush(now ? OverlaySkin.Good : unknown ? Color.FromArgb(0x90, 0xC8, 0xC4, 0xBC) : Color.FromArgb(0xD0, OverlaySkin.Gold.R, OverlaySkin.Gold.G, OverlaySkin.Gold.B)),
                 FontWeight = now ? FontWeights.SemiBold : FontWeights.Normal,
             };
+            if (unknown)
+            {
+                t.ToolTip = unknownText;
+            }
             Grid.SetColumn(n, 1);
             Grid.SetColumn(t, 2);
             grid.Children.Add(n);
             grid.Children.Add(t);
             _rows.Children.Add(grid);
+        }
+
+        if (anyUnknown)
+        {
+            var hint = new TextBlock { Text = "– " + unknownText, FontSize = 9.5, Margin = new Thickness(0, 4, 0, 1), Opacity = 0.75, TextWrapping = TextWrapping.Wrap };
+            hint.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
+            _rows.Children.Add(hint);
         }
     }
 }

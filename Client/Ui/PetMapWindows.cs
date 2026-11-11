@@ -15,7 +15,7 @@ namespace AionDPS.Ui;
 /// A small transparent overlay that can be placed and scaled on its own: locked it is click-through, unlocked it takes clicks, can be dragged by
 /// its body and scaled with the handles at its corners and edges. Place and size are kept per overlay (the pet map and the pet list are two of them).
 /// </summary>
-public abstract class MovableOverlay : Window, IOverlayPlace
+public abstract class MovableOverlay : Window, IOverlayQuick
 {
     private const double MinScale = 0.5, MaxScale = 3.0;
     private readonly ScaleTransform _scale = new(1, 1);
@@ -34,6 +34,14 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         Func<(double? Width, double? Height)> loadSize, Action<double?, double?> saveSize, OverlayEdgeMode edgeMode = OverlayEdgeMode.Crop)
     {
         Title = title;
+        // the overlay's own buttons over its top right corner: its settings and its padlock (11 November 2026)
+        _chrome = new OverlayChrome(this, this, () =>
+        {
+            if (_locked)
+            {
+                ApplyClickThrough();
+            }
+        }) { Enabled = () => !_isView && ShowChrome };
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;
@@ -56,7 +64,11 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         _bodyHost.ClipToBounds = true;
         var stack = new DockPanel { LastChildFill = true };
         stack.Children.Add(_bodyHost);
-        _frame = new Border { Child = stack, LayoutTransform = _scale, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Padding = new Thickness(2), Background = Brushes.Transparent };
+        var layered = new Grid();
+        layered.Children.Add(stack);
+        layered.Children.Add(_chrome.Element);
+        _frame = new Border { Child = layered, LayoutTransform = _scale, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Padding = new Thickness(2), Background = Brushes.Transparent };
+        _chrome.Frame = _frame;
         _frame.MouseLeftButtonDown += (_, e) =>
         {
             if (!_locked && e.ButtonState == MouseButtonState.Pressed)
@@ -91,6 +103,40 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         OverlayDocking.Attach(this, SavePlace);
         OverlayAltDrag.Register(this, () => !_isView, ApplyClickThrough); // Alt + drag moves it in the game (10 November 2026)
     }
+
+    // ---- the overlay's own buttons (11 November 2026, the owner: "every overlay should have a settings button and a lock button to allow users to change the size
+    // etc or settings without needing to open the app"): see OverlayChrome ----
+    private readonly OverlayChrome _chrome;
+
+    /// <summary>False for an overlay that has no room for them (the Atreia button, a skill's own tile).</summary>
+    protected bool ShowChrome { get; set; } = true;
+
+    /// <summary>False for an overlay with a padlock of its own (the map): only the gear then.</summary>
+    protected bool ChromeLock
+    {
+        get => _chrome.WithLock;
+        set => _chrome.WithLock = value;
+    }
+
+    /// <summary>Its settings are open beside it: the buttons stay.</summary>
+    public bool QuickOpen { get; set; }
+
+    /// <summary>How opaque the background is: its own setting, else the look it was built with.</summary>
+    public double QuickOpacity => MeterSettings.Load().OverlayOpacities.TryGetValue(Title, out double v) ? Math.Clamp(v, 0, 1) : _baseAlpha is byte a ? a / 255.0 : 0.9;
+
+    public void SaveQuickOpacity(double opacity)
+    {
+        MeterSettings s = MeterSettings.Load();
+        s.OverlayOpacities[Title] = Math.Clamp(opacity, 0, 1);
+        s.Save();
+        ApplyStoredOpacity();
+        if (Title is OverlayPlaces.EnemyCard or OverlayPlaces.EnemyRadar or OverlayPlaces.DeathRecap)
+        {
+            OverlaySkin.SolidBackground(this, Title);
+        }
+    }
+
+    public void QuickHide() => ShowOverlay(false);
 
     private readonly double _defaultLeft, _defaultTop;
     private (double X, double Y) _shiftAtStart;
@@ -213,6 +259,16 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         return body;
     }
 
+    /// <summary>For the pictures: the whole frame with its own buttons shown (as with the mouse on it), taken out of this never shown window.</summary>
+    internal UIElement TakeFrameForPicture()
+    {
+        _isView = true;
+        _chrome.ShowForPicture();
+        var content = (UIElement)Content;
+        Content = null;
+        return content;
+    }
+
     /// <summary>The content of the overlay (set by the derived window once it has built it).</summary>
     protected UIElement? Body
     {
@@ -249,6 +305,7 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         scale = Math.Clamp(double.IsFinite(scale) ? scale : 1.0, MinScale, MaxScale);
         _scale.ScaleX = scale;
         _scale.ScaleY = scale;
+        _chrome.SetScale(scale); // the buttons keep their size whatever the overlay's
     }
 
     private void SavePlace()
@@ -302,6 +359,8 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         }
 
         _edges.Show(!locked);
+        _chrome.ShowLocked(locked);
+
         _frame.Cursor = locked ? Cursors.Arrow : Cursors.SizeAll;
         _frame.BorderBrush = locked ? Brushes.Transparent : UnlockedBorder ?? new SolidColorBrush(Color.FromRgb(0xFF, 0xBA, 0x42));
         _frame.Background = locked ? Brushes.Transparent : UnlockedBackground ?? new SolidColorBrush(Color.FromArgb(0x30, 0, 0, 0));
@@ -314,8 +373,8 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         if (handle != IntPtr.Zero)
         {
             using var native = new NativeOverlay(this);
-            native.SetClickThrough(_locked && !_hoverInput);
-            native.SetNoActivate((_locked && _hoverInput) || NeverActivate); // a click on a locked overlay (its buttons) never takes the keyboard from the game
+            native.SetClickThrough(_locked && !_hoverInput && !_chrome.Input);
+            native.SetNoActivate((_locked && (_hoverInput || _chrome.Input)) || NeverActivate); // a click on a locked overlay (its buttons) never takes the keyboard from the game
         }
     }
 
@@ -1453,6 +1512,7 @@ public sealed class PetMapWindow : MovableOverlay
 
     public PetMapWindow() : base("Aion DPS Pet Map", new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Right - ViewSize - 40, 120, LoadSize, SaveSize, OverlayEdgeMode.CropAnchored)
     {
+        ChromeLock = false; // the map has its padlock of its own
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible)
@@ -2344,7 +2404,7 @@ public sealed class PetListWindow : MovableOverlay
     private string _shown = "";
 
     /// <summary>How many rows the player can see at most (a row is about 19 units high), plus a reserve: more are not worth building.</summary>
-    public int RowCapacity => (int)Math.Ceiling(HeightLimit / 19.0) + 10;
+    public int RowCapacity => (int)Math.Ceiling(HeightLimit / 22.0) + 10;
 
     private readonly TextBlock _headTitle = new() { FontWeight = FontWeights.Bold, FontSize = 13, Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC3, 0x5A)), TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _headDetail = new() { FontSize = 11.5, Foreground = new SolidColorBrush(Color.FromRgb(0x9D, 0xB3, 0xC2)), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 1, 0, 0) };
@@ -2438,9 +2498,16 @@ public sealed class PetListWindow : MovableOverlay
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Shape dot = diamond
-                ? new Polygon { Points = new PointCollection { new Point(6, 0), new Point(12, 6), new Point(6, 12), new Point(0, 6) }, Fill = new SolidColorBrush(color), Stroke = Brushes.Black, StrokeThickness = 1.2, Width = 12, Height = 12, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center }
-                : new Ellipse { Width = 12, Height = 12, Fill = new SolidColorBrush(color), Stroke = Brushes.White, StrokeThickness = 1.5, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+            // the pet's (or the collectible's) picture framed in its colour on the map (11 November 2026: only a coloured dot before); the dot when there is none
+            FrameworkElement dot = PictureOf(name) is { } picture
+                ? new Border
+                {
+                    Width = 20, Height = 20, CornerRadius = new CornerRadius(diamond ? 4 : 10), BorderThickness = new Thickness(1.6), BorderBrush = new SolidColorBrush(color),
+                    Background = new ImageBrush(picture) { Stretch = Stretch.UniformToFill, AlignmentY = AlignmentY.Top }, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center,
+                }
+                : diamond
+                ? new Polygon { Points = new PointCollection { new Point(6, 0), new Point(12, 6), new Point(6, 12), new Point(0, 6) }, Fill = new SolidColorBrush(color), Stroke = Brushes.Black, StrokeThickness = 1.2, Width = 12, Height = 12, Margin = new Thickness(4, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center }
+                : new Ellipse { Width = 12, Height = 12, Fill = new SolidColorBrush(color), Stroke = Brushes.White, StrokeThickness = 1.5, Margin = new Thickness(4, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
             var n = new TextBlock { Text = name, FontWeight = FontWeights.Bold, FontSize = 12.5, Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 14, 0) };
             var l = new TextBlock { Text = level, FontSize = 11.5, Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD2, 0x7A)), VerticalAlignment = VerticalAlignment.Center };
             var d = new TextBlock { Text = distance, FontSize = 11.5, Foreground = new SolidColorBrush(Color.FromRgb(0x9D, 0xB3, 0xC2)), VerticalAlignment = VerticalAlignment.Center, MinWidth = 52, TextAlignment = TextAlignment.Right, Margin = new Thickness(12, 0, 0, 0) };
@@ -2454,4 +2521,6 @@ public sealed class PetListWindow : MovableOverlay
             _rows.Children.Add(grid);
         }
     }
+
+    private static ImageSource? PictureOf(string name) => MonsterArt.PictureOfName(name);
 }

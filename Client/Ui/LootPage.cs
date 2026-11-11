@@ -345,6 +345,15 @@ public sealed class LootPage : Grid
 
         DockPanel.SetDock(right, Dock.Right);
         row.Children.Add(right);
+        // the monster's picture (11 November 2026: the lists of monsters had none)
+        if (npcId > 0)
+        {
+            FrameworkElement icon = MonsterArt.Icon(npcId, LootText.MobName(npcId), 30);
+            icon.Margin = new Thickness(0, 0, 10, 0);
+            DockPanel.SetDock(icon, Dock.Left);
+            row.Children.Add(icon);
+        }
+
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         var name = Strong(LootText.MobName(npcId), 13);
         name.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -763,7 +772,8 @@ public sealed class LootPage : Grid
                 badge.ToolTip = $"{LootStats.GearName(LootStats.Gold)} ×{gold!.Count:N0}";
             }
 
-            FrameworkElement card = Section(name, rows, new Thickness(0, shown == 0 ? 8 : 12, 0, 0), where, mob.NpcId > 0 ? LootText.Kills(mob.Kills) : null, badge);
+            FrameworkElement card = Section(name, rows, new Thickness(0, shown == 0 ? 8 : 12, 0, 0), where, mob.NpcId > 0 ? LootText.Kills(mob.Kills) : null, badge,
+                mob.NpcId > 0 ? MonsterArt.Icon(mob.NpcId, name, 30) : null);
             _rates.Children.Add(card);
             shown++;
         }
@@ -1027,9 +1037,17 @@ public sealed class LootPage : Grid
     }
 
     /// <summary>A card with a title strip (the title, a muted note beside it, a figure on the right in gold) over its rows.</summary>
-    private static Border Section(string title, UIElement body, Thickness margin, string? note = null, string? figure = null, FrameworkElement? badge = null)
+    private static Border Section(string title, UIElement body, Thickness margin, string? note = null, string? figure = null, FrameworkElement? badge = null,
+        FrameworkElement? icon = null)
     {
         var head = new DockPanel();
+        if (icon is not null)
+        {
+            icon.Margin = new Thickness(0, 0, 10, 0);
+            DockPanel.SetDock(icon, Dock.Left);
+            head.Children.Add(icon);
+        }
+
         if (figure is not null)
         {
             var f = new TextBlock { Text = figure, FontSize = 12.5, FontWeight = FontWeights.SemiBold, Foreground = Frozen(GoldColor), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };

@@ -6,6 +6,37 @@
   ],
   "versions": [
     {
+      "version": "2.0.3",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Overlays",
+          "title": "Every overlay has its own settings button and padlock",
+          "text": "Rest the mouse on an overlay in the game and a small gear and a padlock show in its top right corner. The padlock locks or frees it right there: free, drag it anywhere and pull its edges; locked, clicks go through to the game again. The gear opens its settings beside it: its size, how see-through its background is, locked or not, back to its first place, turn it off, or all its settings in the app. No need to open the app to change an overlay any more.",
+          "example": "The timers sit too big over your minimap: hover them, click the gear, slide Size to 80 % and click back into the game."
+        },
+        {
+          "kind": "improved",
+          "area": "Grind",
+          "title": "Monster pictures on Grind and Loot",
+          "text": "The best monsters to farm, the loot by monster and the drop rates now show each monster's picture next to its name."
+        },
+        {
+          "kind": "improved",
+          "area": "Pets",
+          "title": "Pet pictures on the pet list and over the monster",
+          "text": "The pet list overlay shows each pet's picture framed in its colour on the map (collectibles show theirs too), and the pet information over a monster shows the pet's picture before its level."
+        },
+        {
+          "kind": "improved",
+          "area": "World bosses",
+          "title": "A tidier world boss overlay",
+          "text": "A boss whose time isn't known yet shows a quiet dash instead of the same sentence on every line, with one note under the list saying to visit its map once."
+        }
+      ]
+    },
+    {
       "version": "2.0.2",
       "date": "2026-11-11",
       "items": [
