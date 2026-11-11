@@ -4,7 +4,7 @@ name: Screens
 # the app, and puts the pictures on the "screens" branch, so the look can be checked without a Windows PC.
 on:
   push:
-    branches: [main]
+    branches: [main, abyss-radar-preview]
     paths: ["Client/**", ".github/workflows/screens.yml"]
 
 permissions:
