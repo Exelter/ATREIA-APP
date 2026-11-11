@@ -141,7 +141,8 @@ public sealed class OverlayQuickWindow : Window
         // locked or free
         var lockRow = new CheckBox
         {
-            Content = "Locked in place (clicks go through to the game)", IsChecked = overlay.IsLocked, Margin = new Thickness(0, 6, 0, 2), FontSize = 12.5,
+            Content = new TextBlock { Text = "Locked in place (clicks go through to the game)", TextWrapping = TextWrapping.Wrap }, IsChecked = overlay.IsLocked,
+            Margin = new Thickness(0, 6, 0, 2), FontSize = 12.5,
         };
         lockRow.SetResourceReference(Control.ForegroundProperty, "Brush.Text");
         lockRow.Checked += (_, _) => OverlayQuick.SetLocked(overlay, true);
@@ -156,11 +157,16 @@ public sealed class OverlayQuickWindow : Window
         stack.Children.Add(hint);
 
         // the buttons
-        var buttons = new WrapPanel { Margin = new Thickness(0, 2, 0, 0) };
-        buttons.Children.Add(ActionButton("", "Reset place", () => OverlayPlaces.Reset(overlay.Title)));
+        // the buttons: back to its place and turn it off side by side, all its settings in the app across the whole width under them
+        var buttons = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        Border reset = ActionButton("\uE72C", "Reset place", () => OverlayPlaces.Reset(overlay.Title));
+        reset.Margin = new Thickness(0, 0, 3, 6);
+        buttons.Children.Add(reset);
         if (entry?.Hide is { } hide)
         {
-            buttons.Children.Add(ActionButton("", "Turn off", () =>
+            Border off = ActionButton("\uED1A", "Turn off", () =>
             {
                 MeterSettings s = MeterSettings.Load();
                 hide(s);
@@ -168,15 +174,25 @@ public sealed class OverlayQuickWindow : Window
                 overlay.QuickHide();
                 OverlayQuick.RaiseChanged(s);
                 Close();
-            }));
+            });
+            off.Margin = new Thickness(3, 0, 0, 6);
+            Grid.SetColumn(off, 1);
+            buttons.Children.Add(off);
+        }
+        else
+        {
+            Grid.SetColumnSpan(reset, 2);
+            reset.Margin = new Thickness(0, 0, 0, 6);
         }
 
-        buttons.Children.Add(ActionButton("", "All settings", () =>
+        stack.Children.Add(buttons);
+        Border all = ActionButton("\uE713", "All settings in the app", () =>
         {
             OverlayQuick.AskPage(entry?.Page ?? "overlays");
             Close();
-        }));
-        stack.Children.Add(buttons);
+        });
+        all.Margin = new Thickness(0);
+        stack.Children.Add(all);
 
         var panel = new Border { Child = stack, Padding = new Thickness(14, 12, 14, 12), CornerRadius = new CornerRadius(10), BorderThickness = new Thickness(1), Margin = new Thickness(10) };
         panel.SetResourceReference(Border.BackgroundProperty, "Brush.Panel");
@@ -263,7 +279,7 @@ public sealed class OverlayQuickWindow : Window
 
     private static Border ActionButton(string glyph, string text, System.Action click)
     {
-        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
         var g = new TextBlock { Text = glyph, FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
         g.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Accent");
         row.Children.Add(g);

@@ -207,20 +207,27 @@ public sealed class GrindPage : StackPanel
             var title = new StackPanel { Orientation = Orientation.Horizontal };
             string mobName = LootText.MobName(m.NpcId);
             title.Children.Add(Text(mobName, 13, "Brush.Text", bold: true));
+            name.Children.Add(title);
+            // under the name: "pays best" on the first (beside the name it was cut off once the picture came in), then where it lives
+            var sub = new StackPanel { Orientation = Orientation.Horizontal };
             if (row == 1 && m.PerKill > 0)
             {
-                title.Children.Add(new Border
+                sub.Children.Add(new Border
                 {
-                    Margin = new Thickness(8, 0, 0, 0), Padding = new Thickness(6, 0, 7, 1), CornerRadius = new CornerRadius(7), VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 1, 6, 0), Padding = new Thickness(6, 0, 7, 1), CornerRadius = new CornerRadius(7), VerticalAlignment = VerticalAlignment.Center,
                     Background = new SolidColorBrush(Color.FromArgb(0x26, Good.R, Good.G, Good.B)),
                     Child = new TextBlock { Text = "PAYS BEST", FontSize = 9.5, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Good) },
                 });
             }
 
-            name.Children.Add(title);
             if (m.Zones.Count > 0)
             {
-                name.Children.Add(Text(string.Join(", ", m.Zones.Take(2).Select(LootText.MapName)), 11.5, "Brush.TextMuted"));
+                sub.Children.Add(Text(string.Join(", ", m.Zones.Take(2).Select(LootText.MapName)), 11.5, "Brush.TextMuted"));
+            }
+
+            if (sub.Children.Count > 0)
+            {
+                name.Children.Add(sub);
             }
 
             // the monster's picture beside its name (11 November 2026, the owner: "grind for example it's missing the mob icons")
