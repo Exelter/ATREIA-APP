@@ -46,7 +46,7 @@ SetupIconFile=..\..\..\Client\assets\app\aiondps.ico
 WizardStyle=modern
 WizardImageFile=wizard-100.bmp,wizard-150.bmp,wizard-200.bmp
 WizardSmallImageFile=small-100.bmp,small-150.bmp,small-200.bmp
-InfoBeforeFile=before-install.txt
+InfoBeforeFile=before-install.rtf
 ; the pages: welcome, what the app does, ready, installing, done (no folder or Start menu pages: Velopack puts the app and its shortcuts in place)
 DisableWelcomePage=no
 DisableDirPage=yes
@@ -66,7 +66,8 @@ CloseApplications=no
 SetupLogging=yes
 
 [Messages]
-WelcomeLabel2=This will install Atreia App [ver] on your computer.%n%nAtreia shows your damage meter, boss timers, pets, loot and more right over AION 2.%n%nIt is free, installs for your Windows account only and updates itself.
+WelcomeLabel2=This will install [name/ver] on your computer.%n%nAtreia shows your damage meter, boss timers, pets, loot and more right over AION 2.%n%nIt is free, installs for your Windows account only and updates itself.
+ReadyLabel2b=Click Install to put Atreia App on this computer. It takes a few seconds.
 FinishedHeadingLabel=Atreia App is installed
 FinishedLabelNoIcons=Atreia App is on your computer, with a shortcut on your desktop and in the Start menu.
 FinishedLabel=Atreia App is on your computer, with a shortcut on your desktop and in the Start menu.
