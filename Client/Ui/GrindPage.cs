@@ -203,9 +203,10 @@ public sealed class GrindPage : StackPanel
                 Cell(band, 0);
             }
 
-            var name = new StackPanel { Margin = new Thickness(10, 5, 10, 5) };
+            var name = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             var title = new StackPanel { Orientation = Orientation.Horizontal };
-            title.Children.Add(Text(LootText.MobName(m.NpcId), 13, "Brush.Text", bold: true));
+            string mobName = LootText.MobName(m.NpcId);
+            title.Children.Add(Text(mobName, 13, "Brush.Text", bold: true));
             if (row == 1 && m.PerKill > 0)
             {
                 title.Children.Add(new Border
@@ -222,7 +223,13 @@ public sealed class GrindPage : StackPanel
                 name.Children.Add(Text(string.Join(", ", m.Zones.Take(2).Select(LootText.MapName)), 11.5, "Brush.TextMuted"));
             }
 
-            Cell(name, 0);
+            // the monster's picture beside its name (11 November 2026, the owner: "grind for example it's missing the mob icons")
+            var who = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 6, 10, 6) };
+            FrameworkElement icon = MonsterArt.Icon(m.NpcId, mobName, 34);
+            icon.Margin = new Thickness(0, 0, 10, 0);
+            who.Children.Add(icon);
+            who.Children.Add(name);
+            Cell(who, 0);
             Cell(Number(m.Kills.ToString("N0", CultureInfo.CurrentCulture), null), 1);
             Cell(Number(m.KinahPerKill is double k ? GrindView.Short(k) : "–", GrindView.KinahColour), 2);
             Cell(Number(m.ApPerKill is double a ? GrindView.Short(a) : "–", GrindView.ApColour), 3);

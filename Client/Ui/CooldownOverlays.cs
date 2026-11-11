@@ -388,6 +388,7 @@ public sealed class CooldownSkillWindow : MovableOverlay
         : base(TitleOf(skillId), new Grid(), () => Load(skillId), (left, top, _) => Save(new[] { (skillId, left, top) }), defaultLeft, defaultTop,
             () => (null, null), (_, _) => { }, OverlayEdgeMode.None)
     {
+        ShowChrome = false; // a skill's own small tile: no room for buttons (its settings are Skill Assist's)
         SkillId = skillId;
         UnlockedBorder = Brushes.Transparent; // no frame around it: the bar or the square is all there is (4 November 2026: the orange frames were in the way)
         UnlockedBackground = Brushes.Transparent;

@@ -56,7 +56,12 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         _bodyHost.ClipToBounds = true;
         var stack = new DockPanel { LastChildFill = true };
         stack.Children.Add(_bodyHost);
-        _frame = new Border { Child = stack, LayoutTransform = _scale, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Padding = new Thickness(2), Background = Brushes.Transparent };
+        // the overlay's own buttons over its top right corner: its settings and its padlock (11 November 2026)
+        _chrome = BuildChrome();
+        var layered = new Grid();
+        layered.Children.Add(stack);
+        layered.Children.Add(_chrome);
+        _frame = new Border { Child = layered, LayoutTransform = _scale, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Padding = new Thickness(2), Background = Brushes.Transparent };
         _frame.MouseLeftButtonDown += (_, e) =>
         {
             if (!_locked && e.ButtonState == MouseButtonState.Pressed)
@@ -90,6 +95,127 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         Closed += (_, _) => OverlayPlaces.WasReset -= onReset;
         OverlayDocking.Attach(this, SavePlace);
         OverlayAltDrag.Register(this, () => !_isView, ApplyClickThrough); // Alt + drag moves it in the game (10 November 2026)
+        _chromeTimer.Tick += (_, _) => ChromeTick();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible)
+            {
+                _chromeTimer.Start();
+            }
+            else
+            {
+                _chromeTimer.Stop();
+                SetChrome(false, false);
+            }
+        };
+        Closed += (_, _) => _chromeTimer.Stop();
+    }
+
+    // ---- the overlay's own buttons (11 November 2026, the owner: "every overlay should have a settings button and a lock button to allow users to change the size
+    // etc or settings without needing to open the app") ----
+    private readonly Border _chrome;
+    private TextBlock? _padlock;
+    private readonly ScaleTransform _chromeScale = new(1, 1);
+    private readonly System.Windows.Threading.DispatcherTimer _chromeTimer = new() { Interval = TimeSpan.FromMilliseconds(120) };
+    private bool _chromeInput;
+
+    /// <summary>False for an overlay that has no room for them (the Atreia button, a skill's own tile).</summary>
+    protected bool ShowChrome { get; set; } = true;
+
+    /// <summary>False for an overlay with a padlock of its own (the map): only the gear then.</summary>
+    protected bool ChromeLock { get; set; } = true;
+
+    /// <summary>Its settings are open beside it: the buttons stay.</summary>
+    internal bool QuickOpen { get; set; }
+
+    private Border BuildChrome()
+    {
+        var bar = new StackPanel { Orientation = Orientation.Horizontal };
+        TextBlock Add(string glyph, string tip, Action click)
+        {
+            var t = new TextBlock
+            {
+                Text = glyph, FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 12, Width = 24, Height = 22, TextAlignment = TextAlignment.Center,
+                Padding = new Thickness(0, 5, 0, 0), Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xE2, 0xD4)), Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = tip,
+            };
+            t.MouseEnter += (_, _) => t.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD2, 0x7A));
+            t.MouseLeave += (_, _) => t.Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xE2, 0xD4));
+            // the press is the button's own: it never starts a drag of the overlay
+            t.MouseLeftButtonDown += (_, e) => e.Handled = true;
+            t.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                click();
+            };
+            bar.Children.Add(t);
+            return t;
+        }
+
+        Add("\uE713", "Settings of this overlay: size, background, place", () => OverlayQuickWindow.Open(this));
+        _padlock = Add("\uE72E", "Locked: click to move and size it", () => OverlayQuick.SetLocked(this, !_locked));
+        return new Border
+        {
+            Child = bar, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 2, 2, 0), Padding = new Thickness(2, 0, 2, 0),
+            CornerRadius = new CornerRadius(8), Background = new SolidColorBrush(Color.FromArgb(0xE8, 0x16, 0x13, 0x1C)), BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x70, 0xDC, 0xB8, 0x77)), Visibility = Visibility.Hidden, LayoutTransform = _chromeScale,
+        };
+    }
+
+    // shown while the cursor rests on the overlay (or while it is unlocked, or its settings are open); a locked overlay takes the mouse only while the cursor is
+    // on the buttons, so the rest of it still lets the clicks through to the game
+    private void ChromeTick()
+    {
+        if (_isView || !ShowChrome || !IsVisible)
+        {
+            SetChrome(false, false);
+            return;
+        }
+
+        if (_padlock is not null)
+        {
+            _padlock.Visibility = ChromeLock ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        bool cursor = NativeCursor.Showing();
+        bool overWindow = cursor && Under(_frame);
+        bool overButtons = overWindow && _chrome.Visibility == Visibility.Visible && Under(_chrome);
+        SetChrome(overWindow || !_locked || QuickOpen, overButtons);
+    }
+
+    private void SetChrome(bool shown, bool input)
+    {
+        Visibility v = shown ? Visibility.Visible : Visibility.Hidden;
+        if (_chrome.Visibility != v)
+        {
+            _chrome.Visibility = v;
+        }
+
+        if (input != _chromeInput)
+        {
+            _chromeInput = input;
+            if (_locked)
+            {
+                ApplyClickThrough();
+            }
+        }
+    }
+
+    private static bool Under(FrameworkElement element)
+    {
+        if (!element.IsVisible || PresentationSource.FromVisual(element) is null || !NativeCursor.TryGet(out int x, out int y))
+        {
+            return false;
+        }
+
+        try
+        {
+            Point p = element.PointFromScreen(new Point(x, y));
+            return p.X >= 0 && p.Y >= 0 && p.X <= element.ActualWidth && p.Y <= element.ActualHeight;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     private readonly double _defaultLeft, _defaultTop;
@@ -249,6 +375,9 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         scale = Math.Clamp(double.IsFinite(scale) ? scale : 1.0, MinScale, MaxScale);
         _scale.ScaleX = scale;
         _scale.ScaleY = scale;
+        // the buttons keep their size whatever the overlay's
+        _chromeScale.ScaleX = 1 / scale;
+        _chromeScale.ScaleY = 1 / scale;
     }
 
     private void SavePlace()
@@ -302,6 +431,12 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         }
 
         _edges.Show(!locked);
+        if (_padlock is not null)
+        {
+            _padlock.Text = locked ? "\uE72E" : "\uE785";
+            _padlock.ToolTip = locked ? "Locked: click to move and size it" : "Free to move and size: click to lock it in place";
+        }
+
         _frame.Cursor = locked ? Cursors.Arrow : Cursors.SizeAll;
         _frame.BorderBrush = locked ? Brushes.Transparent : UnlockedBorder ?? new SolidColorBrush(Color.FromRgb(0xFF, 0xBA, 0x42));
         _frame.Background = locked ? Brushes.Transparent : UnlockedBackground ?? new SolidColorBrush(Color.FromArgb(0x30, 0, 0, 0));
@@ -314,8 +449,8 @@ public abstract class MovableOverlay : Window, IOverlayPlace
         if (handle != IntPtr.Zero)
         {
             using var native = new NativeOverlay(this);
-            native.SetClickThrough(_locked && !_hoverInput);
-            native.SetNoActivate((_locked && _hoverInput) || NeverActivate); // a click on a locked overlay (its buttons) never takes the keyboard from the game
+            native.SetClickThrough(_locked && !_hoverInput && !_chromeInput);
+            native.SetNoActivate((_locked && (_hoverInput || _chromeInput)) || NeverActivate); // a click on a locked overlay (its buttons) never takes the keyboard from the game
         }
     }
 
@@ -1453,6 +1588,7 @@ public sealed class PetMapWindow : MovableOverlay
 
     public PetMapWindow() : base("Aion DPS Pet Map", new Border { Child = null }, Load, Save, SystemParameters.WorkArea.Right - ViewSize - 40, 120, LoadSize, SaveSize, OverlayEdgeMode.CropAnchored)
     {
+        ChromeLock = false; // the map has its padlock of its own
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible)

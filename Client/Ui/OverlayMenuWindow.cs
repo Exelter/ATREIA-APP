@@ -29,6 +29,7 @@ public sealed class OverlayMenuWindow : MovableOverlay
         : base(OverlayPlaces.Menu, new Border(), Load, Save, SystemParameters.WorkArea.Left + SystemParameters.WorkArea.Width / 2 - 48, SystemParameters.WorkArea.Top + 2,
             () => (null, null), (_, _) => { }, OverlayEdgeMode.Uniform)
     {
+        ShowChrome = false; // the Atreia button is itself the way to the overlays
         _build = build;
         (_pill, _keys) = Pill();
         var column = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
