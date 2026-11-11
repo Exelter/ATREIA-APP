@@ -530,6 +530,15 @@ public partial class MainWindow : Window
         {
             // the answer to the privacy policy changes what is shown (restricted mode) - also from the settings window
             PrivacyConsent.Changed += () => Dispatcher.BeginInvoke(ApplyPrivacyRestrictions);
+            // a sign-in approved in the browser after its window was closed: the account window comes back and says who the app is signed in as
+            Account.SignedInInBackground += () => Dispatcher.BeginInvoke(new Action(() =>
+            {
+                OnAccountClicked(this, new RoutedEventArgs());
+                if (_shellPage == "home")
+                {
+                    ShowShellPage("home");
+                }
+            }));
         }
 
         var settings = MeterSettings.Load();

@@ -103,6 +103,119 @@ public static class Account
 
     public sealed record LinkStart(string Code, string Poll, string Url, DateTime ExpiresAt, int Interval);
 
+    private static LinkStart? _pending;
+    private static CancellationTokenSource? _background;
+
+    /// <summary>Raised when a sign-in waiting without its window was approved (not on the UI thread): the app shows that it is signed in now.</summary>
+    public static event Action? SignedInInBackground;
+
+    /// <summary>
+    /// The sign-in waiting for its approval in the browser (null: none). It outlives the sign-in window (11 November 2026: players closed that window
+    /// while they signed in to Discord in the browser, and the approval then never reached the app): <see cref="WaitInBackground"/> keeps asking the
+    /// site, and a sign-in window opened again takes it up (<see cref="TakeWaiting"/>).
+    /// </summary>
+    public static LinkStart? Waiting
+    {
+        get { lock (Gate) { return _pending is { } p && DateTime.UtcNow < p.ExpiresAt && _token is null ? p : null; } }
+    }
+
+    /// <summary>A new sign-in started (the window asks the site itself while it is open): an older one waiting in the background stops.</summary>
+    public static void Started(LinkStart start)
+    {
+        StopBackground();
+        lock (Gate)
+        {
+            _pending = start;
+        }
+    }
+
+    /// <summary>The sign-in is over (approved, ran out or started anew): nothing waits any more.</summary>
+    public static void Finished(LinkStart start)
+    {
+        lock (Gate)
+        {
+            if (ReferenceEquals(_pending, start))
+            {
+                _pending = null;
+            }
+        }
+    }
+
+    /// <summary>A sign-in window opens: it takes over the waiting sign-in from the background (null when there is none).</summary>
+    public static LinkStart? TakeWaiting()
+    {
+        LinkStart? waiting = Waiting;
+        if (waiting is not null)
+        {
+            StopBackground();
+        }
+
+        return waiting;
+    }
+
+    /// <summary>The sign-in window closed while its sign-in waited: the app keeps asking the site until it is approved or runs out, and is then
+    /// signed in (<see cref="Changed"/>) as if the window had stayed open.</summary>
+    public static void WaitInBackground(LinkStart start)
+    {
+        StopBackground();
+        var stop = new CancellationTokenSource();
+        lock (Gate)
+        {
+            if (!ReferenceEquals(_pending, start))
+            {
+                return;
+            }
+
+            _background = stop;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (!stop.IsCancellationRequested && !SignedIn && DateTime.UtcNow < start.ExpiresAt)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(start.Interval, 3, 30)), stop.Token);
+                    LinkState state = await PollAsync(start.Poll);
+                    if (stop.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    if (state is LinkState.Linked or LinkState.Expired)
+                    {
+                        Finished(start);
+                        if (state == LinkState.Linked)
+                        {
+                            await RefreshAsync();
+                            SignedInInBackground?.Invoke();
+                        }
+
+                        return;
+                    }
+                }
+
+                Finished(start);
+            }
+            catch (OperationCanceledException)
+            {
+                // a sign-in window took it over, or a new sign-in started
+            }
+        });
+    }
+
+    private static void StopBackground()
+    {
+        CancellationTokenSource? old;
+        lock (Gate)
+        {
+            old = _background;
+            _background = null;
+        }
+
+        old?.Cancel();
+    }
+
     public enum LinkState { Waiting, Linked, Expired, Failed }
 
     /// <summary>Asks the site for a sign-in code. Null with the reason when the site cannot be reached.</summary>

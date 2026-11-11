@@ -6,6 +6,26 @@
   ],
   "versions": [
     {
+      "version": "2.0.8",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Account",
+          "title": "Signing in with Discord finishes even when its window was closed",
+          "text": "Signing the app in happens in the browser: Connect Discord (Discord asks for your password there when the browser isn't signed in to Discord, even if the Discord app is), Authorize, then Approve. The app noticed the approval only while its sign-in window stayed open, so a closed window left the app signed out. It now keeps waiting by itself, and its window comes back to say who it is signed in as. The page in the browser now says each step, why a Discord sign-in didn't come back (it took too long, was cancelled on Discord's page), and keeps the code even when Discord's login finishes in another tab. A sign-in now has 30 minutes instead of 15.",
+          "example": "Sign in with Discord, close the window, log in to Discord in the browser, Authorize, Approve: the app pops its account window up with \"Signed in as …\"."
+        },
+        {
+          "kind": "fixed",
+          "area": "App",
+          "title": "Map, Legion and Streaming no longer vanish without a word",
+          "text": "When the privacy policy was declined (at the first start, for example), the app runs in its restricted mode, and the Map with the Cube finder, Legion and Streaming were simply gone from the column, while some links to them did nothing. They now stay in the column with a padlock: they open a page that says why they are off, with the privacy policy to read again. Home says it too. Accepting brings them back at once, without a restart, and declining in the first-start setup now takes them away at once too.",
+          "example": "A friend without a Map tab: the Map entry shows a padlock, a click on it explains it, and \"Show the privacy policy\" turns it back on."
+        }
+      ]
+    },
+    {
       "version": "2.0.7",
       "date": "2026-11-11",
       "items": [
