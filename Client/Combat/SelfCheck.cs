@@ -92,9 +92,13 @@ public static class SelfCheck
         string? unknown = Aion2.Protocol.Aion2SkillIcons.PathForName("No Such Skill", "Gladiator");
         string? stone = Aion2.Protocol.Aion2SkillIcons.PathFor(30000241);
         bool names = Aion2.Protocol.Aion2Npcs.NameOf(2300709, "de") == "Talisra der Leere" && Aion2.Protocol.Aion2Npcs.NameOf(2300709, "pl") == "Talisra of the Void";
+        // the Cleric's icons as the game's own character pages show them (11 November 2026: Benevolence had another skill's icon, and
+        // Salvation to Voice of Doom each the one of the skill before)
+        bool cleric = Aion2.Protocol.Aion2SkillIcons.TokenOf(17160000) == "ICON_CL_SKILL_047" && Aion2.Protocol.Aion2SkillIcons.TokenOf(17270000) == "ICON_CL_SKILL_026"
+            && Aion2.Protocol.Aion2SkillIcons.TokenOf(17300000) == "ICON_CL_SKILL_029" && Aion2.Protocol.Aion2SkillIcons.TokenOf(17440000) == "ICON_CL_SKILL_046";
         bool ok = keen is not null && Path.GetFileName(keen).StartsWith("ICON_GL_", StringComparison.Ordinal) && unknown is null
-            && stone is not null && Path.GetFileName(stone).Contains("Godstone", StringComparison.Ordinal) && names;
-        Console.WriteLine($"[selftest] Skill icon by name: Keen Strike -> {(keen is null ? "none" : Path.GetFileName(keen))}, unknown -> none: {unknown is null}; Theostone icon: {stone is not null}; NPC names: {names}");
+            && stone is not null && Path.GetFileName(stone).Contains("Godstone", StringComparison.Ordinal) && names && cleric;
+        Console.WriteLine($"[selftest] Skill icon by name: Keen Strike -> {(keen is null ? "none" : Path.GetFileName(keen))}, unknown -> none: {unknown is null}; Theostone icon: {stone is not null}; NPC names: {names}; Cleric icons (Benevolence, Salvation, Voice of Doom, Noble Aura): {cleric}");
         return ok;
     }
 
