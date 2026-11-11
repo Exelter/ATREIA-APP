@@ -6,7 +6,8 @@
 #   2. checks      the app's own self-checks on a copy of it, with the game's pictures from atreia.app (Tools/release/images.ps1, selftest.ps1)
 #   3. previous    the release before it from atreia.app, so the update can be a small delta package (skipped with -NoDelta, or when there is none)
 #   4. pack        Velopack: the installer, the full package (and the delta), the update index releases.<channel>.json
-#   5. tidy        the installer named after the app (Atreia-App-Setup.exe), the update notes (updates.json) and SHA256SUMS.txt beside them
+#   5. tidy        the installer named after the app (Atreia-App-Setup.exe: the setup wizard, installer/atreia.iss, around Velopack's), the update notes
+#                  (updates.json) and SHA256SUMS.txt beside them
 #
 # A version with a suffix ("1.22.0-Beta") is a test release: packed on its own channel ("test"), so installed copies on the normal channel never get it.
 # Needs the .NET 10 SDK and PowerShell 7; the Velopack CLI (vpk 1.2.0) is installed when it is missing.
@@ -86,7 +87,35 @@ try {
 
     "==== 5/5 The files for atreia.app ===="
     $name = if ($channel -eq 'stable') { 'Atreia-App-Setup.exe' } else { "Atreia-App-$channel-Setup.exe" }
-    Move-Item (Join-Path $Out "AtreiaApp-$channel-Setup.exe") (Join-Path $Out $name) -Force
+    $velopackSetup = Join-Path $work "AtreiaApp-$channel-Setup.exe"
+    Move-Item (Join-Path $Out "AtreiaApp-$channel-Setup.exe") $velopackSetup -Force
+    # What players download is the setup wizard around Velopack's installer (Tools/release/installer/atreia.iss, Inno Setup 6; 11 November 2026):
+    # Inno Setup is installed on GitHub when it is missing; on a PC without it the installer is Velopack's own one-click one, as before.
+    function Find-Iscc {
+        $found = @()
+        $cmd = Get-Command iscc -ErrorAction SilentlyContinue
+        if ($cmd) { $found += $cmd.Source }
+        foreach ($dir in ${env:ProgramFiles(x86)}, $env:ProgramFiles, (Join-Path $env:LOCALAPPDATA 'Programs')) {
+            if ($dir) { $found += (Join-Path $dir 'Inno Setup 6\ISCC.exe') }
+        }
+        $found | Where-Object { Test-Path $_ } | Select-Object -First 1
+    }
+    $iscc = Find-Iscc
+    if (-not $iscc -and $env:GITHUB_ACTIONS -eq 'true') {
+        "Installing Inno Setup 6..."
+        choco install innosetup -y --no-progress | Out-Host
+        $iscc = Find-Iscc
+    }
+    if ($iscc) {
+        "The setup wizard ($iscc)..."
+        $global:LASTEXITCODE = 0
+        & $iscc /Q "/DAppVersion=$Version" "/DNumericVersion=$($number).0" "/DVelopackSetup=$velopackSetup" "/DOutputDir=$Out" `
+            "/DOutputName=$([IO.Path]::GetFileNameWithoutExtension($name))" (Join-Path $PSScriptRoot 'installer/atreia.iss') | Out-Host
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Out $name))) { throw "The setup wizard could not be built (ISCC exit code $LASTEXITCODE)." }
+    } else {
+        "Inno Setup 6 is not on this PC: the installer is Velopack's own one-click one. For the setup wizard: winget install JRSoftware.InnoSetup"
+        Copy-Item $velopackSetup (Join-Path $Out $name)
+    }
     # the portable zip is another full copy of what the installer carries; the previous release's full package was only needed for the delta
     Get-ChildItem $Out -File -Filter '*-Portable.zip' | Remove-Item
     Get-ChildItem $Out -File -Filter '*.nupkg' | Where-Object { $_.Name -notlike "AtreiaApp-$Version-*" } | Remove-Item
