@@ -974,6 +974,14 @@ public sealed class MeterSettings
     /// <summary>The pet farming overlay (see PetFarmWindow): the monster marked or hit (from the network) and its pet's level. Off until switched on.</summary>
     public bool ShowPetFarm { get; set; }
 
+    /// <summary>The pet information leaves out a pet the character has at its top level already (11 November 2026, satahn: "an option to not see maxed pets").</summary>
+    public bool PetFarmHideMaxed { get; set; }
+
+    /// <summary>The timers overlay and the world boss overlay step aside in dungeons and raids (11 November 2026, satahn: "get rid of these during a dungeon").</summary>
+    public bool TimetableHideInDungeons { get; set; }
+
+    public bool BossOverlayHideInDungeons { get; set; }
+
     /// <summary>Locked (default): the pet farming overlay is click-through. Unlocked: it can be clicked, moved and scaled.</summary>
     public bool PetFarmLocked { get; set; } = true;
 

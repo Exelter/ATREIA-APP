@@ -31,7 +31,8 @@ public sealed record EnemyCardData(string Name, string? ClassName, int? Level, s
         string? theirs = dir.FactionOf(id);
         string? mine = OwnFaction(dir);
         // a player who traded hits with the own character is an enemy whatever is known of his faction (11 November 2026: in the Abyss most had no server)
-        bool enemy = dir.IsHostile(id) || (theirs is not null && mine is not null && theirs != mine);
+        // a member of the own group is never an enemy (11 November 2026)
+        bool enemy = !(dir.NameFor(id) is { } named && dir.PartyNames.Contains(named)) && (dir.IsHostile(id) || (theirs is not null && mine is not null && theirs != mine));
         if (!enemy && !allies)
         {
             return null;
@@ -318,7 +319,7 @@ public sealed class EnemyCardController : IDisposable
         }
 
         // never in a dungeon or raid (only its sample while it is being placed)
-        EnemyCardData? card = dir is null || Aion2.Protocol.Aion2Zones.IsPveInstance(dir.ZoneId) ? null : EnemyCardData.Of(dir, _settings.EnemyCardAllies, _ownPower);
+        EnemyCardData? card = dir is null || Aion2.Protocol.Aion2Zones.IsPveHere(dir.ZoneId, dir.LiveMobs) ? null : EnemyCardData.Of(dir, _settings.EnemyCardAllies, _ownPower);
         if (card is { Incomplete: true } && dir is not null)
         {
             card = Complete(card, dir);

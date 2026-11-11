@@ -297,7 +297,8 @@ public sealed class WorldBossController : IDisposable
         bool inGame = GameWindow.OverlayMayShow();
         _overlay ??= new WorldBossOverlayWindow();
         _overlay.ApplyLockedIfChanged(locked);
-        if (!inGame || (locked && watched.Count == 0))
+        // asked to, it steps aside in dungeons and raids (11 November 2026, satahn)
+        if (!inGame || (locked && watched.Count == 0) || (settings.BossOverlayHideInDungeons && MainWindow.InDungeonNow))
         {
             _overlay.ShowOverlay(false);
             return;

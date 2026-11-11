@@ -106,6 +106,25 @@ public static class ThemedChrome
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
         buttons.Children.Add(Caption("M1,6 L11,6", () => window.WindowState = WindowState.Minimized));
+        // full size for a window that is sized by hand (11 November 2026, a player: "there's no fullscreen"); one that takes the size of its content keeps it
+        bool sizable = window.SizeToContent == SizeToContent.Manual;
+        if (sizable)
+        {
+            Button maximize = Caption(MaximizeFit.MaximizeGlyph, () => MaximizeFit.Toggle(window));
+            maximize.ToolTip = "Full size";
+            buttons.Children.Add(maximize);
+            window.StateChanged += (_, _) =>
+            {
+                if (maximize.Content is System.Windows.Shapes.Path glyph)
+                {
+                    glyph.Data = Geometry.Parse(window.WindowState == WindowState.Maximized ? MaximizeFit.RestoreGlyph : MaximizeFit.MaximizeGlyph);
+                }
+
+                maximize.ToolTip = window.WindowState == WindowState.Maximized ? "Back to its size" : "Full size";
+            };
+            MaximizeFit.Attach(window);
+        }
+
         buttons.Children.Add(Caption("M1.5,1.5 L10.5,10.5 M10.5,1.5 L1.5,10.5", window.Close));
 
         var bar = new Grid { Height = 30 };
@@ -115,7 +134,11 @@ public static class ThemedChrome
         bar.Children.Add(buttons);
         bar.MouseLeftButtonDown += (_, e) =>
         {
-            if (e.LeftButton == MouseButtonState.Pressed)
+            if (e.ClickCount == 2 && sizable)
+            {
+                MaximizeFit.Toggle(window); // a double click on the title bar, as on any window
+            }
+            else if (e.LeftButton == MouseButtonState.Pressed)
             {
                 window.DragMove();
             }

@@ -2183,10 +2183,18 @@ public static class SelfCheckAion2
         dir.NoteMet("Opponent", t0.AddMinutes(5));      // met again in a new fight
         bool again = dir.ArenaNamesToUpload().Contains("Opponent");
         bool zones = Aion2Zones.IsArena(60) && Aion2Zones.IsArena(61) && Aion2Zones.IsArena(62) && !Aion2Zones.IsArena(1010);
+        // the PvP overlays stay out of dungeons also when the zone frame was missed (11 November 2026): the monsters around tell it (a Fire Temple
+        // Conquest boss, unknown zone or the open map left behind), a field boss of Altgard or the Abyss doesn't, an arena never is one
+        (int, float, float)[] fireTempleBoss = { (2320312, 0f, 0f) }, altgardBoss = { (2400358, 0f, 0f) }, abyssBoss = { (2600089, 0f, 0f) };
+        bool pve = Aion2Zones.IsPveHere(600023, Array.Empty<(int, float, float)>) && Aion2Zones.IsPveHere(0, () => fireTempleBoss)
+                   && Aion2Zones.IsPveHere(1110, () => fireTempleBoss) && !Aion2Zones.IsPveHere(0, () => altgardBoss) && !Aion2Zones.IsPveHere(20, () => abyssBoss)
+                   && !Aion2Zones.IsPveHere(62, () => fireTempleBoss) && !Aion2Zones.IsPveHere(0, Array.Empty<(int, float, float)>)
+                   && Aion2Zones.IsInstanceBoss(2320312) && !Aion2Zones.IsInstanceBoss(2400358) && !Aion2Zones.IsInstanceBoss(2600089);
         Console.WriteLine($"  -> the opponent and a late arrival are collected, a hub player is not: {collected}");
         Console.WriteLine($"  -> a player sent is not sent again, but is after a new fight: {onceOnly && again}");
         Console.WriteLine($"  -> zones 60, 61 and 62 are arenas, a city is not: {zones}");
-        return collected && onceOnly && again && zones;
+        Console.WriteLine($"  -> a dungeon by its zone, or by its boss around when the zone is unknown or still the open map's; not by a field boss, not in an arena: {pve}");
+        return collected && onceOnly && again && zones && pve;
     }
 
     private static bool RunArenaRefillScenario()

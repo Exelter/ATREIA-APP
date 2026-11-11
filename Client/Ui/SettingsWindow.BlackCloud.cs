@@ -55,6 +55,7 @@ public partial class SettingsWindow
     }
 
     private readonly HashSet<string> _petAlertSpecies = new();
+    private readonly Dictionary<string, CheckBox> _petAlertBoxes = new();
     private CheckBox? _petNearBox;
     private ComboBox? _petNearRange;
 
@@ -77,6 +78,7 @@ public partial class SettingsWindow
         // the genera, each with its colour (the pop-up's chip and the mark on the shop's card); the last one stays ticked
         _petAlertSpecies.Clear();
         _petAlertSpecies.UnionWith(settings.PetAlertSpecies is { Count: > 0 } picked ? picked : Aion2Pets.Species);
+        _petAlertBoxes.Clear();
         var genera = new WrapPanel { Margin = new Thickness(0, 4, 0, 10) };
         var boxes = new List<CheckBox>();
         foreach (string species in Aion2Pets.Species)
@@ -102,8 +104,12 @@ public partial class SettingsWindow
                 else
                 {
                     box.IsChecked = true; // none would mean no alert at all: the switches above do that
+                    return;
                 }
+
+                FollowGenus(id, box.IsChecked == true);
             };
+            _petAlertBoxes[id] = box;
             boxes.Add(box);
             genera.Children.Add(box);
         }
@@ -134,6 +140,27 @@ public partial class SettingsWindow
         stack.Children.Add(how);
         var card = new Border { Style = (Style)FindResource("SettingsCard"), Child = stack };
         PanelPets.Children.Insert(Math.Min(1, PanelPets.Children.Count), card);
+    }
+
+    /// <summary>
+    /// The merchant's pets of a genus follow its tick (11 November 2026, satahn: "unselect automatically when user unticks Fera, Varian etc"): unticked, all
+    /// of them are; ticked again, those a character still needs (or all while no character's pets are known) - one every character has stays unticked.
+    /// </summary>
+    private void FollowGenus(string species, bool on)
+    {
+        foreach (MerchantPet pet in Aion2MerchantPets.All.Where(p => Aion2Pets.SpeciesOf(p.PetId) == species))
+        {
+            if (!on)
+            {
+                _blackCloudUnwatched.Add(pet.PetId);
+            }
+            else if (Aion2BlackCloud.Wanted(pet.PetId) is { } w && (w.Needed.Count > 0 || w.Done.Count == 0))
+            {
+                _blackCloudUnwatched.Remove(pet.PetId);
+            }
+        }
+
+        FillBlackCloud();
     }
 
     /// <summary>The ticked list and the offers, made again (a collection or an offer changed, or a tick).</summary>
@@ -213,6 +240,11 @@ public partial class SettingsWindow
             if (tick.IsChecked == true)
             {
                 _blackCloudUnwatched.Remove(id);
+                // a pet ticked while its genus is off: the genus comes on for it (its other pets stay as they are)
+                if (Aion2Pets.SpeciesOf(id) is { } genus && _petAlertSpecies.Add(genus) && _petAlertBoxes.TryGetValue(genus, out CheckBox? genusBox))
+                {
+                    genusBox.IsChecked = true;
+                }
             }
             else
             {

@@ -1567,6 +1567,8 @@ public partial class MainWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        MaximizeFit.Attach(this); // full size stays inside the work area (the window draws its own frame)
+        StateChanged += (_, _) => ShowMaximizeState();
         _overlay = new NativeOverlay(this);
         CreateTrayIcon();
         _hotkeys = new GlobalHotkeys(this);
@@ -8152,12 +8154,30 @@ public partial class MainWindow : Window
         _characterWindow.Show();
     }
 
+    /// <summary>The character is in a dungeon or raid now (set by the overlay gate, a few times a second): the world boss overlay steps aside there when asked.</summary>
+    internal static bool InDungeonNow { get; private set; }
+
     private void OnTitleBarMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.LeftButton == MouseButtonState.Pressed)
+        if (e.ClickCount == 2 && _shellBuilt)
+        {
+            MaximizeFit.Toggle(this); // a double click on the title bar, as on any window
+        }
+        else if (e.LeftButton == MouseButtonState.Pressed)
         {
             DragMove();
         }
+    }
+
+    /// <summary>Full size and back (11 November 2026, a player: "there's no fullscreen"); the window stays inside the screen's work area (MaximizeFit).</summary>
+    private void OnMaximizeClicked(object sender, RoutedEventArgs e) => MaximizeFit.Toggle(this);
+
+    /// <summary>The maximise button shows "restore" while the window is full size.</summary>
+    private void ShowMaximizeState()
+    {
+        bool full = WindowState == WindowState.Maximized;
+        MaximizeGlyph.Data = Geometry.Parse(full ? MaximizeFit.RestoreGlyph : MaximizeFit.MaximizeGlyph);
+        MaximizeButton.ToolTip = full ? "Back to its size" : "Full size";
     }
 
     private void OnCloseClicked(object sender, RoutedEventArgs e)
@@ -8381,8 +8401,11 @@ public partial class MainWindow : Window
         }
 
         var s = _gateSettings;
-        // locked, the timetable steps aside like the other overlays: not while the game is behind another program or a game menu is open
-        _timetable?.ApplyGate(GameWindow.OverlayMayShow());
+        // in a dungeon or raid (the zone, or the monsters around when the zone was missed): the overlays that may step aside there (11 November 2026)
+        InDungeonNow = _liveSource?.Entities is Aion2EntityDirectory here && Aion2Zones.IsPveHere(here.ZoneId, here.LiveMobs);
+        // locked, the timetable steps aside like the other overlays: not while the game is behind another program or a game menu is open, nor in a
+        // dungeon when the player asked for that
+        _timetable?.ApplyGate(GameWindow.OverlayMayShow() && !(s.TimetableHideInDungeons && InDungeonNow));
         _petFarm?.ApplyGate(GameWindow.OverlayMayShow()); // like every overlay: not while one of the game's windows is open
         GateOverlayMenu(s);
         if (_hotkeyOverlay is null)

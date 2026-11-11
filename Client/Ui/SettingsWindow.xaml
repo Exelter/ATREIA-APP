@@ -1140,6 +1140,7 @@
                                 <TextBlock Style="{StaticResource CardTitle}" Text="{local:Loc Settings.Hotkey.Timetable}"/>
                                 <CheckBox x:Name="ShowTimetableBox" Content="{local:Loc Settings.ShowTimetable}"/>
                                 <CheckBox x:Name="TimetableLockedBox" Content="{local:Loc Settings.PetFarm.Locked}" Margin="0,4,0,0"/>
+                                <CheckBox x:Name="TimetableHideInDungeonsBox" Content="{local:Loc Settings.HideInDungeons}" Margin="0,4,0,0"/>
                                 <local:OpacityField x:Name="TimetableOpacityField" Margin="0,8,0,0"/>
                                 <Button Content="{local:Loc Settings.Overlay.ResetPlace}" HorizontalAlignment="Left" Margin="0,8,0,4" Padding="12,3" Tag="Aion DPS Timetable" Click="OnResetOverlayPlaceClicked"/>
                                 <Grid Margin="0,2">
@@ -1173,6 +1174,7 @@
                             <StackPanel>
                                 <CheckBox x:Name="ShowBossOverlayBox" Content="{local:Loc Settings.Boss.Overlay}"/>
                                 <CheckBox x:Name="BossOverlayLockedBox" Content="{local:Loc Settings.PetFarm.Locked}" Margin="0,4,0,0"/>
+                                <CheckBox x:Name="BossHideInDungeonsBox" Content="{local:Loc Settings.HideInDungeons}" Margin="0,4,0,0"/>
                                 <local:OpacityField x:Name="BossOpacity" Margin="0,8,0,0"/>
                                 <Button Content="{local:Loc Settings.Overlay.ResetPlace}" HorizontalAlignment="Left" Margin="0,8,0,8" Padding="12,3" Tag="Aion DPS World Boss" Click="OnResetOverlayPlaceClicked"/>
                                 <CheckBox x:Name="BossNotifyBox" Content="{local:Loc Settings.Boss.Notify}" Checked="OnBossNotifyChanged" Unchecked="OnBossNotifyChanged"/>
@@ -1221,6 +1223,7 @@
                                 <TextBlock Style="{StaticResource CardTitle}" Text="{local:Loc Settings.PetInfo.Title}"/>
                                 <CheckBox x:Name="ShowPetFarmBox" Content="{local:Loc Settings.PetInfo.Show}"/>
                                 <CheckBox x:Name="PetInfoLockedBox" Content="{local:Loc Settings.PetFarm.Locked}" Margin="0,4,0,0"/>
+                                <CheckBox x:Name="PetFarmHideMaxedBox" Content="{local:Loc Settings.PetInfo.HideMaxed}" Margin="0,4,0,0"/>
                                 <local:OpacityField x:Name="PetInfoOpacity" Margin="0,8,0,0"/>
                                 <Button Content="{local:Loc Settings.Overlay.ResetPlace}" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,3" Tag="Aion DPS Pet Farming" Click="OnResetOverlayPlaceClicked"/>
                                 <CheckBox x:Name="ShowPetArrowsBox" Content="{local:Loc Settings.Pet.Arrows}" ToolTip="{local:Loc Settings.Pet.Arrows.Tip}" Margin="0,4,0,0"/>

@@ -28,6 +28,85 @@ public static class Aion2Zones
     /// </summary>
     public static bool IsPveInstance(int zoneId) => zoneId > 0 && IsInstance(zoneId) && !IsArena(zoneId);
 
+    /// <summary>
+    /// No place for the PvP overlays: a dungeon or raid by the zone frame, or by the monsters around when the zone frame says nothing of one. That frame
+    /// can be missed (11 November 2026, the owner: the radar came up in Exploration, Conquest and Ludra): the meter started inside (the zone stays
+    /// unknown, 0; a Fire Temple run after an update had the radar up at its boss), or the frame was lost while the game moved to the instance's server
+    /// (the zone of the open map stays). A known open map or an unknown zone counts as a dungeon when <see cref="MobsSayInstance"/>. An arena never.
+    /// </summary>
+    public static bool IsPveHere(int zoneId, Func<IReadOnlyList<(int NpcId, float X, float Y)>> mobs)
+    {
+        if (IsPveInstance(zoneId))
+        {
+            return true;
+        }
+
+        if (IsArena(zoneId) || (zoneId > 0 && IsInstance(zoneId)))
+        {
+            return false;
+        }
+
+        // the monsters' answer is kept a moment for the same monsters: three overlays ask several times a second
+        IReadOnlyList<(int NpcId, float X, float Y)> around = mobs();
+        long seen = around.Count * 1_000_003L + around.Sum(m => (long)m.NpcId);
+        lock (Gate)
+        {
+            if (_mobsAnswer is { } kept && kept.Zone == zoneId && kept.Seen == seen && DateTime.UtcNow - kept.At < TimeSpan.FromSeconds(2))
+            {
+                return kept.Instance;
+            }
+        }
+
+        bool instance = MobsSayInstance(around);
+        lock (Gate)
+        {
+            _mobsAnswer = (zoneId, seen, DateTime.UtcNow, instance);
+        }
+
+        return instance;
+    }
+
+    private static readonly object Gate = new();
+    private static (int Zone, long Seen, DateTime At, bool Instance)? _mobsAnswer;
+
+    /// <summary>
+    /// The monsters around tell a dungeon or raid: a boss of one is among them (the boss table's place for it is no open map, the Abyss or Impetusium,
+    /// where players fight each other), or at least three of them stand at spawn points of their kind in an instance's map and none at one of an open map.
+    /// </summary>
+    public static bool MobsSayInstance(IReadOnlyList<(int NpcId, float X, float Y)> mobs)
+    {
+        if (mobs.Count == 0)
+        {
+            return false;
+        }
+
+        if (mobs.Any(m => IsInstanceBoss(m.NpcId)))
+        {
+            return true;
+        }
+
+        return Aion2Maps.InstanceVotes(mobs) >= 3 && Aion2Maps.Votes(mobs).Count == 0;
+    }
+
+    /// <summary>A boss of a dungeon or raid (Conquest included): its place in the boss table is no open map, not the Abyss and not Impetusium.</summary>
+    public static bool IsInstanceBoss(int npcId)
+    {
+        if (Aion2BossCatalog.Find(npcId) is not { Instance: { Length: > 0 } place })
+        {
+            return false;
+        }
+
+        string name = place.Replace(" (Conquest)", "", StringComparison.Ordinal).Trim();
+        return !OpenMapNames().Contains(name) && !name.Equals("Abyss", StringComparison.OrdinalIgnoreCase)
+               && !name.Contains("Impetusium", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static HashSet<string>? _openNames;
+
+    /// <summary>The English names of the open maps in the zone file (Verteron, Altgard, the Reshanta levels ...).</summary>
+    private static HashSet<string> OpenMapNames() => _openNames ??= new HashSet<string>(
+        Table().Values.Where(z => !z.Instance).Select(z => z.Names.GetValueOrDefault("en")).OfType<string>(), StringComparer.OrdinalIgnoreCase);
+
     /// <summary>The zone's name in a language, else English; null when the id is not in the file.</summary>
     public static string? NameOf(int zoneId, string language) =>
         Table().TryGetValue(zoneId, out var zone) ? zone.Names.GetValueOrDefault(language) ?? zone.Names.GetValueOrDefault("en") : null;
