@@ -317,7 +317,8 @@ public sealed class EnemyCardController : IDisposable
             _ownPower = MainWindow.OwnCombatPower(dir);
         }
 
-        EnemyCardData? card = dir is null ? null : EnemyCardData.Of(dir, _settings.EnemyCardAllies, _ownPower);
+        // never in a dungeon or raid (only its sample while it is being placed)
+        EnemyCardData? card = dir is null || Aion2.Protocol.Aion2Zones.IsPveInstance(dir.ZoneId) ? null : EnemyCardData.Of(dir, _settings.EnemyCardAllies, _ownPower);
         if (card is { Incomplete: true } && dir is not null)
         {
             card = Complete(card, dir);

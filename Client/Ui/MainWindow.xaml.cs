@@ -1593,7 +1593,7 @@ public partial class MainWindow : Window
                 _liveSource?.Entities is Aion2EntityDirectory radarDir
                     ? _enemyCard?.Lookup(name ?? "", radarDir.ServerIdOf(id) ?? 0, radarDir.LocalCharacter?.ServerId ?? 0, enemy: true)
                     : null);
-            _deathRecap ??= new DeathRecapController(); // who killed the own character
+            _deathRecap ??= new DeathRecapController(() => _liveSource?.Entities as Aion2EntityDirectory); // who killed the own character
             Aion2Pvp.EnablePersistence(); // the rivals: the players fought, with the kills and the deaths against each
             Aion2Loot.EnablePersistence();
             Aion2Grind.EnablePersistence(); // the grind sessions: Kinah, Abyss Points, kills and loot per hour (the meter's Grind view, the Grind page)

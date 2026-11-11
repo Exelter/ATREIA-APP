@@ -841,6 +841,20 @@ public static class Aion2Cooldowns
         }
     }
 
+    /// <summary>
+    /// Whether a skill surely has no cooldown: the lists (basic attacks, fillers) or the client's table for the skill itself - not what its uses taught nor a
+    /// specialization's own entry (11 November 2026: Focused Block has 20 s, every one of its specializations 0, and its tile went at its first use).
+    /// </summary>
+    public static bool SurelyNoCooldown(int skillId)
+    {
+        int id = BaseOf(skillId);
+        var (noCooldown, _, lengths) = _lists ??= LoadLists();
+        lock (Gate)
+        {
+            return noCooldown.Contains(id) || (!Timed.Contains(id) && lengths.TryGetValue(id, out double own) && own <= NoCooldownSeconds);
+        }
+    }
+
     /// <summary>The client's cooldowns (the skill lists' "cooldowns", seconds): a variant's own when it differs from its skill's, else the skill's.</summary>
     private static Dictionary<int, double> Table() => (_lists ??= LoadLists()).Lengths;
 

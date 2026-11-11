@@ -77,6 +77,18 @@ public static class SelfCheckAssistSkills
         Check("kept from the last session", Of(unknown) == "NoCooldown", Of(unknown));
         Aion2Cooldowns.Reset();
 
+        // a skill on the bar stays on the screen whatever its specialization's entry says or its uses taught (11 November 2026, a player: "block skill ...
+        // disappears"): Focused Block (20 s, 0 with every specialization) after a use, and a learned Overhead Slam, both on the bar; a basic attack on the
+        // bar (Rending Blow) and Focused Block off the bar stay out
+        Aion2Cooldowns.NoteOwnCast(11110010, t0.AddMinutes(5));
+        Aion2Cooldowns.SeedLearned(new[] { 11170000 });
+        int[] gladiatorBar = { 11010000, 11110000, 11170000, 11100000 };
+        bool blockStays = Ui.AssistPanel.Listed(11110000, gladiatorBar) && Ui.AssistPanel.Listed(11170000, gladiatorBar);
+        bool basicOut = !Ui.AssistPanel.Listed(11010000, gladiatorBar) && !Ui.AssistPanel.Listed(11110000, new[] { 11100000 });
+        Check("Focused Block and a learned Overhead Slam on the bar stay, a basic attack does not", Of(11110000) == "NoCooldown" && blockStays && basicOut,
+            $"{Of(11110000)}, on the bar {blockStays}, basic attack and off the bar out {basicOut}");
+        Aion2Cooldowns.Reset();
+
         Countdown(Check);
         Lengths(Check);
         BarAndVoice(Check);

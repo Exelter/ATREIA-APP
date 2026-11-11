@@ -83,7 +83,7 @@ public sealed class OverlayQuickWindow : Window
 
     public static void Open(IOverlayQuick overlay)
     {
-        _open?.Close();
+        _open?.CloseOnce();
         _open = new OverlayQuickWindow(overlay);
         _open.Closed += (_, _) => { overlay.QuickOpen = false; _open = null; };
         overlay.QuickOpen = true;
@@ -119,7 +119,7 @@ public sealed class OverlayQuickWindow : Window
         // the head: the overlay's name and a close button
         var head = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
         var close = Glyph("", 11, "Close (Esc)");
-        close.MouseLeftButtonUp += (_, _) => Close();
+        close.MouseLeftButtonUp += (_, _) => CloseOnce();
         DockPanel.SetDock(close, Dock.Right);
         head.Children.Add(close);
         var name = new TextBlock { Text = entry?.Name() ?? overlay.Title.Replace("Aion DPS ", ""), FontSize = 14, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
@@ -173,7 +173,7 @@ public sealed class OverlayQuickWindow : Window
                 s.Save();
                 overlay.QuickHide();
                 OverlayQuick.RaiseChanged(s);
-                Close();
+                CloseOnce();
             });
             off.Margin = new Thickness(3, 0, 0, 6);
             Grid.SetColumn(off, 1);
@@ -189,7 +189,7 @@ public sealed class OverlayQuickWindow : Window
         Border all = ActionButton("\uE713", "All settings in the app", () =>
         {
             OverlayQuick.AskPage(entry?.Page ?? "overlays");
-            Close();
+            CloseOnce();
         });
         all.Margin = new Thickness(0);
         stack.Children.Add(all);
@@ -201,13 +201,19 @@ public sealed class OverlayQuickWindow : Window
         Content = panel;
 
         _save.Tick += (_, _) => Flush();
-        Deactivated += (_, _) => { if (IsLoaded) Close(); };
-        Closing += (_, _) => Flush();
+        // a click elsewhere closes it. Closing makes it lose the focus too, and a second Close() then (while it closes) took the whole app down
+        // (11 November 2026, a player: "turn on radar, open its settings then close it, app gets fucked"): once only.
+        Deactivated += (_, _) => CloseOnce();
+        Closing += (_, _) =>
+        {
+            _closing = true;
+            Flush();
+        };
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)
             {
-                Close();
+                CloseOnce();
             }
         };
         Loaded += (_, _) => Place();
@@ -227,6 +233,18 @@ public sealed class OverlayQuickWindow : Window
 
         Left = left;
         Top = Math.Max(area.Top, Math.Min(at.Top, area.Bottom - h));
+    }
+
+    private bool _closing;
+
+    /// <summary>Closes it, unless it is closing already (or not shown yet).</summary>
+    internal void CloseOnce()
+    {
+        if (!_closing && IsLoaded)
+        {
+            _closing = true;
+            Close();
+        }
     }
 
     private void Later()

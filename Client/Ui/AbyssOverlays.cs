@@ -633,7 +633,14 @@ public sealed class EnemyRadarController : IDisposable
             _zoneStart = tally;
         }
 
-        RadarView? view = dir is null ? null
+        // never in a dungeon or raid (only its sample while it is being placed)
+        bool pve = dir is not null && Aion2.Protocol.Aion2Zones.IsPveInstance(dir.ZoneId);
+        if (pve)
+        {
+            PvpLog.Note("radar", "pve", $"hidden: in a dungeon or raid (zone {dir!.ZoneId})");
+        }
+
+        RadarView? view = dir is null || pve ? null
             : RadarView.Of(dir, _ownPower, DateTime.Now, _looked, (tally.Kills - _zoneStart.Kills, tally.Assists - _zoneStart.Assists, tally.Deaths - _zoneStart.Deaths));
         bool mayShow = GameWindow.OverlayMayShow(ignoreMenu: true);
         if (view is not null)
@@ -843,9 +850,11 @@ public sealed class DeathRecapController : IDisposable
     private DateTime _settingsAt = DateTime.UtcNow;
     private DeathRecap? _recap;
     private DateTime _diedAt = DateTime.MinValue;
+    private readonly Func<Aion2EntityDirectory?> _directory;
 
-    public DeathRecapController()
+    public DeathRecapController(Func<Aion2EntityDirectory?> directory)
     {
+        _directory = directory;
         Aion2Pvp.Died += OnDied;
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
@@ -853,6 +862,13 @@ public sealed class DeathRecapController : IDisposable
 
     private void OnDied(DeathRecap recap)
     {
+        // a death in a dungeon or raid gets no recap (the PvP overlays stay out of them)
+        if (_directory() is { } dir && Aion2.Protocol.Aion2Zones.IsPveInstance(dir.ZoneId))
+        {
+            PvpLog.Write($"death: {recap.VictimName} died in a dungeon or raid (zone {dir.ZoneId}): no recap");
+            return;
+        }
+
         _recap = recap;
         _diedAt = DateTime.UtcNow;
         PvpLog.Write($"death: {recap.VictimName} died, killed by {recap.Killer?.Name ?? "no one seen"}, {recap.Sources.Count} attackers, {recap.Taken:N0} taken in {recap.Seconds:0.0} s");
