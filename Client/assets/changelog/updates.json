@@ -6,6 +6,18 @@
   ],
   "versions": [
     {
+      "version": "2.0.6",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Find a player",
+          "title": "The whole party in your group's list",
+          "text": "A full party showed three players in the group list: everyone but you. You are on it now too, marked \"you\", in Combat Power order with the others."
+        }
+      ]
+    },
+    {
       "version": "2.0.5",
       "date": "2026-11-11",
       "items": [

@@ -650,7 +650,27 @@ public partial class MainWindow
     }
 
     /// <summary>A player of the own group, as the game's party roster lists them: the name, the class and the server when the roster gave them.</summary>
-    internal readonly record struct GroupMate(string Name, string? ClassName, int? ServerId, int? CombatPower = null, int? ItemLevel = null);
+    internal readonly record struct GroupMate(string Name, string? ClassName, int? ServerId, int? CombatPower = null, int? ItemLevel = null, bool IsYou = false);
+
+    /// <summary>
+    /// The group as the list shows it: the other players and the own character among them, by Combat Power (11 November 2026, the owner: "party is full only
+    /// shows 3 not 4" - a full party of four listed the three others only). Empty out of a group.
+    /// </summary>
+    private IReadOnlyList<GroupMate> WithMe(IReadOnlyList<GroupMate> mates)
+    {
+        if (mates.Count == 0 || _liveSource?.Entities is not Aion2EntityDirectory directory || directory.LocalCharacter is not { Name.Length: > 0 } local)
+        {
+            return mates;
+        }
+
+        string own = local.Name;
+        var me = new GroupMate(own, directory.PartyClassOfName(own) ?? directory.ClassOf(directory.LocalPlayerId),
+            directory.ServerIdOfName(own) ?? (local.ServerId > 0 ? local.ServerId : null), IsYou: true);
+        (int? itemLevel, int? combatPower) = directory.PartyFiguresOfName(own);
+        FoundPlayer? found = LookedUp(me);
+        me = me with { CombatPower = combatPower ?? OwnCombatPower(directory) ?? found?.CombatPower, ItemLevel = itemLevel ?? found?.ItemLevel };
+        return StrongestFirst(mates.Append(me));
+    }
 
     /// <summary>The list highest Combat Power first (10 November 2026, the owner: "show their CP at once, highest to lowest"); who has none known yet after, in
     /// the order they came.</summary>
@@ -756,7 +776,7 @@ public partial class MainWindow
     /// <summary>The empty box's lists: the group, then the players fighting with it.</summary>
     private void ShowGroupLists()
     {
-        IReadOnlyList<GroupMate> mates = GroupMates(), alongside = AlongsideMates();
+        IReadOnlyList<GroupMate> mates = WithMe(GroupMates()), alongside = AlongsideMates();
         _groupListsShown = ListsKey(mates, alongside);
         ShowGroupMates(mates, alongside);
     }
@@ -796,7 +816,7 @@ public partial class MainWindow
                     return; // a search or a card on show: the lists come back when the box is emptied
                 }
 
-                IReadOnlyList<GroupMate> mates = GroupMates(), alongside = AlongsideMates();
+                IReadOnlyList<GroupMate> mates = WithMe(GroupMates()), alongside = AlongsideMates();
                 string key = ListsKey(mates, alongside);
                 if (key != _groupListsShown)
                 {
@@ -858,6 +878,13 @@ public partial class MainWindow
         var who = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         var nameText = new TextBlock { Text = mate.Name, FontSize = 12, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
         nameText.Foreground = mate.ClassName is { } c ? ClassBrushes.Text(c) : (Brush)FindResource("Brush.OverlayText");
+        if (mate.IsYou)
+        {
+            var you = new System.Windows.Documents.Run("  you") { FontWeight = FontWeights.Normal, FontSize = 10.5 };
+            you.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "Brush.TextMuted");
+            nameText.Inlines.Add(you);
+        }
+
         who.Children.Add(nameText);
         var parts = new List<string>();
         if (mate.ClassName is { Length: > 0 } className)
