@@ -135,6 +135,8 @@ public partial class MainWindow
         bool reading = (_source as Aion2PacketCombatSource)?.ServerFingerprint is not null;
         if (PrivacyConsent.Restricted)
         {
+            // why the Map, the Legion and the others are not here, and the way to have them back (11 November 2026)
+            yield return Notice("Brush.Warning", "\uE72E", loc["Settings.Privacy.Declined"], loc["Settings.Privacy.Show"], AskPrivacyAgain);
             yield break;
         }
 

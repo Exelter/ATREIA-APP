@@ -30,6 +30,7 @@ public partial class MainWindow
     private StackPanel? _shellNavList;
     private bool _shellBuilt;
     private bool _shellCollapsed;
+    private bool _shellRestricted; // the privacy answer the column was built for (ApplyPrivacyRestrictions builds it again when it changes)
 
     /// <summary>
     /// The hubs of the column (3 November 2026, the owner: 25 entries were too many to find one's way in): pages that belong together are the tabs of one
@@ -105,6 +106,12 @@ public partial class MainWindow
             {
                 main.Add(new ShellItem(hub, hubNames[hub], tabs[0].Glyph));
             }
+            else if (PrivacyConsent.Restricted)
+            {
+                // the restricted mode keeps the entry, with a padlock: it opens the page that says why it is off and how to have it back (11 November 2026: a
+                // player who had declined the privacy policy at the first start looked for the Map and did not know why it was not there)
+                main.Add(new ShellItem(hub, hubNames[hub], "\uE72E"));
+            }
         }
 
         var bottom = new List<ShellItem> { new("feedback", loc["Shell.Feedback"], "\uED15"), new("status", loc["Shell.Status"], "\uE95E") };
@@ -123,6 +130,7 @@ public partial class MainWindow
     internal void BuildShell()
     {
         _shellCollapsed = MeterSettings.Load().AppNavCollapsed;
+        _shellRestricted = PrivacyConsent.Restricted;
         _shellButtons.Clear();
         // the pages of the old windows took their text colour and face from their window: here they take the app's
         AppPageHost.SetResourceReference(TextElement.ForegroundProperty, "Brush.Text");
@@ -284,12 +292,13 @@ public partial class MainWindow
         }
 
         id = AssistTabOf(id);
-        if (ShellHubs.Any(h => h.Hub == id))
+        string[]? hubTabs = ShellHubs.FirstOrDefault(h => h.Hub == id).Tabs;
+        if (hubTabs is not null)
         {
-            // a hub: the tab it was left on, else its first
+            // a hub: the tab it was left on, else its first; a hub the restricted mode took all the pages of: its first, which says why it is off
             List<ShellItem> tabs = HubTabs(id);
             string? last = MeterSettings.Load().AppHubTabs?.GetValueOrDefault(id);
-            id = tabs.FirstOrDefault(t => t.Id == last)?.Id ?? tabs.FirstOrDefault()?.Id ?? "home";
+            id = tabs.FirstOrDefault(t => t.Id == last)?.Id ?? tabs.FirstOrDefault()?.Id ?? (PrivacyConsent.Restricted ? hubTabs[0] : "home");
         }
 
         switch (id)
@@ -328,7 +337,7 @@ public partial class MainWindow
             return;
         }
 
-        UIElement content = id switch
+        UIElement content = RestrictedAway(id) ? RestrictedPage(id) : id switch
         {
             "home" => BuildHomePage(),
             "news" => BuildNewsPage(),
@@ -339,7 +348,7 @@ public partial class MainWindow
             "characters" => HostTool("checklist"),
             _ => HostTool(id),
         };
-        if (HubOf(id) is { } hub)
+        if (HubOf(id) is { } hub && !RestrictedAway(id))
         {
             RememberHubTab(hub, id);
             List<ShellItem> tabs = HubTabs(hub);
@@ -989,6 +998,41 @@ public partial class MainWindow
         _overlayPeekUntil = DateTime.Now + _meterOverlayHideAfter; // shown for a moment, so it can be seen where it is now
         UpdateMeterOverlay();
     }
+
+    // ---- the restricted mode ----
+
+    /// <summary>A page the restricted mode (the privacy policy declined) takes away: a tool or a hub's page that is not among the pages there are now.</summary>
+    private bool RestrictedAway(string id) =>
+        PrivacyConsent.Restricted && !ShellPages().ContainsKey(id)
+        && (ShellHubs.Any(h => h.Tabs.Contains(id)) || ToolsWindow.Groups().Any(g => g.Any(t => t.Id == id)));
+
+    /// <summary>
+    /// What shows for a page the restricted mode took away (11 November 2026: a player who had declined the privacy policy found no Map and a link to the
+    /// Cube finder that did nothing): that the policy was declined, what stays, and the policy to read again; accepting it brings the page back at once.
+    /// </summary>
+    private UIElement RestrictedPage(string id)
+    {
+        LocalizationManager loc = LocalizationManager.Instance;
+        string title = id == "dummy" ? loc["Shell.Dummy"] : ToolsWindow.Groups().SelectMany(g => g).FirstOrDefault(t => t.Id == id)?.Title ?? loc["Privacy.Title"];
+        var column = new StackPanel { Margin = new Thickness(24, 20, 24, 24), MaxWidth = 680, HorizontalAlignment = HorizontalAlignment.Left };
+        column.Children.Add(PageTitle(title, loc["Settings.Privacy.Declined"]));
+        var line = new DockPanel { Margin = new Thickness(0, 0, 0, 14) };
+        TextBlock padlock = ShellText("\uE72E", "Brush.Warning", 15);
+        padlock.FontFamily = new FontFamily("Segoe MDL2 Assets");
+        padlock.Margin = new Thickness(0, 1, 10, 0);
+        padlock.VerticalAlignment = VerticalAlignment.Top;
+        DockPanel.SetDock(padlock, Dock.Left);
+        line.Children.Add(padlock);
+        line.Children.Add(Wrapped(loc["Privacy.DeclineNote"], "Brush.Text", 13));
+        column.Children.Add(line);
+        var read = new Button { Content = loc["Settings.Privacy.Show"], Padding = new Thickness(16, 6, 16, 6), HorizontalAlignment = HorizontalAlignment.Left };
+        read.Click += (_, _) => AskPrivacyAgain();
+        column.Children.Add(read);
+        return new ScrollViewer { Content = column, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+    }
+
+    /// <summary>The privacy policy again, to read and answer anew; the column and the page follow the answer (PrivacyConsent.Changed -> ApplyPrivacyRestrictions).</summary>
+    private void AskPrivacyAgain() => PrivacyConsent.Ask(this);
 
     // ---- small parts ----
 

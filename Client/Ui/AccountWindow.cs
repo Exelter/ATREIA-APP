@@ -72,7 +72,23 @@ public sealed class AccountWindow : Window
             Draw(null);
         };
         _timer.Tick += async (_, _) => await PollAsync();
-        Closed += (_, _) => _timer.Stop();
+        Closed += (_, _) =>
+        {
+            _timer.Stop();
+            // still waiting for the approval in the browser: the app goes on asking without this window (11 November 2026)
+            if (_pending is { } waiting && !Account.SignedIn)
+            {
+                Account.WaitInBackground(waiting);
+            }
+        };
+        // a sign-in started earlier and still waiting (this window was closed meanwhile): shown again, with its code
+        if (!Account.SignedIn && Account.TakeWaiting() is { } earlier)
+        {
+            _pending = earlier;
+            _timer.Interval = TimeSpan.FromSeconds(earlier.Interval);
+            _timer.Start();
+        }
+
         Account.Changed += OnAccountChanged;
         Closed += (_, _) => Account.Changed -= OnAccountChanged;
         CharacterVerify.Changed += OnAccountChanged;
@@ -153,7 +169,7 @@ public sealed class AccountWindow : Window
             _status.Text = "Approve the sign-in in your browser. The page shows this code:";
             _code.Text = p.Code;
             _code.Visibility = Visibility.Visible;
-            _hint.Text = message ?? "Sign in with Discord there if the site asks, then press Approve. This window notices it by itself.";
+            _hint.Text = message ?? "In the browser: Connect Discord (Discord asks for your password there if the browser isn’t signed in to Discord, even when the Discord app is), then Authorize, then Approve on the page that comes back. The app notices it by itself, also if you close this window.";
             _signIn.Visibility = Visibility.Collapsed;
             _openAgain.Visibility = Visibility.Visible;
             return;
@@ -231,6 +247,7 @@ public sealed class AccountWindow : Window
         }
 
         _pending = start;
+        Account.Started(start);
         _failures = 0;
         Draw(null);
         Open(start.Url);
@@ -249,6 +266,7 @@ public sealed class AccountWindow : Window
         if (DateTime.UtcNow > p.ExpiresAt)
         {
             _pending = null;
+            Account.Finished(p);
             Draw("The sign-in ran out. Press Sign in with Discord to try again.");
             return;
         }
@@ -263,12 +281,14 @@ public sealed class AccountWindow : Window
         switch (state)
         {
             case Account.LinkState.Linked:
+                Account.Finished(p);
                 Draw(null);
                 await Account.RefreshAsync();
                 Draw(null);
                 return;
             case Account.LinkState.Expired:
                 _pending = null;
+                Account.Finished(p);
                 Draw("The sign-in ran out or was used already. Press Sign in with Discord to try again.");
                 return;
             case Account.LinkState.Failed:
