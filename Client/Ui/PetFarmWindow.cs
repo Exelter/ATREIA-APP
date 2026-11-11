@@ -400,6 +400,10 @@ public sealed class PetFarmController : IDisposable
                 level = state.Level >= Aion2Pets.TopLevel
                     ? string.Format(loc["PetFarm.Max"], state.Level)
                     : string.Format(loc["PetFarm.Level"], state.Level) + $" ({state.Progress}/{Aion2Pets.ProgressNeeded(state.Level)})";
+                if (directory is { LocalPetStatesLive: false })
+                {
+                    level += " · at last login"; // the game's list comes at the next map change (11 November 2026: a pet finished since showed level 1)
+                }
             }
             else if (directory is { LocalPetStatesLive: false })
             {

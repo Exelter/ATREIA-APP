@@ -183,6 +183,33 @@ public static class Aion2Maps
         return false;
     }
 
+    private static readonly Dictionary<string, HashSet<int>> OnlyOnCache = new();
+
+    /// <summary>
+    /// The pets of an open map that no other open map has: on another side's map through a rift, what can be had there alone (11 November 2026). Instances
+    /// do not count: a pet an instance has too is still one to take on the rift's map.
+    /// </summary>
+    public static IReadOnlySet<int> OnlyOn(Aion2MapInfo map)
+    {
+        lock (OnlyOnCache)
+        {
+            if (OnlyOnCache.TryGetValue(map.Key, out HashSet<int>? known))
+            {
+                return known;
+            }
+
+            var every = Aion2Pets.AllPetIds.ToHashSet();
+            var here = PointsOf(map, every).Select(p => p.PetId).ToHashSet();
+            foreach (Aion2MapInfo other in All.Where(m => m.Key != map.Key))
+            {
+                here.ExceptWith(PointsOf(other, here).Select(p => p.PetId));
+            }
+
+            OnlyOnCache[map.Key] = here;
+            return here;
+        }
+    }
+
     /// <summary>Every spawn point on a map of a monster that drops one of the pets (the pet it belongs to with it).</summary>
     public static IReadOnlyList<(int PetId, float X, float Y)> PointsOf(Aion2MapInfo map, ISet<int> pets)
     {
