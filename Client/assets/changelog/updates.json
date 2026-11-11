@@ -6,6 +6,30 @@
   ],
   "versions": [
     {
+      "version": "2.0.6",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Find a player",
+          "title": "The whole party in your group's list",
+          "text": "A full party showed three players in the group list: everyone but you. You are on it now too, marked \"you\", in Combat Power order with the others."
+        },
+        {
+          "kind": "new",
+          "area": "Pets",
+          "title": "Only this map's own pets, for a rift",
+          "text": "A new switch on the Pet map page shows only the pets you can get on the map you are on and on no other open map. The map, the list and the route all follow it: what to farm while a rift into the other side's land is open."
+        },
+        {
+          "kind": "improved",
+          "area": "Pets",
+          "title": "Says when pet levels are from your last login",
+          "text": "When the app starts while you are already in the game, it uses the pet levels it saved at your last login until the game sends its list again at the next map change. A pet you finished in between could still show as level 1, and the route could send you to it. The pet list and the pet info over a monster now say so: change map or teleport once and the levels are up to date."
+        }
+      ]
+    },
+    {
       "version": "2.0.5",
       "date": "2026-11-11",
       "items": [

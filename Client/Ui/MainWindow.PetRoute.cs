@@ -119,6 +119,12 @@ public partial class MainWindow
         shape.Children.Add(Check(loc["PetMap.CompassFade"], now.PetMapCompassFade, (s, v) => s.PetMapCompassFade = v, loc["PetMap.CompassFadeTip"]));
         display.Children.Add(shape);
 
+        // the pets this map alone has: for a rift into the other side's land (11 November 2026)
+        var onlyHere = new WrapPanel();
+        onlyHere.Children.Add(Check("Only this map's own pets (for a rift)", now.PetMapOnlyHere, (s, v) => s.PetMapOnlyHere = v,
+            "The map, the list and the route show only the pets you can get on this map and on no other open map: what to farm while a rift is open"));
+        display.Children.Add(onlyHere);
+
         // no full map any more: the map itself zooms out to the whole map (mouse wheel or its +/- buttons; PetMapZoom)
         display.Children.Add(Wrapped(loc["PetMap.ZoomHint"], "Brush.TextMuted", 12));
 

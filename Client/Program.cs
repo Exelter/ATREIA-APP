@@ -1757,6 +1757,7 @@ internal static class Program
                 });
                 window.ShowGroupMates(new[]
                 {
+                    new Ui.MainWindow.GroupMate("Kaivhan", "Gladiator", 2302, 184_120, 2990, IsYou: true),
                     new Ui.MainWindow.GroupMate("Valtheris", "Templar", 2302),
                     new Ui.MainWindow.GroupMate("Lunessa", "Cleric", 2302),
                     new Ui.MainWindow.GroupMate("Korrin", "Sorcerer", 2305),

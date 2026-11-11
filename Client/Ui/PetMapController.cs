@@ -573,6 +573,11 @@ public sealed class PetMapController : IDisposable
             var states = directory.LocalPetStates;
             var maxPets = states.Count > 0 ? states.Where(st => st.Level >= Aion2Pets.TopLevel).Select(st => st.PetId).ToHashSet() : _savedMax;
             var wanted = (settings.PetMapAuto ? Aion2Pets.AllPetIds : settings.PetMapPets).Where(id => !maxPets.Contains(id) && settings.PetAlertFor(id)).ToHashSet();
+            if (settings.PetMapOnlyHere && !map.Instance)
+            {
+                wanted.IntersectWith(Aion2Maps.OnlyOn(map)); // this map's own pets only (a rift)
+            }
+
             double reach = Math.Clamp(settings.PetNearMetres, 50, 2000) * 100.0; // 100 world units to the metre
             void Note(int pet, float x, float y)
             {
@@ -860,6 +865,11 @@ public sealed class PetMapController : IDisposable
         HashSet<string>? genusPick = genusList is { Count: > 0 } && PetRoute.Genera.Any(genusName => !genusList.Contains(genusName)) ? genusList.ToHashSet() : null;
         var chosen = (auto ? Aion2Pets.AllPetIds : settings.PetMapPets)
             .Where(id => !maxPets.Contains(id) && (genusPick is null || PetRoute.GenusOf(id) is { } petGenus && genusPick.Contains(petGenus))).ToHashSet();
+        if (settings.PetMapOnlyHere && _current is { Instance: false } onMap)
+        {
+            chosen.IntersectWith(Aion2Maps.OnlyOn(onMap)); // this map's own pets only (a rift)
+        }
+
         if (_petMapOverride)
         {
             chosen.UnionWith(_petsNearShown.Where(id => !maxPets.Contains(id))); // the map came up for these: it shows them, whatever genera it is set to
@@ -1070,6 +1080,13 @@ public sealed class PetMapController : IDisposable
             var rows = InMenu ? shopRows : shopRows.Concat(Rows(ordered, colors, tx, ty, states, live, known, gatherKinds)).ToList();
             // the route's next stop above the list, unless it is switched off (the map still shows the route)
             var (headTitle, headDetail) = InMenu || !settings.PetRouteInList ? (null, null) : RouteHead(settings, known, tx, ty);
+            // until the game sends its pet list (at the next map change) the levels are the ones kept from the last login: a pet finished since then still
+            // counts as needed and the route may lead to it (11 November 2026, a player: "this mob i got max but still doesn't count ... why it sending me here")
+            if (!InMenu && directory is { LocalPetStatesLive: false } && (states.Count > 0 || _savedMax.Count > 0))
+            {
+                const string old = "Pet levels from your last login: change map or teleport once to update them";
+                (headTitle, headDetail) = headTitle is null ? ("Pet levels may be out of date", old) : (headTitle, string.IsNullOrEmpty(headDetail) ? old : headDetail + "\n" + old);
+            }
             _list.RenderHead(headTitle, headDetail);
             foreach (var view in _listViews)
             {
@@ -1161,10 +1178,11 @@ public sealed class PetMapController : IDisposable
 
         _routeAt = DateTime.UtcNow;
         var genera = (settings.PetRouteGenera is { Count: > 0 } picked ? picked : PetRoute.Genera.ToList()).ToHashSet();
-        bool Needed(int id) => !maxPets.Contains(id) && !_skipped.Contains(id);
+        IReadOnlySet<int>? onlyHere = settings.PetMapOnlyHere && !_current.Instance ? Aion2Maps.OnlyOn(_current) : null;
+        bool Needed(int id) => !maxPets.Contains(id) && !_skipped.Contains(id) && (onlyHere is null || onlyHere.Contains(id));
         var needed = Aion2Pets.AllPetIds.Where(id => PetRoute.GenusOf(id) is { } g && genera.Contains(g) && Needed(id)).OrderBy(id => id);
         string faction = RouteFaction();
-        string key = $"{_current.Key}|{faction}|{string.Join(",", genera.OrderBy(g => g))}|{string.Join(",", needed)}|{settings.PetRouteFromHere}";
+        string key = $"{_current.Key}|{faction}|{string.Join(",", genera.OrderBy(g => g))}|{string.Join(",", needed)}|{settings.PetRouteFromHere}|{onlyHere is not null}";
         if (key == _planKey && !_replanHere)
         {
             return;
