@@ -1033,6 +1033,19 @@ public sealed class MeterSettings
     /// others' damage, a green part for their healing on the others, with the "+" figures beside the rate (5 November 2026, the owner). On by default.</summary>
     public bool MeterBarParts { get; set; } = true;
 
+    /// <summary>The grey part (the buffs given to the others) and the green part (the healing on the others, with its "+" figure) each have their own switch
+    /// since 11 November 2026 (the owner: "an option to disable the grey bars in the meter and + healing as well"). Null: not chosen yet, so as
+    /// <see cref="MeterBarParts"/>, the one switch for both before; a player who had switched that off keeps both off.</summary>
+    public bool? MeterBarBuffs { get; set; }
+
+    public bool? MeterBarHeals { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool BarBuffsOn => MeterBarBuffs ?? MeterBarParts;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool BarHealsOn => MeterBarHeals ?? MeterBarParts;
+
     /// <summary>The boss's health over the meter's lines: what is left of it and its whole, when it dies, its enrage (MainWindow.BossBar.cs). Its own switch
     /// since 5 November 2026: it went with the combat overlay's health bar switch (ShowBossHp), and a player who switched that big bar off lost the line too.</summary>
     public bool MeterBossLine { get; set; } = true;

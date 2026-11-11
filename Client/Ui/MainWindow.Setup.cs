@@ -373,8 +373,10 @@ public partial class MainWindow
                 s.MeterColumns = columns;
             });
             Part(Loc["Look.SmallUnits"], _draft.MeterSmallUnits, (s, v) => s.MeterSmallUnits = v, Loc["Look.SmallUnitsTip"]);
-            Part("Buffs and healing on the bar", _draft.MeterBarParts, (s, v) => s.MeterBarParts = v,
-                "Grey after a player's own damage for what their buffs gave the others, green for their healing on the others.");
+            Part("Buffs on the bar (grey part)", _draft.BarBuffsOn, (s, v) => s.MeterBarBuffs = v,
+                "Grey after a player's own damage for what their buffs gave the others, with its + figure.");
+            Part("Healing on the bar (green part and + healing)", _draft.BarHealsOn, (s, v) => s.MeterBarHeals = v,
+                "Green for a player's healing on the others, with the green + figure beside the rate.");
             Part(Loc["Look.BestLast"], _draft.MeterBestLast, (s, v) => s.MeterBestLast = v);
             Part(Loc["Look.GrowUp"], _draft.MeterGrowUp, (s, v) => s.MeterGrowUp = v, Loc["Look.GrowUpTip"]);
             stack.Children.Add(parts);

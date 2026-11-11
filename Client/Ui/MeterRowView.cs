@@ -321,12 +321,15 @@ public sealed class MeterRowView : Grid
                     plus.Children.Add(figure);
                 }
 
-                if (!look.Has("given"))
+                if (look.BarBuffs && !look.Has("given"))
                 {
                     Plus(nameof(PlayerRow.BarGivenText), MeterBarParts.GivenText);
                 }
 
-                Plus(nameof(PlayerRow.BarHealText), MeterBarParts.HealText);
+                if (look.BarHeals)
+                {
+                    Plus(nameof(PlayerRow.BarHealText), MeterBarParts.HealText);
+                }
                 DockPanel.SetDock(plus, Dock.Right);
                 nameSide.Children.Add(plus);
             }

@@ -15,6 +15,13 @@
           "title": "The right icons for the Cleric's skills",
           "text": "Several Cleric skills showed the wrong icon in the skill list, the meter's breakdown and the overlays: Benevolence had another skill's, and Salvation, Power Burst, Absolution, Voice of Doom, Prayer of Amplification, Noble Aura and some passives each showed the one of the skill next to them. They all show their own icon now, as in the game. The same was fixed for a few Gladiator, Templar, Ranger, Sorcerer and Chanter skills, and skills that had no icon at all, like Comrade in Arms and Defiance, have one now.",
           "example": "Benevolence shows its own golden circle now, and Noble Aura is no longer a copy of Prayer of Amplification."
+        },
+        {
+          "kind": "new",
+          "area": "Meter",
+          "title": "Switch off the grey or the green part of the bars",
+          "text": "The grey part of a meter bar (what a player's buffs gave the others) and the green part with its + healing figure (their healing on the others) each have their own switch now, in Meter look under Bars. Switch off one and the other stays; switch off both for bars of the own damage alone. Without the grey part the rDPS view draws the whole rDPS in the class colour, so the bars still follow the order.",
+          "example": "Only want to see who did the damage? Switch off \"Buffs on the bar\" and \"Healing on the bar\": no grey, no green, no +12.4K."
         }
       ]
     },

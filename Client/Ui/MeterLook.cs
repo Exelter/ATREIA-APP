@@ -121,9 +121,14 @@ public sealed class MeterLook
     /// <summary>The letter or % sign after a figure (12.4K, 38%) is printed smaller and dimmer, so the digits stand out.</summary>
     public bool SmallUnits { get; init; }
 
-    /// <summary>After the own damage the bar goes on in grey for the buffs given to the others and in green for the healing on the others
-    /// (<see cref="MeterBarParts"/>), with their "+" figures beside the rate.</summary>
-    public bool BarParts { get; init; } = true;
+    /// <summary>After the own damage the bar goes on in grey for the buffs given to the others (<see cref="BarBuffs"/>) and in green for the healing on
+    /// the others (<see cref="BarHeals"/>; <see cref="MeterBarParts"/>), each with its "+" figure beside the rate. Each has its own switch.</summary>
+    public bool BarBuffs { get; init; } = true;
+
+    public bool BarHeals { get; init; } = true;
+
+    /// <summary>Some part after the own damage is drawn: the grey, the green or both.</summary>
+    public bool BarParts => BarBuffs || BarHeals;
 
     public static MeterLook From(MeterSettings s) => new()
     {
@@ -135,7 +140,8 @@ public sealed class MeterLook
         Shown = (s.MeterColumns ?? DefaultColumns.ToList()).Where(id => NameParts.Contains(id) || Columns.Any(c => c.Id == id)).ToHashSet(),
         Titles = s.MeterColumnTitles,
         SmallUnits = s.MeterSmallUnits,
-        BarParts = s.MeterBarParts,
+        BarBuffs = s.BarBuffsOn,
+        BarHeals = s.BarHealsOn,
     };
 
     public bool Has(string id) => Shown.Contains(id);
@@ -215,7 +221,7 @@ public sealed class MeterLook
     }
 
     /// <summary>Everything that changes the lines, as one text: the lines are built again only when it changes.</summary>
-    public string Key => string.Join("|", Bar, Size, Font, TextScale.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), Titles, SmallUnits, BarParts,
+    public string Key => string.Join("|", Bar, Size, Font, TextScale.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), Titles, SmallUnits, BarBuffs, BarHeals,
         string.Join(",", Shown.OrderBy(c => c, StringComparer.Ordinal)));
 }
 
