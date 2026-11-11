@@ -14,7 +14,7 @@ namespace AionDPS.Ui;
 /// visible with an outline, takes clicks and can be dragged and scaled with the grip in its corner; place and size are remembered.
 /// The target comes from the game's network messages (the monster marked or hit), the level from the pet list of the login frame; nothing is read from the screen.
 /// </summary>
-public sealed class PetFarmWindow : Window, IOverlayPlace
+public sealed class PetFarmWindow : Window, IOverlayQuick
 {
     private const double MinScale = 0.6, MaxScale = 3.0;
 
@@ -30,6 +30,8 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
     public PetFarmWindow()
     {
         Title = "Aion DPS Pet Farming";
+        // its own gear and padlock in the corner (11 November 2026), as every overlay has them
+        _chrome = new OverlayChrome(this, this, ApplyClickThrough);
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;
@@ -47,7 +49,12 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
 
         var stack = new DockPanel { LastChildFill = true };
         stack.Children.Add(new Border { Child = _lines, ClipToBounds = true });
-        _panel = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 6, 11, 7), Child = stack, LayoutTransform = _scale, BorderThickness = new Thickness(1) };
+        var layered = new Grid();
+        layered.Children.Add(stack);
+        _chrome.Element.Margin = new Thickness(0, -4, -9, 0);
+        layered.Children.Add(_chrome.Element);
+        _panel = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 6, 11, 7), Child = layered, LayoutTransform = _scale, BorderThickness = new Thickness(1) };
+        _chrome.Frame = _panel;
         _panel.SetResourceReference(Border.BackgroundProperty, "Brush.OverlayBg");
         _panel.MouseLeftButtonDown += (_, e) =>
         {
@@ -154,6 +161,7 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
         scale = Math.Clamp(double.IsFinite(scale) ? scale : 1.0, MinScale, MaxScale);
         _scale.ScaleX = scale;
         _scale.ScaleY = scale;
+        _chrome.SetScale(scale);
     }
 
     public void ApplyOpacity(double opacity)
@@ -171,15 +179,49 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
         _edges.Show(!locked);
         _panel.Cursor = locked ? Cursors.Arrow : Cursors.SizeAll;
         _panel.SetResourceReference(Border.BorderBrushProperty, locked ? "Brush.OverlayBg" : "Brush.Accent");
-        var handle = new System.Windows.Interop.WindowInteropHelper(this).EnsureHandle();
+        _chrome.ShowLocked(locked);
+        new System.Windows.Interop.WindowInteropHelper(this).EnsureHandle();
+        ApplyClickThrough();
+        Render();
+    }
+
+    // locked it lets every click through, but while the cursor is on its gear or padlock (and never takes the keyboard from the game for them)
+    private void ApplyClickThrough()
+    {
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
         if (handle != IntPtr.Zero)
         {
             using var native = new NativeOverlay(this);
-            native.SetClickThrough(locked);
+            native.SetClickThrough(_locked && !_chrome.Input);
+            native.SetNoActivate(_locked && _chrome.Input);
         }
-
-        Render();
     }
+
+    // ---- its own buttons (OverlayChrome) ----
+    private readonly OverlayChrome _chrome;
+
+    public bool IsLocked => _locked;
+
+    public bool QuickOpen { get; set; }
+
+    public double QuickOpacity
+    {
+        get
+        {
+            MeterSettings s = MeterSettings.Load();
+            return Math.Clamp(s.OverlayOpacities.GetValueOrDefault(OverlayPlaces.PetInfo, s.OverlayOpacity), 0, 1);
+        }
+    }
+
+    public void SaveQuickOpacity(double opacity)
+    {
+        MeterSettings s = MeterSettings.Load();
+        s.OverlayOpacities[OverlayPlaces.PetInfo] = Math.Clamp(opacity, 0, 1);
+        s.Save();
+        ApplyOpacity(opacity);
+    }
+
+    public void QuickHide() => Hide();
 
     /// <summary>Hides the content (the window stays) while the game is not in front: the overlay is never on the desktop.</summary>
     public void ApplyGate(bool show)
@@ -207,6 +249,16 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
     internal static StackPanel BuildRow(string pet, string level)
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 1, 0, 1), HorizontalAlignment = HorizontalAlignment.Center };
+        // the pet's picture before its name (11 November 2026)
+        if (MonsterArt.PictureOfName(pet) is { } picture)
+        {
+            row.Children.Add(new Border
+            {
+                Width = 22, Height = 22, CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center, BorderThickness = new Thickness(1),
+                BorderBrush = new SolidColorBrush(Color.FromArgb(0x50, 0xFF, 0xFF, 0xFF)), Background = new ImageBrush(picture) { Stretch = Stretch.UniformToFill, AlignmentY = AlignmentY.Top },
+            });
+        }
+
         var name = new TextBlock { Text = pet, FontWeight = FontWeights.SemiBold, FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center };
         name.SetResourceReference(TextBlock.ForegroundProperty, "Brush.OverlayText");
         row.Children.Add(name);
@@ -245,15 +297,7 @@ public sealed class PetFarmWindow : Window, IOverlayPlace
     }
 
     // the click-through style is lost when WPF recreates the native window on a first Show
-    private void ApplyLockedStyle()
-    {
-        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-        if (handle != IntPtr.Zero)
-        {
-            using var native = new NativeOverlay(this);
-            native.SetClickThrough(_locked);
-        }
-    }
+    private void ApplyLockedStyle() => ApplyClickThrough();
 
     public void RaiseToFront()
     {

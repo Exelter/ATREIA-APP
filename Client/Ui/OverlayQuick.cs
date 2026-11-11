@@ -54,7 +54,7 @@ public static class OverlayQuick
     internal static void AskPage(string page) => PageAsked?.Invoke(page);
 
     /// <summary>Locks or unlocks the overlay (its padlock, or the switch of its settings).</summary>
-    internal static void SetLocked(MovableOverlay overlay, bool locked)
+    internal static void SetLocked(IOverlayQuick overlay, bool locked)
     {
         if (Of(overlay.Title) is not { } entry)
         {
@@ -77,11 +77,11 @@ public static class OverlayQuick
 public sealed class OverlayQuickWindow : Window
 {
     private static OverlayQuickWindow? _open;
-    private readonly MovableOverlay _overlay;
+    private readonly IOverlayQuick _overlay;
     private readonly System.Windows.Threading.DispatcherTimer _save = new() { Interval = TimeSpan.FromMilliseconds(450) };
-    private bool _dirtyScale, _dirtyOpacity;
+    private bool _dirtyScale;
 
-    public static void Open(MovableOverlay overlay)
+    public static void Open(IOverlayQuick overlay)
     {
         _open?.Close();
         _open = new OverlayQuickWindow(overlay);
@@ -91,7 +91,16 @@ public sealed class OverlayQuickWindow : Window
         _open.Activate();
     }
 
-    private OverlayQuickWindow(MovableOverlay overlay)
+    /// <summary>For the pictures: the panel of an overlay, never shown as a window.</summary>
+    internal static FrameworkElement PictureOf(IOverlayQuick overlay)
+    {
+        var window = new OverlayQuickWindow(overlay);
+        var panel = (FrameworkElement)window.Content;
+        window.Content = null;
+        return panel;
+    }
+
+    private OverlayQuickWindow(IOverlayQuick overlay)
     {
         _overlay = overlay;
         OverlayQuick.Entry? entry = OverlayQuick.Of(overlay.Title);
@@ -127,15 +136,7 @@ public sealed class OverlayQuickWindow : Window
         }));
 
         // how see-through its background is
-        double opacity = MeterSettings.Load().OverlayOpacities.TryGetValue(overlay.Title, out double o) ? o : 0.9;
-        stack.Children.Add(SliderRow("Background", 20, 100, Math.Round(opacity * 100), v => $"{v:0} %", v =>
-        {
-            MeterSettings s = MeterSettings.Load();
-            s.OverlayOpacities[overlay.Title] = v / 100;
-            s.Save();
-            _dirtyOpacity = true;
-            Later();
-        }));
+        stack.Children.Add(SliderRow("Background", 20, 100, Math.Round(overlay.QuickOpacity * 100), v => $"{v:0} %", v => overlay.SaveQuickOpacity(v / 100)));
 
         // locked or free
         var lockRow = new CheckBox
@@ -164,7 +165,7 @@ public sealed class OverlayQuickWindow : Window
                 MeterSettings s = MeterSettings.Load();
                 hide(s);
                 s.Save();
-                overlay.ShowOverlay(false);
+                overlay.QuickHide();
                 OverlayQuick.RaiseChanged(s);
                 Close();
             }));
@@ -225,16 +226,6 @@ public sealed class OverlayQuickWindow : Window
         {
             _dirtyScale = false;
             _overlay.PlaceScaleTo(_overlay.PlaceScale, save: true);
-        }
-
-        if (_dirtyOpacity)
-        {
-            _dirtyOpacity = false;
-            _overlay.ApplyStoredOpacity();
-            if (_overlay.Title is OverlayPlaces.EnemyCard or OverlayPlaces.EnemyRadar or OverlayPlaces.DeathRecap)
-            {
-                OverlaySkin.SolidBackground(_overlay, _overlay.Title);
-            }
         }
     }
 

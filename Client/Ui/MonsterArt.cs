@@ -63,6 +63,74 @@ public static class MonsterArt
         return path;
     }
 
+    private static readonly Dictionary<string, ImageSource?> NamePictures = new();
+    private static string? _namePicturesLanguage;
+
+    /// <summary>
+    /// The picture of a pet (its monster) or of a collectible, found by the name a row shows in the app's language (the pet list, the pet information over a
+    /// monster); null when there is none.
+    /// </summary>
+    public static ImageSource? PictureOfName(string name)
+    {
+        string language = LocalizationManager.Instance.Language;
+        lock (NamePictures)
+        {
+            if (_namePicturesLanguage != language)
+            {
+                NamePictures.Clear();
+                _namePicturesLanguage = language;
+            }
+
+            if (NamePictures.TryGetValue(name, out ImageSource? known))
+            {
+                return known;
+            }
+        }
+
+        string folded = Aion2Pets.Fold(name);
+        string? path = null;
+        foreach (int pet in Aion2Pets.AllPetIds)
+        {
+            if (Aion2Pets.PetName(pet, language) is { } petName && Aion2Pets.Fold(petName) == folded && Aion2Pets.PetIconPath(pet) is { } found)
+            {
+                path = found;
+                break;
+            }
+        }
+
+        if (path is null)
+        {
+            foreach (int pet in Aion2Pets.PetsOfMonsterName(name))
+            {
+                if (Aion2Pets.PetIconPath(pet) is { } found)
+                {
+                    path = found;
+                    break;
+                }
+            }
+        }
+
+        if (path is null)
+        {
+            foreach (var item in Aion2Gather.Items())
+            {
+                if (Aion2Pets.Fold(item.NameIn(language)) == folded && Aion2Gather.IconPath(item.Key) is { } found)
+                {
+                    path = found;
+                    break;
+                }
+            }
+        }
+
+        ImageSource? picture = OverlayPictures.Load(path, 48);
+        lock (NamePictures)
+        {
+            NamePictures[name] = picture;
+        }
+
+        return picture;
+    }
+
     /// <summary>The monster's picture as a rounded tile of <paramref name="size"/>; without one, its initial on a tile of a colour of its own.</summary>
     public static FrameworkElement Icon(int npcId, string name, double size = 32)
     {

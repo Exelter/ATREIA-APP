@@ -15,7 +15,7 @@ namespace AionDPS.Ui;
 /// header to place it, the corner grip scales it, both are remembered. One timer a second moves the countdowns; the rows are laid out again only when an
 /// event starts, ends or comes into the lookahead.
 /// </summary>
-public sealed class TimetableWindow : Window, IOverlayPlace
+public sealed class TimetableWindow : Window, IOverlayQuick
 {
     private TimeSpan _lookahead = TimeSpan.FromMinutes(60);
     private const double PanelWidth = 260;
@@ -43,6 +43,8 @@ public sealed class TimetableWindow : Window, IOverlayPlace
     public TimetableWindow()
     {
         Title = "Aion DPS Timetable";
+        // its own gear and padlock in the corner (11 November 2026), as every overlay has them
+        _chrome = new OverlayChrome(this, this, ApplyClickThrough) { Enabled = () => !_isView };
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;
@@ -94,13 +96,18 @@ public sealed class TimetableWindow : Window, IOverlayPlace
         var stack = new StackPanel();
         stack.Children.Add(header);
         stack.Children.Add(_body);
+        var layered = new Grid();
+        layered.Children.Add(stack);
+        _chrome.Element.Margin = new Thickness(0, -3, -4, 0);
+        layered.Children.Add(_chrome.Element);
         _panel = new Border
         {
-            Width = PanelWidth, CornerRadius = new CornerRadius(10), Padding = new Thickness(7, 6, 7, 6), Child = stack,
+            Width = PanelWidth, CornerRadius = new CornerRadius(10), Padding = new Thickness(7, 6, 7, 6), Child = layered,
             LayoutTransform = _scale, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
         };
         _panel.SetResourceReference(Border.BackgroundProperty, "Brush.OverlayBg");
         if (settings.TimetableWidth is > 0) { _panel.Width = settings.TimetableWidth.Value; }
+        _chrome.Frame = _panel;
         _edges = new OverlayEdgeResize(this, _panel, () => _scale.ScaleX, () => { }, SavePosition, SetScale, OverlayEdgeMode.Width);
         Content = _edges.Wrap(_panel);
         ApplyLocked(settings.TimetableLocked);
@@ -146,7 +153,8 @@ public sealed class TimetableWindow : Window, IOverlayPlace
     public void ApplyLocked(bool locked)
     {
         _locked = locked;
-        _close.Visibility = locked ? Visibility.Collapsed : Visibility.Visible;
+        _close.Visibility = Visibility.Collapsed; // the gear's panel turns it off now (its own close sat under the gear)
+        _chrome.ShowLocked(locked);
         _edges.Show(!locked);
         _header.Cursor = locked ? Cursors.Arrow : Cursors.SizeAll;
         _panel.BorderThickness = new Thickness(1);
@@ -214,9 +222,36 @@ public sealed class TimetableWindow : Window, IOverlayPlace
         if (handle != IntPtr.Zero)
         {
             using var native = new NativeOverlay(this);
-            native.SetClickThrough(_locked);
+            native.SetClickThrough(_locked && !_chrome.Input);
+            native.SetNoActivate(_locked && _chrome.Input); // a click on its buttons never takes the keyboard from the game
         }
     }
+
+    // ---- its own buttons (OverlayChrome) ----
+    private readonly OverlayChrome _chrome;
+
+    public bool IsLocked => _locked;
+
+    public bool QuickOpen { get; set; }
+
+    public double QuickOpacity
+    {
+        get
+        {
+            MeterSettings s = MeterSettings.Load();
+            return Math.Clamp(s.TimetableOpacity ?? s.OverlayOpacity, 0, 1);
+        }
+    }
+
+    public void SaveQuickOpacity(double opacity)
+    {
+        MeterSettings s = MeterSettings.Load();
+        s.TimetableOpacity = Math.Clamp(opacity, 0, 1);
+        s.Save();
+        ApplyOpacity(s.TimetableOpacity.Value);
+    }
+
+    public void QuickHide() => Hide();
 
     /// <summary>How many minutes ahead an event is listed as "starts within ..." (Settings, 0 to 60; 0 lists nothing as "about to start").</summary>
     public void ApplyLookahead(int minutes)
@@ -251,6 +286,7 @@ public sealed class TimetableWindow : Window, IOverlayPlace
         scale = Math.Clamp(double.IsFinite(scale) ? scale : 1.0, MinScale, MaxScale);
         _scale.ScaleX = scale;
         _scale.ScaleY = scale;
+        _chrome.SetScale(scale);
     }
 
     private void SavePosition()

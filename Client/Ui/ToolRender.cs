@@ -158,6 +158,24 @@ public static class ToolRender
                 break;
             }
 
+            case "overlay-quick":
+            {
+                // an overlay with the mouse on it (its gear and its padlock in the corner) and the settings its gear opens, beside it
+                var fps = new FpsOverlayWindow();
+                fps.Render(143, 97, FpsMeter.State.Running);
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.Add(new Border { Child = fps.TakeFrameForPicture(), VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 10, 0, 0) });
+                row.Children.Add(new Border { Child = OverlayQuickWindow.PictureOf(fps), VerticalAlignment = VerticalAlignment.Top });
+                shown = new Border
+                {
+                    Padding = new Thickness(24), Background = new LinearGradientBrush(Color.FromRgb(0x3a, 0x4a, 0x3a), Color.FromRgb(0x24, 0x30, 0x40), 45),
+                    Child = new Border { Child = row, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top },
+                };
+                width = 0;
+                height = 0;
+                break;
+            }
+
             case "overlay-editor":
             {
                 // the overlay editor over the game (10 November 2026): a few overlays on, one key read, on a busy backdrop that shows the glass
