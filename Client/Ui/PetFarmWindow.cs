@@ -387,8 +387,14 @@ public sealed class PetFarmController : IDisposable
         var loc = LocalizationManager.Instance;
         string lang = loc.Language;
         var result = new List<(string, string)>();
+        bool hideMaxed = MeterSettings.Load().PetFarmHideMaxed; // asked to, a pet at its top level is left out (11 November 2026, satahn)
         foreach (int petId in pets.OrderBy(p => p))
         {
+            if (hideMaxed && states.FirstOrDefault(s => s.PetId == petId) is { } top && top.Level >= Aion2Pets.TopLevel) // a saved level is never above the real one
+            {
+                continue;
+            }
+
             string name = Aion2Pets.PetName(petId, lang) ?? $"#{petId}";
             string level;
             if (states.Count == 0)

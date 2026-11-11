@@ -29,6 +29,20 @@
           "title": "Full size for the app and its windows",
           "text": "The app and its windows (Timers, the pages opened in a window of their own, History ...) have a full size button beside minimise, and a double click on the title bar does the same. Full size keeps the taskbar in sight.",
           "example": "Open the Timers window, press the square beside the minus: it fills the screen."
+        },
+        {
+          "kind": "new",
+          "area": "Overlays",
+          "title": "Timers and world bosses can step aside in dungeons",
+          "text": "The timers overlay and the world boss overlay each have a new switch, \"Hide in dungeons and raids\" (on the Timers page and the World bosses page). With it on, they disappear when you enter a dungeon or raid and come back when you leave. Off by default, so nothing changes until you switch it on.",
+          "example": "Running Fire Temple? The event countdowns and the boss list stay out of your way."
+        },
+        {
+          "kind": "new",
+          "area": "Pets",
+          "title": "Leave maxed pets out of the pet information",
+          "text": "The pet information at the monster has a new switch, \"Leave out pets already at their top level\" (Pets page). With it on, a pet your character has maxed is no longer listed, so only the ones still worth farming show.",
+          "example": "Intermediate Fire Spirit at Level 3 (max) no longer shows up while you farm Fire Temple."
         }
       ]
     },

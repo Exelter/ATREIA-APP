@@ -87,7 +87,9 @@ public partial class SettingsWindow : Window
         PetListOpacity.Fraction = settings.OverlayOpacities.GetValueOrDefault(OverlayPlaces.PetList, 0.6);
         PetInfoOpacity.Fraction = settings.OverlayOpacities.GetValueOrDefault(OverlayPlaces.PetInfo, settings.OverlayOpacity);
         PetInfoLockedBox.IsChecked = !settings.PetInfoLocked;
+        PetFarmHideMaxedBox.IsChecked = settings.PetFarmHideMaxed;
         TimetableLockedBox.IsChecked = !settings.TimetableLocked;
+        TimetableHideInDungeonsBox.IsChecked = settings.TimetableHideInDungeons;
         InitPetMap(settings);
         InitBossPage(settings);
         SetHotkeyBox(HotkeyTimetableBox, HotkeyBinding.Parse(settings.HotkeyTimetable).ToString());
@@ -789,6 +791,7 @@ public partial class SettingsWindow : Window
         {
             s.ShowPetFarm = ShowPetFarmBox.IsChecked ?? false;
             s.PetInfoLocked = !(PetInfoLockedBox.IsChecked ?? false);
+            s.PetFarmHideMaxed = PetFarmHideMaxedBox.IsChecked ?? false;
             s.OverlayOpacities[OverlayPlaces.PetInfo] = PetInfoOpacity.Fraction;
             s.ShowPetArrows = ShowPetArrowsBox.IsChecked ?? true;
             s.PetMapPets = _petPicked.OrderBy(i => i).ToList();
@@ -1063,7 +1066,9 @@ public partial class SettingsWindow : Window
         _settings.OverlayOpacities[OverlayPlaces.PetList] = PetListOpacity.Fraction;
         _settings.OverlayOpacities[OverlayPlaces.PetInfo] = PetInfoOpacity.Fraction;
         _settings.PetInfoLocked = !(PetInfoLockedBox.IsChecked ?? false);
+        _settings.PetFarmHideMaxed = PetFarmHideMaxedBox.IsChecked ?? false;
         _settings.TimetableLocked = !(TimetableLockedBox.IsChecked ?? false);
+        _settings.TimetableHideInDungeons = TimetableHideInDungeonsBox.IsChecked ?? false;
         _settings.ShowPetMap = ShowPetMapBox.IsChecked ?? false;
         _settings.PetMapRadius = (int)PetMapRadiusSlider.Value;
         _settings.PetMapOpacity = PetMapOpacity.Fraction;
@@ -1127,6 +1132,7 @@ public partial class SettingsWindow : Window
         _settings.TimetableNotify = TimetableNotifyBox.IsChecked ?? false;
         _settings.ShowBossOverlay = ShowBossOverlayBox.IsChecked ?? false;
         _settings.BossOverlayLocked = !(BossOverlayLockedBox.IsChecked ?? false);
+        _settings.BossOverlayHideInDungeons = BossHideInDungeonsBox.IsChecked ?? false;
         _settings.BossNotify = BossNotifyBox.IsChecked ?? false;
         _settings.BossAlerts = _bossAlerts.ToDictionary(kv => kv.Key, kv => kv.Value);
         _settings.TimetableSoundMinutes = (int)TimetableSoundSlider.Value;
@@ -1266,6 +1272,7 @@ public partial class SettingsWindow : Window
         _bossAlerts = settings.BossAlerts.ToDictionary(kv => kv.Key, kv => new BossAlertSetting { Enabled = kv.Value.Enabled, Sound = kv.Value.Sound, Volume = kv.Value.Volume });
         ShowBossOverlayBox.IsChecked = settings.ShowBossOverlay;
         BossOverlayLockedBox.IsChecked = !settings.BossOverlayLocked;
+        BossHideInDungeonsBox.IsChecked = settings.BossOverlayHideInDungeons;
         BossNotifyBox.IsChecked = settings.BossNotify;
         BuildBossPage();
         _bossTimer.Tick += (_, _) => RefreshBossTimes();

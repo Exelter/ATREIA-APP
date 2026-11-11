@@ -3306,6 +3306,30 @@
     "ja": "レベル {0}",
     "ko": "레벨 {0}"
   },
+  "Settings.HideInDungeons": {
+    "en": "Hide in dungeons and raids",
+    "de": "In Dungeons und Raids ausblenden",
+    "fr": "Masquer dans les donjons et les raids",
+    "es": "Ocultar en mazmorras y bandas",
+    "ru": "Скрывать в подземельях и рейдах",
+    "zh": "在副本和团队副本中隐藏",
+    "zh-TW": "在副本與團隊副本中隱藏",
+    "pt": "Ocultar em masmorras e raides",
+    "ja": "ダンジョンとレイドでは非表示",
+    "ko": "던전과 레이드에서는 숨기기"
+  },
+  "Settings.PetInfo.HideMaxed": {
+    "en": "Leave out pets already at their top level",
+    "de": "Pets auf Höchststufe ausblenden",
+    "fr": "Masquer les familiers déjà au niveau maximum",
+    "es": "Ocultar las mascotas que ya están al nivel máximo",
+    "ru": "Скрывать питомцев максимального уровня",
+    "zh": "隐藏已满级的宠物",
+    "zh-TW": "隱藏已滿級的寵物",
+    "pt": "Ocultar mascotes já no nível máximo",
+    "ja": "最大レベルのペットを表示しない",
+    "ko": "최대 레벨인 펫 숨기기"
+  },
   "PetFarm.Max": {
     "en": "Level {0} (max)",
     "de": "Stufe {0} (max.)",

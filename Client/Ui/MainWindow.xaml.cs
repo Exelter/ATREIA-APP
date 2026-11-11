@@ -8154,6 +8154,9 @@ public partial class MainWindow : Window
         _characterWindow.Show();
     }
 
+    /// <summary>The character is in a dungeon or raid now (set by the overlay gate, a few times a second): the world boss overlay steps aside there when asked.</summary>
+    internal static bool InDungeonNow { get; private set; }
+
     private void OnTitleBarMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 2 && _shellBuilt)
@@ -8398,8 +8401,11 @@ public partial class MainWindow : Window
         }
 
         var s = _gateSettings;
-        // locked, the timetable steps aside like the other overlays: not while the game is behind another program or a game menu is open
-        _timetable?.ApplyGate(GameWindow.OverlayMayShow());
+        // in a dungeon or raid (the zone, or the monsters around when the zone was missed): the overlays that may step aside there (11 November 2026)
+        InDungeonNow = _liveSource?.Entities is Aion2EntityDirectory here && Aion2Zones.IsPveHere(here.ZoneId, here.LiveMobs);
+        // locked, the timetable steps aside like the other overlays: not while the game is behind another program or a game menu is open, nor in a
+        // dungeon when the player asked for that
+        _timetable?.ApplyGate(GameWindow.OverlayMayShow() && !(s.TimetableHideInDungeons && InDungeonNow));
         _petFarm?.ApplyGate(GameWindow.OverlayMayShow()); // like every overlay: not while one of the game's windows is open
         GateOverlayMenu(s);
         if (_hotkeyOverlay is null)
