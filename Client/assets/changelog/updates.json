@@ -6,6 +6,30 @@
   ],
   "versions": [
     {
+      "version": "2.0.4",
+      "date": "2026-11-11",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Overlays",
+          "title": "Closing an overlay's settings no longer closes the app",
+          "text": "Closing the settings that an overlay's gear opens could close the whole app (it happened most with the Abyss radar). It closes cleanly now, by its X, by Esc or by clicking somewhere else."
+        },
+        {
+          "kind": "fixed",
+          "area": "Abyss",
+          "title": "The PvP overlays stay out of dungeons and raids",
+          "text": "The enemy card, the Abyss radar and the death recap no longer come up in dungeons and raids. They still work in the Abyss, the open world and the arenas."
+        },
+        {
+          "kind": "fixed",
+          "area": "Skill Assist",
+          "title": "Skills on your skill bar no longer vanish from the cooldowns",
+          "text": "Some skills, like Focused Block, disappeared from the cooldowns after their first use and left a hole among your tiles. A skill on your skill bar now stays where you put it. Only basic attacks and chain skills are left out, and you can still hide any skill yourself in the Skill Assist."
+        }
+      ]
+    },
+    {
       "version": "2.0.3",
       "date": "2026-11-11",
       "items": [

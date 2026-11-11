@@ -104,8 +104,16 @@ public sealed class AssistPanel : StackPanel
     /// a chain skill or a passive.
     /// </summary>
     public static bool Listed(int skillId, IReadOnlyList<int>? bar = null) =>
-        skillId >= FirstSkillId && !Aion2Artwork.IsPassive(skillId) && Aion2Cooldowns.NotWorth(skillId) is null
+        skillId >= FirstSkillId && !Aion2Artwork.IsPassive(skillId) && (Aion2Cooldowns.NotWorth(skillId) is null || StaysOnBar(skillId, bar))
         && ((bar is not null && bar.Contains(skillId)) || Aion2Cooldowns.IsKnown(skillId));
+
+    /// <summary>
+    /// A skill on the skill bar stays on the screen unless it surely has no cooldown (a basic attack, a filler) or is a chain skill: what its uses taught or a
+    /// specialization's entry in the client's table no longer takes it off (11 November 2026, a player: "block skill and probably more disappears still" -
+    /// it left a hole among the tiles placed around it). A ready tile then; the Skill Assist's box still hides it for good.
+    /// </summary>
+    private static bool StaysOnBar(int skillId, IReadOnlyList<int>? bar) =>
+        bar is not null && bar.Contains(skillId) && Aion2Cooldowns.NotWorth(skillId) == NotWorthListing.NoCooldown && !Aion2Cooldowns.SurelyNoCooldown(skillId);
 
     /// <summary>The skills said out loud when they are back (see <see cref="MeterSettings.AssistVoiceSkills"/>).</summary>
     public HashSet<int> Voiced { get; set; } = new();
