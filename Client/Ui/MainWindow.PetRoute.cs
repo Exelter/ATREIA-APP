@@ -119,10 +119,12 @@ public partial class MainWindow
         shape.Children.Add(Check(loc["PetMap.CompassFade"], now.PetMapCompassFade, (s, v) => s.PetMapCompassFade = v, loc["PetMap.CompassFadeTip"]));
         display.Children.Add(shape);
 
-        // the pets this map alone has: for a rift into the other side's land (11 November 2026)
+        // the pets this map alone has, for the player: for a rift into the other side's land (11 November 2026; 12 November: counted against the player's
+        // own maps and the Abyss, not the other side's second map)
         var onlyHere = new WrapPanel();
         onlyHere.Children.Add(Check("Only this map's own pets (for a rift)", now.PetMapOnlyHere, (s, v) => s.PetMapOnlyHere = v,
-            "The map, the list and the route show only the pets you can get on this map and on no other open map: what to farm while a rift is open"));
+            "The map, the list and the route show only the pets you can't get on your own side's other maps or in the Abyss. In a rift: what the other "
+            + "side's land has that you can't farm at home, and the route starts where you are and walks"));
         display.Children.Add(onlyHere);
 
         // no full map any more: the map itself zooms out to the whole map (mouse wheel or its +/- buttons; PetMapZoom)

@@ -23,7 +23,7 @@ public static class SelfCheckBlackCloud
         // belongs to and no place lists (the 13 of the first list) are all among the chests-only and special ones
         var all = Aion2MerchantPets.All;
         int Count(MerchantPetKind kind) => all.Count(p => p.Kind == kind);
-        int[] computed = { 1025, 1032, 1057, 1102, 1111, 1112, 1122, 1177, 1182, 1204, 1240, 1278, 1299 };
+        int[] computed = { 1021, 1032, 1057, 1102, 1111, 1112, 1122, 1177, 1182, 1204, 1240, 1278, 1299 };
         bool onlyOk = all.Count == 51 && Count(MerchantPetKind.FieldBoss) == 5 && Count(MerchantPetKind.Dungeon) == 5 && Count(MerchantPetKind.Chests) == 35
             && Count(MerchantPetKind.Special) == 6 && all.Select(p => p.PetId).Distinct().Count() == 51
             && Aion2MerchantPets.Of(1206)?.WhereIn("en") == "Divine Ansas · Verteron" && Aion2MerchantPets.Of(1156)?.WhereIn("en") == "Bodyguard Teegant · Verteron"

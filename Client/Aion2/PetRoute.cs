@@ -171,14 +171,15 @@ public static class PetRoute
     /// <summary>
     /// Plans the route of a map. <paramref name="faction"/>: "Elyos" or "Asmodian" (which camp it starts at). <paramref name="needed"/>: the pets still
     /// to farm. <paramref name="from"/>: where the player stands (metres and the area's name); null starts at the camp. <paramref name="pin"/>: the stop
-    /// being farmed, which stays the first while it still has pets to farm.
+    /// being farmed, which stays the first while it still has pets to farm. <paramref name="teleports"/> false: a route that walks, with no Kibelisk hops
+    /// (the other side's land in a rift: its Kibelisks are not the player's).
     /// </summary>
     public static PetRoutePlan? Plan(string mapKey, string? faction, IReadOnlySet<string> genera, Func<int, bool> needed,
-        (double X, double Z, string Zone)? from = null, PetRouteStop? pin = null) => PlanWith(Load(), mapKey, faction, genera, needed, from, pin);
+        (double X, double Z, string Zone)? from = null, PetRouteStop? pin = null, bool teleports = true) => PlanWith(Load(), mapKey, faction, genera, needed, from, pin, teleports);
 
     /// <summary>The same with the route data of a file (the checks).</summary>
     internal static PetRoutePlan? PlanFrom(string path, string mapKey, string? faction, IReadOnlySet<string> genera, Func<int, bool> needed, (double X, double Z, string Zone)? from = null) =>
-        PlanWith(Load(path), mapKey, faction, genera, needed, from, null);
+        PlanWith(Load(path), mapKey, faction, genera, needed, from, null, true);
 
     /// <summary>A stop the planner chose: where (metres), how far its spots reach, the island (empty: the mainland), its pets (by English name) and the spot of each, the area.</summary>
     private sealed record ChosenStop(double X, double Z, double R, string Island, List<int> Pets, Dictionary<int, PetRouteSpot> At, string Zone);
@@ -721,7 +722,7 @@ public static class PetRoute
     private static double Dist((double X, double Z)? a, (double X, double Z) b) => a is { } p ? Dist(p, b) : double.NaN;
 
     private static PetRoutePlan? PlanWith(Data data, string mapKey, string? faction, IReadOnlySet<string> genera, Func<int, bool> needed,
-        (double X, double Z, string Zone)? from, PetRouteStop? pin)
+        (double X, double Z, string Zone)? from, PetRouteStop? pin, bool teleports)
     {
         if (!data.Maps.TryGetValue(mapKey, out MapData? m))
         {
@@ -755,9 +756,10 @@ public static class PetRoute
 
         var left = names.Select(c => c.Id).Where(id => !pinned.Contains(id)).ToList();
 
-        // the Kibelisks one can teleport to (home maps only; not the island or Sky Island ones)
+        // the Kibelisks one can teleport to (home maps only; not the island or Sky Island ones; none on the other side's land)
         var islandKibs = m.Islands.Values.Select(i => i.Kibelisk).Where(k => k is not null).ToHashSet();
-        var kibs = m.Site == "reshanta" ? new List<Teleport>() : m.Tps.Where(t => t.Type == "t" && !islandKibs.Contains(t.Name) && !SkyIsland.IsMatch(t.Name)).ToList();
+        var kibs = !teleports || m.Site == "reshanta" ? new List<Teleport>()
+            : m.Tps.Where(t => t.Type == "t" && !islandKibs.Contains(t.Name) && !SkyIsland.IsMatch(t.Name)).ToList();
         (Teleport? T, double D) NearTp((double X, double Z) p)
         {
             Teleport? b = null;
