@@ -755,7 +755,7 @@ public partial class MainWindow
             IEnumerable<int> pets;
             if (_draft.PetMapAuto)
             {
-                var max = Aion2.Aion2CharacterStore.Load(Aion2.Aion2CharacterStore.DefaultPath)?.Pets.Where(p => p.Level >= Aion2.Protocol.Aion2Pets.TopLevel).Select(p => p.Id).ToHashSet()
+                var max = Aion2.Aion2CharacterStore.Load(Aion2.Aion2CharacterStore.DefaultPath)?.Pets.Where(p => Aion2.Protocol.Aion2Pets.IsFarmed(p.Level, p.Progress)).Select(p => p.Id).ToHashSet()
                     ?? new HashSet<int>();
                 pets = Aion2.Protocol.Aion2Pets.AllPetIds.Where(id => !max.Contains(id));
             }

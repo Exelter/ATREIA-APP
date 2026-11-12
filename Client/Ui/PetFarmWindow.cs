@@ -390,7 +390,7 @@ public sealed class PetFarmController : IDisposable
         bool hideMaxed = MeterSettings.Load().PetFarmHideMaxed; // asked to, a pet at its top level is left out (11 November 2026, satahn)
         foreach (int petId in pets.OrderBy(p => p))
         {
-            if (hideMaxed && states.FirstOrDefault(s => s.PetId == petId) is { } top && top.Level >= Aion2Pets.TopLevel) // a saved level is never above the real one
+            if (hideMaxed && states.FirstOrDefault(s => s.PetId == petId) is { } top && Aion2Pets.IsFarmed(top)) // a saved level is never above the real one
             {
                 continue;
             }

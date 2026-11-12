@@ -28,7 +28,7 @@ public sealed class PetMapController : IDisposable
     private MeterSettings _settings = MeterSettings.Load();
     private DateTime _settingsAt = DateTime.UtcNow;
     private string? _faction = Aion2Gather.OwnFaction();
-    private HashSet<int> _savedMax = SavedMaxPets();
+    private HashSet<int> _savedFarmed = SavedFarmedPets();
 
     public PetMapController(Func<Aion2EntityDirectory?> directory)
     {
@@ -570,9 +570,8 @@ public sealed class PetMapController : IDisposable
         var near = new Dictionary<int, double>();
         if (map is not null && position is { } me && !PositionIsStale(directory, me))
         {
-            var states = directory.LocalPetStates;
-            var maxPets = states.Count > 0 ? states.Where(st => st.Level >= Aion2Pets.TopLevel).Select(st => st.PetId).ToHashSet() : _savedMax;
-            var wanted = (settings.PetMapAuto ? Aion2Pets.AllPetIds : settings.PetMapPets).Where(id => !maxPets.Contains(id) && settings.PetAlertFor(id)).ToHashSet();
+            var farmed = FarmedPets(directory.LocalPetStates, _savedFarmed);
+            var wanted = (settings.PetMapAuto ? Aion2Pets.AllPetIds : settings.PetMapPets).Where(id => !farmed.Contains(id) && settings.PetAlertFor(id)).ToHashSet();
             if (settings.PetMapOnlyHere && !map.Instance)
             {
                 wanted.IntersectWith(Aion2Maps.OnlyOn(map, _faction)); // the pets the player can't get on another map of their own (a rift)
@@ -801,7 +800,7 @@ public sealed class PetMapController : IDisposable
         {
             _settings = MeterSettings.Load(); // the settings file is read once a second, not every tick
             _faction = Aion2Gather.OwnFaction();
-            _savedMax = SavedMaxPets();
+            _savedFarmed = SavedFarmedPets();
             _settingsAt = DateTime.UtcNow;
         }
 
@@ -853,18 +852,17 @@ public sealed class PetMapController : IDisposable
             }
         }
 
-        // The chosen pets (those at the top level need no farming)
+        // The chosen pets: those already farmed (at the top level, or with every soul they need) are on neither the map, the list nor the route
         var states = directory?.LocalPetStates ?? Array.Empty<Aion2PetState>();
         _states = states;
-        // before the game's pet list has arrived (the meter started after the login) the levels saved at the last login stand in
-        var maxPets = states.Count > 0 ? states.Where(s => s.Level >= Aion2Pets.TopLevel).Select(s => s.PetId).ToHashSet() : _savedMax;
+        var farmed = FarmedPets(states, _savedFarmed);
         // every pet still needed (the collection decides), or the pets picked by hand
         bool auto = settings.PetMapAuto;
         // some genera picked (not all four): the map and the list show the pets of those only, as the route does (Cogni and Natura picked: no Varian gnat)
         List<string>? genusList = settings.PetRouteGenera;
         HashSet<string>? genusPick = genusList is { Count: > 0 } && PetRoute.Genera.Any(genusName => !genusList.Contains(genusName)) ? genusList.ToHashSet() : null;
         var chosen = (auto ? Aion2Pets.AllPetIds : settings.PetMapPets)
-            .Where(id => !maxPets.Contains(id) && (genusPick is null || PetRoute.GenusOf(id) is { } petGenus && genusPick.Contains(petGenus))).ToHashSet();
+            .Where(id => !farmed.Contains(id) && (genusPick is null || PetRoute.GenusOf(id) is { } petGenus && genusPick.Contains(petGenus))).ToHashSet();
         if (settings.PetMapOnlyHere && _current is { Instance: false } onMap)
         {
             chosen.IntersectWith(Aion2Maps.OnlyOn(onMap, _faction)); // the pets the player can't get on another map of their own (a rift)
@@ -872,7 +870,7 @@ public sealed class PetMapController : IDisposable
 
         if (_petMapOverride)
         {
-            chosen.UnionWith(_petsNearShown.Where(id => !maxPets.Contains(id))); // the map came up for these: it shows them, whatever genera it is set to
+            chosen.UnionWith(_petsNearShown.Where(id => !farmed.Contains(id))); // the map came up for these: it shows them, whatever genera it is set to
         }
         // only what the player's own faction can use (an earlier pick of the other side's plants no longer counts)
         var gatherKinds = Aion2Gather.Items().Where(i => settings.PetMapGatherItems.Contains(i.Key) && i.IsFor(_faction)).Select(i => i.Key).ToHashSet();
@@ -955,7 +953,7 @@ public sealed class PetMapController : IDisposable
         }
 
         ShowLiveGather(gatherKinds, known, tx, ty);
-        UpdateRoute(settings, maxPets, known, tx, ty);
+        UpdateRoute(settings, farmed, known, tx, ty);
         StepZoom();
         bool zoomedOut = _zoomShown >= RouteAllZoom;
         // close up the next six stops of the route, zoomed out further on (up to twelve)
@@ -1091,7 +1089,7 @@ public sealed class PetMapController : IDisposable
             var (headTitle, headDetail) = InMenu || !settings.PetRouteInList ? (null, null) : RouteHead(settings, known, tx, ty);
             // until the game sends its pet list (at the next map change) the levels are the ones kept from the last login: a pet finished since then still
             // counts as needed and the route may lead to it (11 November 2026, a player: "this mob i got max but still doesn't count ... why it sending me here")
-            if (!InMenu && directory is { LocalPetStatesLive: false } && (states.Count > 0 || _savedMax.Count > 0))
+            if (!InMenu && directory is { LocalPetStatesLive: false } && (states.Count > 0 || _savedFarmed.Count > 0))
             {
                 const string old = "Pet levels from your last login: change map or teleport once to update them";
                 (headTitle, headDetail) = headTitle is null ? ("Pet levels may be out of date", old) : (headTitle, string.IsNullOrEmpty(headDetail) ? old : headDetail + "\n" + old);
@@ -1166,11 +1164,11 @@ public sealed class PetMapController : IDisposable
     private string RouteFaction() => _faction ?? (_current?.Key is "verteron" or "eltnen" ? "Elyos" : "Asmodian");
 
     /// <summary>
-    /// Once a second: the route of the map the player is on, for the pets still needed (not at the top level, of the genera picked), planned as the
+    /// Once a second: the route of the map the player is on, for the pets still needed (not farmed yet, of the genera picked), planned as the
     /// website plans it. The first stop stays the stop being farmed while it has pets left (as on the site, a stop being farmed stays step 1); when its
     /// pets are done (the game's collection says so, by itself) the route is planned again from where the player is, or from that stop.
     /// </summary>
-    private void UpdateRoute(MeterSettings settings, HashSet<int> maxPets, bool known, float tx, float ty)
+    private void UpdateRoute(MeterSettings settings, HashSet<int> farmed, bool known, float tx, float ty)
     {
         if (!settings.PetRouteOn || _current is null || !PetRoute.Covers(_current.Key))
         {
@@ -1188,7 +1186,7 @@ public sealed class PetMapController : IDisposable
         _routeAt = DateTime.UtcNow;
         var genera = (settings.PetRouteGenera is { Count: > 0 } picked ? picked : PetRoute.Genera.ToList()).ToHashSet();
         IReadOnlySet<int>? onlyHere = settings.PetMapOnlyHere && !_current.Instance ? Aion2Maps.OnlyOn(_current, _faction) : null;
-        bool Needed(int id) => !maxPets.Contains(id) && !_skipped.Contains(id) && (onlyHere is null || onlyHere.Contains(id));
+        bool Needed(int id) => !farmed.Contains(id) && !_skipped.Contains(id) && (onlyHere is null || onlyHere.Contains(id));
         var needed = Aion2Pets.AllPetIds.Where(id => PetRoute.GenusOf(id) is { } g && genera.Contains(g) && Needed(id)).OrderBy(id => id);
         string faction = RouteFaction();
         // the other side's land (a rift, 12 November 2026): its Kibelisks are not the player's and its camp is not where the player came in, so the route
@@ -1322,8 +1320,13 @@ public sealed class PetMapController : IDisposable
         return rows.OrderBy(r => r.Rank).ThenBy(r => r.Level).Select(r => r.Row).ToList();
     }
 
-    private static HashSet<int> SavedMaxPets() =>
-        (Aion2CharacterStore.Load(Aion2CharacterStore.DefaultPath)?.Pets ?? new()).Where(p => p.Level >= Aion2Pets.TopLevel).Select(p => p.Id).ToHashSet();
+    /// <summary>The pets already farmed (<see cref="Aion2Pets.IsFarmed(Aion2PetState)"/>) as the game's list says, kept up to date by its messages of every
+    /// soul and level; before that list has arrived (the meter started after the login) the levels saved at the last login stand in.</summary>
+    internal static HashSet<int> FarmedPets(IReadOnlyList<Aion2PetState> states, HashSet<int> saved) =>
+        states.Count > 0 ? states.Where(s => Aion2Pets.IsFarmed(s)).Select(s => s.PetId).ToHashSet() : saved;
+
+    private static HashSet<int> SavedFarmedPets() =>
+        (Aion2CharacterStore.Load(Aion2CharacterStore.DefaultPath)?.Pets ?? new()).Where(p => Aion2Pets.IsFarmed(p.Level, p.Progress)).Select(p => p.Id).ToHashSet();
 
     private (float X, float Y)? _lastKnown;
     private bool _lastKnownFlag;

@@ -59,6 +59,7 @@ public static class SelfCheckPetRoute
         ok &= PetsOfTheSpiders();
         ok &= OwnPetsOfAMap();
         ok &= RouteInARift();
+        ok &= FarmedPetsLeave();
         Console.WriteLine(ok ? "  -> pet route: ok" : "  -> pet route: FAIL");
         return ok;
     }
@@ -209,6 +210,51 @@ public static class SelfCheckPetRoute
             && !AionDPS.Aion2.Protocol.Aion2Maps.OnlyOn(altgard, "Elyos").Contains(1025);
         Console.WriteLine($"  -> this map's own pets: {rift.Count} for an Asmodian in Verteron (Giant Bee among them), {any.Count} against every map; "
             + $"the Mutated Aberrant Odyle Spider in neither: {(good ? "ok" : "FAIL")}");
+        return good;
+    }
+
+    /// <summary>
+    /// A pet already farmed leaves the pet map, its list and the route (12 November 2026, the owner: "make sure the pet already farmed disappears from the
+    /// map / does not show in the pet list"): with the game's message of its top level, and as well with its last soul alone (level 2 at 75 / 75) or a
+    /// level 1 whose progress counted on to 100 (its level messages missed); a pet a soul short stays. The map, the list and the route take the same set
+    /// (PetMapController.FarmedPets): the game's list kept up to date by its messages, else the levels saved at the last login.
+    /// </summary>
+    private static bool FarmedPetsLeave()
+    {
+        var ids = PetRoute.PetsOn("altgard").Where(id => PetRoute.GenusOf(id) is { } g && PetRoute.Genera.Contains(g)).Distinct().Take(6).ToList();
+        if (ids.Count < 6)
+        {
+            Console.WriteLine("  -> a pet already farmed leaves the map, the list and the route: FAIL (too few pets in Altgard)");
+            return false;
+        }
+
+        int lastSoul = ids[0], levelMessage = ids[1], countedOn = ids[2], oneShort = ids[3], farFrom = ids[4], atTop = ids[5];
+        var directory = new AionDPS.Aion2.Aion2EntityDirectory();
+        directory.SetLocalPetStates(new List<AionDPS.Aion2.Protocol.Aion2PetState>
+        {
+            new(lastSoul, 2, 74), new(levelMessage, 2, 40), new(countedOn, 1, 99), new(oneShort, 2, 73), new(farFrom, 1, 3), new(atTop, 3, 0),
+        });
+        var before = AionDPS.Ui.PetMapController.FarmedPets(directory.LocalPetStates, new HashSet<int>());
+        directory.NotePetProgress(lastSoul, 1); // its last soul: 75 / 75, before (or without) the game's message of level 3
+        directory.NotePetLevel(levelMessage, 3);
+        directory.NotePetProgress(countedOn, 1); // level 1, counted on past 25 to 100: both levels' souls
+        directory.NotePetProgress(oneShort, 1); // 74 / 75: one soul short
+        directory.NotePetProgress(farFrom, 2);
+        var after = AionDPS.Ui.PetMapController.FarmedPets(directory.LocalPetStates, new HashSet<int>());
+        var gone = new HashSet<int> { lastSoul, levelMessage, countedOn, atTop };
+        bool states = before.SetEquals(new[] { atTop }) && after.SetEquals(gone);
+        // the route plans none of them, and the pets still needed all
+        PetRoutePlan? plan = PetRoute.Plan("altgard", "Asmodian", PetRoute.Genera.ToHashSet(), id => !after.Contains(id));
+        var onRoute = plan?.Stops.SelectMany(st => st.Pets).ToHashSet() ?? new HashSet<int>();
+        bool route = plan is not null && !onRoute.Overlaps(gone) && onRoute.Contains(oneShort) && onRoute.Contains(farFrom);
+        // before the game's list: the levels saved at the last login decide (a saved 75 / 75 counts as farmed)
+        bool saved = AionDPS.Ui.PetMapController.FarmedPets(Array.Empty<AionDPS.Aion2.Protocol.Aion2PetState>(), new HashSet<int> { farFrom }).SetEquals(new[] { farFrom })
+            && AionDPS.Aion2.Protocol.Aion2Pets.IsFarmed(2, 75) && !AionDPS.Aion2.Protocol.Aion2Pets.IsFarmed(2, 74) && AionDPS.Aion2.Protocol.Aion2Pets.IsFarmed(3, 0)
+            && !AionDPS.Aion2.Protocol.Aion2Pets.IsFarmed(1, 25) && AionDPS.Aion2.Protocol.Aion2Pets.SoulsLeft(1, 10) == 90;
+        bool good = states && route && saved;
+        Console.WriteLine($"  -> a pet already farmed leaves the map, the list and the route: farmed {before.Count} at first, {after.Count} after the last soul, "
+            + $"a level message and a level 1 counted on to 100 (one a soul short stays): {states}; none of them on the route, the others on it: {route}; "
+            + $"without the game's list the saved levels: {saved}: {(good ? "ok" : "FAIL")}");
         return good;
     }
 
