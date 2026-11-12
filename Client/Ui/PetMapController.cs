@@ -1000,13 +1000,22 @@ public sealed class PetMapController : IDisposable
         _map.ShowCompass = settings.PetMapCompass;
         _map.CompassFades = settings.PetMapCompassFade;
         _map.ArrowPets = arrowPets;
-        _map.SetRoute(routeStops, nextPet, firstName, stopTexts, firstKibelisk);
+        // the stops reached by teleport or windstream (the dashed line breaks before them), and the Kibelisk the solid line starts at while the player is
+        // far from the stop (as far as the list's head names it: beyond the Kibelisk's walk and 200 m)
+        IReadOnlySet<int>? hops = settings.PetRouteOn && _plan is { } hopPlan
+            ? hopPlan.Stops.Where(st => st.Teleport is not null || st.Via is not null).Select(st => st.Step).ToHashSet()
+            : null;
+        (double X, double Y)? firstHop = settings.PetRouteOn && known && _plan is { Stops.Count: > 0 } legPlan && legPlan.Stops[0].Teleport is { } legHop
+            && Math.Sqrt((legPlan.Stops[0].X * 100 - tx) * (legPlan.Stops[0].X * 100 - tx) + (legPlan.Stops[0].Z * 100 - ty) * (legPlan.Stops[0].Z * 100 - ty)) / 100.0 > 200 + legHop.Distance
+            ? (legHop.X * 100, legHop.Z * 100)
+            : null;
+        _map.SetRoute(routeStops, nextPet, firstName, stopTexts, firstKibelisk, hops, firstHop);
         foreach (var view in _mapViews)
         {
             view.Round = settings.PetMapRound;
             view.ShowCompass = settings.PetMapCompass;
             view.ArrowPets = arrowPets;
-            view.SetRoute(routeStops, nextPet, firstName, stopTexts, firstKibelisk);
+            view.SetRoute(routeStops, nextPet, firstName, stopTexts, firstKibelisk, hops, firstHop);
         }
 
         // the view's middle is the arrow (MarkerMotion glides over the steps of the guess, so the view needs no glide of its own)
