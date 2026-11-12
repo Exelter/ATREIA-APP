@@ -1,0 +1,55 @@
+name: Pet map shots (temporary)
+
+# A one-off check of the pet map's route on a branch that is deleted afterwards (the new route and the one before, without the game's pictures).
+on:
+  push:
+    branches: [replay-shots]
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+      - name: Build
+        run: dotnet build Client/AionDPS.csproj -c Release --nologo -o out
+      - name: Build the one before
+        shell: pwsh
+        run: |
+          git fetch -q --depth 1 origin main
+          git worktree add -q ../old FETCH_HEAD
+          dotnet build ../old/Client/AionDPS.csproj -c Release --nologo -o out-old
+      - name: Draw the map
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory shots | Out-Null
+          $shots = @(
+            @('altgard-whole', 'altgard', '20000', '30000', 'route-whole'),
+            @('verteron-whole', 'verteron', '-215789', '262953', 'route-whole'),
+            @('altgard-route', 'altgard', '20000', '30000', 'route'),
+            @('verteron-route', 'verteron', '-215789', '262953', 'route')
+          )
+          foreach ($dir in @(@('out', ''), @('out-old', '-old'))) {
+            $exe = (Resolve-Path "$($dir[0])/AtreiaApp.exe").Path
+            foreach ($s in $shots) {
+              $out = Join-Path (Resolve-Path shots).Path "$($s[0])$($dir[1]).png"
+              $p = Start-Process -FilePath $exe -ArgumentList @('render-petmap', "`"$out`"", $s[1], $s[2], $s[3], $s[4]) -WorkingDirectory (Resolve-Path $dir[0]).Path -Wait -PassThru -RedirectStandardOutput "$out.txt"
+              "$($s[0])$($dir[1]): exit $($p.ExitCode), $(if (Test-Path $out) { (Get-Item $out).Length } else { 'no picture' }); $(Get-Content "$out.txt" -Raw)"
+            }
+          }
+      - name: Put them on a branch
+        shell: pwsh
+        run: |
+          cd shots
+          git init -q
+          git checkout -q -b replay-shots-out
+          git add .
+          git -c user.name="shots" -c user.email="shots@users.noreply.github.com" commit -q -m "Pet map shots for $env:GITHUB_SHA"
+          git push -q -f "https://x-access-token:$env:GH_TOKEN@github.com/$env:GITHUB_REPOSITORY" replay-shots-out
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
