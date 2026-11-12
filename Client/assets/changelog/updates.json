@@ -32,6 +32,12 @@
           "area": "Network",
           "title": "One reconnect no longer means Unsteady all evening",
           "text": "A single reconnect kept the Network page and its overlay on Unsteady for as long as the app ran. Reconnects and server changes now count for the current game session only, and a reconnect is a warning for ten minutes."
+        },
+        {
+          "kind": "improved",
+          "area": "Replay",
+          "title": "Ludra's areas measured again with the first kill",
+          "text": "The shapes the replay draws for Abyssal Forge: Ludra came from wipes that never got Eternal Ludra below 9 %. They are measured again with three more pulls, two wipes at 9 and 5 % and a kill, and some sizes changed: Eternal Ludra's Despairing Aura reaches 34 m (it was drawn at 42 m), the Central Abyss Fusion Reactor's circle 9 m (it was 7 m), and one of Ketu's attacks shows as its measured cone. One more object on the floor is drawn with its reach."
         }
       ]
     },
