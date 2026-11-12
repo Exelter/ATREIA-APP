@@ -291,10 +291,12 @@ public partial class MainWindow
 
         if (pace is { } p)
         {
+            // the own DPS beside the change (12 November 2026, the owner: "show self dps next to % best thing, not just best"), before the best so a narrow
+            // meter cuts the best rather than it
             double change = (p.Now - p.Best) / p.Best;
             bool ahead = change >= 0;
-            _bossPace!.Text = (ahead ? "▲ " : "▼ ") + Math.Abs(change * 100).ToString(Math.Abs(change) < 0.1 ? "0.#" : "0", CultureInfo.CurrentCulture) + "% vs your best "
-                + PlayerRow.Compact((long)p.Best);
+            _bossPace!.Text = (ahead ? "▲ " : "▼ ") + Math.Abs(change * 100).ToString(Math.Abs(change) < 0.1 ? "0.#" : "0", CultureInfo.CurrentCulture) + "% · you "
+                + PlayerRow.Compact((long)p.Now) + " vs your best " + PlayerRow.Compact((long)p.Best);
             _bossPace.Foreground = ahead ? new SolidColorBrush(Color.FromRgb(0x6C, 0xD4, 0x8A)) : Math.Abs(change) < 0.05 ? OverlayPictures.Amber : OverlayPictures.Red;
             _bossPace.ToolTip = "Your DPS now against your best kill of this boss on this character (History)";
             _bossPace.Visibility = Visibility.Visible;

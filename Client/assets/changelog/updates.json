@@ -6,6 +6,25 @@
   ],
   "versions": [
     {
+      "version": "2.0.12",
+      "date": "2026-11-12",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Meter",
+          "title": "Your DPS beside the pace against your best",
+          "text": "During a boss fight, the line under the boss compared you with your best kill of it but didn't say where you are now. It now shows your DPS too, before your best.",
+          "example": "▲ 19% · you 135.2K vs your best 113.6K"
+        },
+        {
+          "kind": "fixed",
+          "area": "Characters",
+          "title": "Two daily dungeons that aren't open yet are hidden",
+          "text": "The game sends entry counts for Abandoned Balaur Fortress and Fafnium Laboratory on every server, but they aren't open on the Global servers yet, so the Characters page listed two full counters you can't use. They're hidden until they open."
+        }
+      ]
+    },
+    {
       "version": "2.0.11",
       "date": "2026-11-12",
       "items": [
