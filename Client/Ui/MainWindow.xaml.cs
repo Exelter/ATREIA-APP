@@ -6714,7 +6714,7 @@ public partial class MainWindow : Window
     /// <summary>After an upload the status line links the fight's page: a click opens it in the browser.</summary>
     private void OnUploadStatusClicked(object sender, MouseButtonEventArgs e)
     {
-        if (_uploadStatusUrl is { } url)
+        if (_uploadStatusUrl is { } url && Links.IsWeb(url))
         {
             try
             {

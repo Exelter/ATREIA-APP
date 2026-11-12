@@ -272,6 +272,11 @@ public sealed class FightReportWindow : Window
         var open = new Button { Content = "Open on the website", Padding = new Thickness(14, 6, 14, 6), Margin = new Thickness(0, 0, 8, 0), Cursor = Cursors.Hand, ToolTip = url };
         open.Click += (_, _) =>
         {
+            if (!Links.IsWeb(url))
+            {
+                return;
+            }
+
             try
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });

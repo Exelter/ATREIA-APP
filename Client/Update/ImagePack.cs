@@ -329,6 +329,11 @@ public static class ImagePack
                     await file.WriteAsync(buffer.AsMemory(0, read), cancel).ConfigureAwait(false);
                     hash.AppendData(buffer, 0, read);
                     got += read;
+                    if (got > MaxPackBytes || (index.Size > 0 && got > index.Size))
+                    {
+                        throw new InvalidDataException($"more than {(index.Size > 0 ? index.Size : MaxPackBytes)} bytes came"); // the disk isn't filled first
+                    }
+
                     if (got - shown >= 256 * 1024)
                     {
                         shown = got;
@@ -371,12 +376,21 @@ public static class ImagePack
         }
     }
 
+    /// <summary>
+    /// The most a pack may hold (12 November 2026, the security check): a picture of 8 MB, 512 MB in all, 50,000 pictures. The pack of November 2026 holds
+    /// about 5,000 pictures of a few KB each. The pack's SHA-256 comes from the same site as the pack, so it can't vouch for the pack's size: a pack that
+    /// unpacks into more (a "zip bomb", only if the site were ever taken over) stops with nothing kept, instead of filling the disk.
+    /// </summary>
+    internal const long MaxPictureBytes = 8L << 20, MaxPackBytes = 512L << 20;
+    internal const int MaxPictures = 50_000;
+
     /// <summary>The pictures of the pack into images.next, nothing else and nothing outside it; pack.json last, as the sign that it is complete.</summary>
-    private static int Unpack(string zip, PackIndex index, CancellationToken cancel)
+    internal static int Unpack(string zip, PackIndex index, CancellationToken cancel)
     {
         Remove(Next);
         string root = Path.GetFullPath(Next) + Path.DirectorySeparatorChar;
         int count = 0;
+        long unpacked = 0;
         using (ZipArchive archive = ZipFile.OpenRead(zip))
         {
             foreach (ZipArchiveEntry entry in archive.Entries)
@@ -393,8 +407,13 @@ public static class ImagePack
                     continue;
                 }
 
+                if (count >= MaxPictures || entry.Length > MaxPictureBytes)
+                {
+                    throw new InvalidDataException("the pack holds more than a picture pack can");
+                }
+
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                entry.ExtractToFile(path, overwrite: true);
+                unpacked += Extract(entry, path, Math.Min(MaxPictureBytes, MaxPackBytes - unpacked));
                 count++;
             }
         }
@@ -406,6 +425,29 @@ public static class ImagePack
 
         File.WriteAllText(Path.Combine(Next, Marker), JsonSerializer.Serialize(new Installed(index.Version, count, index.Sha256, DateTime.UtcNow)));
         return count;
+    }
+
+    /// <summary>One picture to its file, counted as it is unpacked (the size a zip states for a file can be wrong): more than <paramref name="room"/> bytes
+    /// stops the pack.</summary>
+    private static long Extract(ZipArchiveEntry entry, string path, long room)
+    {
+        using Stream from = entry.Open();
+        using FileStream to = File.Create(path);
+        byte[] buffer = new byte[81920];
+        long written = 0;
+        int read;
+        while ((read = from.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            written += read;
+            if (written > room)
+            {
+                throw new InvalidDataException("the pack holds more than a picture pack can");
+            }
+
+            to.Write(buffer, 0, read);
+        }
+
+        return written;
     }
 
     private static void Remove(string folder)

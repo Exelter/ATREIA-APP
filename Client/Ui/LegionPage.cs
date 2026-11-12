@@ -446,6 +446,11 @@ internal sealed class LegionPage : Grid
 
     private static void Open(string url)
     {
+        if (!Links.IsWeb(url))
+        {
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });

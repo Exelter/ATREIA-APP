@@ -1340,6 +1340,11 @@ public sealed class PlayerView : Border
 
     private static void OpenInBrowser(string url)
     {
+        if (!Links.IsWeb(url))
+        {
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });

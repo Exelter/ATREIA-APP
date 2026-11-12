@@ -924,7 +924,7 @@ public sealed class HistoryWindow : Window
         var delete = new MenuItem { Header = "Delete" };
         delete.Click += (_, _) => FightLog.Delete(entry);
         menu.Items.Add(open);
-        if (entry.Url is { Length: > 0 } url)
+        if (entry.Url is { Length: > 0 } url && Links.IsWeb(url))
         {
             var web = new MenuItem { Header = "Open on the website" };
             web.Click += (_, _) =>
