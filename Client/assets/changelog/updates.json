@@ -6,6 +6,24 @@
   ],
   "versions": [
     {
+      "version": "2.0.10",
+      "date": "2026-11-12",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "App",
+          "title": "Links only ever open as web pages",
+          "text": "Every link the app opens in your browser (player and fight pages, the news, legion invites, your fight history) is checked once more right before it opens: only a normal https web page goes through. Windows opens whatever it is handed, a program or a shared folder too, so anything else is simply not opened. The links were already checked where the app gets them; this is a second lock."
+        },
+        {
+          "kind": "improved",
+          "area": "Updates",
+          "title": "The game's pictures can't fill your disk",
+          "text": "The pack of game pictures the app downloads is measured while it unpacks: at most 8 MB a picture, 512 MB and 50,000 pictures in all, and the download stops if more arrives than the website announced. A pack over that stops, and nothing of it is kept. Today's pack is about 5,000 pictures and 40 MB, well inside the limits."
+        }
+      ]
+    },
+    {
       "version": "2.0.9",
       "date": "2026-11-11",
       "items": [
