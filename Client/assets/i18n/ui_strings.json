@@ -4939,6 +4939,21 @@
     "de": "Verbunden (Adresse verborgen)",
     "fr": "Connecté (adresse masquée)"
   },
+  "Network.Server.Relayed": {
+    "en": "Connected through a ping reducer or VPN on this PC",
+    "de": "Verbunden über einen Ping-Reducer oder ein VPN auf diesem PC",
+    "fr": "Connecté via un réducteur de ping ou un VPN sur ce PC"
+  },
+  "Network.Ping.Relayed": {
+    "en": "– · the ping reducer’s own window shows it",
+    "de": "– · das Fenster des Ping-Reducers zeigt ihn",
+    "fr": "– · la fenêtre du réducteur de ping l’affiche"
+  },
+  "Network.Relayed.Hidden": {
+    "en": "– · hidden behind the ping reducer",
+    "de": "– · hinter dem Ping-Reducer verborgen",
+    "fr": "– · masqué derrière le réducteur de ping"
+  },
   "Network.Waiting": {
     "en": "Waiting for game traffic …",
     "de": "Warte auf Spielverkehr …",

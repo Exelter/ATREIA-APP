@@ -6,6 +6,36 @@
   ],
   "versions": [
     {
+      "version": "2.0.14",
+      "date": "2026-11-12",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Overlays",
+          "title": "FPS and ping in one overlay",
+          "text": "The FPS counter now shows your ping beside the frames per second: the ping the Network page measures, green under 60 ms, amber under 120 and red above. Pick what it shows on the Overlays page or in the overlay's own settings (its gear): FPS and ping, FPS only or ping only. Ping only needs no permission from Windows."
+        },
+        {
+          "kind": "fixed",
+          "area": "Network",
+          "title": "No more 0 ms ping through a ping reducer",
+          "text": "With a ping reducer or VPN running on your PC (ExitLag and the like), the game talks to that program on your own PC, and the program carries the traffic to the server its own way. The Network page timed the program's instant answers and showed a ping of 0 ms with no jitter and no loss. It now says the connection goes through a ping reducer and leaves ping, jitter and loss out, since they can't be seen from your PC; the ping reducer's own window shows them. A new connection through it, which every zone and instance makes, no longer counts as a reconnect."
+        },
+        {
+          "kind": "fixed",
+          "area": "Network",
+          "title": "Other programs' traffic is never taken for the game",
+          "text": "While the app looked for the game on other ports, an upload by another program could be taken for the game's connection, and the Network page showed that instead. Only the game's own traffic reaches the app now."
+        },
+        {
+          "kind": "improved",
+          "area": "Network",
+          "title": "One reconnect no longer means Unsteady all evening",
+          "text": "A single reconnect kept the Network page and its overlay on Unsteady for as long as the app ran. Reconnects and server changes now count for the current game session only, and a reconnect is a warning for ten minutes."
+        }
+      ]
+    },
+    {
       "version": "2.0.13",
       "date": "2026-11-12",
       "items": [

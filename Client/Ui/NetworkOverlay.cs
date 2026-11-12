@@ -35,7 +35,8 @@ public static class NetworkOverlayRows
         if (Shown("server"))
         {
             // never the address: the overlay is on stream, and an address on screen is an invitation to flood it
-            rows.Add(s.Server is null ? (Label("server"), loc["Network.Waiting"], Neutral) : (Label("server"), loc["Network.Server.Hidden"], Good));
+            rows.Add(s.Server is null ? (Label("server"), loc["Network.Waiting"], Neutral)
+                : (Label("server"), loc[s.Relayed ? "Network.Server.Relayed" : "Network.Server.Hidden"], Good));
         }
 
         if (!s.Connected)
@@ -48,16 +49,19 @@ public static class NetworkOverlayRows
             return rows;
         }
 
+        // through a ping reducer or VPN on this PC, ping, jitter and loss are those of the last hop to it, nothing at all (NetworkStats): said, not shown as 0
         if (Shown("ping"))
         {
-            rows.Add(s.PingMs is { } ping
+            rows.Add(s.Relayed ? (Label("ping"), loc["Network.Ping.Relayed"], Neutral)
+                : s.PingMs is { } ping
                 ? (Label("ping"), $"{Num(ping, "0")} ms  ({string.Format(loc["Network.Ping.Detail"], Num(s.PingAverageMs ?? ping, "0"), Num(s.PingMinMs ?? ping, "0"), Num(s.PingMaxMs ?? ping, "0"))})", PingColor(ping))
                 : (Label("ping"), "…", Neutral));
         }
 
         if (Shown("jitter"))
         {
-            rows.Add(s.JitterMs is { } jitter
+            rows.Add(s.Relayed ? (Label("jitter"), loc["Network.Relayed.Hidden"], Neutral)
+                : s.JitterMs is { } jitter
                 ? (Label("jitter"), $"{Num(jitter)} ms", jitter < 10 ? Good : jitter < 30 ? Warn : Bad)
                 : (Label("jitter"), "…", Neutral));
         }
@@ -70,7 +74,8 @@ public static class NetworkOverlayRows
         if (Shown("loss"))
         {
             int bad = s.Retransmissions + s.Gaps;
-            rows.Add((Label("loss"), string.Format(loc["Network.Loss.Value"], s.Retransmissions, s.Gaps), bad == 0 ? Good : bad <= 5 ? Warn : Bad));
+            rows.Add(s.Relayed ? (Label("loss"), loc["Network.Relayed.Hidden"], Neutral)
+                : (Label("loss"), string.Format(loc["Network.Loss.Value"], s.Retransmissions, s.Gaps), bad == 0 ? Good : bad <= 5 ? Warn : Bad));
         }
 
         if (Shown("stalls"))
@@ -118,7 +123,9 @@ public static class NetworkOverlayRows
                 text += " · " + string.Format(loc["Network.Connection.Unacked"], (int)unacked.TotalSeconds);
             }
 
-            rows.Add((Label("connection"), text, stalled ? Bad : s.Reconnects > 0 ? Warn : Good));
+            // a reconnect is a warning for ten minutes (like a stall), then just a number of the session
+            bool recentReconnect = s.SinceLastReconnect is { } ago && ago.TotalMinutes < 10;
+            rows.Add((Label("connection"), text, stalled ? Bad : recentReconnect ? Warn : Good));
         }
 
         if (Shown("load"))
@@ -253,7 +260,9 @@ public sealed class NetworkOverlayWindow : MovableOverlay
         };
         line.Children.Add(word);
         _rows.Children.Add(line);
-        var hint = new TextBlock { Text = "Hold Alt over it for every line", FontSize = 9, Margin = new Thickness(16, 2, 0, 0), Opacity = 0.75 };
+        // through a ping reducer the ping can't be seen (NetworkStats): the dash says why
+        var hint = new TextBlock { Text = snapshot.Relayed ? "Via a ping reducer: see its window · Alt for every line" : "Hold Alt over it for every line", FontSize = 9,
+            Margin = new Thickness(16, 2, 0, 0), Opacity = 0.75 };
         hint.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
         _rows.Children.Add(hint);
     }

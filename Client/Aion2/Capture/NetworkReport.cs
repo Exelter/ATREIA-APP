@@ -125,6 +125,8 @@ public static class NetworkReport
                 uptimeSeconds = snapshot.Uptime is { } up ? (int)up.TotalSeconds : (int?)null,
                 switches = snapshot.Switches,
                 reconnects = snapshot.Reconnects,
+                // through a ping reducer or VPN on the PC: the ping and loss below are missing on purpose (NetworkStats)
+                relayed = snapshot.Relayed,
             },
             summary = new
             {

@@ -141,6 +141,10 @@ public static class NetworkProbe
 
             string? gateway = _gateway;
             string? server = NetworkStats.ServerAddress;
+            if (NetworkStats.IsLocalAddress(server))
+            {
+                server = null; // the game talks to a ping reducer or VPN on this PC: pinging that tells nothing of the server
+            }
             Task<double?> gw = PingAsync(gateway), net = PingAsync(InternetHost), srv = PingAsync(server);
             double? gwMs = await gw.ConfigureAwait(false), netMs = await net.ConfigureAwait(false), srvMs = await srv.ConfigureAwait(false);
             DateTime now = DateTime.Now;

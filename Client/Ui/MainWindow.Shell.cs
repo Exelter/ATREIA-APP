@@ -563,7 +563,7 @@ public partial class MainWindow
     private sealed record OverlayOption(string Text, Func<MeterSettings, bool> Get, Action<MeterSettings, bool> Set);
 
     private sealed record OverlayDef(string Name, string What, Func<MeterSettings, bool> Get, Action<MeterSettings, bool> Set, string? Page, Action? Reset = null,
-        Func<MeterSettings, string>? Keys = null, string Id = "", OverlayOption? Option = null);
+        Func<MeterSettings, string>? Keys = null, string Id = "", OverlayOption? Option = null, OverlayQuick.Choice? Pick = null);
 
     /// <summary>Every overlay over the game, the main ones first: its switch, what it shows and where its settings are.</summary>
     private List<OverlayDef> OverlayDefs()
@@ -584,8 +584,9 @@ public partial class MainWindow
             new(loc["Checklist.Season"], loc["Shell.OvSeasonWhat"], s => s.ShowSeasonOverlay, (s, v) => s.ShowSeasonOverlay = v, "checklist", null, null, "season"),
             new(loc["Main.MenuTools.Craft"], loc["Shell.OvCraftWhat"], s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v, "craft", null, s => s.HotkeyCraft, "craft"),
             new(loc["Settings.Nav.Network"], loc["Shell.OvNetworkWhat"], s => s.ShowNetworkOverlay, (s, v) => s.ShowNetworkOverlay = v, "network", null, s => s.HotkeyNetwork, "network"),
-            new("FPS counter", "The game's frames per second and its 1% low, from Windows' own frame timing (nothing touches the game).", s => s.ShowFpsOverlay,
-                (s, v) => s.ShowFpsOverlay = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Fps), null, "fps"),
+            new("FPS and ping", "The game's frames per second and its 1% low (from Windows' own frame timing) and your ping to the game server (from the game's own "
+                + "traffic), side by side or either alone. Nothing touches the game.", s => s.ShowFpsOverlay,
+                (s, v) => s.ShowFpsOverlay = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Fps), null, "fps", Pick: OverlayQuick.FpsShows),
             new("Enemy card", "Select an enemy player in the Abyss: his class, level, Combat Power and item level, and how his Combat Power compares with yours.",
                 s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyCard), null, "enemy",
                 new OverlayOption("Players of your side too", s => s.EnemyCardAllies, (s, v) => s.EnemyCardAllies = v)),
@@ -729,6 +730,30 @@ public partial class MainWindow
                 links.Children.Add(opt);
             }
 
+            if (def.Pick is { } pick)
+            {
+                // a choice of what it shows as a link too: the chosen one in the text, a click takes the next ("Shows: FPS and ping" > "FPS" > "Ping")
+                TextBlock? choice = null;
+                void ShowPick()
+                {
+                    string now = pick.Get(MeterSettings.Load());
+                    choice!.Text = pick.Label + ": " + pick.Options.FirstOrDefault(o => o.Id == now).Text;
+                }
+
+                choice = ShellLink("", () =>
+                {
+                    var settings = MeterSettings.Load();
+                    int at = Array.FindIndex(pick.Options, o => o.Id == pick.Get(settings));
+                    pick.Set(settings, pick.Options[(at + 1) % pick.Options.Length].Id);
+                    settings.Save();
+                    ShowPick();
+                });
+                ShowPick();
+                choice.ToolTip = "Click for the next: " + string.Join(", ", pick.Options.Select(o => o.Text));
+                choice.Margin = new Thickness(links.Children.Count > 0 ? 16 : 0, 0, 0, 0);
+                links.Children.Add(choice);
+            }
+
             if (links.Children.Count > 0)
             {
                 text.Children.Add(links);
@@ -805,7 +830,7 @@ public partial class MainWindow
             OverlayPlaces.Season => s.ShowSeasonOverlay ? loc["Checklist.Season"] : null,
             OverlayPlaces.Craft => s.ShowCraftOverlay ? loc["Main.MenuTools.Craft"] : null,
             OverlayPlaces.Network => s.ShowNetworkOverlay ? loc["Settings.Nav.Network"] : null,
-            OverlayPlaces.Fps => s.ShowFpsOverlay ? "FPS counter" : null,
+            OverlayPlaces.Fps => s.ShowFpsOverlay ? "FPS and ping" : null,
             OverlayPlaces.EnemyCard => s.ShowEnemyCard ? "Enemy card" : null,
             OverlayPlaces.EnemyRadar => s.ShowEnemyRadar ? "Enemy radar" : null,
             OverlayPlaces.DeathRecap => s.ShowDeathRecap ? "Death recap" : null,

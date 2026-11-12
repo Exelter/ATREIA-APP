@@ -136,11 +136,11 @@ public static class ToolRender
             case "fps":
             case "fps-access":
             {
-                // the FPS counter over the game: counting (green), and asking Windows for the access once
+                // the FPS counter over the game: counting (green) with the ping beside it, and asking Windows for the access once
                 var fps = new FpsOverlayWindow();
                 if (what == "fps")
                 {
-                    fps.Render(143, 97, FpsMeter.State.Running);
+                    fps.Render(143, 97, FpsMeter.State.Running, FpsOverlayShows.Both, new PingReading(24, false));
                 }
                 else
                 {
@@ -162,7 +162,7 @@ public static class ToolRender
             {
                 // an overlay with the mouse on it (its gear and its padlock in the corner) and the settings its gear opens, beside it
                 var fps = new FpsOverlayWindow();
-                fps.Render(143, 97, FpsMeter.State.Running);
+                fps.Render(143, 97, FpsMeter.State.Running, FpsOverlayShows.Both, new PingReading(24, false));
                 var row = new StackPanel { Orientation = Orientation.Horizontal };
                 row.Children.Add(new Border { Child = fps.TakeFrameForPicture(), VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 10, 0, 0) });
                 row.Children.Add(new Border { Child = OverlayQuickWindow.PictureOf(fps), VerticalAlignment = VerticalAlignment.Top });

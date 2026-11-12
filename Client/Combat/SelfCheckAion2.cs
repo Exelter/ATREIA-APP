@@ -29,6 +29,7 @@ public static class SelfCheckAion2
         ok &= RunGameFlowDetectorScenario();
         ok &= RunEffectAuraScenario();
         ok &= RunNetworkStatsScenario();
+        ok &= RunRelayedConnectionScenario();
         ok &= RunAion2ProtocolScenario();
         ok &= RunAion2RealCaptureScenario();
         ok &= RunAion2BundleScenario();
@@ -2404,6 +2405,73 @@ public static class SelfCheckAion2
         System.IO.File.Delete(logFile);
         NetworkStats.Reset();
         return ping && loss && connection && switches && stall && logged;
+    }
+
+    /// <summary>
+    /// The game through a ping reducer on this PC (12 November 2026, the owner: "why does the network analysis show 0?" - ExitLag on 127.0.0.1:61660): no ping
+    /// from its instant acknowledgements, a new connection to it is a server change; reconnects count per session; only the game's ports reach the meter.
+    /// </summary>
+    private static bool RunRelayedConnectionScenario()
+    {
+        Console.WriteLine("[selftest] Network analysis through a ping reducer or VPN on the PC, and only the game's traffic:");
+        string logFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "aiondps-selftest-network-relayed.log");
+        NetworkLog.PathOverride = logFile;
+        System.IO.File.Delete(logFile);
+        NetworkStats.Reset();
+        DateTime t0 = DateTime.Now.AddSeconds(-5);
+        const string proxy = "127.0.0.1:61660", game = "127.0.0.1:50100";
+        NetworkStats.Note(new TcpSegment(t0, game, proxy, 5000, new byte[100], false));
+        NetworkStats.Note(new TcpSegment(t0.AddMilliseconds(1), proxy, game, 9000, new byte[0], true, 5100)); // the program on the PC acknowledges at once
+        NetworkStats.Note(new TcpSegment(t0.AddSeconds(1), game, proxy, 5100, new byte[50], false));
+        NetworkStats.Note(new TcpSegment(t0.AddSeconds(1).AddMilliseconds(1), proxy, game, 9000, new byte[200], true, 5150));
+        NetworkSnapshot relayed = NetworkStats.Snapshot();
+        bool noPing = relayed.Relayed && relayed.PingMs is null && relayed.PingAverageMs is null && relayed.JitterMs is null;
+        Console.WriteLine($"  -> a connection to 127.0.0.1 is relayed, and its instant acknowledgements give no ping (not 0 ms): {noPing}");
+
+        // the next zone through the same program: the same local address with another port of the game, a server change and not a reconnect
+        NetworkStats.Note(new TcpSegment(t0.AddSeconds(2), proxy, "127.0.0.1:50101", 1, new byte[10], true, 0));
+        NetworkSnapshot zone = NetworkStats.Snapshot();
+        bool zoneChange = zone.Switches == 1 && zone.Reconnects == 0 && zone.SinceLastReconnect is null;
+        Console.WriteLine($"  -> a new connection to the same program on the PC is a server change, not a reconnect: {zoneChange}");
+
+        // straight to a server: a reconnect is counted and dated; a new session (after 30 s of silence) starts the counts again
+        NetworkStats.Reset();
+        DateTime t1 = DateTime.Now.AddSeconds(-50);
+        NetworkStats.Note(new TcpSegment(t1, "193.0.2.10:13328", "192.168.0.2:50000", 1, new byte[10], true, 0));
+        NetworkStats.Note(new TcpSegment(t1.AddSeconds(1), "193.0.2.10:13328", "192.168.0.2:50001", 1, new byte[10], true, 0));
+        NetworkSnapshot reconnected = NetworkStats.Snapshot();
+        bool counted = !reconnected.Relayed && reconnected.Reconnects == 1 && reconnected.SinceLastReconnect is { } ago && ago.TotalSeconds > 40;
+        NetworkStats.Note(new TcpSegment(t1.AddSeconds(45), "193.0.2.10:13328", "192.168.0.2:50002", 1, new byte[10], true, 0));
+        NetworkSnapshot fresh = NetworkStats.Snapshot();
+        bool perSession = fresh.Reconnects == 0 && fresh.Switches == 0 && fresh.SinceLastReconnect is null;
+        Console.WriteLine($"  -> the same server again is a reconnect, with its time: {counted}");
+        Console.WriteLine($"  -> after 30 s of silence a new session starts with no reconnects and no server changes: {perSession}");
+
+        bool local = NetworkStats.IsLocalAddress("127.0.0.1:61660") && NetworkStats.IsLocalAddress("192.168.0.3:63045") && NetworkStats.IsLocalAddress("10.8.0.1:13328")
+            && NetworkStats.IsLocalAddress("172.20.1.1:13328") && NetworkStats.IsLocalAddress("::1:61660") && !NetworkStats.IsLocalAddress("193.202.112.113:13328")
+            && !NetworkStats.IsLocalAddress("172.32.0.1:13328") && !NetworkStats.IsLocalAddress("104.19.193.29:443") && !NetworkStats.IsLocalAddress(null);
+        Console.WriteLine($"  -> addresses on the PC or the local network told from servers on the internet: {local}");
+
+        int[] ports = { 13328 };
+        bool keeps = !NpcapCaptureService.Keeps(ports, false, 443, 50000) && !NpcapCaptureService.Keeps(ports, false, 50000, 443)
+            && NpcapCaptureService.Keeps(ports, false, 13328, 50000) && NpcapCaptureService.Keeps(ports, false, 50000, 13328)
+            && NpcapCaptureService.Keeps(Array.Empty<int>(), false, 443, 50000) && NpcapCaptureService.Keeps(ports, true, 443, 50000);
+        Console.WriteLine($"  -> only the game's ports go on to the meter (a website's 443 never does): {keeps}");
+
+        var settings = new MeterSettings();
+        bool shows = FpsOverlayShows.Of(settings) == FpsOverlayShows.Both;
+        settings.FpsOverlayShows = "ping";
+        shows &= FpsOverlayShows.Of(settings) == FpsOverlayShows.Ping && !FpsOverlayShows.ShowsFps(FpsOverlayShows.Ping) && FpsOverlayShows.ShowsPing(FpsOverlayShows.Ping);
+        settings.FpsOverlayShows = "nonsense";
+        shows &= FpsOverlayShows.Of(settings) == FpsOverlayShows.Both && FpsOverlayShows.ShowsFps(FpsOverlayShows.Both) && FpsOverlayShows.ShowsPing(FpsOverlayShows.Both);
+        settings.FpsOverlayShows = null!;
+        shows &= FpsOverlayShows.Of(settings) == FpsOverlayShows.Both && !FpsOverlayShows.ShowsPing(FpsOverlayShows.Fps);
+        Console.WriteLine($"  -> the FPS overlay shows the frames and the ping by default, either alone when chosen: {shows}");
+
+        NetworkLog.PathOverride = null;
+        System.IO.File.Delete(logFile);
+        NetworkStats.Reset();
+        return noPing && zoneChange && counted && perSession && local && keeps && shows;
     }
 
     private static bool RunTcpReassemblerScenario()
