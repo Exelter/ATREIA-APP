@@ -1,0 +1,2 @@
+render-petmap: route of 22 stops from YOU · ; first Altamia Canyon
+render-petmap: wrote D:\a\ATREIA-APP\ATREIA-APP\shots\verteron-route-old.png (6516 points of 8 pets on Verteron); tiles shown 0: verteron/4_4@1536=null

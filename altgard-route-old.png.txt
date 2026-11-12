@@ -1,0 +1,2 @@
+render-petmap: route of 20 stops from YOU · ; first Basfelt Ruins
+render-petmap: wrote D:\a\ATREIA-APP\ATREIA-APP\shots\altgard-route-old.png (5887 points of 8 pets on Altgard); tiles shown 0: altgard/5_2@1024=null altgard/5_3@1024=null

@@ -1,0 +1,2 @@
+render-petmap: route of 18 stops from YOU · ; first Tolbas Forest
+render-petmap: wrote D:\a\ATREIA-APP\ATREIA-APP\shots\verteron-route.png (6516 points of 8 pets on Verteron); tiles shown 0: verteron/3_4@1536=null

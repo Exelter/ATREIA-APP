@@ -1,0 +1,2 @@
+render-petmap: route of 16 stops from YOU · ; first Moslan Forest
+render-petmap: wrote D:\a\ATREIA-APP\ATREIA-APP\shots\altgard-route.png (5887 points of 8 pets on Altgard); tiles shown 0: altgard/3_4@1024=null
