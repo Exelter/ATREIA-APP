@@ -6,6 +6,32 @@
   ],
   "versions": [
     {
+      "version": "2.0.11",
+      "date": "2026-11-12",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "Your Combat Power matches the game right away",
+          "text": "The meter took your own Combat Power from the legion list the game sends when you log in, so after an enchant or a new piece it kept the old number until you logged in again. The game also sends your Combat Power every time it changes, failed enchants included; the meter now reads that, so the bar, your line, the group list and the character window show the new number within seconds. The same goes for your Item Level.",
+          "example": "Enchant your weapon from +18 to +19: the bar shows the new CP at once, no relog needed."
+        },
+        {
+          "kind": "new",
+          "area": "Character",
+          "title": "Your gear updates as you change it",
+          "text": "The character window showed your equipment as the game listed it when you logged in or changed servers. The game sends a piece again whenever you enchant it, roll its stats again or put it on, and the window now takes each of those as it happens: enchant level, stones and stats. It also shows your Item Level and Combat Power as the game counts them.",
+          "example": "Rolling the stats of an earring again and again? The window shows every new roll."
+        },
+        {
+          "kind": "improved",
+          "area": "Logs",
+          "title": "Your own Combat Power in the fights you upload",
+          "text": "The website's logs knew your Combat Power only from its own records, often an older number. The fights you upload now carry your number at the time of the fight, like everyone else's, so the Class Stats by Combat Power count you where you belong."
+        }
+      ]
+    },
+    {
       "version": "2.0.10",
       "date": "2026-11-12",
       "items": [

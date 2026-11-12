@@ -671,9 +671,14 @@ public partial class MainWindow
         string own = local.Name;
         var me = new GroupMate(own, directory.PartyClassOfName(own) ?? directory.ClassOf(directory.LocalPlayerId),
             directory.ServerIdOfName(own) ?? (local.ServerId > 0 ? local.ServerId : null), IsYou: true);
+        // the game's own numbers first (sent with every change); the room's roster keeps the last it gave after the room is left
         (int? itemLevel, int? combatPower) = directory.PartyFiguresOfName(own);
         FoundPlayer? found = LookedUp(me);
-        me = me with { CombatPower = combatPower ?? OwnCombatPower(directory) ?? found?.CombatPower, ItemLevel = itemLevel ?? found?.ItemLevel };
+        me = me with
+        {
+            CombatPower = directory.OwnLiveCombatPower ?? combatPower ?? OwnCombatPower(directory) ?? found?.CombatPower,
+            ItemLevel = directory.OwnLiveItemLevel ?? itemLevel ?? OwnItemLevel(directory) ?? found?.ItemLevel,
+        };
         return StrongestFirst(mates.Append(me));
     }
 

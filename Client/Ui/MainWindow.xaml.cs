@@ -2062,8 +2062,10 @@ public partial class MainWindow : Window
         var players = classes.Keys.Where(seen.Contains).Select(id =>
         {
             string name = names.GetValueOrDefault(id) ?? ResolveDisplayName(id);
-            int? cp = directory.SeenProfileOf(id)?.CombatPower;
-            return new ReportPlayer(id, name, classes[id], cp is 397228 ? null : cp, id == local || (ownName is not null && name == ownName));
+            bool self = id == local || (ownName is not null && name == ownName);
+            // the own character has no appearance frame to carry it: its number is the one the game sends of itself
+            int? cp = directory.SeenProfileOf(id)?.CombatPower ?? (self ? OwnCombatPower(directory) : null);
+            return new ReportPlayer(id, name, classes[id], cp is 397228 ? null : cp, self);
         }).ToList();
         if (players.Count == 0)
         {
@@ -2221,7 +2223,7 @@ public partial class MainWindow : Window
         var directory = _liveSource?.Entities as Aion2.Aion2EntityDirectory;
         var names = new Dictionary<int, string>(run.Names);
         string name = names.GetValueOrDefault(run.PlayerId) ?? directory?.NameFor(run.PlayerId) ?? CompactOverlayOwnName() ?? "You";
-        int? cp = directory?.SeenProfileOf(run.PlayerId)?.CombatPower;
+        int? cp = directory?.SeenProfileOf(run.PlayerId)?.CombatPower ?? (directory is not null ? OwnCombatPower(directory) : null); // the own run
         int dummy = run.Events.GroupBy(e => e.TargetObjectId).OrderByDescending(g => g.Sum(e => e.Amount)).First().Key;
         string dummyName = names.GetValueOrDefault(dummy) ?? directory?.MonsterNameFor(dummy) ?? "Training dummy";
         names[run.PlayerId] = name;
@@ -4590,7 +4592,12 @@ public partial class MainWindow : Window
             {
                 var names = participants.Select(p => p.Name).ToHashSet();
                 var reportPlayers = uploadRows.Where(r => names.Contains(r.Name)).GroupBy(r => r.Name).Select(g => g.First())
-                    .Select(r => new ReportPlayer(r.ObjectId, r.Name, r.ClassName, SeenInfoOf(r)?.CombatPower, participants.Any(p => p.IsSelf && p.Name == r.Name))).ToList();
+                    .Select(r =>
+                    {
+                        // the own character's Combat Power is the game's own number (the website's logs showed an older one from its records)
+                        bool self = participants.Any(p => p.IsSelf && p.Name == r.Name);
+                        return new ReportPlayer(r.ObjectId, r.Name, r.ClassName, SeenInfoOf(r)?.CombatPower ?? (self ? OwnCombatPower(aion2Directory) : null), self);
+                    }).ToList();
                 var reportEvents = _aggregator.Events.Where(e => e.Timestamp >= windowStart && e.Timestamp <= windowEnd && (e.IsHeal || e.TargetObjectId != targetId))
                     .Concat(targetHits.Where(e => !e.IsHeal)).OrderBy(e => e.Timestamp).ToList();
                 FightExtras reportExtras = aion2Directory.Combat.Slice(windowStart, windowEnd, ResolveDisplayName, ReplayKeeps, ReplayHp);
@@ -7018,6 +7025,11 @@ public partial class MainWindow : Window
             int liveId = _historyMode ? _historyLiveIds.GetValueOrDefault(id, id) : id;
             int? power = (_liveSource?.Entities as Aion2EntityDirectory)?.SeenProfileOf(liveId)?.CombatPower;
             bool self = (!_historyMode && _source?.Entities.IsLocalPlayer(id) == true) || (ownName is not null && name == ownName);
+            if (power is null && self && !_historyMode && _liveSource?.Entities is Aion2EntityDirectory live)
+            {
+                power = OwnCombatPower(live); // the game's own number of the own character (not in the history: today's number is not the one of the fight)
+            }
+
             return new ReportPlayer(id, name, ResolveClassName(id), power is 397228 ? null : power, self);
         }).ToList();
 

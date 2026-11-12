@@ -425,7 +425,19 @@ public sealed class CharacterWindow : Window
         row.Children.Add(names);
 
         var numbers = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        numbers.Children.Add(Number(average.ToString("F1", CultureInfo.CurrentCulture), "Avg item level", Gold));
+        // The game's own Item Level and Combat Power, which it sends with every change: an enchant or a piece put on shows here at once.
+        int? itemLevel = MainWindow.OwnItemLevel(_directory);
+        if (itemLevel is int shownLevel)
+        {
+            numbers.Children.Add(Number(shownLevel.ToString("N0", CultureInfo.CurrentCulture), Loc("Character.ItemLevel"), Gold));
+        }
+
+        if (MainWindow.OwnCombatPower(_directory) is int power and > 0)
+        {
+            numbers.Children.Add(Number(power.ToString("N0", CultureInfo.CurrentCulture), Loc("Character.CombatPower"), null));
+        }
+
+        numbers.Children.Add(Number(average.ToString("F1", CultureInfo.CurrentCulture), "Avg item level", itemLevel is null ? Gold : null));
         if (skillCount > 0)
         {
             numbers.Children.Add(Number(skillCount.ToString(), "Skills", null));
