@@ -458,7 +458,7 @@ public static class PetRoute
         }
 
         // every spawn spot (each place once), then each moved twice to the middle of the pets farmable there; the most of each pet any of them has
-        var evaluated = new List<((double X, double Z) Pos, string Island, Dictionary<int, Reach> Reach)>();
+        var evaluated = new List<((double X, double Z) Pos, string Island, Dictionary<int, Reach> Near)>();
         var anchorSeen = new HashSet<(double, double)>();
         foreach (var (_, _, spots) in pets)
         {
