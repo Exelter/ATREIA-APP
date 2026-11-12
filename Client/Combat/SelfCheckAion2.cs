@@ -2350,7 +2350,8 @@ public static class SelfCheckAion2
         System.IO.File.Delete(logFile);
         NetworkStats.Reset();
         DateTime t0 = DateTime.Now.AddSeconds(-3);
-        const string server = "10.0.0.1:13328", client = "192.168.0.2:50000";
+        // a server on the internet (a documentation address): private ones (10.x, 192.168.x as the server) are a ping reducer or VPN on the PC, see the next scenario
+        const string server = "203.0.113.1:13328", client = "192.168.0.2:50000";
         TcpSegment Up(DateTime at, uint seq, int length) => new(at, client, server, seq, new byte[length], false);
         TcpSegment Down(DateTime at, uint seq, int length, uint ack) => new(at, server, client, seq, new byte[length], true, ack);
 
@@ -2371,8 +2372,8 @@ public static class SelfCheckAion2
         Console.WriteLine($"  -> game connection recognised: {connection}");
 
         // another server a moment later is a switch (an instance), the same server again a reconnect
-        NetworkStats.Note(new TcpSegment(t0.AddSeconds(2.5), "10.0.0.9:13328", "192.168.0.2:50001", 1, new byte[10], true, 0));
-        NetworkStats.Note(new TcpSegment(t0.AddSeconds(2.6), "10.0.0.9:13328", "192.168.0.2:50002", 1, new byte[10], true, 0));
+        NetworkStats.Note(new TcpSegment(t0.AddSeconds(2.5), "203.0.113.9:13328", "192.168.0.2:50001", 1, new byte[10], true, 0));
+        NetworkStats.Note(new TcpSegment(t0.AddSeconds(2.6), "203.0.113.9:13328", "192.168.0.2:50002", 1, new byte[10], true, 0));
         NetworkSnapshot after = NetworkStats.Snapshot();
         bool switches = after.Switches == 1 && after.Reconnects == 1;
         Console.WriteLine($"  -> another server counts as a switch, the same server again as a reconnect: {switches}");
