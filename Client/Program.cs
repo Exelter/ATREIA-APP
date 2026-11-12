@@ -3146,8 +3146,8 @@ internal static class Program
 
         tracks.Add(new Combat.PositionTrack(boss, start, new[] { 0, 60000 }, new[] { 0, 0 }, new[] { 0, 0 }));
         // Eternal Ludra's own attacks in their measured shapes (assets/aion2/bosses/mechanic_areas.json): a line ahead, a cone, a circle on a player, and the objects
-        // her mechanics leave on the floor: pools that hurt around them while they stay (violet), the Airborne zones they wind up, her 6 x 6 board (its tiles light
-        // up a quarter at a time, the one square left out never) and a wave from the arena's edge
+        // her mechanics leave on the floor: pools that hurt around them while they stay (violet), the Airborne zones they wind up, her 6 x 6 board (some tiles light up,
+        // in three goes; the rest and the square left out never) and a wave
         const int ludra = 2301014, pool = 2920755, airborne = 2920793, tile = 2920772, wave = 2920760;
         var windups = new List<Combat.WindupRecord>();
         var hits = new List<Combat.DamageEvent>();
@@ -3175,21 +3175,34 @@ internal static class Program
         hits.Add(new Combat.DamageEvent(start.AddSeconds(12.3), 301, 7, 3100, false, "Attack", SkillId: 1803215));
 
         var casts = new List<Combat.ObjectCast>();
-        double[] lightUp = { 4.0, 7.7, 11.4, 15.2 };
-        int tileId = 400;
-        for (int cx = 0; cx < 6; cx++)
+        // her first board of the first kill (12 November 2026): when each tile lit up after the board appeared (0: never; -1: the square the board leaves out)
+        double[,] lightUp =
         {
-            for (int cy = 0; cy < 6; cy++)
+            { 0, -1, 4.0, 0, 7.7, 0 },
+            { 11.4, 0, 4.0, 11.4, 3.9, 0 },
+            { 0, 7.7, 7.7, 0, 0, 11.4 },
+            { 0, 3.9, 0, 0, 0, 3.9 },
+            { 7.7, 7.7, 3.9, 3.9, 7.7, 7.7 },
+            { 4.0, 3.9, 7.7, 0, 7.7, 4.0 },
+        };
+        int tileId = 400;
+        for (int cy = 0; cy < 6; cy++)
+        {
+            for (int cx = 0; cx < 6; cx++)
             {
-                if (cx == 4 && cy == 1)
+                double after = lightUp[cy, cx];
+                if (after < 0)
                 {
-                    continue; // the square to stand on
+                    continue;
                 }
 
                 int id = tileId++, tx = -1500 + cx * 600, ty = -1500 + cy * 600;
                 objects[id] = tile;
                 tracks.Add(new Combat.PositionTrack(id, start.AddSeconds(6), new[] { 0 }, new[] { tx }, new[] { ty }));
-                casts.Add(new Combat.ObjectCast(start.AddSeconds(6 + lightUp[(cx * 7 + cy * 3) % 4]), id, 1803014, 0, tx, ty, true));
+                if (after > 0)
+                {
+                    casts.Add(new Combat.ObjectCast(start.AddSeconds(6 + after), id, 1803014, 0, tx, ty, true));
+                }
             }
         }
 

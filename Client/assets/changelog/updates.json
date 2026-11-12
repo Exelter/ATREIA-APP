@@ -12,9 +12,9 @@
         {
           "kind": "new",
           "area": "Replay",
-          "title": "Eternal Ludra's boards in the replay",
-          "text": "The replay now draws Eternal Ludra's boards tile by tile. Each tile of the 6 x 6 board is its own square: amber from the moment it appears, filling up until it lights up, then red and flashing while it hurts. The one square left out is green. The 3 x 3 board of 20 m squares is drawn the same way, and her waves spread across the floor at their measured speed. The app keeps when each tile lit up with the fight, so a fight you open later from your history still shows its board, and the fight's page on atreia.app shows it too once you upload it with this version.",
-          "example": "A quarter of the tiles light up about 4 seconds after the board appears, then another quarter every few seconds. Scrub through it and you see which ones were next, and that the green square never lit up."
+          "title": "Eternal Ludra's bingo boards in the replay",
+          "text": "The replay now draws Eternal Ludra's bingo boards tile by tile. Each tile of the 6 x 6 board is its own square: the ones that are going to light up fill with amber until they do, then turn red and flash while they hurt. About half the tiles never light up; they turn green once the last ones have lit, as does the square the board leaves out. The 3 x 3 board of 20 m squares is drawn the same way, and her waves spread across the floor at their measured speed. The app keeps when each tile lit up with the fight, so a fight you open later from your history still shows its board, and the fight's page on atreia.app shows it too once you upload it with this version.",
+          "example": "The first tiles light up about 4 seconds after the board appears, more at about 8 and 11 seconds. Scrub through it and you see which ones were next, and where it stayed safe."
         },
         {
           "kind": "improved",

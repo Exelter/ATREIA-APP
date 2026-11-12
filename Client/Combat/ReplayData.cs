@@ -284,11 +284,19 @@ public static class ReplayBuilder
     }
 }
 
-/// <summary>A board of a boss (Eternal Ludra's "bingo"): the tiles that appeared together on a grid, from the first of them to the last, how many, and the cells of its grid
-/// left out, where nothing lights up (on the 6 x 6 board the one square to stand on). Centres in centimetres, as the tiles'.</summary>
-public sealed record ReplayBoard(double Start, double End, double SizeCm, int Tiles, IReadOnlyList<(double X, double Y)> Gaps);
+/// <summary>A board of a boss (Eternal Ludra's "bingo"): the tiles that appeared together on a grid, from the first of them to the last, and the cells of its grid left
+/// out, where nothing lights up (centres in centimetres, as the tiles'). On the 6 x 6 board about half the tiles light up, in three goes about 4, 8 and 11 seconds after
+/// it appears, and hurt from then until it is gone; the rest never light up (the first Ludra kill, 12 November 2026).</summary>
+public sealed record ReplayBoard(double Start, double End, double SizeCm, IReadOnlyList<ReplayArea> Tiles, IReadOnlyList<(double X, double Y)> Gaps)
+{
+    /// <summary>Whether the app saw when its tiles lit up (a fight kept before 2.0.15 has none of it): then a tile without that moment never lit up.</summary>
+    public bool Known { get; } = Tiles.Any(t => t.LitAt is not null);
 
-/// <summary>Finds the boards among a replay's areas: the squares of the same size that appeared within moments of each other.</summary>
+    /// <summary>When the last of its tiles lit up (null: not known).</summary>
+    public double? LastLit { get; } = Tiles.Max(t => t.LitAt);
+}
+
+/// <summary>Finds the boards among a replay's areas: the squares of the same size that appeared within moments of each other (every square is on one).</summary>
 public static class ReplayBoards
 {
     /// <summary>Tiles that appeared further apart than this are on two boards.</summary>
@@ -336,7 +344,7 @@ public static class ReplayBoards
                 }
             }
 
-            boards.Add(new ReplayBoard(group.Min(a => a.Start), group.Max(a => a.End), size, group.Count, gaps));
+            boards.Add(new ReplayBoard(group.Min(a => a.Start), group.Max(a => a.End), size, group, gaps));
         }
 
         return boards;

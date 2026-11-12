@@ -91,7 +91,7 @@ public static class SelfCheckMechanics
         ReplayBoard? found = ReplayBoards.Of(boardData.Areas).SingleOrDefault();
         ReplayArea? waveArea = boardData.Areas.SingleOrDefault(a => a.Shape is { Shape: "wave" });
         bool drawn = kept.Count == 36 && squares.Count == 35 && squares.All(q => q.Zone && q.Shape!.SizeCm == 600 && q.LitAt is double lit && lit >= q.Start + 3.9)
-            && found is { Tiles: 35, SizeCm: 600 } && found.Gaps.Count == 1 && found.Gaps[0] == (10000 + 2 * 600.0, 20000 + 3 * 600.0)
+            && found is { SizeCm: 600, Known: true, LastLit: > 7 } && found.Tiles.Count == 35 && found.Gaps.Count == 1 && found.Gaps[0] == (10000 + 2 * 600.0, 20000 + 3 * 600.0)
             && waveArea is { Start: 5, Facing: 45, X: 5000, Y: 5000 } && waveArea.Shape is { SpeedCmS: 1150 } && Math.Abs(waveArea.Radius - edge!.ReachCm) < 1;
         Console.WriteLine($"  -> the replay draws the board's 35 tiles lit one by one, finds the square left out and the wave where it set out: {drawn}");
         ok &= drawn;

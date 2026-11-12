@@ -8,9 +8,9 @@ namespace AionDPS.Ui;
 /// <summary>
 /// The fight from above: the group as class-coloured dots, the bosses as large ones with the way they face, the areas of the skills a boss is winding up in their own shape (a circle,
 /// a ring, a cone, a line, a cross or the whole room; amber while it winds up, filling up to the moment it lands, red with a flash as it lands), the reach of the objects a boss leaves on
-/// the floor while they stay (violet), the tiles of a board (Eternal Ludra's "bingo": amber until each lights up, then red on its beat; green, a square left out), waves spreading from
-/// where they set out, the boss's windup as a ring filling around it with the skill's name, a red ring on whoever was hit, the dead crossed out, and the last few seconds of each walk
-/// as a trail. Positions are the game's own readings (it sends them with movements and skills, not on a regular beat), drawn straight between two of them. North is up, as on the
+/// the floor while they stay (violet), the tiles of a board (Eternal Ludra's "bingo": amber filling up until each lights up, then red on its beat; the tiles that never light up
+/// turn green once the last ones have, as does a square the board leaves out), waves spreading from where they set out, the boss's windup as a ring filling around it with the
+/// skill's name, a red ring on whoever was hit, the dead crossed out, and the last few seconds of each walk as a trail. Positions are the game's own readings (it sends them with movements and skills, not on a regular beat), drawn straight between two of them. North is up, as on the
 /// game's map (10 November 2026: the map was drawn upside down before). Drag to move the map, the wheel zooms, a double click fits it again.
 /// </summary>
 public sealed class ReplayView : FrameworkElement
@@ -165,12 +165,12 @@ public sealed class ReplayView : FrameworkElement
                 continue;
             }
 
-            double fade = Math.Clamp(area.End - _time, 0, 1);
-            if (area.Shape is { Shape: "square" } tile)
+            if (area.Shape is { Shape: "square" })
             {
-                DrawTile(dc, area, tile.SizeCm ?? area.Radius * 2, fade);
-                continue;
+                continue; // a tile: with its board, below
             }
+
+            double fade = Math.Clamp(area.End - _time, 0, 1);
 
             // an object on the floor: where it is now (it may move), violet while it stays, fading in its last second
             var actor = _data.Entities.FirstOrDefault(e => e.Id == area.Actor);
@@ -179,12 +179,20 @@ public sealed class ReplayView : FrameworkElement
             dc.DrawEllipse(new SolidColorBrush(Color.FromArgb((byte)(0x38 * fade + 0x10), 0xA8, 0x6B, 0xFF)), new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xC0 * fade + 0x20), 0xB8, 0x86, 0xFF)), 1.5), c, r, r);
         }
 
-        // a board's squares left out: nothing lights up there (green while the board is on)
+        // the boards: their tiles, and the squares they leave out, where nothing lights up (green while the board is on)
         foreach (ReplayBoard board in _boards)
         {
             if (_time < board.Start || _time > board.End)
             {
                 continue;
+            }
+
+            foreach (ReplayArea tile in board.Tiles)
+            {
+                if (_time >= tile.Start && _time <= tile.End)
+                {
+                    DrawTile(dc, tile, board, Math.Clamp(tile.End - _time, 0, 1));
+                }
             }
 
             double side = board.SizeCm * _scale, fade = Math.Clamp(board.End - _time, 0, 1);
@@ -419,13 +427,14 @@ public sealed class ReplayView : FrameworkElement
     }
 
     /// <summary>
-    /// A tile of a board: amber from when it appeared, filling up to the moment it lights up; then red, flashing on the beat it hurts at; violet when the moment it lit up is not
-    /// known (a fight kept before 2.0.15). Its side in centimetres, <paramref name="fade"/> 1 until its last second.
+    /// A tile of a board: amber from when it appeared, filling up to the moment it lights up; then red, flashing on the beat it hurts at. A tile that never lights up is an
+    /// amber outline while the board's other tiles are still to light up, then green. Violet when the moments are not known (a fight kept before 2.0.15). <paramref name="fade"/>:
+    /// 1 until its last second.
     /// </summary>
-    private void DrawTile(DrawingContext dc, ReplayArea area, double sideCm, double fade)
+    private void DrawTile(DrawingContext dc, ReplayArea area, ReplayBoard board, double fade)
     {
         Point mid = ToScreen(area.X, area.Y);
-        double side = Math.Max(2, sideCm * _scale - 2);
+        double side = Math.Max(2, (area.Shape?.SizeCm ?? board.SizeCm) * _scale - 2);
         var rect = new Rect(mid.X - side / 2, mid.Y - side / 2, side, side);
         if (area.LitAt is double lit && _time >= lit)
         {
@@ -440,6 +449,20 @@ public sealed class ReplayView : FrameworkElement
             double progress = Math.Clamp((_time - area.Start) / Math.Max(0.05, soon - area.Start), 0, 1), inner = side * progress;
             dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xBA, 0x42)), new Pen(new SolidColorBrush(Color.FromArgb(0x90, 0xFF, 0xBA, 0x42)), 1), rect);
             dc.DrawRectangle(new SolidColorBrush(Color.FromArgb((byte)(0x18 + 0x48 * progress), 0xFF, 0xBA, 0x42)), null, new Rect(mid.X - inner / 2, mid.Y - inner / 2, inner, inner));
+            return;
+        }
+
+        if (board.Known)
+        {
+            if (board.LastLit is double last && _time >= last)
+            {
+                dc.DrawRectangle(new SolidColorBrush(Color.FromArgb((byte)(0x30 * fade), 0x5B, 0xE0, 0x8A)), new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xB0 * fade), 0x5B, 0xE0, 0x8A)), 1), rect);
+            }
+            else
+            {
+                dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x0C, 0xFF, 0xBA, 0x42)), new Pen(new SolidColorBrush(Color.FromArgb(0x70, 0xFF, 0xBA, 0x42)), 1), rect);
+            }
+
             return;
         }
 
