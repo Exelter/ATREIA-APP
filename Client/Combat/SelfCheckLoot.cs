@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.IO;
 using AionDPS.Aion2;
 using AionDPS.Combat.Sources;
 
