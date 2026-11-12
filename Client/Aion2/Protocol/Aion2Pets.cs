@@ -101,6 +101,9 @@ public static class Aion2Pets
         return File.Exists(path) ? path : null;
     }
 
+    /// <summary>The pet's key: the model of its monster as the game names it (KrallWar_01, Coradon_01_V01); null for an unknown pet.</summary>
+    public static string? PetKey(int petId) => Data.PetKeys.TryGetValue(petId, out string? key) ? key : null;
+
     /// <summary>The pets whose soul this monster drops (usually one).</summary>
     public static IReadOnlyList<int> PetsOfNpc(int npcId) => Data.PetsOfNpc.TryGetValue(npcId, out int[]? pets) ? pets : Array.Empty<int>();
 

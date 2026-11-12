@@ -12,8 +12,41 @@ public static class Aion2Npcs
 {
     private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "npcs", "npc_names.json");
     private static readonly string SummonFilePath = Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "npcs", "player_summon_npcs.json");
+    private static readonly string ModelFilePath = Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "npcs", "npc_models.json");
     private static Dictionary<int, Dictionary<string, string>>? _table;
     private static HashSet<int>? _playerSummons;
+    private static Dictionary<int, string>? _models;
+
+    /// <summary>
+    /// The model a monster wears, as the game names it in lower case ("drakanelite_01", "lycan_04"), for its picture; null when it is not known
+    /// (assets/aion2/npcs/npc_models.json, from the names of its spawns in the game client: Tools/monster-pictures/npc_models.py).
+    /// </summary>
+    public static string? ModelOf(int npcId) => (_models ??= LoadModels()).TryGetValue(npcId, out string? model) ? model : null;
+
+    private static Dictionary<int, string> LoadModels()
+    {
+        var models = new Dictionary<int, string>();
+        try
+        {
+            if (File.Exists(ModelFilePath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(ModelFilePath));
+                foreach (JsonProperty entry in doc.RootElement.GetProperty("models").EnumerateObject())
+                {
+                    if (int.TryParse(entry.Name, out int id) && entry.Value.GetString() is { Length: > 0 } model)
+                    {
+                        models[id] = model;
+                    }
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            // No table: monsters keep the pictures found by their pet or their name.
+        }
+
+        return models;
+    }
 
     /// <summary>True for a monster the NPC table knows that is not one of the player summons (pet, trap, aura, spirit):
     /// a spawn of it that names a player names its target (a Blazing Totem naming the player it burns), not an owner.

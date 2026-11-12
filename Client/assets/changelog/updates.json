@@ -6,6 +6,26 @@
   ],
   "versions": [
     {
+      "version": "2.0.16",
+      "date": "2026-11-13",
+      "items": [
+        {
+          "kind": "improved",
+          "area": "Grind",
+          "title": "More monsters with their picture",
+          "text": "Grind and Loot now show a picture for many more monsters. Monsters that give no pet, like the Abyss's elite Drakans, the Blades and the Draconutes, now get the picture of the model they wear, or of their own kind when the game has no picture of that exact model (a Krall for a Krall archer). A totem, a cannon or a monster the game has no picture of keeps its letter tile.",
+          "example": "Abyss Elite Drakan, Abyss Elite Priest, Abyss Elite Officer, Chief's Sentinel and Blades Elite Sentinel had only their initial; now each shows its picture."
+        },
+        {
+          "kind": "improved",
+          "area": "Meter",
+          "title": "The boss line shows how much is left in percent",
+          "text": "The boss line on the meter now shows the share of the boss's health that is left after its numbers, so you don't have to work it out. When the meter's header already names the boss, the line keeps showing the percent in place of the name, as before.",
+          "example": "Executor Tamasa at 463.94M / 1.40B now reads 463.94M / 1.40B · 33%."
+        }
+      ]
+    },
+    {
       "version": "2.0.15",
       "date": "2026-11-12",
       "items": [
