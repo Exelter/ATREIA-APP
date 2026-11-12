@@ -1121,6 +1121,11 @@ public partial class MainWindow
 
     private static void OpenUrl(string url)
     {
+        if (!Links.IsWeb(url))
+        {
+            return;
+        }
+
         try
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });

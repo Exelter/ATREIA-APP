@@ -61,6 +61,7 @@ public static class SelfCheck
         ok &= SelfCheckJourney.Run();
         ok &= SelfCheckBarParts.Run();
         ok &= SelfCheckLegion.Run();
+        ok &= SelfCheckSafety.Run();
         ok &= SelfCheckRanks.Run();
         ok &= SelfCheckValue.Run();
         ok &= SelfCheckFieldBosses.Run();

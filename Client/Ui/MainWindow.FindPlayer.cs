@@ -84,6 +84,11 @@ public partial class MainWindow
 
     private static void OpenInBrowser(string url)
     {
+        if (!Links.IsWeb(url))
+        {
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
