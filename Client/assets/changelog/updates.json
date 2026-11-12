@@ -34,6 +34,13 @@
           "text": "A single reconnect kept the Network page and its overlay on Unsteady for as long as the app ran. Reconnects and server changes now count for the current game session only, and a reconnect is a warning for ten minutes."
         },
         {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "Your group's list no longer stays up in dungeons",
+          "text": "The list of your group over the meter is meant to go away when you enter a dungeon or raid and when a boss fight begins, so the fight has the meter. It could stay the whole run: when you had opened it yourself, when the search box still held a name you looked up earlier, or when the meter missed the way into the dungeon. Now it goes in all of those cases. Open it again inside and it stays until the next boss fight begins; a search or a character's card you are reading stays until you close it.",
+          "example": "Your party forms in town and the list shows everyone's Combat Power. You walk into Fire Temple and it folds away; the meter shows the run."
+        },
+        {
           "kind": "improved",
           "area": "Replay",
           "title": "Ludra's areas measured again with the first kill",

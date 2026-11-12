@@ -36,6 +36,7 @@ public static class SelfCheck
         ok &= SelfCheckRaidDps.Run();
         ok &= SelfCheckOverheal.Run();
         ok &= SelfCheckGroupFinder.Run();
+        ok &= SelfCheckGroupList.Run();
         ok &= SelfCheckBuffUpload.Run();
         ok &= SelfCheckDummy.Run();
         ok &= SelfCheckFightReport.Run();
