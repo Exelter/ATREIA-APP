@@ -12,7 +12,15 @@ namespace AionDPS.Ui;
 /// </summary>
 public static class OverlayQuick
 {
-    public sealed record Entry(Func<string> Name, Func<MeterSettings, bool> Locked, Action<MeterSettings, bool> SetLocked, Action<MeterSettings>? Hide, string Page);
+    public sealed record Entry(Func<string> Name, Func<MeterSettings, bool> Locked, Action<MeterSettings, bool> SetLocked, Action<MeterSettings>? Hide, string Page,
+        Choice? Pick = null);
+
+    /// <summary>What an overlay shows, one of a few (the FPS overlay: the frames and the ping, or either alone): in its own settings at the overlay and on the
+    /// Overlays page.</summary>
+    public sealed record Choice(string Label, (string Id, string Text)[] Options, Func<MeterSettings, string> Get, Action<MeterSettings, string> Set);
+
+    /// <summary>The FPS overlay's choice (12 November 2026, the owner: "show ping and fps and allow options to open either both or just one").</summary>
+    internal static readonly Choice FpsShows = new("Shows", FpsOverlayShows.Choices, FpsOverlayShows.Of, (s, v) => s.FpsOverlayShows = v);
 
     private static string L(string key) => LocalizationManager.Instance[key];
 
@@ -35,7 +43,7 @@ public static class OverlayQuick
         [OverlayPlaces.BossCast] = new(() => L("Settings.Nav.Combat"), s => s.CombatCastOverlayLocked ?? s.CombatOverlayLocked, (s, v) => s.CombatCastOverlayLocked = v, s => s.ShowCombatOverlay = false, "combat"),
         [OverlayPlaces.BossHp] = new(() => L("Settings.Nav.Combat"), s => s.CombatHpOverlayLocked ?? s.CombatOverlayLocked, (s, v) => s.CombatHpOverlayLocked = v, s => s.ShowCombatOverlay = false, "combat"),
         [OverlayPlaces.TargetOfTarget] = new(() => L("Settings.Nav.Combat"), s => s.CombatOverlayLocked, (s, v) => s.CombatOverlayLocked = v, s => s.ShowCombatOverlay = false, "combat"),
-        [OverlayPlaces.Fps] = new(() => "FPS counter", s => s.FpsOverlayLocked, (s, v) => s.FpsOverlayLocked = v, s => s.ShowFpsOverlay = false, "overlays"),
+        [OverlayPlaces.Fps] = new(() => "FPS and ping", s => s.FpsOverlayLocked, (s, v) => s.FpsOverlayLocked = v, s => s.ShowFpsOverlay = false, "overlays", FpsShows),
         [OverlayPlaces.EnemyCard] = new(() => "Enemy card", s => s.EnemyCardLocked, (s, v) => s.EnemyCardLocked = v, s => s.ShowEnemyCard = false, "overlays"),
         [OverlayPlaces.EnemyRadar] = new(() => "Abyss radar", s => s.EnemyRadarLocked, (s, v) => s.EnemyRadarLocked = v, s => s.ShowEnemyRadar = false, "overlays"),
         [OverlayPlaces.DeathRecap] = new(() => "Death recap", s => s.DeathRecapLocked, (s, v) => s.DeathRecapLocked = v, s => s.ShowDeathRecap = false, "overlays"),
@@ -137,6 +145,12 @@ public sealed class OverlayQuickWindow : Window
 
         // how see-through its background is
         stack.Children.Add(SliderRow("Background", 20, 100, Math.Round(overlay.QuickOpacity * 100), v => $"{v:0} %", v => overlay.SaveQuickOpacity(v / 100)));
+
+        // what it shows, where an overlay has the choice (the FPS overlay: the frames and the ping, or either alone)
+        if (entry?.Pick is { } pick)
+        {
+            stack.Children.Add(ChoiceRow(pick));
+        }
 
         // locked or free
         var lockRow = new CheckBox
@@ -284,6 +298,53 @@ public sealed class OverlayQuickWindow : Window
             number.Text = shown(e.NewValue);
             changed(e.NewValue);
         };
+        return row;
+    }
+
+    /// <summary>A choice as a row of small buttons, the chosen one outlined in the accent colour; a click keeps it at once.</summary>
+    private static FrameworkElement ChoiceRow(OverlayQuick.Choice pick)
+    {
+        var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(78) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var text = new TextBlock { Text = pick.Label, FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center };
+        text.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        row.Children.Add(text);
+        var buttons = new WrapPanel();
+        var all = new List<(string Id, Border Button, TextBlock Text)>();
+        void Mark(string chosen)
+        {
+            foreach (var (id, button, label) in all)
+            {
+                bool on = id == chosen;
+                button.SetResourceReference(Border.BorderBrushProperty, on ? "Brush.Accent" : "Brush.Border");
+                button.SetResourceReference(Border.BackgroundProperty, on ? "Brush.ControlHover" : "Brush.Control");
+                label.SetResourceReference(TextBlock.ForegroundProperty, on ? "Brush.Accent" : "Brush.Text");
+                label.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
+            }
+        }
+
+        foreach ((string id, string name) in pick.Options)
+        {
+            var label = new TextBlock { Text = name, FontSize = 12 };
+            var button = new Border { Child = label, Padding = new Thickness(8, 3, 8, 4), Margin = new Thickness(0, 0, 4, 4), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1),
+                Cursor = Cursors.Hand };
+            button.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                MeterSettings s = MeterSettings.Load();
+                pick.Set(s, id);
+                s.Save();
+                Mark(id);
+                OverlayQuick.RaiseChanged(s);
+            };
+            all.Add((id, button, label));
+            buttons.Children.Add(button);
+        }
+
+        Mark(pick.Get(MeterSettings.Load()));
+        Grid.SetColumn(buttons, 1);
+        row.Children.Add(buttons);
         return row;
     }
 

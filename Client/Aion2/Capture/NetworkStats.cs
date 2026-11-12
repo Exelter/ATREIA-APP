@@ -26,7 +26,9 @@ public sealed record NetworkSnapshot(
     TimeSpan? SinceLastStall,
     string? LastStallVerdict,
     TimeSpan? UnackedFor,
-    NetworkProbeSnapshot Probe);
+    NetworkProbeSnapshot Probe,
+    bool Relayed = false,
+    TimeSpan? SinceLastReconnect = null);
 
 /// <summary>A pause of the game connection: the server sent nothing for a while although it had been busy, and what the PC saw meanwhile.</summary>
 public sealed record NetworkStall(DateTime Start, DateTime End, int ClientSegments, int ServerAcks, int Retransmissions, string? Verdict)
@@ -40,6 +42,11 @@ public sealed record NetworkStall(DateTime Start, DateTime End, int ClientSegmen
 /// acknowledgement of it (Karn's rule: retransmitted segments give no sample). Because the capture sits on the
 /// player's own PC, that is the whole path to the server. An acknowledgement that rides on game data waits for
 /// the server's own processing, so the figure is an estimate, a little above the pure network time.
+/// <para>A game connection to an address on this PC or the local network (127.0.0.1, 192.168.x.x ...) is relayed: a ping reducer or VPN (ExitLag, a local
+/// proxy) takes the game's traffic there and carries it to the server its own way. Its acknowledgements come from that program at once, so they time nothing
+/// (12 November 2026, the owner: "why does the network analysis show 0?" - 0 ms, min 0, max 0 through ExitLag on 127.0.0.1); no ping is taken from them,
+/// and loss on that last hop says nothing either. Every zone and instance comes through the same local address there, so a new connection to it is a server
+/// change, not a reconnect.</para>
 /// Fed from the capture's worker thread, read from the UI thread.
 /// </summary>
 public static class NetworkStats
@@ -61,6 +68,7 @@ public static class NetworkStats
     private static Connection? _connection;
     private static int _switches;
     private static int _reconnects;
+    private static DateTime _lastReconnect = DateTime.MinValue;
     private static DateTime _sessionSince;
     private static DateTime _lastData = DateTime.MinValue;
     private static long _checkedSecond;
@@ -112,6 +120,7 @@ public static class NetworkStats
     {
         public string Server = "";
         public string Client = "";
+        public bool Relayed;                // to an address on this PC or the local network: a ping reducer or VPN carries it on (see the class)
         public DateTime Since;
         public bool HaveServerEnd;
         public uint ServerEnd;
@@ -156,6 +165,7 @@ public static class NetworkStats
             _connection = null;
             _switches = 0;
             _reconnects = 0;
+            _lastReconnect = DateTime.MinValue;
             _sessionSince = DateTime.MinValue;
             _lastData = DateTime.MinValue;
         }
@@ -179,21 +189,33 @@ public static class NetworkStats
                 }
 
                 string server = segment.FromServer ? segment.Source : segment.Destination;
+                bool relayed = IsLocalAddress(server);
                 string how;
                 if (_connection is null || segment.Timestamp - _lastData > TimeSpan.FromSeconds(30))
                 {
-                    _sessionSince = segment.Timestamp; // the first connection, or one after a long silence: a new session
+                    // the first connection, or one after a long silence: a new session, whose server changes and reconnects start from none (they used to
+                    // count for as long as the app ran, so one reconnect kept the overlay "Unsteady" for the rest of the evening)
+                    _sessionSince = segment.Timestamp;
+                    _switches = 0;
+                    _reconnects = 0;
+                    _lastReconnect = DateTime.MinValue;
                     how = "new session";
                 }
-                else if (_connection.Server == server)
+                else if (_connection.Server == server && !relayed)
                 {
                     _reconnects++; // the same server again: the connection was lost and made anew
+                    _lastReconnect = segment.Timestamp;
                     how = "RECONNECT to the same server (the connection was lost)";
                 }
                 else
                 {
-                    _switches++; // another server (a zone, an instance): normal
-                    how = "server change (zone or instance)";
+                    _switches++; // another server (a zone, an instance): normal; through a ping reducer every one comes to the same local address
+                    how = _connection.Server == server ? "server change (zone or instance) through the same program on this PC" : "server change (zone or instance)";
+                }
+
+                if (relayed)
+                {
+                    how += "; the address is on this PC or the local network: a ping reducer or VPN carries the game's traffic on, its ping and loss can't be seen here";
                 }
 
                 string client = segment.FromServer ? segment.Destination : segment.Source;
@@ -205,6 +227,7 @@ public static class NetworkStats
                 {
                     Server = server,
                     Client = client,
+                    Relayed = relayed,
                     Since = segment.Timestamp,
                 };
                 Pings.Clear();
@@ -290,7 +313,8 @@ public static class NetworkStats
                         covered = c.Sent.Dequeue();
                     }
 
-                    if (covered is { } hit)
+                    // a relayed connection's acknowledgements come from the program on this PC at once: they time nothing (see the class)
+                    if (covered is { } hit && !c.Relayed)
                     {
                         double ms = (segment.Timestamp - hit.At).TotalMilliseconds;
                         if (ms is >= 0 and < 5000)
@@ -487,6 +511,43 @@ public static class NetworkStats
         }
     }
 
+    /// <summary>
+    /// Whether an "address:port" is on this PC or the local network: loopback (127.x, ::1), the private ranges (10.x, 172.16-31.x, 192.168.x), link-local
+    /// (169.254.x, fe80::) and IPv6's own local range (fc00::/7). A game server is never there; a ping reducer, a VPN or a proxy is.
+    /// </summary>
+    public static bool IsLocalAddress(string? endpoint)
+    {
+        if (string.IsNullOrEmpty(endpoint))
+        {
+            return false;
+        }
+
+        int colon = endpoint.LastIndexOf(':');
+        string host = colon > 0 ? endpoint[..colon] : endpoint;
+        if (!System.Net.IPAddress.TryParse(host.Trim('[', ']'), out System.Net.IPAddress? address))
+        {
+            return false;
+        }
+
+        if (address.IsIPv4MappedToIPv6)
+        {
+            address = address.MapToIPv4();
+        }
+
+        if (System.Net.IPAddress.IsLoopback(address))
+        {
+            return true;
+        }
+
+        if (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        {
+            byte[] b = address.GetAddressBytes();
+            return b[0] == 10 || (b[0] == 172 && b[1] is >= 16 and <= 31) || (b[0] == 192 && b[1] == 168) || (b[0] == 169 && b[1] == 254);
+        }
+
+        return address.IsIPv6LinkLocal || address.IsIPv6SiteLocal || (address.GetAddressBytes()[0] & 0xFE) == 0xFC;
+    }
+
     /// <summary>The pauses of the connection that ended after a moment (the last fifty are kept).</summary>
     public static IReadOnlyList<NetworkStall> StallHistory(DateTime from)
     {
@@ -565,7 +626,8 @@ public static class NetworkStats
             TimeSpan? since = _lastData == DateTime.MinValue ? null : now - _lastData;
             return new NetworkSnapshot(c is not null, c?.Server, c is null ? null : now - _sessionSince, _switches, _reconnects,
                 current, average, min, max, jitter, down, up, peak, segments, retrans, gaps, since, queued, dropped,
-                stallCount, longest, last is null ? null : now - last.End, last?.Verdict, unacked, NetworkProbe.Snapshot());
+                stallCount, longest, last is null ? null : now - last.End, last?.Verdict, unacked, NetworkProbe.Snapshot(),
+                c?.Relayed ?? false, _lastReconnect == DateTime.MinValue ? null : now - _lastReconnect);
         }
     }
 }

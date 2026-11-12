@@ -226,9 +226,13 @@ public sealed class MeterSettings
     /// the ids of the lines switched off in the Network analysis settings are kept in <see cref="NetworkOverlayHidden"/> (everything shows by default).</summary>
     public bool ShowNetworkOverlay { get; set; }
 
-    /// <summary>The FPS counter over the game (FpsOverlay.cs): the game's frames per second and its 1 % low, read from Windows' own frame timing. Off until
-    /// switched on.</summary>
+    /// <summary>The FPS counter over the game (FpsOverlay.cs): the game's frames per second and its 1 % low, read from Windows' own frame timing, and the ping
+    /// beside them. Off until switched on.</summary>
     public bool ShowFpsOverlay { get; set; }
+
+    /// <summary>What the FPS overlay shows (12 November 2026, the owner: "for fps, show ping and fps and allow options to open either both or just one"):
+    /// "both" (the frames per second and the ping side by side), "fps" or "ping"; anything else is both (<see cref="FpsOverlayShows"/>).</summary>
+    public string FpsOverlayShows { get; set; } = "both";
 
     /// <summary>Every overlay moves with the mouse while Alt is held (OverlayAltDrag.cs). Off by default (10 November 2026, a tester: "these move if I drag them,
     /// they're not locked now" - Alt is the game's own key for the cursor, so clicks in the game with it held took the overlays along); they are placed in the

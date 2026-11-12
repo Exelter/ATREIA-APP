@@ -162,10 +162,13 @@ public sealed class NpcapCaptureService : IDisposable
         }
 
         int[] ports = _serverPorts;
-        if (_discovering && ports.Length > 0 && !ports.Contains(tcp.SourcePort) && !ports.Contains(tcp.DestinationPort))
+        if (!Keeps(ports, Network is { Length: > 0 }, tcp.SourcePort, tcp.DestinationPort))
         {
-            // Not a known game port: only ask whether it is the game's stream; the segment itself is dropped.
-            if (payload.Length > 0 && _flowDetector.Observe(tcp.SourcePort, payload, DateTime.UtcNow))
+            // Not a known game port: during the wide search, only ask whether it is the game's stream; the segment itself is dropped either way. Outside the
+            // search too: the driver still hands over what the wide filter let in a moment before it narrowed again, and one such segment became "the game
+            // connection" of the network page (12 November 2026: an upload to a website, 104.19.x.x:443, while the game was closed) and stopped the search
+            // for the game for good.
+            if (_discovering && payload.Length > 0 && _flowDetector.Observe(tcp.SourcePort, payload, DateTime.UtcNow))
             {
                 AdoptPort(tcp.SourcePort);
             }
@@ -199,6 +202,11 @@ public sealed class NpcapCaptureService : IDisposable
             // Queue already completed: the capture is being stopped.
         }
     }
+
+    /// <summary>Whether a segment goes on to the meter: one of the game's ports at either end, or everything when no port is known yet (calibration
+    /// recordings) or a whole network is recorded (the diagnostic recording).</summary>
+    internal static bool Keeps(int[] ports, bool wholeNetwork, int sourcePort, int destinationPort) =>
+        ports.Length == 0 || wholeNetwork || ports.Contains(sourcePort) || ports.Contains(destinationPort);
 
     /// <summary>The game was found on another port: capture it from now on, and go back to the narrow filter.</summary>
     private void AdoptPort(int port)

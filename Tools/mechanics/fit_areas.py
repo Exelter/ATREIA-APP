@@ -222,7 +222,8 @@ def main(paths):
     out = {
         '_note': [
             'Boss mechanics of Abyssal Forge: Ludra as they land, measured from 31 pulls of Eternal Ludra and the other bosses of the run (debug recordings of',
-            '7 and 8 November 2026, Tools/mechanics/fit_areas.py). areas: per skill a monster winds up, its shape on the floor around the spot the windup aims at',
+            '7 and 8 November 2026) and the three pulls of 12 November 2026, two wipes at 9 and 5 % and the first kill, the only ones below 9 % (Tools/mechanics/',
+            'fit_areas.py). areas: per skill a monster winds up, its shape on the floor around the spot the windup aims at',
             '(circle; ring: inner to radius; cone: radius and half the angle around the facing; line: from behind the spot to length ahead of it, width to each side;',
             'cross: two such bars of length each way; room: everybody), sizes in centimetres, onTarget: the spot is the targeted player, landMs: the time from the end',
             'of the windup to the first hit, seen: how many landings it rests on, fit: how well the shape told the players it hit from the ones it missed (F1).',

@@ -265,7 +265,37 @@ internal static class FpsMeter
     }
 }
 
-/// <summary>The FPS counter over the game: a small pill with the frames per second, coloured by how smooth it is, and the 1 % low under it.</summary>
+/// <summary>What the FPS overlay shows (<see cref="MeterSettings.FpsOverlayShows"/>): the frames per second and the ping, or just one of them.</summary>
+internal static class FpsOverlayShows
+{
+    public const string Both = "both", Fps = "fps", Ping = "ping";
+
+    /// <summary>The choices as the Overlays page and the overlay's own settings name them, in their order.</summary>
+    public static readonly (string Id, string Text)[] Choices = { (Both, "FPS and ping"), (Fps, "FPS"), (Ping, "Ping") };
+
+    /// <summary>The choice in the settings; anything unknown (an older settings file has none) is both.</summary>
+    public static string Of(MeterSettings s) => s.FpsOverlayShows is Fps or Ping ? s.FpsOverlayShows : Both;
+
+    public static bool ShowsFps(string shows) => shows != Ping;
+
+    public static bool ShowsPing(string shows) => shows != Fps;
+}
+
+/// <summary>
+/// The ping as the FPS overlay shows it: the estimate the Network page shows for the game connection (<see cref="Aion2.Capture.NetworkStats"/>, from the game's own
+/// traffic; nothing is sent). None while there is no measurement, and none through a ping reducer or VPN on this PC, where it can't be seen.
+/// </summary>
+internal readonly record struct PingReading(double? Ms, bool Relayed)
+{
+    public static PingReading Now()
+    {
+        Aion2.Capture.NetworkSnapshot s = Aion2.Capture.NetworkStats.Snapshot();
+        return new PingReading(s.Relayed ? null : s.PingMs, s.Relayed);
+    }
+}
+
+/// <summary>The FPS counter over the game: a small pill with the frames per second, coloured by how smooth it is, and the 1 % low under it; the ping beside them
+/// (or either alone).</summary>
 internal sealed class FpsOverlayWindow : MovableOverlay
 {
     private readonly StackPanel _content = new() { MinWidth = 86 };
@@ -340,10 +370,15 @@ internal sealed class FpsOverlayWindow : MovableOverlay
         }
     }
 
-    /// <summary>The counter: the frames per second big, coloured (green from 60, amber from 30, red under), "FPS" beside it, the 1 % low under it.</summary>
-    public void Render(double? fps, double? low, FpsMeter.State state)
+    /// <summary>
+    /// The counter: the frames per second big, coloured (green from 60, amber from 30, red under), "FPS" beside it, the 1 % low under it; and the ping beside
+    /// them (green under 60 ms, amber under 120, red above, as on the Network page), or either alone (<see cref="FpsOverlayShows"/>).
+    /// </summary>
+    public void Render(double? fps, double? low, FpsMeter.State state, string shows = FpsOverlayShows.Fps, PingReading? ping = null)
     {
-        string key = $"{fps:0}|{low:0}|{state}";
+        bool showsFps = FpsOverlayShows.ShowsFps(shows);
+        PingReading? shownPing = FpsOverlayShows.ShowsPing(shows) ? ping : null;
+        string key = (showsFps ? $"{fps:0}|{low:0}|{state}" : "-") + "|" + (shownPing is { } p ? $"{p.Ms:0}|{p.Relayed}" : "-");
         if (key == _shown)
         {
             return;
@@ -352,59 +387,102 @@ internal sealed class FpsOverlayWindow : MovableOverlay
         _shown = key;
         _content.Children.Clear();
         _allow = null;
-        if (state == FpsMeter.State.NoAccess)
+        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        if (showsFps)
         {
-            var head = new TextBlock { Text = "FPS", FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(OverlaySkin.Gold) };
-            _content.Children.Add(head);
-            var why = new TextBlock { Text = "Windows has to allow the counter once.", FontSize = 10.5, TextWrapping = TextWrapping.Wrap, MaxWidth = 180, Margin = new Thickness(0, 2, 0, 5) };
-            why.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
-            _content.Children.Add(why);
-            var text = new TextBlock { Text = "Allow", FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x16, 0x10)) };
-            _allow = new Border
-            {
-                Child = text, Padding = new Thickness(10, 2, 10, 3), CornerRadius = new CornerRadius(6), Background = new SolidColorBrush(OverlaySkin.Gold), Cursor = System.Windows.Input.Cursors.Hand,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                ToolTip = "Adds you to Windows' \"Performance Log Users\" group (Windows asks first), as the Xbox Game Bar does for its FPS counter. Sign out and in again afterwards.",
-            };
-            _allow.MouseLeftButtonUp += (_, e) =>
-            {
-                e.Handled = true;
-                bool asked = FpsMeter.AskForAccess();
-                _content.Children.Remove(_allow);
-                var then = new TextBlock { Text = asked ? "Sign out of Windows and in again, then it counts." : "Windows said no: the counter stays off.", FontSize = 10.5,
-                    TextWrapping = TextWrapping.Wrap, MaxWidth = 180, Foreground = new SolidColorBrush(asked ? OverlaySkin.Good : OverlaySkin.Warn) };
-                _content.Children.Add(then);
-                _shown = "asked";
-            };
-            _content.Children.Add(_allow);
-            return;
+            row.Children.Add(state == FpsMeter.State.NoAccess ? AccessBlock() : FpsBlock(fps, low, state));
         }
 
-        var line = new StackPanel { Orientation = Orientation.Horizontal };
-        Color colour = fps is not double f ? Color.FromRgb(0x9A, 0x9A, 0xA4) : f >= 60 ? OverlaySkin.Good : f >= 30 ? OverlaySkin.Warn : OverlaySkin.Bad;
-        var number = new TextBlock
+        if (shownPing is { } reading)
         {
-            Text = fps is double v ? Math.Round(v).ToString("0", CultureInfo.CurrentCulture) : state == FpsMeter.State.Failed ? "!" : "–", FontSize = 22, FontWeight = FontWeights.Bold,
-            Foreground = new SolidColorBrush(colour), VerticalAlignment = VerticalAlignment.Bottom,
-            ToolTip = state == FpsMeter.State.Failed ? "Windows' frame timing can't be read: " + FpsMeter.Error : null,
-        };
+            if (showsFps)
+            {
+                row.Children.Add(new Border { Width = 1, Margin = new Thickness(11, 4, 11, 4), Background = new SolidColorBrush(Color.FromArgb(0x38, 0xFF, 0xFF, 0xFF)) });
+            }
+
+            row.Children.Add(PingBlock(reading));
+        }
+
+        _content.Children.Add(row);
+    }
+
+    private static StackPanel FpsBlock(double? fps, double? low, FpsMeter.State state)
+    {
+        var block = new StackPanel();
+        Color colour = fps is not double f ? Grey : f >= 60 ? OverlaySkin.Good : f >= 30 ? OverlaySkin.Warn : OverlaySkin.Bad;
+        string? tip = state == FpsMeter.State.Failed ? "Windows' frame timing can't be read: " + FpsMeter.Error : null;
+        block.Children.Add(BigLine(fps is double v ? Math.Round(v).ToString("0", CultureInfo.CurrentCulture) : state == FpsMeter.State.Failed ? "!" : "–", colour, "FPS", tip));
+        block.Children.Add(SubLine(low is double l ? "1% low " + Math.Round(l).ToString("0", CultureInfo.CurrentCulture)
+            : fps is null ? (state == FpsMeter.State.Running ? "waiting for the game" : "starting…") : "1% low …"));
+        return block;
+    }
+
+    /// <summary>The ping: the milliseconds big in the colour of the Network page, "ms" beside them, "ping" under them; through a ping reducer a dash and why.</summary>
+    private static StackPanel PingBlock(PingReading ping)
+    {
+        var block = new StackPanel();
+        Color colour = ping.Ms is not double ms ? Grey : ms < 60 ? OverlaySkin.Good : ms < 120 ? OverlaySkin.Warn : OverlaySkin.Bad;
+        string tip = ping.Relayed
+            ? "The game's traffic goes through a ping reducer or VPN on this PC: the ping to the server can't be seen from here. Its own window shows it."
+            : "Your ping to the game server, timed from the game's own traffic (as on the Network page). Nothing is sent.";
+        block.Children.Add(BigLine(ping.Ms is double m ? Math.Round(m).ToString("0", CultureInfo.CurrentCulture) : "–", colour, "ms", tip));
+        block.Children.Add(SubLine(ping.Relayed ? "ping reducer" : ping.Ms is null ? "ping …" : "ping"));
+        return block;
+    }
+
+    private static readonly Color Grey = Color.FromRgb(0x9A, 0x9A, 0xA4);
+
+    private static StackPanel BigLine(string text, Color colour, string unit, string? tip)
+    {
+        var line = new StackPanel { Orientation = Orientation.Horizontal, ToolTip = tip };
+        var number = new TextBlock { Text = text, FontSize = 22, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(colour), VerticalAlignment = VerticalAlignment.Bottom };
         number.SetValue(System.Windows.Documents.Typography.NumeralAlignmentProperty, FontNumeralAlignment.Tabular);
         line.Children.Add(number);
-        line.Children.Add(new TextBlock { Text = "FPS", FontSize = 10.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(OverlaySkin.Gold), Margin = new Thickness(5, 0, 0, 4),
+        line.Children.Add(new TextBlock { Text = unit, FontSize = 10.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(OverlaySkin.Gold), Margin = new Thickness(5, 0, 0, 4),
             VerticalAlignment = VerticalAlignment.Bottom });
-        _content.Children.Add(line);
-        var sub = new TextBlock
-        {
-            Text = low is double l ? "1% low " + Math.Round(l).ToString("0", CultureInfo.CurrentCulture) : fps is null ? (state == FpsMeter.State.Running ? "waiting for the game" : "starting…") : "1% low …",
-            FontSize = 10, Margin = new Thickness(0, -2, 0, 0),
-        };
+        return line;
+    }
+
+    private static TextBlock SubLine(string text)
+    {
+        var sub = new TextBlock { Text = text, FontSize = 10, Margin = new Thickness(0, -2, 0, 0) };
         sub.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
-        _content.Children.Add(sub);
+        return sub;
+    }
+
+    /// <summary>Windows has to let the counter listen first: the reason and a button that asks for it once.</summary>
+    private StackPanel AccessBlock()
+    {
+        var block = new StackPanel();
+        block.Children.Add(new TextBlock { Text = "FPS", FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(OverlaySkin.Gold) });
+        var why = new TextBlock { Text = "Windows has to allow the counter once.", FontSize = 10.5, TextWrapping = TextWrapping.Wrap, MaxWidth = 180, Margin = new Thickness(0, 2, 0, 5) };
+        why.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        block.Children.Add(why);
+        var text = new TextBlock { Text = "Allow", FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x16, 0x10)) };
+        var allow = new Border
+        {
+            Child = text, Padding = new Thickness(10, 2, 10, 3), CornerRadius = new CornerRadius(6), Background = new SolidColorBrush(OverlaySkin.Gold), Cursor = System.Windows.Input.Cursors.Hand,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            ToolTip = "Adds you to Windows' \"Performance Log Users\" group (Windows asks first), as the Xbox Game Bar does for its FPS counter. Sign out and in again afterwards.",
+        };
+        allow.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            bool asked = FpsMeter.AskForAccess();
+            block.Children.Remove(allow);
+            var then = new TextBlock { Text = asked ? "Sign out of Windows and in again, then it counts." : "Windows said no: the counter stays off.", FontSize = 10.5,
+                TextWrapping = TextWrapping.Wrap, MaxWidth = 180, Foreground = new SolidColorBrush(asked ? OverlaySkin.Good : OverlaySkin.Warn) };
+            block.Children.Add(then);
+            _shown = "asked";
+        };
+        block.Children.Add(allow);
+        _allow = allow;
+        return block;
     }
 }
 
-/// <summary>Runs the FPS counter: once every half second it reads the settings and the count, and shows the overlay only while the game is in front (or while
-/// the overlays are unlocked so it can be placed). Windows' frame timing is listened to only while the counter is on.</summary>
+/// <summary>Runs the FPS counter: once every half second it reads the settings, the count and the ping, and shows the overlay only while the game is in front (or
+/// while the overlays are unlocked so it can be placed). Windows' frame timing is listened to only while the counter is on and shows the frames.</summary>
 internal sealed class FpsOverlayController : IDisposable
 {
     private readonly System.Windows.Threading.DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
@@ -433,18 +511,23 @@ internal sealed class FpsOverlayController : IDisposable
             _settingsAt = DateTime.UtcNow;
         }
 
-        if (!_settings.ShowFpsOverlay)
+        string shows = FpsOverlayShows.Of(_settings);
+        bool countsFrames = FpsOverlayShows.ShowsFps(shows);
+        if (!_settings.ShowFpsOverlay || !countsFrames)
         {
-            _overlay?.ShowOverlay(false);
+            // off, or the ping alone: Windows' frame timing isn't listened to (and needs no access then)
             if (FpsMeter.Status != FpsMeter.State.Off)
             {
                 FpsMeter.Stop();
             }
 
-            return;
+            if (!_settings.ShowFpsOverlay)
+            {
+                _overlay?.ShowOverlay(false);
+                return;
+            }
         }
-
-        if (FpsMeter.Status == FpsMeter.State.Off)
+        else if (FpsMeter.Status == FpsMeter.State.Off)
         {
             FpsMeter.Start();
         }
@@ -458,9 +541,15 @@ internal sealed class FpsOverlayController : IDisposable
             return;
         }
 
-        (double? fps, double? low) = FpsMeter.Read();
-        // while it is placed and the game hands over no frames, a sample fills it in its real size
-        _overlay.Render(fps ?? (!locked ? 144 : null), low ?? (!locked && fps is null ? 118 : null), FpsMeter.Status);
+        (double? fps, double? low) = countsFrames ? FpsMeter.Read() : (null, null);
+        PingReading? ping = FpsOverlayShows.ShowsPing(shows) ? PingReading.Now() : null;
+        // while it is placed and the game hands over no frames (or there is no ping yet), a sample fills it in its real size
+        if (!locked && ping is { Ms: null, Relayed: false })
+        {
+            ping = new PingReading(28, false);
+        }
+
+        _overlay.Render(fps ?? (!locked ? 144 : null), low ?? (!locked && fps is null ? 118 : null), FpsMeter.Status, shows, ping);
         _overlay.ShowOverlay(true);
     }
 }

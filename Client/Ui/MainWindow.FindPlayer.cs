@@ -194,7 +194,8 @@ public partial class MainWindow
         }
 
         InitFindRegion();
-        _findAuto = false; // opened by the player: it stays until closed
+        _findAuto = false; // opened by the player: it stays until closed, or a dungeon or boss fight begins (GroupListRule)
+        _findOpenedAt = DateTime.Now;
         OverlayFind.Visibility = Visibility.Visible;
         ShowGroupLists(); // the group's players and those fighting with it, a click each, until a name is searched
         StartGroupWatch();
@@ -237,6 +238,8 @@ public partial class MainWindow
         OverlayFindResults.Children.Clear();
         OverlayFindCard.Visibility = Visibility.Collapsed;
         OverlayFindStatus.Visibility = Visibility.Collapsed;
+        // the next opening starts empty: an old search's name left in the box kept the group list from ever going by itself (12 November 2026)
+        OverlayFindBox.Text = "";
     }
 
     private void OnOverlayFindTextChanged(object sender, TextChangedEventArgs e)
@@ -1008,8 +1011,17 @@ public partial class MainWindow
     /// <summary>The roster names other players (the meter stays up then, with "stay up in dungeons and while in a group").</summary>
     private bool _groupSeen;
 
-    /// <summary>The search was opened by <see cref="AutoShowGroup"/>: it folds away when a boss fight starts.</summary>
+    /// <summary>The search was opened by <see cref="AutoShowGroup"/>: it also goes when the group does.</summary>
     private bool _findAuto;
+
+    /// <summary>When the search last opened (by the player or by itself): a dungeon or boss fight begun after it folds the group list away.</summary>
+    private DateTime _findOpenedAt = DateTime.MinValue;
+
+    /// <summary>Where the player is and whether a boss fight is on, for when the group list goes (see <see cref="GroupListRule"/>).</summary>
+    private readonly GroupListRule _groupListRule = new();
+
+    /// <summary>The search shows only the group's lists: no search's results and no character's card the player is reading.</summary>
+    private bool FindShowsGroupOnly => _findShown is null && _findPlayers.Count == 0;
 
     private string _autoGroupKey = "";
     private DateTime _autoGroupAt = DateTime.MinValue;
@@ -1037,16 +1049,17 @@ public partial class MainWindow
     /// The group by itself (10 November 2026, the owner: "make the meter auto search and show the party members once in any party, Ludra, exploration,
     /// Conquest"): once a second, while the meter is up, the roster is read; a new group (someone joined, another party) opens Find a player on the group - never
     /// taking the keyboard from the game - and looks the party members up in the background, so their Combat Power shows on their rows and a click shows their
-    /// card at once. Not in a boss fight; folded away when one starts. Going into a dungeon or raid folds it away too, and in one it does not open by itself
-    /// (11 November 2026, a player: "pls make that this goes away once you enter the dungeon ... it sits there all the time until you x it"). With "Show my
-    /// group" off it only notes the group.
+    /// card at once. Not in a boss fight, nor in a dungeon, raid or arena. A dungeon or boss fight begun after the list opened folds it away, whoever opened
+    /// it (11 November 2026, a player: "pls make that this goes away once you enter the dungeon ... it sits there all the time until you x it"; 12 November
+    /// 2026, the owner: "why does this stay again, in dungeons. It should stop"): the dungeon by the zone, or by the monsters around when the meter missed
+    /// the way in (<see cref="InDungeonNow"/>); a search's results or a card the player is reading stay. With "Show my group" off it only notes the group.
     /// </summary>
     private void AutoShowGroup(DateTime now)
     {
-        // a boss fight starting folds the group away: the fight is on the meter then
-        if (_findAuto && OverlayFind.Visibility == Visibility.Visible && now - _lastOwnBossFight < TimeSpan.FromSeconds(3) && OverlayFindBox.Text.Length == 0 && _findShown is null)
+        _groupListRule.Note(now, _scopeContext == ScopeContext.Instance || InDungeonNow, _lastOwnBossFight);
+        if (OverlayFind.Visibility == Visibility.Visible && _groupListRule.Folds(_findOpenedAt, FindShowsGroupOnly))
         {
-            CloseFindPlayer();
+            CloseFindPlayer(); // the fight or the dungeon is on the meter now
         }
 
         if (now - _autoGroupAt < TimeSpan.FromSeconds(1) || Headless)
@@ -1057,11 +1070,7 @@ public partial class MainWindow
         _autoGroupAt = now;
         IReadOnlyList<GroupMate> mates = GroupMates();
         _groupSeen = mates.Count > 0;
-        bool inside = _scopeContext == ScopeContext.Instance;
-        if (inside && _findAuto && OverlayFind.Visibility == Visibility.Visible && OverlayFindBox.Text.Length == 0 && _findShown is null)
-        {
-            CloseFindPlayer(); // in the dungeon: the group list it opened goes (one the player is using stays)
-        }
+        bool inside = _groupListRule.Inside;
 
         if (mates.Count == 0)
         {
@@ -1098,10 +1107,12 @@ public partial class MainWindow
         }
 
         InitFindRegion();
+        OverlayFindBox.Text = ""; // the group's list, never under an old search's name
         OverlayFind.Visibility = Visibility.Visible;
         ShowGroupLists();
         StartGroupWatch();
         _findAuto = true;
+        _findOpenedAt = now;
     }
 
     /// <summary>The party members the search hasn't found lately, one after the other (the website's searches are limited: at most ten a minute).</summary>

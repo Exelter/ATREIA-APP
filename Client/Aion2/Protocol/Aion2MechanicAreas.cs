@@ -21,7 +21,8 @@ public sealed record MechanicHazard(int NpcId, double RadiusCm, double Seconds, 
 /// <summary>
 /// The boss mechanics measured on recorded fights (10 November 2026, the owner: "for Ludra, if we have more logs, make it more accurate with the animations,
 /// where the mechanics happen"): 31 pulls of Eternal Ludra and the other bosses of Abyssal Forge: Ludra, read from the debug recordings by
-/// Tools/mechanics/fit_areas.py. For a skill: its shape and size around the spot its windup aims at and the time from the windup's end to the hit; for the
+/// Tools/mechanics/fit_areas.py, and the three pulls of 12 November 2026 with the first kill (the owner: "Ludra defeated, go do it better with the actual log").
+/// For a skill: its shape and size around the spot its windup aims at and the time from the windup's end to the hit; for the
 /// objects a boss leaves on the floor: how far they reach and how long they stay. Most of Ludra's dangerous attacks are dealt by such objects, not by the boss
 /// (the Airborne zones, the pools): the replay follows them and draws their reach.
 /// </summary>
