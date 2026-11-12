@@ -164,7 +164,8 @@ jobs:
             @('render-history', 'history-nightmare.png', 'Nightmare'),
             @('render-history', 'history-bosses.png', 'Boss-fights'),
             @('render-history', 'history-bests.png', 'Personal-bests'),
-            @('render-replay', 'replay-ludra.png', '12.2')
+            @('render-replay', 'replay-ludra.png', '12.2'),
+            @('render-replay', 'replay-ludra-board.png', '17.0')
           )
           foreach ($s in $shots) {
             $out = Join-Path (Resolve-Path screens).Path $s[1]

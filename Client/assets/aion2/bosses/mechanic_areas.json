@@ -7,7 +7,10 @@
   "cross: two such bars of length each way; room: everybody), sizes in centimetres, onTarget: the spot is the targeted player, landMs: the time from the end",
   "of the windup to the first hit, seen: how many landings it rests on, fit: how well the shape told the players it hit from the ones it missed (F1).",
   "A skill without a shape here keeps the game client's word (skill_shapes.json) and the size the meter learns. hazards: per object a boss leaves on the floor,",
-  "the radius it hits players in, how long it stays (seconds) and its skills. objects: every such object (the replay follows them)."
+  "the radius it hits players in, how long it stays (seconds) and its skills. objects: every such object (the replay follows them).",
+  "floors: objects on a regular grid that hurt whoever stands on their square (size: the side, the grid's spacing; board: places across and down; seconds:",
+  "how long one stays; tickMs: the beat it hurts at; litSeconds: when tiles light up after they appear, quartiles; the app sends each tile's own). waves:",
+  "objects whose hit spreads from where they stand (speed in cm/s, width of the band, seconds it runs, half: 90 only ahead of the object, 180 all round)."
  ],
  "areas": {
   "1239200": {
@@ -312,15 +315,6 @@
    "seen": 24,
    "fit": 0.76
   },
-  "2920748": {
-   "radius": 400,
-   "seconds": 12.1,
-   "skills": [
-    1803185
-   ],
-   "seen": 528,
-   "fit": 0.86
-  },
   "2920750": {
    "radius": 4000,
    "seconds": 3.3,
@@ -347,15 +341,70 @@
    ],
    "seen": 59,
    "fit": 0.71
+  }
+ },
+ "floors": {
+  "2920748": {
+   "size": 2000,
+   "board": [
+    3,
+    3
+   ],
+   "seconds": 12.1,
+   "skills": [
+    1803185
+   ],
+   "tickMs": 500,
+   "litSeconds": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "seen": 659
   },
   "2920772": {
-   "radius": 450,
+   "size": 600,
+   "board": [
+    6,
+    6
+   ],
    "seconds": 19.2,
    "skills": [
     1803014
    ],
-   "seen": 383,
-   "fit": 0.81
+   "tickMs": 500,
+   "litSeconds": [
+    4.0,
+    7.7,
+    11.4
+   ],
+   "seen": 1391
+  }
+ },
+ "waves": {
+  "2920676": {
+   "skill": 1801951,
+   "speed": 2375,
+   "width": 650,
+   "seconds": 2.5,
+   "half": 90,
+   "seen": 75
+  },
+  "2920745": {
+   "skill": 1803155,
+   "speed": 1175,
+   "width": 600,
+   "seconds": 2.6,
+   "half": 180,
+   "seen": 101
+  },
+  "2920760": {
+   "skill": 1803315,
+   "speed": 1150,
+   "width": 350,
+   "seconds": 2.4,
+   "half": 90,
+   "seen": 177
   }
  },
  "objects": [
@@ -369,6 +418,7 @@
   2920679,
   2920680,
   2920725,
+  2920745,
   2920746,
   2920748,
   2920750,
@@ -376,6 +426,7 @@
   2920754,
   2920755,
   2920757,
+  2920760,
   2920763,
   2920764,
   2920772,

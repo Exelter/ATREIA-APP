@@ -7,16 +7,19 @@ namespace AionDPS.Ui;
 
 /// <summary>
 /// The fight from above: the group as class-coloured dots, the bosses as large ones with the way they face, the areas of the skills a boss is winding up in their own shape (a circle,
-/// a ring, a cone, a line, a cross or the whole room; amber while it winds up, red as it lands), the reach of the objects a boss leaves on the floor while they stay (violet), a red ring
-/// on whoever was hit, the dead crossed out, and the last few seconds of each walk as a trail. Positions are the game's own readings (it sends them with movements and skills, not on a
-/// regular beat), drawn straight between two of them. North is up, as on the game's map (10 November 2026: the map was drawn upside down before). Drag to move the map, the wheel zooms,
-/// a double click fits it again.
+/// a ring, a cone, a line, a cross or the whole room; amber while it winds up, filling up to the moment it lands, red with a flash as it lands), the reach of the objects a boss leaves on
+/// the floor while they stay (violet), the tiles of a board (Eternal Ludra's "bingo": amber until each lights up, then red on its beat; green, a square left out), waves spreading from
+/// where they set out, the boss's windup as a ring filling around it with the skill's name, a red ring on whoever was hit, the dead crossed out, and the last few seconds of each walk
+/// as a trail. Positions are the game's own readings (it sends them with movements and skills, not on a regular beat), drawn straight between two of them. North is up, as on the
+/// game's map (10 November 2026: the map was drawn upside down before). Drag to move the map, the wheel zooms, a double click fits it again.
 /// </summary>
 public sealed class ReplayView : FrameworkElement
 {
-    private const double TrailSeconds = 6, FlashSeconds = 0.6, LandSeconds = 0.45;
+    private const double TrailSeconds = 6, FlashSeconds = 0.6, LandSeconds = 0.45, TileBeatSeconds = 0.5;
 
     private ReplayData? _data;
+    private IReadOnlyList<ReplayBoard> _boards = Array.Empty<ReplayBoard>();
+    private HashSet<int> _tileActors = new();
     private double _time;
     private bool _showNames = true;
     private double _scale = 0.02; // pixels per centimetre
@@ -34,6 +37,8 @@ public sealed class ReplayView : FrameworkElement
     public void Show(ReplayData data)
     {
         _data = data;
+        _boards = ReplayBoards.Of(data.Areas);
+        _tileActors = data.Areas.Where(a => a.Shape is { Shape: "square" }).Select(a => a.Actor).ToHashSet();
         _fitted = false;
         InvalidateVisual();
     }
@@ -87,6 +92,14 @@ public sealed class ReplayView : FrameworkElement
 
         foreach (ReplayArea a in _data.Areas)
         {
+            if (a.Shape is { Shape: "wave" } or { Room: true })
+            {
+                // a wave may run across the whole room, and the room is everywhere: only where it set out counts
+                xs.Add(a.X);
+                ys.Add(a.Y);
+                continue;
+            }
+
             xs.Add(a.X - a.Radius);
             xs.Add(a.X + a.Radius);
             ys.Add(a.Y - a.Radius);
@@ -152,18 +165,47 @@ public sealed class ReplayView : FrameworkElement
                 continue;
             }
 
+            double fade = Math.Clamp(area.End - _time, 0, 1);
+            if (area.Shape is { Shape: "square" } tile)
+            {
+                DrawTile(dc, area, tile.SizeCm ?? area.Radius * 2, fade);
+                continue;
+            }
+
             // an object on the floor: where it is now (it may move), violet while it stays, fading in its last second
             var actor = _data.Entities.FirstOrDefault(e => e.Id == area.Actor);
             Point c = actor?.At(_data.Start, _time) is { } place ? ToScreen(place.X, place.Y) : ToScreen(area.X, area.Y);
-            double fade = Math.Clamp(area.End - _time, 0, 1);
             double r = area.Radius * _scale;
             dc.DrawEllipse(new SolidColorBrush(Color.FromArgb((byte)(0x38 * fade + 0x10), 0xA8, 0x6B, 0xFF)), new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xC0 * fade + 0x20), 0xB8, 0x86, 0xFF)), 1.5), c, r, r);
+        }
+
+        // a board's squares left out: nothing lights up there (green while the board is on)
+        foreach (ReplayBoard board in _boards)
+        {
+            if (_time < board.Start || _time > board.End)
+            {
+                continue;
+            }
+
+            double side = board.SizeCm * _scale, fade = Math.Clamp(board.End - _time, 0, 1);
+            var safePen = new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xE0 * fade), 0x5B, 0xE0, 0x8A)), 2) { DashStyle = DashStyles.Dash };
+            foreach (var (gx, gy) in board.Gaps)
+            {
+                Point m = ToScreen(gx, gy);
+                dc.DrawRectangle(new SolidColorBrush(Color.FromArgb((byte)(0x40 * fade), 0x5B, 0xE0, 0x8A)), safePen, new Rect(m.X - side / 2 + 2, m.Y - side / 2 + 2, Math.Max(1, side - 4), Math.Max(1, side - 4)));
+            }
         }
 
         foreach (ReplayArea area in _data.Areas.Where(a => !a.Zone))
         {
             if (_time < area.Start || _time > area.End + LandSeconds)
             {
+                continue;
+            }
+
+            if (area.Shape is { Shape: "wave" })
+            {
+                DrawWave(dc, area);
                 continue;
             }
 
@@ -186,7 +228,15 @@ public sealed class ReplayView : FrameworkElement
             dc.DrawGeometry(new SolidColorBrush(fill), pen, AreaGeometry(area, 1));
             if (!landing && progress > 0.02)
             {
-                dc.DrawGeometry(null, new Pen(new SolidColorBrush(Color.FromArgb(0x90, 0xFF, 0xBA, 0x42)), 1), AreaGeometry(area, progress)); // how far the windup is
+                // how far the windup is: the area fills up to the moment it lands
+                dc.DrawGeometry(new SolidColorBrush(Color.FromArgb((byte)(0x30 * progress), 0xFF, 0xBA, 0x42)), new Pen(new SolidColorBrush(Color.FromArgb(0x90, 0xFF, 0xBA, 0x42)), 1),
+                    AreaGeometry(area, progress));
+            }
+            else if (landing)
+            {
+                // the hit: a white flash running just past its edge
+                double k = Math.Clamp((_time - area.End) / LandSeconds, 0, 1);
+                dc.DrawGeometry(null, new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xD0 * (1 - k)), 0xFF, 0xFF, 0xFF)), 1 + 2.5 * (1 - k)), AreaGeometry(area, 1 + 0.08 * k));
             }
         }
 
@@ -195,8 +245,8 @@ public sealed class ReplayView : FrameworkElement
         {
             if (e.Role == ReplayRole.Mechanic)
             {
-                // an object on the floor: a small violet diamond while it does something (its reach or a windup is on)
-                if (_data.Areas.Any(a => a.Actor == e.Id && a.Start <= _time && _time <= a.End + LandSeconds) && e.At(_data.Start, _time) is { } spot)
+                // an object on the floor: a small violet diamond while it does something (its reach or a windup is on); a tile of a board is its square
+                if (!_tileActors.Contains(e.Id) && _data.Areas.Any(a => a.Actor == e.Id && a.Start <= _time && _time <= a.End + LandSeconds) && e.At(_data.Start, _time) is { } spot)
                 {
                     Point m = ToScreen(spot.X, spot.Y);
                     var diamond = new StreamGeometry();
@@ -258,12 +308,33 @@ public sealed class ReplayView : FrameworkElement
             if (e.Role == ReplayRole.Boss)
             {
                 double rb = Math.Max(9, 160 * _scale);
+                ReplayArea? casting = _data.Areas.LastOrDefault(a => a.Actor == e.Id && !a.Zone && a.Start <= _time && _time <= a.End);
+                if (casting is not null)
+                {
+                    // the boss winds up: a glow around it
+                    dc.DrawEllipse(new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xBA, 0x42)), null, at, rb + 9, rb + 9);
+                }
+
                 dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(0xC0, 0x45, 0x2E)), new Pen(Brushes.White, 1.5), at, rb, rb);
                 ReplayArea? facing = _data.Areas.LastOrDefault(a => a.Actor == e.Id && a.Start <= _time && a.Start >= _time - 6);
                 if (facing is not null)
                 {
                     double ang = facing.Facing * Math.PI / 180;
                     dc.DrawLine(new Pen(Brushes.White, 2), at, new Point(at.X + Math.Cos(ang) * rb * 1.8, at.Y + Math.Sin(ang) * rb * 1.8));
+                }
+
+                if (casting is not null)
+                {
+                    // its windup as a ring filling up around it, the skill's name above
+                    double share = Math.Clamp((_time - casting.Start) / Math.Max(0.05, casting.End - casting.Start), 0, 1);
+                    var amber = new SolidColorBrush(Color.FromRgb(0xFF, 0xBA, 0x42));
+                    dc.DrawEllipse(null, new Pen(new SolidColorBrush(Color.FromArgb(0x50, 0xFF, 0xBA, 0x42)), 3), at, rb + 5, rb + 5);
+                    dc.DrawGeometry(null, new Pen(amber, 3), Arc(at, rb + 5, share));
+                    if (!string.IsNullOrWhiteSpace(casting.SkillName))
+                    {
+                        var cast = new FormattedText(casting.SkillName, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, ThemeManager.UiTypeface(), 10, amber, dpi);
+                        dc.DrawText(cast, new Point(at.X - cast.Width / 2, at.Y - rb - 9 - cast.Height));
+                    }
                 }
 
                 var label = new FormattedText(e.Name, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, ThemeManager.UiTypeface(), 11, text, dpi);
@@ -317,8 +388,10 @@ public sealed class ReplayView : FrameworkElement
             }
         }
 
-        ReplayArea? current = _data.Areas.LastOrDefault(a => !a.Zone && a.Start <= _time && a.End + LandSeconds >= _time);
-        if (current is not null)
+        // what lands now, else a board's tiles that are lit
+        ReplayArea? current = _data.Areas.LastOrDefault(a => !a.Zone && a.Start <= _time && a.End + LandSeconds >= _time)
+            ?? _data.Areas.LastOrDefault(a => a.Zone && a.LitAt is double lit && lit <= _time && _time <= a.End);
+        if (current is not null && !string.IsNullOrWhiteSpace(current.SkillName))
         {
             status.Add(current.SkillName);
         }
@@ -343,6 +416,100 @@ public sealed class ReplayView : FrameworkElement
             var meters = new FormattedText("10 m", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, ThemeManager.UiTypeface(), 10, muted, dpi);
             dc.DrawText(meters, new Point(14 + bar, height - 22));
         }
+    }
+
+    /// <summary>
+    /// A tile of a board: amber from when it appeared, filling up to the moment it lights up; then red, flashing on the beat it hurts at; violet when the moment it lit up is not
+    /// known (a fight kept before 2.0.15). Its side in centimetres, <paramref name="fade"/> 1 until its last second.
+    /// </summary>
+    private void DrawTile(DrawingContext dc, ReplayArea area, double sideCm, double fade)
+    {
+        Point mid = ToScreen(area.X, area.Y);
+        double side = Math.Max(2, sideCm * _scale - 2);
+        var rect = new Rect(mid.X - side / 2, mid.Y - side / 2, side, side);
+        if (area.LitAt is double lit && _time >= lit)
+        {
+            double beat = 1 - (_time - lit) % TileBeatSeconds / TileBeatSeconds;
+            dc.DrawRectangle(new SolidColorBrush(Color.FromArgb((byte)((0x48 + 0x58 * beat) * fade), 0xFF, 0x3D, 0x5A)),
+                new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xE8 * fade), 0xFF, 0x9A, 0xA8)), 1.5), rect);
+            return;
+        }
+
+        if (area.LitAt is double soon)
+        {
+            double progress = Math.Clamp((_time - area.Start) / Math.Max(0.05, soon - area.Start), 0, 1), inner = side * progress;
+            dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xBA, 0x42)), new Pen(new SolidColorBrush(Color.FromArgb(0x90, 0xFF, 0xBA, 0x42)), 1), rect);
+            dc.DrawRectangle(new SolidColorBrush(Color.FromArgb((byte)(0x18 + 0x48 * progress), 0xFF, 0xBA, 0x42)), null, new Rect(mid.X - inner / 2, mid.Y - inner / 2, inner, inner));
+            return;
+        }
+
+        dc.DrawRectangle(new SolidColorBrush(Color.FromArgb((byte)(0x30 * fade + 0x10), 0xA8, 0x6B, 0xFF)), new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xC0 * fade + 0x20), 0xB8, 0x86, 0xFF)), 1), rect);
+    }
+
+    /// <summary>A wave: a band spreading from where it set out at its speed, ahead of the way it faced (all round when the half angle is 180), as far as it reaches (dotted).</summary>
+    private void DrawWave(DrawingContext dc, ReplayArea area)
+    {
+        var shape = area.Shape!;
+        double speed = shape.SpeedCmS is > 0.0 ? shape.SpeedCmS.Value : 1000, width = shape.WidthCm is > 0.0 ? shape.WidthCm.Value : 300, reach = area.Radius;
+        double half = shape.HalfAngle ?? 180, front = (_time - area.Start) * speed;
+        if (front <= 0 || front - width >= reach)
+        {
+            return;
+        }
+
+        double outer = Math.Min(front, reach), inner = Math.Max(0, front - width), fade = 1 - 0.55 * Math.Clamp(front / Math.Max(1, reach), 0, 1);
+        dc.DrawGeometry(null, new Pen(new SolidColorBrush(Color.FromArgb(0x60, 0xFF, 0x6A, 0x3D)), 1) { DashStyle = DashStyles.Dot }, Sector(area, reach, 0, half));
+        dc.DrawGeometry(new SolidColorBrush(Color.FromArgb((byte)(0xA8 * fade), 0xFF, 0x5A, 0x3D)), new Pen(new SolidColorBrush(Color.FromArgb((byte)(0xF0 * fade), 0xFF, 0xD8, 0xB0)), 1.5),
+            Sector(area, outer, inner, half));
+    }
+
+    /// <summary>The band between two distances from an area's spot (centimetres), within <paramref name="halfDeg"/> of its facing: a ring all round, else a slice of one.</summary>
+    private Geometry Sector(ReplayArea area, double outerCm, double innerCm, double halfDeg)
+    {
+        Point c = ToScreen(area.X, area.Y);
+        double ro = Math.Max(0.5, outerCm * _scale), ri = innerCm * _scale;
+        if (halfDeg >= 179.5)
+        {
+            Geometry disc = new EllipseGeometry(c, ro, ro);
+            return ri > 0.5 ? new CombinedGeometry(GeometryCombineMode.Exclude, disc, new EllipseGeometry(c, ri, ri)) : disc;
+        }
+
+        double th = area.Facing * Math.PI / 180, half = halfDeg * Math.PI / 180;
+        bool large = half * 2 > Math.PI;
+        Point P(double r, double a) => new(c.X + Math.Cos(a) * r, c.Y + Math.Sin(a) * r);
+        var g = new StreamGeometry();
+        using (StreamGeometryContext ctx = g.Open())
+        {
+            ctx.BeginFigure(P(ri, th - half), true, true);
+            ctx.LineTo(P(ro, th - half), true, false);
+            ctx.ArcTo(P(ro, th + half), new Size(ro, ro), 0, large, SweepDirection.Clockwise, true, false);
+            if (ri > 0.5)
+            {
+                ctx.LineTo(P(ri, th + half), true, false);
+                ctx.ArcTo(P(ri, th - half), new Size(ri, ri), 0, large, SweepDirection.Counterclockwise, true, false);
+            }
+        }
+
+        return g;
+    }
+
+    /// <summary><paramref name="share"/> of a circle around <paramref name="c"/>, from the top, clockwise.</summary>
+    private static Geometry Arc(Point c, double r, double share)
+    {
+        if (share >= 0.999)
+        {
+            return new EllipseGeometry(c, r, r);
+        }
+
+        double a0 = -Math.PI / 2, a1 = a0 + Math.Max(0.001, share) * 2 * Math.PI;
+        var g = new StreamGeometry();
+        using (StreamGeometryContext ctx = g.Open())
+        {
+            ctx.BeginFigure(new Point(c.X + Math.Cos(a0) * r, c.Y + Math.Sin(a0) * r), false, false);
+            ctx.ArcTo(new Point(c.X + Math.Cos(a1) * r, c.Y + Math.Sin(a1) * r), new Size(r, r), 0, share > 0.5, SweepDirection.Clockwise, true, false);
+        }
+
+        return g;
     }
 
     /// <summary>
@@ -469,11 +636,12 @@ public sealed class ReplayView : FrameworkElement
     }
 }
 
-/// <summary>The strip under the map: the whole fight with its big attacks (amber), the hits on the group (red), deaths (x), staggers (shaded) and the boss's health as a line; click or
-/// drag on it to go to that moment.</summary>
+/// <summary>The strip under the map: the whole fight with its big attacks (amber), its boards (violet), the hits on the group (red), deaths (x), staggers (shaded) and the boss's
+/// health as a line; click or drag on it to go to that moment.</summary>
 public sealed class ReplayTimeline : FrameworkElement
 {
     private ReplayData? _data;
+    private IReadOnlyList<ReplayBoard> _boards = Array.Empty<ReplayBoard>();
     private double _time;
     private bool _dragging;
 
@@ -488,6 +656,7 @@ public sealed class ReplayTimeline : FrameworkElement
     public void Show(ReplayData data)
     {
         _data = data;
+        _boards = ReplayBoards.Of(data.Areas);
         InvalidateVisual();
     }
 
@@ -525,6 +694,12 @@ public sealed class ReplayTimeline : FrameworkElement
             {
                 dc.DrawLine(pen, new Point(X(hp.Seconds[i - 1]), h - 12 - (h - 24) * hp.Fraction[i - 1]), new Point(X(hp.Seconds[i]), h - 12 - (h - 24) * hp.Fraction[i]));
             }
+        }
+
+        // the boards (a violet bar for as long as each is on), under the attacks
+        foreach (ReplayBoard b in _boards)
+        {
+            dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x70, 0xB8, 0x86, 0xFF)), null, new Rect(X(b.Start), 4, Math.Max(2, X(b.End) - X(b.Start)), 12));
         }
 
         var amber = new Pen(new SolidColorBrush(Color.FromArgb(0xB0, 0xFF, 0xBA, 0x42)), 1);

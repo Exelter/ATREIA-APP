@@ -23,10 +23,13 @@ public sealed record ReplayUploadRequest(
 /// the actual boss, not just a ball and a bar loading"): who winds it up (the name of its path), the skill, its wind-up in milliseconds after the fight's start, the
 /// spot it aims at and the way it faces (degrees, atan2 of y and x, centimetres as the paths), and its shape on the floor as the app's own replay draws it (circle,
 /// ring, cone, line, cross or room; sizes in centimetres). <see cref="Zone"/>: the reach of an object the boss left on the floor while it stays; <see cref="Sized"/>:
-/// the size rests on measurements, not on a guess.
+/// the size rests on measurements, not on a guess. Since 2.0.15 (12 November 2026, the owner: "the actual bingo etc for ludra etc. all visible"): "square", a
+/// tile of a board (<see cref="Size"/>: its side; <see cref="LitMs"/>: when it lit up and began to hurt, null when not seen) and "wave", a hit spreading from the
+/// spot at <see cref="Speed"/> cm/s as far as <see cref="Radius"/>, a band <see cref="Width"/> wide, ahead of the facing within <see cref="Half"/>.
 /// </summary>
 public sealed record ReplayAreaUpload(int StartMs, int EndMs, string Actor, string Skill, int SkillId, string Shape, int X, int Y, double Facing, int Radius,
-    int? Inner = null, double? Half = null, int? Length = null, int? Width = null, int? Behind = null, bool Zone = false, bool Sized = false);
+    int? Inner = null, double? Half = null, int? Length = null, int? Width = null, int? Behind = null, bool Zone = false, bool Sized = false,
+    int? Size = null, int? LitMs = null, int? Speed = null);
 
 /// <summary>A boss's hit on a player whose path goes with the replay (milliseconds after the fight's start), for the ring on whoever was caught.</summary>
 public sealed record ReplayHitUpload(int AtMs, string Victim, string Skill);
@@ -50,9 +53,18 @@ public static class ReplayUploadBuilder
     public static IReadOnlyList<ReplayTrackUpload> Tracks(ReplayData data, bool includeOthers)
     {
         var list = new List<ReplayTrackUpload>();
-        foreach (ReplayEntity e in data.Entities)
+        // the group and the bosses first, the objects of a boss's mechanics last: the site keeps a set number of paths (12 November 2026: on Eternal Ludra the
+        // tiles of its boards filled them all, and the replay of the first kill had neither the boss nor the group). A tile of a board sends no path: its square,
+        // with where and when, goes with the attacks.
+        static int Order(ReplayEntity e) => e.Role switch { ReplayRole.Player => e.IsSelf ? 0 : 1, ReplayRole.Boss => 2, ReplayRole.Add => 3, _ => 4 };
+        foreach (ReplayEntity e in data.Entities.OrderBy(Order))
         {
             if (e.Role == ReplayRole.Player && !e.IsSelf && !includeOthers)
+            {
+                continue;
+            }
+
+            if (e.Role == ReplayRole.Mechanic && e.NpcId is int npc && AionDPS.Aion2.Protocol.Aion2MechanicAreas.FloorOf(npc) is not null)
             {
                 continue;
             }
@@ -108,10 +120,11 @@ public static class ReplayUploadBuilder
             }
 
             AionDPS.Aion2.Protocol.MechanicArea? shape = a.Shape;
-            string kind = shape?.Shape is "ring" or "cone" or "line" or "cross" or "room" ? shape.Shape : "circle";
+            string kind = shape?.Shape is "ring" or "cone" or "line" or "cross" or "room" or "square" or "wave" ? shape.Shape : "circle";
             int? Cm(double? v) => v is double d && double.IsFinite(d) ? (int)Math.Round(d) : null;
             areas.Add(new ReplayAreaUpload(Ms(a.Start), Ms(Math.Max(a.End, a.Start)), actor.Name, a.SkillName, a.SkillId, kind, (int)Math.Round(a.X), (int)Math.Round(a.Y),
-                Math.Round(a.Facing, 1), (int)Math.Round(a.Radius), Cm(shape?.InnerCm), shape?.HalfAngle, Cm(shape?.LengthCm), Cm(shape?.WidthCm), Cm(shape?.BehindCm), a.Zone, a.Sized));
+                Math.Round(a.Facing, 1), (int)Math.Round(a.Radius), Cm(shape?.InnerCm), shape?.HalfAngle, Cm(shape?.LengthCm), Cm(shape?.WidthCm), Cm(shape?.BehindCm), a.Zone, a.Sized,
+                kind == "square" ? Cm(shape?.SizeCm) : null, kind == "square" && a.LitAt is double lit ? Ms(lit) : null, kind == "wave" ? Cm(shape?.SpeedCmS) : null));
         }
 
         var hits = new List<ReplayHitUpload>();

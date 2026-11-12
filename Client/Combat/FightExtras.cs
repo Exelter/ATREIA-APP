@@ -25,6 +25,10 @@ public readonly record struct WindupRecord(DateTime At, int Actor, int SkillId, 
 
 public readonly record struct DeathRecord(DateTime At, int Entity, DateTime? RevivedAt = null);
 
+/// <summary>A skill an object of a boss's mechanics used (the game's cast notice), for the replay: when a tile of a board lit up (its first cast; the beats after it
+/// are not kept), where a wave set out and which way (<see cref="Facing"/>, degrees, atan2 of y and x; <see cref="X"/>, <see cref="Y"/> in centimetres).</summary>
+public readonly record struct ObjectCast(DateTime At, int Actor, int SkillId, double Facing, int X, int Y, bool HasPosition);
+
 
 /// <summary>An actor (player or monster) changed his target (frames 0x3238 for others, 0x3138 for the own character); Target 0 = no target any more.</summary>
 public readonly record struct TargetChange(DateTime At, int Actor, int Target);
@@ -35,7 +39,8 @@ public sealed record HpSeries(int Entity, DateTime Start, int[] T, short[] Permi
 /// <summary>
 /// What the packet stream said during a fight besides damage: the skills used, the effects on everyone, the bosses' stagger and - for the replay - where the group and the
 /// bosses were, the skills the bosses wound up, who died and the bosses' health. Kept with a stored fight (<see cref="History.ExtrasBlob"/>) so the views can show an old fight
-/// too. <see cref="Names"/> names the ids that occur in it.
+/// too. <see cref="Names"/> names the ids that occur in it; <see cref="Npcs"/> gives the NPC id of the monsters and objects of the replay (the boards and waves of a
+/// boss are told by it, also once the capture that saw them is gone); <see cref="ObjectCasts"/>: the casts of those objects the replay draws.
 /// </summary>
 public sealed record FightExtras(
     IReadOnlyList<SkillUse> Uses,
@@ -46,7 +51,9 @@ public sealed record FightExtras(
     IReadOnlyList<WindupRecord>? Windups = null,
     IReadOnlyList<DeathRecord>? Deaths = null,
     IReadOnlyList<HpSeries>? Hp = null,
-    IReadOnlyList<TargetChange>? Targets = null)
+    IReadOnlyList<TargetChange>? Targets = null,
+    IReadOnlyList<ObjectCast>? ObjectCasts = null,
+    IReadOnlyDictionary<int, int>? Npcs = null)
 {
     public static FightExtras Empty { get; } = new(Array.Empty<SkillUse>(), Array.Empty<BuffEvent>(), Array.Empty<StaggerEvent>(), new Dictionary<int, string>());
 
@@ -62,5 +69,7 @@ public sealed record FightExtras(
         Windups?.Select(w => w with { Actor = map(w.Actor), Target = map(w.Target) }).ToList(),
         Deaths?.Select(d => d with { Entity = map(d.Entity) }).ToList(),
         Hp?.Select(h => h with { Entity = map(h.Entity) }).ToList(),
-        Targets?.Select(t => t with { Actor = map(t.Actor), Target = t.Target == 0 ? 0 : map(t.Target) }).ToList());
+        Targets?.Select(t => t with { Actor = map(t.Actor), Target = t.Target == 0 ? 0 : map(t.Target) }).ToList(),
+        ObjectCasts?.Select(c => c with { Actor = map(c.Actor) }).ToList(),
+        Npcs?.GroupBy(kv => map(kv.Key)).ToDictionary(g => g.Key, g => g.First().Value));
 }

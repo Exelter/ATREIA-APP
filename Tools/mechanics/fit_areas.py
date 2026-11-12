@@ -12,6 +12,12 @@ it missed (F1 of the hits). Without a word: a circle, unless a ring, a cone or a
 or the skill hit nearly everybody (the whole room); the time from the windup's end to the first hit is kept for every skill seen land four times.
 Objects that hit players around themselves without winding up (the hazards: the pools, totems and orbs a boss leaves) are measured the same way around
 the object, with how long they stay.
+
+Two kinds of objects are told apart by how they lie and move (12 November 2026, the owner: "the actual bingo etc for ludra etc. all visible"):
+floors, objects that lie on a regular grid and hurt whoever stands on their square (Eternal Ludra's 6 x 6 board of 6 m tiles and the 3 x 3 board of
+20 m cells): the square's side is the grid's spacing, with how long a tile stays, its skill, the beat it hurts at and when tiles light up (their first
+cast); and waves, objects whose hit spreads from where they stand at a steady speed (the wave from the arena's edge): the speed, the band's width, how
+long it runs and whether it spreads only ahead of the object (half 90) or all round. A floor is no hazard (its square replaces the circle).
 """
 import bisect
 import collections
@@ -55,6 +61,8 @@ class Tracks:
 
 def gather(paths):
     win, haz, life = collections.defaultdict(list), collections.defaultdict(list), collections.defaultdict(list)
+    # floors and waves: where each object of a boss appeared, its casts, and the hits of its skills on players
+    spots, casts, ohits = collections.defaultdict(lambda: collections.defaultdict(list)), collections.defaultdict(list), collections.defaultdict(list)
     for path in paths:
         d = pickle.load(open(path, 'rb'))
         tr = Tracks(d['pos'])
@@ -84,6 +92,24 @@ def gather(paths):
         for e, t in spawn_at.items():
             if e in removed and in_fight(t):
                 life[npc_of[e]].append(removed[e] - t)
+        place = {e: (l[-1][2], l[-1][3]) for e, l in d['spawn'].items() if l}
+        first_cast = {}
+        for (t, a, sk, tg, f, x, y, has) in sorted(d['cast']):
+            npc = npc_of.get(a)
+            if npc is None or npc < 2_920_000 or a not in spawn_at or t < spawn_at[a] - 0.3 or not in_fight(t):
+                continue
+            casts[npc].append((path, a, t - spawn_at[a], sk))
+            first_cast.setdefault((a, sk), (t, f, (x, y) if has else place.get(a)))
+        for e, t in spawn_at.items():
+            if npc_of[e] >= 2_920_000 and in_fight(t) and e in place:
+                spots[npc_of[e]][path].append(place[e])
+        for (t, a, v, sk, amt) in d['dmg']:
+            if v in players and a in npc_of and npc_of[a] >= 2_920_000 and (a, sk) in first_cast:
+                t0, f, at = first_cast[(a, sk)]
+                p = tr.at(v, t)
+                if at and p and 0 <= t - t0 <= 8:
+                    dx, dy = p[0] - at[0], p[1] - at[1]
+                    ohits[(npc_of[a], sk)].append((t - t0, math.hypot(dx, dy), dx * math.cos(math.radians(f)) + dy * math.sin(math.radians(f))))
         used = set()
         for (t0, actor, skill, target, ms, facing, x, y, has) in d['windup']:
             if not has or actor not in npc_of or not in_fight(t0) or not 1_000_000 <= skill < 10_000_000:
@@ -115,7 +141,86 @@ def gather(paths):
                 pts = [(p[0] - c[0], p[1] - c[1], q in victims) for q in players for p in [tr.at(q, g[0][0])] if p]
                 if len(pts) >= 3:
                     haz[(npc_of[a], g[0][2])].append(pts)
-    return win, haz, life
+    return win, haz, life, spots, casts, ohits
+
+
+def grid_of(points, tol=60):
+    """The spacing of a square grid the points lie on (None if they don't): at least 3 x 3 places, every step between neighbours the same."""
+    def levels(vals):
+        out = []
+        for v in sorted(vals):
+            if not out or v - out[-1][-1] > tol:
+                out.append([v])
+            else:
+                out[-1].append(v)
+        return [st.median(c) for c in out]
+    xs, ys = levels([p[0] for p in points]), levels([p[1] for p in points])
+    if len(xs) < 3 or len(ys) < 3:
+        return None
+    gaps = [b - a for a, b in zip(xs, xs[1:])] + [b - a for a, b in zip(ys, ys[1:])]
+    step = st.median(gaps)
+    if step < 200 or any(abs(g - step) > tol for g in gaps):
+        return None
+    cells = {(round((p[0] - xs[0]) / step), round((p[1] - ys[0]) / step)) for p in points}
+    if len(cells) < 9 or len(cells) < 0.6 * len(xs) * len(ys):
+        return None
+    return round(step / 50) * 50, len(xs), len(ys)
+
+
+def floors_of(spots, casts, life):
+    """Objects lying on a regular grid that hurt players: Eternal Ludra's boards. The grid is looked for in each recording on its own (a board lies the same
+    way in every pull); it must be found in most of the recordings the object appears in."""
+    out = {}
+    for npc, per in sorted(spots.items()):
+        found = [g for g in (grid_of(pts) for pts in per.values() if len(pts) >= 9) if g]
+        tried = sum(1 for pts in per.values() if len(pts) >= 9)
+        if not found or len(found) * 2 < tried or not life.get(npc):
+            continue
+        grid = collections.Counter(found).most_common(1)[0][0]
+        pts = [q for l in per.values() for q in l]
+        by = collections.Counter(sk for (_, _, _, sk) in casts.get(npc, []))
+        if not by:
+            continue
+        skill = by.most_common(1)[0][0]
+        firsts, beats, last = {}, [], {}
+        for (path, a, dt, sk) in sorted(casts[npc], key=lambda c: (c[0], c[1], c[2])):
+            if sk != skill:
+                continue
+            firsts.setdefault((path, a), dt)
+            if (path, a) in last and 0.1 <= dt - last[(path, a)] <= 3:
+                beats.append(dt - last[(path, a)])
+            last[(path, a)] = dt
+        lit = sorted(firsts.values())
+        out[str(npc)] = {'size': grid[0], 'board': [grid[1], grid[2]], 'seconds': round(st.median(life[npc]), 1), 'skills': [skill],
+                         'tickMs': round(st.median(beats) * 1000) if beats else None, 'litSeconds': [round(q, 1) for q in st.quantiles(lit, n=4)] if len(lit) >= 4 else None,
+                         'seen': len(pts)}
+    return out
+
+
+def waves_of(ohits, floors):
+    """Objects whose hit spreads from where they stand at a steady speed: the hits on the players come later the further away they stood."""
+    out = {}
+    for (npc, skill), rows in sorted(ohits.items()):
+        if str(npc) in floors or len(rows) < 20:
+            continue
+        moving = [r for r in rows if r[0] > 0.3]
+        if len(moving) < 20:
+            continue
+        speed = st.median(r[1] / r[0] for r in moving)
+        res = sorted(abs(r[1] - speed * r[0]) for r in moving)
+        on = [r for r in moving if abs(r[1] - speed * r[0]) <= 600]   # the hits on the front (a stray reading of a place is no part of it)
+        if len(on) < 0.7 * len(moving) or len(on) < 20:
+            continue
+        far, late = sorted(r[1] for r in on), sorted(r[0] for r in on)
+        spread, wait = far[len(far) * 9 // 10] - far[len(far) // 10], late[len(late) * 9 // 10] - late[len(late) // 10]
+        if res[len(res) // 2] > 150 or speed < 500 or spread < 1000 or wait < 0.8 or st.correlation([r[0] for r in on], [r[1] for r in on]) < 0.8:
+            continue   # not a front at a steady speed: a pool, a burst, or hits all at once
+        ahead = sum(1 for r in moving if r[2] > 0) / len(moving)
+        steady = [r for r in moving if abs(r[1] - speed * r[0]) <= 300]
+        span = sorted(r[0] for r in steady)
+        out[str(npc)] = {'skill': skill, 'speed': round(speed / 25) * 25, 'width': max(200, round(2 * res[len(res) * 9 // 10] / 50) * 50),
+                         'seconds': round(span[min(len(span) - 1, len(span) * 95 // 100)], 1), 'half': 90 if ahead >= 0.9 else 180, 'seen': len(rows)}
+    return out
 
 
 def f1(rows, pred):
@@ -179,8 +284,10 @@ def word_of(skill):
 
 
 def main(paths):
-    win, haz, life = gather(paths)
+    win, haz, life, spots, casts, ohits = gather(paths)
     areas, hazards, objects = {}, {}, set()
+    floors = floors_of(spots, casts, life)
+    waves = waves_of(ohits, floors)
     for (npc, skill), ss in sorted(win.items()):
         rows = [(dx, dy, h, s['f']) for s in ss for (dx, dy, h) in s['pts']]
         hit = sum(r[2] for r in rows)
@@ -213,7 +320,7 @@ def main(paths):
         if len(groups) < 8 or sum(r[2] for r in rows) < 8 or npc < 2_920_000 or skill // 10_000 == 123:   # 123xxxx: a follower's skill (an id seen again in another run)
             continue
         score, radius = max((f1(rows, lambda r: dist(r) <= R), R) for R in range(100, 4001, 50))
-        if score < MIN_HAZARD_F1 or not life.get(npc):
+        if score < MIN_HAZARD_F1 or not life.get(npc) or str(npc) in floors:
             continue
         h = hazards.setdefault(str(npc), {'radius': radius, 'seconds': round(st.median(life[npc]), 1), 'skills': [], 'seen': 0, 'fit': round(score, 2)})
         h['skills'].append(skill)
@@ -228,15 +335,21 @@ def main(paths):
             'cross: two such bars of length each way; room: everybody), sizes in centimetres, onTarget: the spot is the targeted player, landMs: the time from the end',
             'of the windup to the first hit, seen: how many landings it rests on, fit: how well the shape told the players it hit from the ones it missed (F1).',
             'A skill without a shape here keeps the game client\'s word (skill_shapes.json) and the size the meter learns. hazards: per object a boss leaves on the floor,',
-            'the radius it hits players in, how long it stays (seconds) and its skills. objects: every such object (the replay follows them).'],
+            'the radius it hits players in, how long it stays (seconds) and its skills. objects: every such object (the replay follows them).',
+            'floors: objects on a regular grid that hurt whoever stands on their square (size: the side, the grid\'s spacing; board: places across and down; seconds:',
+            'how long one stays; tickMs: the beat it hurts at; litSeconds: when tiles light up after they appear, quartiles; the app sends each tile\'s own). waves:',
+            'objects whose hit spreads from where they stand (speed in cm/s, width of the band, seconds it runs, half: 90 only ahead of the object, 180 all round).'],
         'areas': areas,
         'hazards': hazards,
-        'objects': sorted(objects),
+        'floors': floors,
+        'waves': waves,
+        'objects': sorted(objects | {int(n) for n in floors} | {int(n) for n in waves}),
     }
     with open('Client/assets/aion2/bosses/mechanic_areas.json', 'w', encoding='utf-8') as f:
         json.dump(out, f, indent=1)
         f.write('\n')
-    print(f'{len(areas)} skills ({sum(1 for a in areas.values() if "shape" in a)} with a shape), {len(hazards)} hazards, {len(objects)} objects')
+    print(f'{len(areas)} skills ({sum(1 for a in areas.values() if "shape" in a)} with a shape), {len(hazards)} hazards, {len(floors)} floors, {len(waves)} waves, '
+          f'{len(out["objects"])} objects')
 
 
 if __name__ == '__main__':

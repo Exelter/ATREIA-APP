@@ -2878,6 +2878,11 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
     /// <summary>Casts, whom entities aim at and the effects on them (see <see cref="Aion2CombatState"/>).</summary>
     public Aion2CombatState Combat { get; } = new();
 
+    public Aion2EntityDirectory()
+    {
+        Combat.NpcOf = NpcIdOf; // a fight's replay keeps the NPC ids of its monsters and objects (its boards and waves are told by them)
+    }
+
     // Every entity announced by the monster-appears frame: monsters and summons, never players.
     private readonly HashSet<int> _spawned = new();
 

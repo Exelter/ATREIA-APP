@@ -114,6 +114,16 @@ public sealed class Aion2CombatState
     private readonly List<SkillUse> _uses = new();
     private readonly Dictionary<int, TrackBuffer> _tracks = new();
     private readonly List<WindupRecord> _windupLog = new();
+
+    /// <summary>The casts of the objects of a boss's mechanics the replay draws (a board's tiles: only the first of each, when it lit up; a wave: each).</summary>
+    private readonly List<ObjectCast> _objectCastLog = new();
+    private readonly Dictionary<(int Actor, int Skill), DateTime> _objectCastKept = new();
+
+    /// <summary>A tile keeps hurting on its beat after it lit up; one cast of the same object and skill this soon after the last kept one is that beat.</summary>
+    private static readonly TimeSpan TileBeatWindow = TimeSpan.FromSeconds(25);
+
+    /// <summary>The NPC id of an entity (the directory's word; null: unknown): kept with a fight's replay so its boards and waves are told apart later too.</summary>
+    public Func<int, int?>? NpcOf { get; set; }
     private readonly List<DeathRecord> _deathLog = new();
     private readonly List<TargetChange> _targetLog = new();
     private readonly Dictionary<int, int> _targetNow = new();
@@ -361,6 +371,30 @@ public sealed class Aion2CombatState
             Append(_windupLog, new WindupRecord(cast.Start, cast.Actor, cast.SkillId, cast.Target, cast.DurationMs, cast.Facing, (int)cast.X, (int)cast.Y, cast.HasPosition));
             _lastAim[cast.Actor] = (cast.Target, cast.Start);
             Lesson(cast.SkillId).CastMs = cast.DurationMs;
+        }
+    }
+
+    /// <summary>
+    /// A cast of an object of a boss's mechanics (12 November 2026, the owner: "the actual bingo etc for ludra etc. all visible"): a tile of a board is kept only
+    /// once (<paramref name="firstOnly"/>: its first cast is when it lit up, the beats after it are left out), a wave every time it sets out.
+    /// </summary>
+    public void NoteObjectCast(ObjectCast cast, bool firstOnly)
+    {
+        lock (_gate)
+        {
+            var key = (cast.Actor, cast.SkillId);
+            if (firstOnly && _objectCastKept.TryGetValue(key, out DateTime kept) && cast.At - kept >= TimeSpan.Zero && cast.At - kept < TileBeatWindow)
+            {
+                return;
+            }
+
+            if (_objectCastKept.Count > 4000)
+            {
+                _objectCastKept.Clear();
+            }
+
+            _objectCastKept[key] = cast.At;
+            Append(_objectCastLog, cast);
         }
     }
 
@@ -742,6 +776,30 @@ public sealed class Aion2CombatState
 
     public FightExtras Slice(DateTime from, DateTime to, Func<int, string?> nameOf, Func<int, bool>? keep = null, Func<int, DateTime, DateTime, HpSeries?>? hpOf = null)
     {
+        FightExtras extras = SliceLocked(from, to, nameOf, keep, hpOf);
+        // the NPC ids of the monsters and objects of the replay, asked of the directory outside this state's lock (the directory takes its own)
+        if (NpcOf is { } npcOf && extras.Tracks is { Count: > 0 } kept)
+        {
+            var npcs = new Dictionary<int, int>();
+            foreach (PositionTrack t in kept)
+            {
+                if (npcOf(t.Entity) is int npc && npc > 0)
+                {
+                    npcs[t.Entity] = npc;
+                }
+            }
+
+            if (npcs.Count > 0)
+            {
+                extras = extras with { Npcs = npcs };
+            }
+        }
+
+        return extras;
+    }
+
+    private FightExtras SliceLocked(DateTime from, DateTime to, Func<int, string?> nameOf, Func<int, bool>? keep, Func<int, DateTime, DateTime, HpSeries?>? hpOf)
+    {
         lock (_gate)
         {
             DateTime buffFrom = from - TimeSpan.FromMinutes(10);
@@ -799,7 +857,11 @@ public sealed class Aion2CombatState
             }
 
             List<TargetChange> targets = TargetsIn(from, to);
-            return new FightExtras(uses, buffs, staggers, names, tracks, windups, deaths, hp, targets.Count > 0 ? targets : null);
+            // a tile that lit up just before the fight's window still counts (its first cast is all that is kept of it)
+            List<ObjectCast>? objectCasts = keep is null ? null
+                : _objectCastLog.Where(c => c.At >= from - TimeSpan.FromSeconds(20) && c.At <= to && keep(c.Actor)).ToList();
+            return new FightExtras(uses, buffs, staggers, names, tracks, windups, deaths, hp, targets.Count > 0 ? targets : null,
+                objectCasts is { Count: > 0 } ? objectCasts : null);
         }
     }
 
