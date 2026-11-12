@@ -575,7 +575,7 @@ public sealed class PetMapController : IDisposable
             var wanted = (settings.PetMapAuto ? Aion2Pets.AllPetIds : settings.PetMapPets).Where(id => !maxPets.Contains(id) && settings.PetAlertFor(id)).ToHashSet();
             if (settings.PetMapOnlyHere && !map.Instance)
             {
-                wanted.IntersectWith(Aion2Maps.OnlyOn(map)); // this map's own pets only (a rift)
+                wanted.IntersectWith(Aion2Maps.OnlyOn(map, _faction)); // the pets the player can't get on another map of their own (a rift)
             }
 
             double reach = Math.Clamp(settings.PetNearMetres, 50, 2000) * 100.0; // 100 world units to the metre
@@ -867,7 +867,7 @@ public sealed class PetMapController : IDisposable
             .Where(id => !maxPets.Contains(id) && (genusPick is null || PetRoute.GenusOf(id) is { } petGenus && genusPick.Contains(petGenus))).ToHashSet();
         if (settings.PetMapOnlyHere && _current is { Instance: false } onMap)
         {
-            chosen.IntersectWith(Aion2Maps.OnlyOn(onMap)); // this map's own pets only (a rift)
+            chosen.IntersectWith(Aion2Maps.OnlyOn(onMap, _faction)); // the pets the player can't get on another map of their own (a rift)
         }
 
         if (_petMapOverride)
@@ -1178,11 +1178,14 @@ public sealed class PetMapController : IDisposable
 
         _routeAt = DateTime.UtcNow;
         var genera = (settings.PetRouteGenera is { Count: > 0 } picked ? picked : PetRoute.Genera.ToList()).ToHashSet();
-        IReadOnlySet<int>? onlyHere = settings.PetMapOnlyHere && !_current.Instance ? Aion2Maps.OnlyOn(_current) : null;
+        IReadOnlySet<int>? onlyHere = settings.PetMapOnlyHere && !_current.Instance ? Aion2Maps.OnlyOn(_current, _faction) : null;
         bool Needed(int id) => !maxPets.Contains(id) && !_skipped.Contains(id) && (onlyHere is null || onlyHere.Contains(id));
         var needed = Aion2Pets.AllPetIds.Where(id => PetRoute.GenusOf(id) is { } g && genera.Contains(g) && Needed(id)).OrderBy(id => id);
         string faction = RouteFaction();
-        string key = $"{_current.Key}|{faction}|{string.Join(",", genera.OrderBy(g => g))}|{string.Join(",", needed)}|{settings.PetRouteFromHere}|{onlyHere is not null}";
+        // the other side's land (a rift, 12 November 2026): its Kibelisks are not the player's and its camp is not where the player came in, so the route
+        // walks from where the player is
+        bool foreign = _faction is not null && Aion2Maps.SideOf(_current) is { } land && land != _faction;
+        string key = $"{_current.Key}|{faction}|{string.Join(",", genera.OrderBy(g => g))}|{string.Join(",", needed)}|{settings.PetRouteFromHere}|{onlyHere is not null}|{foreign}";
         if (key == _planKey && !_replanHere)
         {
             return;
@@ -1191,7 +1194,7 @@ public sealed class PetMapController : IDisposable
         (double X, double Z, string Zone)? here = known ? (tx / 100.0, ty / 100.0, PetRoute.ZoneNear(_current.Key, tx / 100.0, ty / 100.0)) : null;
         PetRouteStop? pin = _pin is { } p && p.Pets.Any(Needed) ? p : null;
         (double X, double Z, string Zone)? from = null;
-        if (pin is null && (settings.PetRouteFromHere || _replanHere || _pin is not null))
+        if (pin is null && (settings.PetRouteFromHere || foreign || _replanHere || _pin is not null))
         {
             // a new route near the player (else at the camp, as on the site), or the stop being farmed is done: on from where the player is now
             if (here is not null)
@@ -1204,7 +1207,7 @@ public sealed class PetMapController : IDisposable
             }
         }
 
-        _plan = PetRoute.Plan(_current.Key, faction, genera, Needed, from, pin);
+        _plan = PetRoute.Plan(_current.Key, faction, genera, Needed, from, pin, teleports: !foreign);
         _pin = _plan?.Stops.FirstOrDefault();
         _planKey = key;
         _replanHere = false;

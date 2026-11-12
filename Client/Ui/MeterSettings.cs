@@ -1103,8 +1103,8 @@ public sealed class MeterSettings
     /// <summary>The interactive map shows only its marks and the route, no map picture (to lay over the game's minimap).</summary>
     public bool PetMapMarkersOnly { get; set; }
 
-    /// <summary>The map, the list and the route show only the pets of the map the player is on that no other open map has (11 November 2026, a player:
-    /// "a filter to only show mobs exclusive to that map would be nice for farming the rift").</summary>
+    /// <summary>The map, the list and the route show only the pets of the map the player is on that no other map of their own side, nor the Abyss, has
+    /// (11 November 2026, a player: "a filter to only show mobs exclusive to that map would be nice for farming the rift"; Aion2Maps.OnlyOn).</summary>
     public bool PetMapOnlyHere { get; set; }
 
     /// <summary>How far the interactive map is zoomed out: 0 the close-up around the player (<see cref="PetMapRadius"/>), 1 the whole map; the wheel over the map,

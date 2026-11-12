@@ -206,27 +206,36 @@ public static class Aion2Maps
 
     private static readonly Dictionary<string, HashSet<int>> OnlyOnCache = new();
 
+    /// <summary>Whose own land an open map is: "Elyos" (World_L: Verteron, Eltnen), "Asmodian" (World_D: Altgard, Morheim); null for the Abyss, which
+    /// both sides farm.</summary>
+    public static string? SideOf(Aion2MapInfo map) =>
+        map.Table.StartsWith("World/World_L/", StringComparison.OrdinalIgnoreCase) ? "Elyos"
+        : map.Table.StartsWith("World/World_D/", StringComparison.OrdinalIgnoreCase) ? "Asmodian" : null;
+
     /// <summary>
-    /// The pets of an open map that no other open map has: on another side's map through a rift, what can be had there alone (11 November 2026). Instances
-    /// do not count: a pet an instance has too is still one to take on the rift's map.
+    /// The pets of an open map that the player can't get on any other open map they farm: their own side's maps and the Abyss (11 November 2026). In a
+    /// rift, the other side's pets that can't be had at home: a pet the other side's second map has too (Eltnen's, in a rift into Verteron) still counts,
+    /// since the player can't farm that map either (12 November 2026, a player: "but broken"). <paramref name="faction"/> unknown: every other open map
+    /// counts. Instances do not count: a pet an instance has too is still one to take on the rift's map.
     /// </summary>
-    public static IReadOnlySet<int> OnlyOn(Aion2MapInfo map)
+    public static IReadOnlySet<int> OnlyOn(Aion2MapInfo map, string? faction = null)
     {
+        string key = map.Key + "|" + faction;
         lock (OnlyOnCache)
         {
-            if (OnlyOnCache.TryGetValue(map.Key, out HashSet<int>? known))
+            if (OnlyOnCache.TryGetValue(key, out HashSet<int>? known))
             {
                 return known;
             }
 
             var every = Aion2Pets.AllPetIds.ToHashSet();
             var here = PointsOf(map, every).Select(p => p.PetId).ToHashSet();
-            foreach (Aion2MapInfo other in All.Where(m => m.Key != map.Key))
+            foreach (Aion2MapInfo other in All.Where(m => m.Key != map.Key && (faction is null || SideOf(m) is not { } side || side == faction)))
             {
                 here.ExceptWith(PointsOf(other, here).Select(p => p.PetId));
             }
 
-            OnlyOnCache[map.Key] = here;
+            OnlyOnCache[key] = here;
             return here;
         }
     }

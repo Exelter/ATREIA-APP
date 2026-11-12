@@ -6,6 +6,25 @@
   ],
   "versions": [
     {
+      "version": "2.0.13",
+      "date": "2026-11-12",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Pets",
+          "title": "The two Aberrant Odyle Spiders were mixed up",
+          "text": "The app had the Aberrant Odyle Spider and the Mutated Aberrant Odyle Spider the wrong way round. Targeting a Marsh, Highland or Garden Spider (or an Unstable Ashen Spider in Altgard) showed the other spider's level, and the map and the route kept sending you to those spiders after your Mutated one was maxed. They now count for the Mutated Aberrant Odyle Spider, and the Aberrant one is listed as coming from chests and the Black Cloud Merchants only."
+        },
+        {
+          "kind": "fixed",
+          "area": "Pets",
+          "title": "Only this map's own pets works in a rift",
+          "text": "The switch left out every pet that any other open map has, the other side's second map included, so a rift into Verteron hid pets you can only farm on the Elyos side. It now compares with your own side's maps and the Abyss only. On the other side's land the route also starts where you are and walks, since their Kibelisks aren't yours.",
+          "example": "An Asmodian in a rift into Verteron now sees Giant Bee, Skama and Karnif, which only the Elyos maps have."
+        }
+      ]
+    },
+    {
       "version": "2.0.12",
       "date": "2026-11-12",
       "items": [

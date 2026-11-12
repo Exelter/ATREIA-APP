@@ -83,8 +83,80 @@ public static class SelfCheckPetRoute
             Console.WriteLine($"  -> {mapKey} ({faction}): {plan.Stops.Count} stops, {covered} of {pets} pets with spawn points on the map at their spot: {(all ? "ok" : "FAIL " + string.Join(", ", missing.Take(6)))}");
         }
 
+        ok &= PetsOfTheSpiders();
+        ok &= OwnPetsOfAMap();
+        ok &= RouteInARift();
         Console.WriteLine(ok ? "  -> pet route: ok" : "  -> pet route: FAIL");
         return ok;
+    }
+
+    /// <summary>
+    /// The two spider pets the meter had the wrong way round (12 November 2026, a player: "this mob i got max but still doesnt count ... why it sending
+    /// me here"): the Marsh, Highland and Garden spiders and the Unstable Ashen Spider drop Soul: Mutated Aberrant Odyle Spider, the pet 1025
+    /// (OdSpider_04_V01); the Aberrant Odyle Spider (1021, OdSpider_04) comes from chests and the shop only. Every soul and pet item now names its pet.
+    /// </summary>
+    private static bool PetsOfTheSpiders()
+    {
+        bool spiders = new[] { 2100030, 2100745, 2100663, 2400744 }.All(npc => AionDPS.Aion2.Protocol.Aion2Pets.PetsOfNpc(npc).SequenceEqual(new[] { 1025 }));
+        bool names = AionDPS.Aion2.Protocol.Aion2Pets.PetName(1025, "en") == "Mutated Aberrant Odyle Spider" && AionDPS.Aion2.Protocol.Aion2Pets.PetName(1021, "en") == "Aberrant Odyle Spider"
+            && AionDPS.Aion2.Protocol.Aion2Pets.PetOfSoulItem(534660020) == 1025 && AionDPS.Aion2.Protocol.Aion2Pets.PetOfSoulItem(534660024) == 1021
+            && AionDPS.Aion2.Protocol.Aion2Pets.PetOfShopItem(534760020) == 1025 && AionDPS.Aion2.Protocol.Aion2Pets.PetOfShopItem(534760024) == 1021
+            && AionDPS.Aion2.Protocol.Aion2Pets.NpcsOfPet(1021).Count == 0 && AionDPS.Aion2.Protocol.Aion2Pets.IsShopOnly(1021) && !AionDPS.Aion2.Protocol.Aion2Pets.IsShopOnly(1025)
+            && PetRoute.NameOf(1025) == "Mutated Aberrant Odyle Spider" && PetRoute.NameOf(1021) is null;
+        // every soul (534660xxx) and pet item (534760xxx) the data ties to a pet carries that pet's name: "Soul: X (Bound)", "Pet: X"
+        var wrong = new List<string>();
+        foreach (int item in Enumerable.Range(534660001, 400).Concat(Enumerable.Range(534760001, 400)))
+        {
+            int? pet = item < 534760000 ? AionDPS.Aion2.Protocol.Aion2Pets.PetOfSoulItem(item) : AionDPS.Aion2.Protocol.Aion2Pets.PetOfShopItem(item);
+            string? itemName = pet is null ? null : AionDPS.Aion2.Protocol.Aion2ItemNames.NameOf(item, "en");
+            if (pet is int id && itemName is not null)
+            {
+                string named = itemName.Replace("Soul: ", "").Replace("Pet: ", "").Replace(" (Bound)", "");
+                if (!string.Equals(named, AionDPS.Aion2.Protocol.Aion2Pets.PetName(id, "en"), StringComparison.OrdinalIgnoreCase))
+                {
+                    wrong.Add($"{item} {itemName} -> {id} {AionDPS.Aion2.Protocol.Aion2Pets.PetName(id, "en")}");
+                }
+            }
+        }
+
+        bool good = spiders && names && wrong.Count == 0;
+        Console.WriteLine($"  -> the spiders drop the Mutated Aberrant Odyle Spider (1025), the Aberrant one (1021) is chests and shop only: {spiders && names}; "
+            + $"every soul and pet item names its pet: {(wrong.Count == 0 ? "ok" : "FAIL " + string.Join("; ", wrong.Take(3)))}");
+        return good;
+    }
+
+    /// <summary>
+    /// "Only this map's own pets" counts the maps the player farms (their side's and the Abyss): an Asmodian in a rift into Verteron also gets the pets
+    /// Verteron shares with Eltnen only (Giant Bee), which no Asmodian map has; nobody gets the Mutated Aberrant Odyle Spider there (Altgard has it too).
+    /// Without the player's side every other open map counts, as before.
+    /// </summary>
+    private static bool OwnPetsOfAMap()
+    {
+        var verteron = AionDPS.Aion2.Protocol.Aion2Maps.All.First(m => m.Key == "verteron");
+        var altgard = AionDPS.Aion2.Protocol.Aion2Maps.All.First(m => m.Key == "altgard");
+        var rift = AionDPS.Aion2.Protocol.Aion2Maps.OnlyOn(verteron, "Asmodian");
+        var any = AionDPS.Aion2.Protocol.Aion2Maps.OnlyOn(verteron);
+        bool sides = AionDPS.Aion2.Protocol.Aion2Maps.SideOf(verteron) == "Elyos" && AionDPS.Aion2.Protocol.Aion2Maps.SideOf(altgard) == "Asmodian"
+            && AionDPS.Aion2.Protocol.Aion2Maps.SideOf(AionDPS.Aion2.Protocol.Aion2Maps.All.First(m => m.Key == "abyss")) is null;
+        bool good = sides && rift.Contains(1059) && !any.Contains(1059) && any.IsSubsetOf(rift) && !rift.Contains(1025) && !any.Contains(1025)
+            && !AionDPS.Aion2.Protocol.Aion2Maps.OnlyOn(altgard, "Elyos").Contains(1025);
+        Console.WriteLine($"  -> this map's own pets: {rift.Count} for an Asmodian in Verteron (Giant Bee among them), {any.Count} against every map; "
+            + $"the Mutated Aberrant Odyle Spider in neither: {(good ? "ok" : "FAIL")}");
+        return good;
+    }
+
+    /// <summary>On the other side's land (a rift) the route walks: no Kibelisk hop anywhere, and it starts where the player is.</summary>
+    private static bool RouteInARift()
+    {
+        var all = PetRoute.Genera.ToHashSet();
+        (double X, double Z, string Zone) here = (-200, 100, "");
+        PetRoutePlan? home = PetRoute.Plan("verteron", "Elyos", all, _ => true, here);
+        PetRoutePlan? rift = PetRoute.Plan("verteron", "Asmodian", all, _ => true, here, teleports: false);
+        bool good = home is { Stops.Count: > 0 } && rift is { Stops.Count: > 0 } && home.Stops.Any(s => s.Teleport is not null)
+            && rift.Stops.All(s => s.Teleport is null) && rift.FromPlayer && Round(rift.OriginX) == -200 && Round(rift.OriginZ) == 100;
+        Console.WriteLine($"  -> a route in a rift walks from the player: {rift?.Stops.Count} stops, {rift?.Stops.Count(s => s.Teleport is not null)} teleports "
+            + $"(at home {home?.Stops.Count(s => s.Teleport is not null)}): {(good ? "ok" : "FAIL")}");
+        return good;
     }
 
     /// <summary>Rounded as JavaScript's Math.round does (halves up).</summary>
