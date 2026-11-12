@@ -168,15 +168,22 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// The own character's Combat Power: the legion's member list the game sends at the login names it (the character played's own line), else the last
-    /// reading the CP checks kept, else the character page's. The game shows no Combat Power of the own character the way it shows the others' (their
-    /// appearance frames), so the meter's line of the own character had none (5 November 2026, the owner: "the user's CP is hidden, which should not be").
+    /// The own character's Combat Power: the number the game sends every time it changes and at the login (an upgrade shows within the second, 12 November
+    /// 2026: the legion list's number of the login stayed until the next login, so it didn't match the game after an upgrade); before the game sent one in
+    /// this run, the legion's member list of the login (the character played's own line), else the last reading the CP checks kept, else the character
+    /// page's. The game shows no Combat Power of the own character the way it shows the others' (their appearance frames), so the meter's line of the own
+    /// character had none (5 November 2026, the owner: "the user's CP is hidden, which should not be").
     /// </summary>
     internal static int? OwnCombatPower(Aion2EntityDirectory directory)
     {
         if (directory.LocalCharacter is not { } me || me.Name.Length == 0)
         {
             return null;
+        }
+
+        if (directory.OwnLiveCombatPower is int live)
+        {
+            return live;
         }
 
         if (Aion2Moved.Find(directory.LegionRoster(), m => m.Name, m => m.ServerId, me.Name, me.ServerId) is { CombatPower: > 0 } listed)
@@ -190,6 +197,23 @@ public partial class MainWindow
         }
 
         return CpChecks.OfficialOf(me.Name, me.ServerId)?.Cp is int page and > 0 ? page : null;
+    }
+
+    /// <summary>The own character's Item Level: the game's own number, sent with every change and at the login; before it came in this run, the legion
+    /// list's of the login.</summary>
+    internal static int? OwnItemLevel(Aion2EntityDirectory directory)
+    {
+        if (directory.LocalCharacter is not { } me || me.Name.Length == 0)
+        {
+            return null;
+        }
+
+        if (directory.OwnLiveItemLevel is int live)
+        {
+            return live;
+        }
+
+        return Aion2Moved.Find(directory.LegionRoster(), m => m.Name, m => m.ServerId, me.Name, me.ServerId) is { ItemLevel: > 0 } listed ? listed.ItemLevel : null;
     }
 
     // ------------------------------------------------------------------ the counters at the foot

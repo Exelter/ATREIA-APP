@@ -62,6 +62,7 @@ public static class SelfCheck
         ok &= SelfCheckBarParts.Run();
         ok &= SelfCheckLegion.Run();
         ok &= SelfCheckSafety.Run();
+        ok &= SelfCheckOwnFigures.Run();
         ok &= SelfCheckRanks.Run();
         ok &= SelfCheckValue.Run();
         ok &= SelfCheckFieldBosses.Run();

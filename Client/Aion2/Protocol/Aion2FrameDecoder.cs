@@ -105,6 +105,12 @@ public sealed class Aion2FrameDecoder
     /// <summary>The local player's cooldown list (kept for later features; see <see cref="Aion2Cooldowns"/>).</summary>
     private const int CooldownOpcode = 0x4738;
 
+    /// <summary>The local player's own Combat Power, whenever it changes and at every login and server change (see <see cref="DecodeOwnCombatPower"/>).</summary>
+    private const int OwnCombatPowerOpcode = 0x5636;
+
+    /// <summary>The local player's own Item Level, whenever it changes and at login (see <see cref="DecodeOwnItemLevel"/>).</summary>
+    private const int OwnItemLevelOpcode = 0x1d56;
+
     /// <summary>One stat of an entity: <c>opcode | entity (varint) | 01 | stat id u16 | value u32</c>. On a boss, stat 0xCD at 5000 or 10000 arrives
     /// exactly 300 s after it went into combat - in the four fights of the recordings that lasted that long (Talisra x3, Divine Auldor) and in none that
     /// ended before. The stat is no known name; that it is the rage is the reading of the timing (and the user's: the rage comes after about five minutes).</summary>
@@ -734,6 +740,18 @@ public sealed class Aion2FrameDecoder
         if (opcode == EngageOpcode)
         {
             DecodeEngage(frame, timestamp);
+            return Array.Empty<DamageEvent>();
+        }
+
+        if (opcode == OwnCombatPowerOpcode)
+        {
+            DecodeOwnCombatPower(frame, timestamp);
+            return Array.Empty<DamageEvent>();
+        }
+
+        if (opcode == OwnItemLevelOpcode)
+        {
+            DecodeOwnItemLevel(frame, timestamp);
             return Array.Empty<DamageEvent>();
         }
 
@@ -2663,8 +2681,49 @@ public sealed class Aion2FrameDecoder
     }
 
     /// <summary>
+    /// The local player's own Combat Power (<see cref="OwnCombatPowerOpcode"/>): <c>opcode | Combat Power u32 | 00 00 00 00 | u32 | 00 00 00 00</c>, 18
+    /// bytes. Read from the recordings of 7 to 12 November 2026 (491 frames, five characters): it came within the second of every upgrade, enchant
+    /// (failed ones too) and piece put on, the own entry of the party roster moved to the same number at the same moment, and a login sends three in a
+    /// row of which the last is the legion list's number of that login (189,848 / 190,050 / 190,088 for YIELD, 127,357 for a second character; the two
+    /// before it are lower, partial counts). The u32 behind it is no number the game shows (it moves rarely; maybe the highest ever reached).
+    /// </summary>
+    private void DecodeOwnCombatPower(ReadOnlySpan<byte> frame, DateTime timestamp)
+    {
+        if (frame.Length < 10 || BinaryPrimitives.ReadUInt32LittleEndian(frame[6..]) != 0)
+        {
+            return;
+        }
+
+        uint power = BinaryPrimitives.ReadUInt32LittleEndian(frame[2..]);
+        if (power is >= 1 and <= 20_000_000)
+        {
+            _entities.NoteOwnCombatPower((int)power, timestamp);
+        }
+    }
+
+    /// <summary>
+    /// The local player's own Item Level (<see cref="OwnItemLevelOpcode"/>): <c>opcode | Item Level u32 | highest Item Level u32</c>, 10 bytes (the same
+    /// recordings, 239 frames: it moved with every piece and enchant as the party roster's entry did; while pieces were swapped the second stayed at the highest).
+    /// </summary>
+    private void DecodeOwnItemLevel(ReadOnlySpan<byte> frame, DateTime timestamp)
+    {
+        if (frame.Length != 10)
+        {
+            return;
+        }
+
+        uint current = BinaryPrimitives.ReadUInt32LittleEndian(frame[2..]);
+        uint highest = BinaryPrimitives.ReadUInt32LittleEndian(frame[6..]);
+        if (current is >= 1 and <= 20_000 && highest >= current && highest <= 20_000)
+        {
+            _entities.NoteOwnItemLevel((int)current, (int)highest, timestamp);
+        }
+    }
+
+    /// <summary>
     /// An inventory change of the local player: <c>opcode | 01 00 00 | 8 bytes | item id u32 | quantity u32 ...</c> (also AP and Kinah, see
-    /// the resources note; bytes 5-8 are the item instance, so two souls dropped at once differ). Only a pet soul is of interest: it goes to the pet farm log with the monsters that died right before it.
+    /// the resources note; bytes 5-8 are the item instance, so two souls dropped at once differ). A pet soul goes to the pet farm log with the monsters
+    /// that died right before it; a worn piece that changed goes into the equipment (<see cref="DecodeWornChanges"/>).
     /// </summary>
     private void DecodeInventoryChange(ReadOnlySpan<byte> frame, DateTime timestamp)
     {
@@ -2673,6 +2732,7 @@ public sealed class Aion2FrameDecoder
             return;
         }
 
+        DecodeWornChanges(frame);
         var gains = Aion2Stock.NoteChange(frame, timestamp);
         Aion2Grind.NoteInventory(frame, timestamp, _entities.LocalCharacter?.Name);
         if (gains.Count > 0 && Aion2GatherLog.AnyResource(gains))
@@ -2856,6 +2916,7 @@ public sealed class Aion2FrameDecoder
     private void DecodeCharacterList(ReadOnlySpan<byte> frame)
     {
         Capture.LoginCapture.LoginStarted(); // a no-op unless the legion's login switch is on
+        _entities.ForgetOwnFigures(); // back at the character selection: the next character's Combat Power and Item Level come with its login
         if (TryReadAccountKey(frame, out string accountKey))
         {
             _entities.NoteAccountKey(accountKey);
@@ -3126,7 +3187,104 @@ public sealed class Aion2FrameDecoder
     /// </summary>
     private void DecodeEquipment(ReadOnlySpan<byte> frame)
     {
-        var items = new List<Aion2EquippedItem>();
+        List<WornEntry> worn = ReadWornEntries(frame).Where(w => !w.Gone).ToList();
+        if (worn.Count == 0)
+        {
+            return;
+        }
+
+        _wornInstances.Clear();
+        foreach (WornEntry entry in worn)
+        {
+            if (entry.Instance != 0)
+            {
+                _wornInstances[entry.Item.SlotIndex] = (entry.Instance, entry.Item.ItemId);
+            }
+        }
+
+        _entities.SetLocalEquipment(worn.Select(w => w.Item).OrderBy(i => i.SlotIndex).ToList());
+    }
+
+    /// <summary>A worn piece read from an item entry, and the game's id of that very item: the 8 bytes in front of the item id. The id is the server's
+    /// (the login lists of one evening gave every piece a new one at each server change), so it ties entries together only until the next login list.
+    /// <paramref name="Gone"/>: the entry's kind (10 bytes before the item id, see <see cref="Aion2Stock"/>) is 2, the piece is no longer there (the
+    /// recordings had kind 0 in the login lists and 1 in the changes for every worn piece, never 2).</summary>
+    private readonly record struct WornEntry(Aion2EquippedItem Item, ulong Instance, bool Gone = false);
+
+    /// <summary>The worn pieces of the last login list by slot, with the id the server gave each, kept up to date by <see cref="DecodeWornChanges"/>.</summary>
+    private readonly Dictionary<int, (ulong Instance, int ItemId)> _wornInstances = new();
+
+    /// <summary>
+    /// The worn pieces an inventory change carries (see <see cref="DecodeInventoryChange"/>; its entries are laid out as the login list's, see
+    /// <see cref="DecodeEquipment"/>): the game sends a piece anew after an enchant (failed or not), a stat rolled again, and when it is put on. Checked on the
+    /// recording of 11 to 12 November 2026 (YIELD): the weapon's enchant 18 -> 19, and nine entries of seven pieces sent while the player worked on them
+    /// (weapon, guard, helmet, necklace, earrings, rings); each matched the next login list's entry of that slot, two of them but for a flag byte that moves
+    /// from one login list to the next as well. An entry of a piece of the list, under the id the list gave it, that names another place than the worn
+    /// pieces' (<c>0b</c>) is a piece taken off; one worn in another slot than before left its old slot.
+    /// </summary>
+    private void DecodeWornChanges(ReadOnlySpan<byte> frame)
+    {
+        List<WornEntry> entries = ReadWornEntries(frame);
+        List<WornEntry> worn = entries.Where(w => !w.Gone).ToList();
+        var emptied = new HashSet<int>();
+        foreach (WornEntry gone in entries.Where(w => w.Gone))
+        {
+            // a piece gone from its slot, under the id the list gave it
+            int slot = gone.Item.SlotIndex;
+            if (_wornInstances.TryGetValue(slot, out (ulong Instance, int ItemId) known) && known.Instance == gone.Instance && gone.Instance != 0)
+            {
+                emptied.Add(slot);
+                _wornInstances.Remove(slot);
+            }
+        }
+
+        Span<byte> needle = stackalloc byte[16];
+        foreach (KeyValuePair<int, (ulong Instance, int ItemId)> piece in _wornInstances.ToList())
+        {
+            BinaryPrimitives.WriteUInt64LittleEndian(needle, piece.Value.Instance);
+            BinaryPrimitives.WriteInt32LittleEndian(needle[8..], piece.Value.ItemId);
+            BinaryPrimitives.WriteUInt32LittleEndian(needle[12..], 1);
+            int at = frame.IndexOf(needle);
+            if (at >= 0 && at + 21 < frame.Length && BinaryPrimitives.ReadUInt32LittleEndian(frame[(at + 16)..]) == 0 && frame[at + 20] != 0x0b)
+            {
+                emptied.Add(piece.Key);
+                _wornInstances.Remove(piece.Key);
+            }
+        }
+
+        foreach (WornEntry entry in worn)
+        {
+            int slot = entry.Item.SlotIndex;
+            if (entry.Instance != 0)
+            {
+                foreach (KeyValuePair<int, (ulong Instance, int ItemId)> other in _wornInstances.ToList())
+                {
+                    if (other.Key != slot && other.Value.Instance == entry.Instance)
+                    {
+                        emptied.Add(other.Key);
+                        _wornInstances.Remove(other.Key);
+                    }
+                }
+
+                _wornInstances[slot] = (entry.Instance, entry.Item.ItemId);
+            }
+        }
+
+        foreach (WornEntry entry in worn)
+        {
+            emptied.Remove(entry.Item.SlotIndex);
+        }
+
+        if (worn.Count > 0 || emptied.Count > 0)
+        {
+            _entities.UpdateLocalEquipment(worn.Select(w => w.Item).ToList(), emptied);
+        }
+    }
+
+    /// <summary>The worn pieces among a frame's item entries (the first of each slot), with their ids; see <see cref="DecodeEquipment"/>.</summary>
+    private static List<WornEntry> ReadWornEntries(ReadOnlySpan<byte> frame)
+    {
+        var items = new List<WornEntry>();
         var seen = new HashSet<int>();
         for (int p = 2; p + 14 < frame.Length; p++)
         {
@@ -3137,7 +3295,8 @@ public sealed class Aion2FrameDecoder
 
             int itemId = unchecked((int)BinaryPrimitives.ReadUInt32LittleEndian(frame[p..]));
             int slot = frame[p + 13];
-            if (Aion2ItemCatalog.Find(itemId) is null || !seen.Add(slot))
+            bool gone = p >= 10 && frame[p - 10] == 2; // a piece no longer there does not hold its slot against the one that came
+            if (Aion2ItemCatalog.Find(itemId) is null || (!gone && !seen.Add(slot)))
             {
                 continue;
             }
@@ -3179,13 +3338,11 @@ public sealed class Aion2FrameDecoder
                 }
             }
 
-            items.Add(ItemWith(slot, itemId, enchant, details) with { Arcana = arcana });
+            ulong instance = p >= 8 ? BinaryPrimitives.ReadUInt64LittleEndian(frame[(p - 8)..]) : 0;
+            items.Add(new WornEntry(ItemWith(slot, itemId, enchant, details) with { Arcana = arcana }, instance, gone));
         }
 
-        if (items.Count > 0)
-        {
-            _entities.SetLocalEquipment(items.OrderBy(i => i.SlotIndex).ToList());
-        }
+        return items;
     }
 
     /// <summary>Slots from here on are the arcana pieces, whose entries are laid out differently (no stones).</summary>

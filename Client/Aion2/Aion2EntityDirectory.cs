@@ -254,6 +254,20 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
                 _pruneStigmas = false;
             }
 
+            // The Combat Power and Item Level the game sent of the character played before (the new one's come with its login, moments before this record).
+            if (_character is { } before && before.Name != info.Name && !info.Restored)
+            {
+                if (_ownPower is { } power && info.ReceivedAt - power.At > OwnFiguresCarry)
+                {
+                    _ownPower = null;
+                }
+
+                if (_ownItemLevel is { } level && info.ReceivedAt - level.At > OwnFiguresCarry)
+                {
+                    _ownItemLevel = null;
+                }
+            }
+
             DropRestoredListsOfOthers(info.Name);
 
             int previousId = _explicitLocalId;
@@ -518,6 +532,43 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
         {
             _fullEquipment = equipment;
             _listsAt = DateTime.UtcNow;
+        }
+
+        NotifyCharacterChanged();
+    }
+
+    /// <summary>
+    /// Worn pieces that changed in the game since the login list (Aion2FrameDecoder.DecodeWornChanges): each goes into its slot of the list, a slot of
+    /// <paramref name="emptied"/> loses its piece. An enchant, a stat rolled again or a piece put on shows at once instead of at the next login (12
+    /// November 2026, the owner: "show their gear live as it changes"). Only once the game named the character in this run: before that the list can still
+    /// be the one read back from the file of another character, and the next login list brings everything anyway.
+    /// </summary>
+    public void UpdateLocalEquipment(IReadOnlyList<Aion2EquippedItem> pieces, IReadOnlyCollection<int> emptied)
+    {
+        lock (_gate)
+        {
+            if (_fullEquipment is null || _character is not { Restored: false } || (pieces.Count == 0 && emptied.Count == 0))
+            {
+                return;
+            }
+
+            var bySlot = new SortedDictionary<int, Aion2EquippedItem>();
+            foreach (Aion2EquippedItem item in _fullEquipment)
+            {
+                bySlot[item.SlotIndex] = item;
+            }
+
+            foreach (int slot in emptied)
+            {
+                bySlot.Remove(slot);
+            }
+
+            foreach (Aion2EquippedItem piece in pieces)
+            {
+                bySlot[piece.SlotIndex] = piece;
+            }
+
+            _fullEquipment = bySlot.Values.ToList();
         }
 
         NotifyCharacterChanged();
@@ -1941,6 +1992,97 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
             {
                 return _stats is not null && _statsOwn ? (new Dictionary<int, int>(_stats), _statsAt) : null;
             }
+        }
+    }
+
+    // The local player's Combat Power and Item Level as the game itself sends them (see NoteOwnCombatPower, NoteOwnItemLevel), with the time of the frame.
+    private (int Value, DateTime At)? _ownPower;
+    private (int Current, int Highest, DateTime At)? _ownItemLevel;
+
+    /// <summary>The number the 10 against 10 arena gives everybody (see <see cref="Aion2Zones.IsEqualizedArena"/>): never the character's own.</summary>
+    private const int EqualizedCombatPower = 397228;
+
+    /// <summary>What the game sent before the record of another character can't be that character's: its own numbers come with its login, a few seconds
+    /// before its record (6 to 7 s in the recordings of 12 November 2026).</summary>
+    private static readonly TimeSpan OwnFiguresCarry = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// The local player's Combat Power as the game sends it: whenever it changes (an enchant, a piece put on or taken off, a stat rolled again) and at every
+    /// login and server change (see Aion2FrameDecoder.DecodeOwnCombatPower). Until now the meter had only the legion list's number of the login, so an
+    /// upgrade showed only after logging in again (12 November 2026, a player: "my cp ingame does not match on the atreia app sometimes when I upgrade").
+    /// </summary>
+    public void NoteOwnCombatPower(int combatPower, DateTime at)
+    {
+        if (combatPower <= 0 || combatPower == EqualizedCombatPower)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            if (_ownPower is { } was && was.Value == combatPower)
+            {
+                _ownPower = (combatPower, at);
+                return;
+            }
+
+            _ownPower = (combatPower, at);
+        }
+
+        NotifyCharacterChanged();
+    }
+
+    /// <summary>The local player's Item Level as the game sends it with every change and at login, and the highest it reached (that one stays while pieces
+    /// are swapped; see Aion2FrameDecoder.DecodeOwnItemLevel).</summary>
+    public void NoteOwnItemLevel(int current, int highest, DateTime at)
+    {
+        lock (_gate)
+        {
+            if (_ownItemLevel is { } was && was.Current == current && was.Highest == highest)
+            {
+                _ownItemLevel = (current, highest, at);
+                return;
+            }
+
+            _ownItemLevel = (current, highest, at);
+        }
+
+        NotifyCharacterChanged();
+    }
+
+    /// <summary>The local player's Combat Power as the game last sent it in this run; null before it did (the meter then has the legion list's number of
+    /// the login, see MainWindow.OwnCombatPower).</summary>
+    public int? OwnLiveCombatPower
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _ownPower?.Value;
+            }
+        }
+    }
+
+    /// <summary>The local player's Item Level as the game last sent it in this run; null before it did.</summary>
+    public int? OwnLiveItemLevel
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _ownItemLevel?.Current;
+            }
+        }
+    }
+
+    /// <summary>The game went back to the character selection (its character list came): the numbers of the character played so far end with it, the next
+    /// character's come with its login.</summary>
+    public void ForgetOwnFigures()
+    {
+        lock (_gate)
+        {
+            _ownPower = null;
+            _ownItemLevel = null;
         }
     }
 
