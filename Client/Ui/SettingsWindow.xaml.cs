@@ -2236,7 +2236,7 @@ public partial class SettingsWindow : Window
 
     private IEnumerable<(int PetId, string Name)> PetsOfSpecies(string species) => Aion2Pets.MapPetsOf(species, LocalizationManager.Instance.Language);
 
-    private bool IsMax(int petId) => _petLevels.TryGetValue(petId, out int level) && level >= Aion2Pets.TopLevel;
+    private bool IsMax(int petId) => _petLevels.TryGetValue(petId, out int level) && Aion2Pets.IsFarmed(level, _petProgress.GetValueOrDefault(petId));
 
     /// <summary>Counts the pets that are on: those at the top level do not count.</summary>
     private (int On, int All) PetCounts(string? species)

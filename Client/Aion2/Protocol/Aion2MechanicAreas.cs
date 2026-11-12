@@ -8,11 +8,30 @@ namespace AionDPS.Aion2.Protocol;
 /// around the facing. <see cref="Measured"/>: the size was measured on recorded fights (assets/aion2/bosses/mechanic_areas.json); else only the shape is known
 /// (the game client's word, <see cref="Aion2SkillShapes"/>) and the size is a guess or the one the meter learns.
 /// </summary>
+/// <remarks>Two shapes belong to objects, not to windups: "square", a tile of a board (<see cref="SizeCm"/>: its side, square to the map's axes), and "wave", a hit that
+/// spreads from the spot at <see cref="SpeedCmS"/> for as far as <see cref="RadiusCm"/>, a band <see cref="WidthCm"/> wide, ahead of the facing within
+/// <see cref="HalfAngle"/> (180: all round).</remarks>
 public sealed record MechanicArea(string Shape, double? RadiusCm = null, double? InnerCm = null, double? HalfAngle = null, double? LengthCm = null, double? WidthCm = null,
-    double? BehindCm = null, bool OnTarget = false, int? LandMs = null, int Seen = 0, bool Measured = false)
+    double? BehindCm = null, bool OnTarget = false, int? LandMs = null, int Seen = 0, bool Measured = false, double? SizeCm = null, double? SpeedCmS = null)
 {
     /// <summary>Everybody in the room.</summary>
     public bool Room => Shape == "room";
+}
+
+/// <summary>
+/// An object that lies on a board with others like it and hurts whoever stands on its square (12 November 2026, the owner: "the actual bingo etc for ludra etc.
+/// all visible"): Eternal Ludra's 6 x 6 board of 6 m tiles, of which 35 appear at once and light up in four rounds (the one that never appears is the safe
+/// square), and the 3 x 3 board of 20 m cells, 7 burning at once. <see cref="SizeCm"/>: the square's side (the board's spacing), <see cref="Seconds"/>: how long
+/// one stays, <see cref="TickMs"/>: the beat it hurts at once lit. When each tile lights up is its first cast (the replay keeps it).
+/// </summary>
+public sealed record MechanicFloor(int NpcId, double SizeCm, double Seconds, IReadOnlyList<int> Skills, int TickMs, int Seen);
+
+/// <summary>An object whose hit spreads from where it stands at a steady speed (the wave from Eternal Ludra's arena edge): <see cref="SpeedCmS"/>, the band's
+/// <see cref="WidthCm"/>, how long it runs, and <see cref="HalfAngle"/> around the way the object faces as it casts (90: only ahead of it, 180: all round).</summary>
+public sealed record MechanicWave(int NpcId, int SkillId, double SpeedCmS, double WidthCm, double Seconds, double HalfAngle, int Seen)
+{
+    /// <summary>How far it runs.</summary>
+    public double ReachCm => SpeedCmS * Seconds;
 }
 
 /// <summary>An object a boss leaves on the floor that hurts the players around it (a pool, an orb): how far it reaches and how long it stays.</summary>
@@ -29,7 +48,10 @@ public sealed record MechanicHazard(int NpcId, double RadiusCm, double Seconds, 
 public static class Aion2MechanicAreas
 {
     private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "bosses", "mechanic_areas.json");
-    private static (Dictionary<int, MechanicArea> Areas, Dictionary<int, MechanicHazard> Hazards, HashSet<int> Objects)? _table;
+    private static Table? _table;
+
+    private sealed record Table(Dictionary<int, MechanicArea> Areas, Dictionary<int, MechanicHazard> Hazards, HashSet<int> Objects, Dictionary<int, MechanicFloor> Floors,
+        Dictionary<int, MechanicWave> Waves);
 
     /// <summary>The size a shape gets while nothing measured it (a dashed outline says it is a guess).</summary>
     public const double GuessRadiusCm = 450, GuessHalfAngle = 45, GuessWidthCm = 250;
@@ -70,7 +92,16 @@ public static class Aion2MechanicAreas
     /// <summary>Whether an NPC is an object of a boss's mechanics (summoned on the floor; the replay follows it).</summary>
     public static bool IsObject(int npcId) => Load().Objects.Contains(npcId);
 
-    private static (Dictionary<int, MechanicArea> Areas, Dictionary<int, MechanicHazard> Hazards, HashSet<int> Objects) Load()
+    /// <summary>The tile of a board an NPC is (null: none).</summary>
+    public static MechanicFloor? FloorOf(int npcId) => Load().Floors.GetValueOrDefault(npcId);
+
+    /// <summary>The wave an NPC sends out (null: none).</summary>
+    public static MechanicWave? WaveOf(int npcId) => Load().Waves.GetValueOrDefault(npcId);
+
+    /// <summary>Whether the casts of an NPC matter to the replay: when a tile lights up, where and which way a wave sets out.</summary>
+    public static bool WatchesCasts(int npcId) => Load().Floors.ContainsKey(npcId) || Load().Waves.ContainsKey(npcId);
+
+    private static Table Load()
     {
         if (_table is { } cached)
         {
@@ -80,6 +111,8 @@ public static class Aion2MechanicAreas
         var areas = new Dictionary<int, MechanicArea>();
         var hazards = new Dictionary<int, MechanicHazard>();
         var objects = new HashSet<int>();
+        var floors = new Dictionary<int, MechanicFloor>();
+        var waves = new Dictionary<int, MechanicWave>();
         try
         {
             if (File.Exists(FilePath))
@@ -128,7 +161,36 @@ public static class Aion2MechanicAreas
                     }
                 }
 
+                static double? NumOf(JsonElement v, string name) => v.TryGetProperty(name, out JsonElement e) && e.ValueKind == JsonValueKind.Number ? e.GetDouble() : null;
+                static List<int> IdsOf(JsonElement v, string name) => v.TryGetProperty(name, out JsonElement e) && e.ValueKind == JsonValueKind.Array
+                    ? e.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => x.GetInt32()).ToList() : new List<int>();
+                if (root.TryGetProperty("floors", out JsonElement boards) && boards.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (JsonProperty p in boards.EnumerateObject())
+                    {
+                        if (int.TryParse(p.Name, out int npc) && p.Value.ValueKind == JsonValueKind.Object && NumOf(p.Value, "size") is double size && size > 0
+                            && NumOf(p.Value, "seconds") is double seconds && seconds > 0)
+                        {
+                            floors[npc] = new MechanicFloor(npc, size, seconds, IdsOf(p.Value, "skills"), (int)(NumOf(p.Value, "tickMs") ?? 500), (int)(NumOf(p.Value, "seen") ?? 0));
+                        }
+                    }
+                }
+
+                if (root.TryGetProperty("waves", out JsonElement fronts) && fronts.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (JsonProperty p in fronts.EnumerateObject())
+                    {
+                        if (int.TryParse(p.Name, out int npc) && p.Value.ValueKind == JsonValueKind.Object && NumOf(p.Value, "skill") is double skill && NumOf(p.Value, "speed") is double speed
+                            && speed > 0 && NumOf(p.Value, "seconds") is double seconds && seconds > 0)
+                        {
+                            waves[npc] = new MechanicWave(npc, (int)skill, speed, NumOf(p.Value, "width") ?? 300, seconds, NumOf(p.Value, "half") ?? 180, (int)(NumOf(p.Value, "seen") ?? 0));
+                        }
+                    }
+                }
+
                 objects.UnionWith(hazards.Keys);
+                objects.UnionWith(floors.Keys);
+                objects.UnionWith(waves.Keys);
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException or InvalidOperationException or FormatException)
@@ -136,7 +198,7 @@ public static class Aion2MechanicAreas
             // No table: the replay draws the client's shapes with the learnt sizes, as before.
         }
 
-        _table = (areas, hazards, objects);
-        return _table.Value;
+        _table = new Table(areas, hazards, objects, floors, waves);
+        return _table;
     }
 }

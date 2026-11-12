@@ -3104,7 +3104,8 @@ internal static class Program
         Environment.Exit(0);
     }
 
-    /// <summary>Draws the replay window at one moment of a made-up Eternal Ludra fight (eight players around her, her areas in their measured shapes, the objects on the floor); no window is ever shown.</summary>
+    /// <summary>Draws the replay window at one moment of a made-up Eternal Ludra fight (eight players around her, her areas in their measured shapes, the objects on the floor, a board
+    /// lighting up tile by tile and a wave from the arena's edge); no window is ever shown.</summary>
     private static void RunRenderReplayMode(string path, double seconds, int scale)
     {
         Environment.SetEnvironmentVariable("AIONDPS_DATA_DIR", Path.Combine(Path.GetTempPath(), "aiondps-render-replay"));
@@ -3145,8 +3146,9 @@ internal static class Program
 
         tracks.Add(new Combat.PositionTrack(boss, start, new[] { 0, 60000 }, new[] { 0, 0 }, new[] { 0, 0 }));
         // Eternal Ludra's own attacks in their measured shapes (assets/aion2/bosses/mechanic_areas.json): a line ahead, a cone, a circle on a player, and the objects
-        // her mechanics leave on the floor: pools that hurt around them while they stay (violet) and the Airborne zones they wind up
-        const int ludra = 2301014, pool = 2920748, airborne = 2920793;
+        // her mechanics leave on the floor: pools that hurt around them while they stay (violet), the Airborne zones they wind up, her 6 x 6 board (some tiles light up,
+        // in three goes; the rest and the square left out never) and a wave
+        const int ludra = 2301014, pool = 2920755, airborne = 2920793, tile = 2920772, wave = 2920760;
         var windups = new List<Combat.WindupRecord>();
         var hits = new List<Combat.DamageEvent>();
         (double At, int Skill, double Facing, int Target)[] attacks = { (3, 1803140, 30, 1), (7, 1803120, 200, 3), (11, 1803140, 300, 2), (16, 1803250, 0, 4), (21, 1803130, 0, 0), (26, 1803140, 120, 6) };
@@ -3172,9 +3174,46 @@ internal static class Program
         windups.Add(new Combat.WindupRecord(start.AddSeconds(11.4), 301, 1803215, 301, 700, 0, 900, 700, true));
         hits.Add(new Combat.DamageEvent(start.AddSeconds(12.3), 301, 7, 3100, false, "Attack", SkillId: 1803215));
 
+        var casts = new List<Combat.ObjectCast>();
+        // her first board of the first kill (12 November 2026): when each tile lit up after the board appeared (0: never; -1: the square the board leaves out)
+        double[,] lightUp =
+        {
+            { 0, -1, 4.0, 0, 7.7, 0 },
+            { 11.4, 0, 4.0, 11.4, 3.9, 0 },
+            { 0, 7.7, 7.7, 0, 0, 11.4 },
+            { 0, 3.9, 0, 0, 0, 3.9 },
+            { 7.7, 7.7, 3.9, 3.9, 7.7, 7.7 },
+            { 4.0, 3.9, 7.7, 0, 7.7, 4.0 },
+        };
+        int tileId = 400;
+        for (int cy = 0; cy < 6; cy++)
+        {
+            for (int cx = 0; cx < 6; cx++)
+            {
+                double after = lightUp[cy, cx];
+                if (after < 0)
+                {
+                    continue;
+                }
+
+                int id = tileId++, tx = -1500 + cx * 600, ty = -1500 + cy * 600;
+                objects[id] = tile;
+                tracks.Add(new Combat.PositionTrack(id, start.AddSeconds(6), new[] { 0 }, new[] { tx }, new[] { ty }));
+                if (after > 0)
+                {
+                    casts.Add(new Combat.ObjectCast(start.AddSeconds(6 + after), id, 1803014, 0, tx, ty, true));
+                }
+            }
+        }
+
+        objects[350] = wave;
+        tracks.Add(new Combat.PositionTrack(350, start.AddSeconds(9.5), new[] { 0 }, new[] { -2600 }, new[] { 200 }));
+        casts.Add(new Combat.ObjectCast(start.AddSeconds(10.5), 350, 1803315, 0, -2600, 200, true));
+
         var extras = new Combat.FightExtras(Array.Empty<Combat.SkillUse>(), Array.Empty<Combat.BuffEvent>(), new[] { new Combat.StaggerEvent(start.AddSeconds(30), boss, 0, 0, true) },
             new Dictionary<int, string>(), tracks, windups, new[] { new Combat.DeathRecord(start.AddSeconds(41), 5, start.AddSeconds(52)) },
-            new[] { new Combat.HpSeries(boss, start, Enumerable.Range(0, 61).Select(s => s * 1000).ToArray(), Enumerable.Range(0, 61).Select(s => (short)(1000 - s * 15)).ToArray()) });
+            new[] { new Combat.HpSeries(boss, start, Enumerable.Range(0, 61).Select(s => s * 1000).ToArray(), Enumerable.Range(0, 61).Select(s => (short)(1000 - s * 15)).ToArray()) },
+            ObjectCasts: casts);
         string bossName = Aion2.Protocol.Aion2Npcs.NameOf(ludra, Ui.LocalizationManager.Instance.Language) ?? "Eternal Ludra";
         var data = Combat.ReplayBuilder.Build(bossName, extras, hits, start, start.AddSeconds(60),
             id => id == boss ? (bossName, "", false) : objects.ContainsKey(id) ? ("", "", false) : (names[id - 1], classes[id - 1], true),
@@ -3720,7 +3759,8 @@ internal static class Program
             {
                 x = plan.Stops[0].X * 100 - 7000;
                 y = plan.Stops[0].Z * 100 + 5500;
-                window.SetRoute(plan.Stops.Take(whole ? Ui.PetMapWindow.RouteBadges : 6).Select(st => (st.X * 100, st.Z * 100, st.Radius, st.Step)).ToList(), null, plan.Stops[0].Zone);
+                window.SetRoute(plan.Stops.Take(whole ? Ui.PetMapWindow.RouteBadges : 6).Select(st => (st.X * 100, st.Z * 100, st.Radius, st.Step)).ToList(), null, plan.Stops[0].Zone,
+                    hops: plan.Stops.Where(st => st.Teleport is not null || st.Via is not null).Select(st => st.Step).ToHashSet());
                 window.ArrowPets = plan.Stops[0].Pets.ToHashSet();
                 chosen = plan.Stops.SelectMany(st => st.Pets).ToHashSet();
                 points = Aion2.Protocol.Aion2Maps.PointsOf(map, chosen);
@@ -3753,7 +3793,8 @@ internal static class Program
             }.Concat(isLive ? new[] { "One of them is here right now" } : Array.Empty<string>()));
             window.SetRoute(hoverPlan.Stops.Take(whole ? Ui.PetMapWindow.RouteBadges : 6).Select(st => (st.X * 100, st.Z * 100, st.Radius, st.Step)).ToList(), null, hoverPlan.Stops[0].Zone,
                 hoverPlan.Stops.Take(Ui.PetMapWindow.RouteBadges).Select(st => $"Stop {st.Step} of {hoverPlan.Stops.Count} · {st.Zone}\n" + string.Join(", ", st.Pets.Select(id => Aion2.Protocol.Aion2Pets.PetName(id, "en")))).ToList(),
-                Aion2.PetRoute.KibeliskOf(mapKey, hoverPlan.Stops[0]) is { } kib ? kib.Name : null);
+                Aion2.PetRoute.KibeliskOf(mapKey, hoverPlan.Stops[0]) is { } kib ? kib.Name : null,
+                hoverPlan.Stops.Where(st => st.Teleport is not null || st.Via is not null).Select(st => st.Step).ToHashSet());
             window.HoverForPicture = whole ? "stop" : "live";
         }
 

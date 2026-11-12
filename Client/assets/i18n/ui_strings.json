@@ -7124,16 +7124,16 @@
     "zh-TW": "硬直中"
   },
   "Replay.Early": {
-    "en": "Early test: the places are the game's own readings (it sends them with movements and skills, not on a regular beat); the size of an area is learnt from who it hit, dashed = still a guess; violet = what a boss leaves on the floor, while it stays.",
-    "de": "Früher Test: Die Orte sind die Messwerte des Spiels (es sendet sie bei Bewegungen und Skills, nicht in festem Takt); die Größe einer Fläche wird aus den Getroffenen gelernt, gestrichelt = noch geschätzt; violett = was ein Boss auf dem Boden hinterlässt, solange es bleibt.",
-    "fr": "Test préliminaire : les positions sont les relevés du jeu (envoyés lors des déplacements et des compétences, pas à intervalle régulier) ; la taille d'une zone est apprise d'après les personnes touchées, en pointillés = encore estimée ; en violet = ce qu'un boss laisse au sol, tant que cela reste.",
-    "es": "Prueba temprana: las posiciones son las lecturas del propio juego (las envía con los movimientos y las habilidades, no a intervalos fijos); el tamaño de un área se aprende de a quién golpea, a trazos = aún una estimación; violeta = lo que un jefe deja en el suelo, mientras permanece.",
-    "ru": "Ранний тест: положения - это показания самой игры (она шлёт их при движениях и умениях, а не с равным интервалом); размер области определяется по тем, кого она задела, пунктир = пока оценка; фиолетовым - то, что босс оставляет на земле, пока оно держится.",
-    "zh": "早期测试：位置来自游戏自身的读数（随移动和技能发送，而非固定间隔）；范围大小根据被命中的玩家学习得出，虚线 = 仍为估计；紫色 = 首领留在地面上的东西，存在期间显示。",
-    "pt": "Teste inicial: as posições são as leituras do próprio jogo (enviadas com movimentos e habilidades, não em intervalos fixos); o tamanho de uma área é aprendido de quem ela atinge, tracejado = ainda uma estimativa; violeta = o que um chefe deixa no chão, enquanto permanece.",
-    "ja": "先行テスト：位置はゲーム自身の読み取り値です（移動やスキルに合わせて送られ、一定間隔ではありません）。範囲の大きさは当たった相手から学習し、破線はまだ推定です。紫はボスが床に残したもので、残っている間表示されます。",
-    "ko": "초기 테스트: 위치는 게임 자체의 측정값입니다(이동과 스킬에 맞춰 전송되며 일정한 간격이 아닙니다). 범위의 크기는 맞은 대상에서 학습하며 점선은 아직 추정입니다. 보라색은 보스가 바닥에 남긴 것으로, 남아 있는 동안 표시됩니다.",
-    "zh-TW": "早期測試：位置來自遊戲本身的讀數（隨移動和技能傳送，而非固定間隔）；範圍大小依據被命中的玩家學習而得，虛線 = 仍為估計；紫色 = 首領留在地面上的東西，存在期間顯示。"
+    "en": "Early test: the places are the game's own readings (it sends them with movements and skills, not on a regular beat); the size of an area is learnt from who it hit, dashed = still a guess; violet = what a boss leaves on the floor, while it stays. Squares = the tiles of a board: the amber ones fill up until they light up red; the rest never light up and turn green, as does a square the board leaves out. Waves spread from where they set out.",
+    "de": "Früher Test: Die Orte sind die Messwerte des Spiels (es sendet sie bei Bewegungen und Skills, nicht in festem Takt); die Größe einer Fläche wird aus den Getroffenen gelernt, gestrichelt = noch geschätzt; violett = was ein Boss auf dem Boden hinterlässt, solange es bleibt. Quadrate = die Felder eines Bretts: die orangen füllen sich, bis sie rot aufleuchten; die übrigen leuchten nie auf und werden grün, wie ein Feld, das das Brett auslässt. Wellen breiten sich von ihrem Ausgangspunkt aus.",
+    "fr": "Test préliminaire : les positions sont les relevés du jeu (envoyés lors des déplacements et des compétences, pas à intervalle régulier) ; la taille d'une zone est apprise d'après les personnes touchées, en pointillés = encore estimée ; en violet = ce qu'un boss laisse au sol, tant que cela reste. Carrés = les cases d'un plateau : les cases orange se remplissent jusqu'à s'allumer en rouge ; les autres ne s'allument jamais et passent au vert, comme une case laissée vide. Les vagues partent de leur point de départ.",
+    "es": "Prueba temprana: las posiciones son las lecturas del propio juego (las envía con los movimientos y las habilidades, no a intervalos fijos); el tamaño de un área se aprende de a quién golpea, a trazos = aún una estimación; violeta = lo que un jefe deja en el suelo, mientras permanece. Cuadrados = las casillas de un tablero: las naranjas se llenan hasta encenderse en rojo; las demás nunca se encienden y se vuelven verdes, como una casilla que falta. Las ondas se propagan desde donde salen.",
+    "ru": "Ранний тест: положения - это показания самой игры (она шлёт их при движениях и умениях, а не с равным интервалом); размер области определяется по тем, кого она задела, пунктир = пока оценка; фиолетовым - то, что босс оставляет на земле, пока оно держится. Квадраты - клетки поля: оранжевые заполняются, пока не загорятся красным; остальные не загораются никогда и становятся зелёными, как и пропущенная клетка. Волны расходятся от места, откуда вышли.",
+    "zh": "早期测试：位置来自游戏自身的读数（随移动和技能发送，而非固定间隔）；范围大小根据被命中的玩家学习得出，虚线 = 仍为估计；紫色 = 首领留在地面上的东西，存在期间显示。方块 = 棋盘的格子：橙色的格子逐渐填满，随后亮起变红；其余格子始终不会亮起，会变成绿色，空出的格子也一样。波从出发点向外扩散。",
+    "pt": "Teste inicial: as posições são as leituras do próprio jogo (enviadas com movimentos e habilidades, não em intervalos fixos); o tamanho de uma área é aprendido de quem ela atinge, tracejado = ainda uma estimativa; violeta = o que um chefe deixa no chão, enquanto permanece. Quadrados = as casas de um tabuleiro: as laranja enchem-se até acenderem a vermelho; as outras nunca acendem e ficam verdes, como uma casa que falta. As ondas espalham-se a partir de onde partem.",
+    "ja": "先行テスト：位置はゲーム自身の読み取り値です（移動やスキルに合わせて送られ、一定間隔ではありません）。範囲の大きさは当たった相手から学習し、破線はまだ推定です。紫はボスが床に残したもので、残っている間表示されます。四角は盤面のマスです。オレンジのマスは満ちていき、赤く光ります。それ以外は光らず緑になり、盤面の空いたマスも同じです。波は発生した地点から広がります。",
+    "ko": "초기 테스트: 위치는 게임 자체의 측정값입니다(이동과 스킬에 맞춰 전송되며 일정한 간격이 아닙니다). 범위의 크기는 맞은 대상에서 학습하며 점선은 아직 추정입니다. 보라색은 보스가 바닥에 남긴 것으로, 남아 있는 동안 표시됩니다. 사각형은 판의 칸입니다. 주황색 칸은 차오르다가 빨갛게 켜집니다. 나머지는 켜지지 않고 초록색이 되며, 판에서 빠진 칸도 마찬가지입니다. 파동은 시작된 지점에서 퍼져 나갑니다.",
+    "zh-TW": "早期測試：位置來自遊戲本身的讀數（隨移動和技能傳送，而非固定間隔）；範圍大小依據被命中的玩家學習而得，虛線 = 仍為估計；紫色 = 首領留在地面上的東西，存在期間顯示。方塊 = 棋盤的格子：橙色的格子逐漸填滿，隨後亮起變紅；其餘格子始終不會亮起，會變成綠色，空出的格子也一樣。波從出發點向外擴散。"
   },
   "Combat.Element.TargetIcon": {
     "en": "Picture",
@@ -15516,9 +15516,9 @@
     "fr": "Itinéraire des familiers"
   },
   "PetRoute.Lede": {
-    "en": "The farming route of the Pet Soul Map Atlas on atreia.app, planned the same way here: each pet at one of its densest spots, stops where several pets are close together, teleports where they save time. The map overlay leads you to the next stop and moves on by itself when your collection says its pets are done.",
-    "de": "Die Farm-Route des Pet Soul Map Atlas auf atreia.app, hier genauso geplant: jedes Haustier an einer seiner dichtesten Stellen, Stopps wo mehrere Haustiere nah beieinander sind, Teleports wo sie Zeit sparen. Die Karte führt dich zum nächsten Stopp und geht von selbst weiter, wenn deine Sammlung sagt, dass seine Haustiere fertig sind.",
-    "fr": "L’itinéraire de farm du Pet Soul Map Atlas sur atreia.app, planifié de la même façon ici : chaque familier à l’un de ses endroits les plus denses, des arrêts là où plusieurs familiers sont proches, des téléportations quand elles font gagner du temps. La carte te guide vers l’arrêt suivant et passe au prochain toute seule quand ta collection dit que ses familiers sont faits."
+    "en": "A farming route for the pets you still need: each pet at the first stop with nearly as many of its monsters as the best one, as few stops as it takes, round the map rather than back and forth across it, teleports where they save time. The map overlay leads you to the next stop and moves on by itself when your collection says its pets are done.",
+    "de": "Eine Farm-Route für die Haustiere, die dir noch fehlen: jedes Haustier am ersten Stopp mit fast so vielen seiner Monster wie am besten Stopp, so wenige Stopps wie nötig, einmal rund um die Karte statt kreuz und quer, Teleports wo sie Zeit sparen. Die Karte führt dich zum nächsten Stopp und geht von selbst weiter, wenn deine Sammlung sagt, dass seine Haustiere fertig sind.",
+    "fr": "Un itinéraire de farm pour les familiers qu’il te manque : chaque familier au premier arrêt avec presque autant de ses monstres que le meilleur, aussi peu d’arrêts que possible, un tour de la carte plutôt que des allers-retours, des téléportations quand elles font gagner du temps. La carte te guide vers l’arrêt suivant et passe au prochain toute seule quand ta collection dit que ses familiers sont faits."
   },
   "PetRoute.On": {
     "en": "Guide me along the route on the map",
@@ -15536,9 +15536,9 @@
     "fr": "Commencer près de moi"
   },
   "PetRoute.FromHereTip": {
-    "en": "Off: the route starts at your faction’s start camp, as on the website.",
-    "de": "Aus: Die Route beginnt am Startlager deiner Fraktion, wie auf der Website.",
-    "fr": "Désactivé : l’itinéraire commence au camp de départ de ta faction, comme sur le site."
+    "en": "Off: the route is planned for the whole map and starts at a stop a teleport takes you to (in the Abyss: at your side’s camp).",
+    "de": "Aus: Die Route wird für die ganze Karte geplant und beginnt an einem Stopp, zu dem dich ein Teleport bringt (im Abyss: an deinem Lager).",
+    "fr": "Désactivé : l’itinéraire est planifié pour toute la carte et commence à un arrêt où une téléportation t’amène (dans l’Abysse : à la base de ta faction)."
   },
   "PetRoute.Next": {
     "en": "Next stop",

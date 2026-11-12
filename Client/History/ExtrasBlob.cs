@@ -26,12 +26,16 @@ public static class ExtrasBlob
 
     private sealed record Tgt(long T, int A, int G);
 
+    private sealed record ObjCast(long T, int A, int S, double F, int X, int Y, bool P);
+
     private sealed record Payload(List<Use> U, List<Buff> B, List<Stagger> S, Dictionary<string, string> N,
         [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] List<Track>? R = null,
         [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] List<Windup>? W = null,
         [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] List<Death>? D = null,
         [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] List<Hp>? H = null,
-        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] List<Tgt>? K = null);
+        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] List<Tgt>? K = null,
+        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] List<ObjCast>? O = null,
+        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] Dictionary<string, int>? M = null);
 
     public static byte[] Pack(FightExtras extras)
     {
@@ -44,7 +48,9 @@ public static class ExtrasBlob
             extras.Windups?.Select(w => new Windup(w.At.Ticks, w.Actor, w.SkillId, w.Target, w.DurationMs, w.Facing, w.X, w.Y, w.HasPosition)).ToList(),
             extras.Deaths?.Select(d => new Death(d.At.Ticks, d.Entity, d.RevivedAt?.Ticks)).ToList(),
             extras.Hp?.Select(h => new Hp(h.Entity, h.Start.Ticks, h.T, h.Permille)).ToList(),
-            extras.Targets?.Select(t => new Tgt(t.At.Ticks, t.Actor, t.Target)).ToList());
+            extras.Targets?.Select(t => new Tgt(t.At.Ticks, t.Actor, t.Target)).ToList(),
+            extras.ObjectCasts?.Select(c => new ObjCast(c.At.Ticks, c.Actor, c.SkillId, c.Facing, c.X, c.Y, c.HasPosition)).ToList(),
+            extras.Npcs?.ToDictionary(kv => kv.Key.ToString(System.Globalization.CultureInfo.InvariantCulture), kv => kv.Value));
         using var output = new MemoryStream();
         using (var gzip = new GZipStream(output, CompressionLevel.Fastest, leaveOpen: true))
         {
@@ -74,6 +80,9 @@ public static class ExtrasBlob
             payload.W?.Select(w => new WindupRecord(At(w.T), w.A, w.K, w.G, w.D, w.F, w.X, w.Y, w.P)).ToList(),
             payload.D?.Select(d => new DeathRecord(At(d.T), d.E, d.R is long revived ? At(revived) : null)).ToList(),
             payload.H?.Select(h => new HpSeries(h.E, At(h.S), h.T, h.P)).ToList(),
-            payload.K?.Select(t => new TargetChange(At(t.T), t.A, t.G)).ToList());
+            payload.K?.Select(t => new TargetChange(At(t.T), t.A, t.G)).ToList(),
+            payload.O?.Select(c => new ObjectCast(At(c.T), c.A, c.S, c.F, c.X, c.Y, c.P)).ToList(),
+            payload.M?.Where(kv => int.TryParse(kv.Key, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out _))
+                .ToDictionary(kv => int.Parse(kv.Key, System.Globalization.CultureInfo.InvariantCulture), kv => kv.Value));
     }
 }

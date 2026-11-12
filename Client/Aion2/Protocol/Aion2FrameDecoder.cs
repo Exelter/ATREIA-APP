@@ -2115,7 +2115,7 @@ public sealed class Aion2FrameDecoder
     /// whom the caster aims at - what "the target of the target" reads.</summary>
     private void DecodeCastNotice(ReadOnlySpan<byte> frame, DateTime timestamp)
     {
-        if (TryReadAim(frame, out int actor, out int skillId, out int target, out _, out _, out _, out _, out _, out _))
+        if (TryReadAim(frame, out int actor, out int skillId, out int target, out double facing, out float x, out float y, out _, out bool hasPosition, out _))
         {
             if (actor == _entities.LocalPlayerId && _entities.LocalPlayerId >= 0)
             {
@@ -2126,6 +2126,12 @@ public sealed class Aion2FrameDecoder
             if (!_entities.IsKnownMonster(actor))
             {
                 _entities.Combat.NoteSkillUse(timestamp, actor, skillId); // the rotation view
+            }
+            else if (_entities.NpcIdOf(actor) is int npc && Aion2MechanicAreas.WatchesCasts(npc))
+            {
+                // an object of a boss's mechanics the replay draws: a tile of a board lights up (its first cast), a wave sets out (where, and which way)
+                TimeSpan? tile = Aion2MechanicAreas.FloorOf(npc) is { } floor ? TimeSpan.FromSeconds(floor.Seconds + 1) : null;
+                _entities.Combat.NoteObjectCast(new ObjectCast(timestamp, actor, skillId, facing, (int)x, (int)y, hasPosition), onceWithin: tile);
             }
         }
     }

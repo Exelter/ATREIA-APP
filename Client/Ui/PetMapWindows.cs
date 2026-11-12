@@ -1163,14 +1163,23 @@ public sealed class PetMapWindow : MovableOverlay
     /// <summary>The pet route to draw (world units): the stop being farmed first, then the next ones. Empty: no route. <paramref name="firstName"/>: where the
     /// stop being farmed is (its area), written beside the arrow and, on the full map, beside the stop.</summary>
     public void SetRoute(IReadOnlyList<(double X, double Y, double Radius, int Step)> stops, (double X, double Y)? next = null, string? firstName = null,
-        IReadOnlyList<string>? stopTexts = null, string? firstKibelisk = null)
+        IReadOnlyList<string>? stopTexts = null, string? firstKibelisk = null, IReadOnlySet<int>? hops = null, (double X, double Y)? firstHop = null)
     {
         _route = stops;
         _next = next;
         _firstName = firstName;
         _stopTexts = stopTexts;
         _firstKibelisk = firstKibelisk;
+        _hops = hops;
+        _firstHop = firstHop;
     }
+
+    /// <summary>The stops (by step) reached by teleport or windstream: the route's dashed line has a gap before them (12 November 2026: a line across the
+    /// whole map to each of them made the route look like it zigzagged about).</summary>
+    private IReadOnlySet<int>? _hops;
+
+    /// <summary>The Kibelisk to teleport to for the stop being farmed (world units), while the player is far from it: the solid line starts there.</summary>
+    private (double X, double Y)? _firstHop;
 
     private string? _firstName;
 
@@ -1349,22 +1358,35 @@ public sealed class PetMapWindow : MovableOverlay
         var shown = _route.Take(parts.Badges.Count).Select(st => (Stop: st, P: at(st.X, st.Y))).ToList();
         if (shown.Count > 1)
         {
-            // the way on from the stop being farmed: dashed
-            var points = new PointCollection(shown.Count);
-            foreach (var (_, pt) in shown)
+            // the way on from the stop being farmed: dashed, with a gap before a stop reached by teleport or windstream
+            var way = new StreamGeometry();
+            using (StreamGeometryContext g = way.Open())
             {
-                points.Add(pt);
+                g.BeginFigure(shown[0].P, false, false);
+                for (int i = 1; i < shown.Count; i++)
+                {
+                    if (_hops?.Contains(shown[i].Stop.Step) == true)
+                    {
+                        g.BeginFigure(shown[i].P, false, false);
+                    }
+                    else
+                    {
+                        g.LineTo(shown[i].P, true, false);
+                    }
+                }
             }
 
-            parts.Path.Points = points;
+            way.Freeze();
+            parts.Path.Data = way;
             parts.Path.Visibility = Visibility.Visible;
         }
 
         if (_next is null)
         {
-            // the way to the stop being farmed: solid, from the player
-            parts.Leg.X1 = me.X;
-            parts.Leg.Y1 = me.Y;
+            // the way to the stop being farmed: solid, from the player, or from the Kibelisk to teleport to when the player is far
+            Point legStart = _firstHop is { } kibelisk ? at(kibelisk.X, kibelisk.Y) : me;
+            parts.Leg.X1 = legStart.X;
+            parts.Leg.Y1 = legStart.Y;
             parts.Leg.X2 = shown[0].P.X;
             parts.Leg.Y2 = shown[0].P.Y;
             parts.Leg.Visibility = Visibility.Visible;
@@ -1443,7 +1465,7 @@ public sealed class PetMapWindow : MovableOverlay
 
     private sealed class RouteParts
     {
-        public required Polyline Path { get; init; }
+        public required System.Windows.Shapes.Path Path { get; init; }
         public required Ellipse Ring { get; init; }
         public required List<Border> Badges { get; init; }
         public required Polygon Arrow { get; init; }
@@ -1465,7 +1487,7 @@ public sealed class PetMapWindow : MovableOverlay
         var labelText = new TextBlock { FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = RouteGold };
         var parts = new RouteParts
         {
-            Path = new Polyline { Stroke = RouteGold, StrokeThickness = 2.2, Opacity = 0.75, StrokeDashArray = new DoubleCollection { 3, 2.5 }, IsHitTestVisible = false },
+            Path = new System.Windows.Shapes.Path { Stroke = RouteGold, StrokeThickness = 2.2, Opacity = 0.75, StrokeDashArray = new DoubleCollection { 3, 2.5 }, IsHitTestVisible = false },
             Ring = new Ellipse { Stroke = RouteGold, StrokeThickness = 1.6, StrokeDashArray = new DoubleCollection { 4, 3 }, Fill = RouteGoldSoft, IsHitTestVisible = false },
             Badges = Enumerable.Range(0, RouteBadges).Select(i =>
             {
