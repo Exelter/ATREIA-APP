@@ -3759,7 +3759,8 @@ internal static class Program
             {
                 x = plan.Stops[0].X * 100 - 7000;
                 y = plan.Stops[0].Z * 100 + 5500;
-                window.SetRoute(plan.Stops.Take(whole ? Ui.PetMapWindow.RouteBadges : 6).Select(st => (st.X * 100, st.Z * 100, st.Radius, st.Step)).ToList(), null, plan.Stops[0].Zone);
+                window.SetRoute(plan.Stops.Take(whole ? Ui.PetMapWindow.RouteBadges : 6).Select(st => (st.X * 100, st.Z * 100, st.Radius, st.Step)).ToList(), null, plan.Stops[0].Zone,
+                    hops: plan.Stops.Where(st => st.Teleport is not null || st.Via is not null).Select(st => st.Step).ToHashSet());
                 window.ArrowPets = plan.Stops[0].Pets.ToHashSet();
                 chosen = plan.Stops.SelectMany(st => st.Pets).ToHashSet();
                 points = Aion2.Protocol.Aion2Maps.PointsOf(map, chosen);
@@ -3792,7 +3793,8 @@ internal static class Program
             }.Concat(isLive ? new[] { "One of them is here right now" } : Array.Empty<string>()));
             window.SetRoute(hoverPlan.Stops.Take(whole ? Ui.PetMapWindow.RouteBadges : 6).Select(st => (st.X * 100, st.Z * 100, st.Radius, st.Step)).ToList(), null, hoverPlan.Stops[0].Zone,
                 hoverPlan.Stops.Take(Ui.PetMapWindow.RouteBadges).Select(st => $"Stop {st.Step} of {hoverPlan.Stops.Count} · {st.Zone}\n" + string.Join(", ", st.Pets.Select(id => Aion2.Protocol.Aion2Pets.PetName(id, "en")))).ToList(),
-                Aion2.PetRoute.KibeliskOf(mapKey, hoverPlan.Stops[0]) is { } kib ? kib.Name : null);
+                Aion2.PetRoute.KibeliskOf(mapKey, hoverPlan.Stops[0]) is { } kib ? kib.Name : null,
+                hoverPlan.Stops.Where(st => st.Teleport is not null || st.Via is not null).Select(st => st.Step).ToHashSet());
             window.HoverForPicture = whole ? "stop" : "live";
         }
 

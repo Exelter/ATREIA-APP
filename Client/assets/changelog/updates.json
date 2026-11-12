@@ -27,6 +27,19 @@
           "area": "Replay",
           "title": "Ludra's replay on the site shows the boss and the group",
           "text": "On Eternal Ludra the board's tiles took all the room a replay has on atreia.app, so the fight's page could show the tiles but neither the boss nor your group. The group and the boss now always go first, and the tiles go as squares with the boss's attacks. A fight uploaded before this version stays as it was sent."
+        },
+        {
+          "kind": "improved",
+          "area": "Pets",
+          "title": "A better pet route",
+          "text": "The pet route looked for each pet's single densest group of monsters, so a pet whose monsters spawn in several smaller groups around a stop got a stop of its own elsewhere, and you were sent off to farm a monster you had just been standing among. It now counts everything within reach of a stop, farms each pet at the first stop with nearly as many of its monsters as the best stop of the route (so the stops after it never have far more of what you just farmed), and uses as few stops as it takes. It goes round the map instead of back and forth across it, and teleports only where that saves real time. On the map the route's line breaks where you teleport, and while you are far from your next stop its line starts at the Kibelisk to teleport to.",
+          "example": "With every pet still to farm, Altgard takes 16 stops instead of 20 and Verteron 18 instead of 22, and the line the route draws over the map is about half as long."
+        },
+        {
+          "kind": "improved",
+          "area": "Pets",
+          "title": "Finished pets leave the map at their last soul",
+          "text": "A pet you have finished now leaves the pet map, its list and the route as soon as its last soul comes in (level 2 at 75/75), not only once the app has seen the game's message that it reached level 3. The pet picker greys it out the same way, and the pet info over a monster leaves it out when \"Leave out pets already at their top level\" is on."
         }
       ]
     },

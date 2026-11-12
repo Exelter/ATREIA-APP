@@ -15516,9 +15516,9 @@
     "fr": "Itinéraire des familiers"
   },
   "PetRoute.Lede": {
-    "en": "The farming route of the Pet Soul Map Atlas on atreia.app, planned the same way here: each pet at one of its densest spots, stops where several pets are close together, teleports where they save time. The map overlay leads you to the next stop and moves on by itself when your collection says its pets are done.",
-    "de": "Die Farm-Route des Pet Soul Map Atlas auf atreia.app, hier genauso geplant: jedes Haustier an einer seiner dichtesten Stellen, Stopps wo mehrere Haustiere nah beieinander sind, Teleports wo sie Zeit sparen. Die Karte führt dich zum nächsten Stopp und geht von selbst weiter, wenn deine Sammlung sagt, dass seine Haustiere fertig sind.",
-    "fr": "L’itinéraire de farm du Pet Soul Map Atlas sur atreia.app, planifié de la même façon ici : chaque familier à l’un de ses endroits les plus denses, des arrêts là où plusieurs familiers sont proches, des téléportations quand elles font gagner du temps. La carte te guide vers l’arrêt suivant et passe au prochain toute seule quand ta collection dit que ses familiers sont faits."
+    "en": "A farming route for the pets you still need: each pet at the first stop with nearly as many of its monsters as the best one, as few stops as it takes, round the map rather than back and forth across it, teleports where they save time. The map overlay leads you to the next stop and moves on by itself when your collection says its pets are done.",
+    "de": "Eine Farm-Route für die Haustiere, die dir noch fehlen: jedes Haustier am ersten Stopp mit fast so vielen seiner Monster wie am besten Stopp, so wenige Stopps wie nötig, einmal rund um die Karte statt kreuz und quer, Teleports wo sie Zeit sparen. Die Karte führt dich zum nächsten Stopp und geht von selbst weiter, wenn deine Sammlung sagt, dass seine Haustiere fertig sind.",
+    "fr": "Un itinéraire de farm pour les familiers qu’il te manque : chaque familier au premier arrêt avec presque autant de ses monstres que le meilleur, aussi peu d’arrêts que possible, un tour de la carte plutôt que des allers-retours, des téléportations quand elles font gagner du temps. La carte te guide vers l’arrêt suivant et passe au prochain toute seule quand ta collection dit que ses familiers sont faits."
   },
   "PetRoute.On": {
     "en": "Guide me along the route on the map",
@@ -15536,9 +15536,9 @@
     "fr": "Commencer près de moi"
   },
   "PetRoute.FromHereTip": {
-    "en": "Off: the route starts at your faction’s start camp, as on the website.",
-    "de": "Aus: Die Route beginnt am Startlager deiner Fraktion, wie auf der Website.",
-    "fr": "Désactivé : l’itinéraire commence au camp de départ de ta faction, comme sur le site."
+    "en": "Off: the route is planned for the whole map and starts at a stop a teleport takes you to (in the Abyss: at your side’s camp).",
+    "de": "Aus: Die Route wird für die ganze Karte geplant und beginnt an einem Stopp, zu dem dich ein Teleport bringt (im Abyss: an deinem Lager).",
+    "fr": "Désactivé : l’itinéraire est planifié pour toute la carte et commence à un arrêt où une téléportation t’amène (dans l’Abysse : à la base de ta faction)."
   },
   "PetRoute.Next": {
     "en": "Next stop",

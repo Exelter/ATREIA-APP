@@ -21,6 +21,29 @@ public static class Aion2Pets
 
     public static int ProgressNeeded(int level) => level switch { 1 => 25, 2 => 75, _ => 0 };
 
+    /// <summary>The souls a pet still needs to reach the top level: what its level and the levels after it need, less its progress (level 1 at 10: 15 + 75 =
+    /// 90). Should the game's message of a new level not come, the progress counts on past its level's need and this still adds up.</summary>
+    public static int SoulsLeft(int level, int progress)
+    {
+        int left = 0;
+        for (int l = Math.Max(level, 1); l < TopLevel; l++)
+        {
+            left += ProgressNeeded(l);
+        }
+
+        return Math.Max(0, left - progress);
+    }
+
+    /// <summary>
+    /// A pet that needs no more farming: at the top level, or with every soul it needs (level 2 at 75 / 75). The pet map, its list, the route and the
+    /// pickers leave such a pet out (12 November 2026, the owner: "make sure the pet already farmed disappears from the map / does not show in the pet
+    /// list"): as soon as its last soul came, not only once the game's message of its new level is read.
+    /// </summary>
+    public static bool IsFarmed(int level, int progress) => level >= TopLevel || SoulsLeft(level, progress) == 0;
+
+    /// <inheritdoc cref="IsFarmed(int, int)"/>
+    public static bool IsFarmed(Aion2PetState pet) => IsFarmed(pet.Level, pet.Progress);
+
     private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "assets", "aion2", "pets", "pets.json");
     private static Catalog? _catalog;
 
