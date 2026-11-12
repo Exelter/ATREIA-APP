@@ -1174,7 +1174,7 @@ public sealed class PetMapWindow : MovableOverlay
         _firstHop = firstHop;
     }
 
-    /// <summary>The stops (by step) reached by teleport or windstream: the route's dashed line has a gap before them (13 November 2026: a line across the
+    /// <summary>The stops (by step) reached by teleport or windstream: the route's dashed line has a gap before them (12 November 2026: a line across the
     /// whole map to each of them made the route look like it zigzagged about).</summary>
     private IReadOnlySet<int>? _hops;
 

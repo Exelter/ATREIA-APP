@@ -3,11 +3,12 @@ using AionDPS.Aion2;
 namespace AionDPS.Combat;
 
 /// <summary>
-/// The pet route (Aion2/PetRoute.cs). Until 13 November 2026 it had to plan the routes of atreia.app's Pet Soul Map Atlas to the last stop; players found
+/// The pet route (Aion2/PetRoute.cs). Until 12 November 2026 it had to plan the routes of atreia.app's Pet Soul Map Atlas to the last stop; players found
 /// them bad (a player: "send me to a spot to farm a mob, then send me to another, where the mob from just now also spawns"), and the route now plans its
-/// own way. Its checks: every pet still needed is on the route once; none is farmed later than a stop before it where as many of its monsters spawn; no
-/// stop is there for pets that spawn as much at other stops; no two stops in a row on the same ground stand close together; the routes of the home maps
-/// are shorter than the site's were (Verteron 22 stops, 33.9 km of line on the map; Altgard 20 stops, 40.4 km).
+/// own way. Its checks: every pet still needed is on the route once; none is farmed later than a stop before it where as many of its monsters spawn, nor
+/// at a stop when a later one has half again as many; no stop is there for pets that spawn as much at other stops; no two stops in a row on the same
+/// ground stand close together; the routes of the home maps are shorter than the site's were (Verteron 22 stops, 33.9 km of line on the map; Altgard 20
+/// stops, 40.4 km).
 /// </summary>
 public static class SelfCheckPetRoute
 {
@@ -62,8 +63,8 @@ public static class SelfCheckPetRoute
         return ok;
     }
 
-    /// <summary>The routes of the three maps: every pet once, none late, no stop that is not needed, no two close stops in a row, fewer stops and a
-    /// shorter line than the site's route had.</summary>
+    /// <summary>The routes of the three maps: every pet once, none late or early, no stop that is not needed, no two close stops in a row, fewer stops
+    /// and a shorter line than the site's route had.</summary>
     private static bool Routes()
     {
         bool ok = true;
@@ -113,7 +114,8 @@ public static class SelfCheckPetRoute
 
     /// <summary>
     /// What a player would find wrong with a route: a pet farmed at a stop when a stop before it has as many of its monsters within reach (260 m; at the
-    /// stop itself, within its ring); a stop whose every pet spawns as much at another stop; two stops in a row on the same ground within 200 m.
+    /// stop itself, within its ring), or a later stop half again as many (and 10 more: the mob just farmed spawns all over the next stops); a stop whose
+    /// every pet spawns as much at another stop; two stops in a row on the same ground within 200 m.
     /// </summary>
     private static List<string> Audit(string map, PetRoutePlan plan)
     {
@@ -127,6 +129,12 @@ public static class SelfCheckPetRoute
                 if (plan.Stops.Where(h => h.Step < st.Step).FirstOrDefault(h => Near(pet, h, 260) >= Math.Max(4, here)) is { } before)
                 {
                     issues.Add($"{PetRoute.NameOf(pet)} at stop {st.Step} ({here}), as many at stop {before.Step}");
+                }
+
+                var after = plan.Stops.Where(h => h.Step > st.Step).Select(h => (h.Step, Count: Near(pet, h, 260))).FirstOrDefault(h => h.Count >= 1.5 * here && h.Count - here >= 10);
+                if (after.Step > 0)
+                {
+                    issues.Add($"{PetRoute.NameOf(pet)} at stop {st.Step} ({here}), {after.Count} at stop {after.Step}");
                 }
             }
 

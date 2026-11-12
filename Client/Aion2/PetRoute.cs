@@ -23,11 +23,12 @@ public sealed record PetRoutePlan(string MapKey, double OriginX, double OriginZ,
 
 /// <summary>
 /// The pet farming route, from the camp or from where the player stands. It began as the route of atreia.app's Pet Soul Map Atlas
-/// (guides/pets-route-map.html); since 13 November 2026 (the owner: "the pathing is a bit wrong ... users are reporting that it's cancer bad") it plans
-/// on its own (<see cref="ChooseStops"/>): each pet is on the route once, at the first stop it is farmable at, counted over everything a stop reaches;
-/// the fewest stops; the mainland's in the shortest order found with teleports counted by their cost and a share of the straight way (so the route
-/// goes round the map instead of across it at every step), the windstream islands after the mainland. The spawn spots, teleports, camps and islands
-/// (assets/aion2/pets/route.json) are made from the site's data by Tools/pet-route/make-route.mjs.
+/// (guides/pets-route-map.html); since 12 November 2026 (the owner: "the pathing is a bit wrong ... users are reporting that it's cancer bad") it plans
+/// on its own (<see cref="ChooseStops"/>): each pet is on the route once, at the first stop with nearly as many of its monsters as the stop of the
+/// route with the most (<see cref="NearlyAsMany"/>), counted over everything a stop reaches; the fewest stops; the mainland's in the shortest order
+/// found with teleports counted by their cost and a share of the straight way (so the route goes round the map instead of across it at every step), the
+/// windstream islands after the mainland. The spawn spots, teleports, camps and islands (assets/aion2/pets/route.json) are made from the site's data by
+/// Tools/pet-route/make-route.mjs.
 /// </summary>
 public static class PetRoute
 {
@@ -203,13 +204,20 @@ public static class PetRoute
 
     /// <summary>
     /// A pet is farmable at a place where at least this share of the most of its monsters any place has spawn within reach (<see cref="FarmableFloor"/> at
-    /// least, or all it has anywhere). 13 November 2026: the route asked for 60 % of the densest single spot, so a pet whose monsters spawn in many small
+    /// least, or all it has anywhere). 12 November 2026: the route asked for 60 % of the densest single spot, so a pet whose monsters spawn in many small
     /// groups around a stop was sent to a stop of its own elsewhere ("send me to a spot to farm a mob, then send me to another, where the mob from just
     /// now also spawns"); counted over the whole reach and at 40 %, the pets of a place are farmed where the group stands.
     /// </summary>
     private const double FarmableShare = 0.4;
 
     private const int FarmableFloor = 4;
+
+    /// <summary>
+    /// A pet is farmed at the first stop with at least this share of the most of its monsters any stop of the route has. At the first stop it was
+    /// farmable at, a later stop sometimes had twice as many of it (Verteron: Ursus 19 at one stop, 45 two stops later; Slink 20, then 42 at the next):
+    /// the same "the mob from just now also spawns" as before. Now a later stop never has half again as many, and a stop before never as many.
+    /// </summary>
+    private const double NearlyAsMany = 0.7;
 
     /// <summary>
     /// A teleport also counts this share of the straight way to the stop. Every teleport cost the same before, so the order of the stops reached by
@@ -374,14 +382,14 @@ public static class PetRoute
     }
 
     /// <summary>
-    /// The stops of a route, in their order (13 November 2026, the owner: "the pathing is a bit wrong ... users are reporting that it's cancer bad").
+    /// The stops of a route, in their order (12 November 2026, the owner: "the pathing is a bit wrong ... users are reporting that it's cancer bad").
     /// The places a stop may be at are the spawn spots of the pets still to farm, each also moved twice to the middle of the pets farmable there; a pet is
     /// farmable at a place where enough of its monsters spawn within reach (<see cref="FarmableShare"/>). Of the fewest places that farm every pet (searched
     /// exactly over the sets of pets no other place outdoes, up to <see cref="Data.Covers"/> such sets, at most <see cref="Data.Nodes"/> steps) the one that
     /// ends with the fewest stops, then the shortest way, is taken: its places put in order (the island the player is on, the mainland by the shortest way
-    /// found, then the windstream islands), each pet farmed at the first stop of that order it is farmable at, places left without pets dropped, places of
-    /// the same island right after each other merged where every pet of both stays farmable, and a place whose every pet is farmable at another stop of
-    /// the route left out.
+    /// found, then the windstream islands), each pet farmed at the first stop of that order with nearly as many of its monsters as the stop with the most
+    /// (<see cref="NearlyAsMany"/>), places left without pets dropped, places of the same island right after each other merged where every pet of both
+    /// stays farmable, and a place whose every pet is farmable at another stop of the route left out.
     /// </summary>
     private static List<ChosenStop> ChooseStops(Data data, MapData m, Func<string, string> islandOf, List<(int Id, string Name, List<PetRouteSpot> Spots)> pets,
         Func<(double X, double Z), (Teleport? T, double D)> nearTp, (double X, double Z)? start0, string startIsl, Dictionary<int, string> nameOf)
@@ -749,13 +757,22 @@ public static class PetRoute
             return result;
         }
 
-        // each pet at the first place of the order it is farmable at
+        // each pet at the first place of the order with nearly as many of its monsters as the place of the order with the most
         Dictionary<int, Place> Assign(List<Place> seq)
         {
             var asg = new Dictionary<int, Place>();
             foreach (int n in left)
             {
-                if (seq.FirstOrDefault(p => p.Farm.ContainsKey(n)) is { } at)
+                int top = 0;
+                foreach (Place p in seq)
+                {
+                    if (p.Farm.TryGetValue(n, out Reach have) && have.Count > top)
+                    {
+                        top = have.Count;
+                    }
+                }
+
+                if (seq.FirstOrDefault(p => p.Farm.TryGetValue(n, out Reach got) && got.Count >= NearlyAsMany * top) is { } at)
                 {
                     asg[n] = at;
                 }
