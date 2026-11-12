@@ -78,7 +78,7 @@ public static class SelfCheckMechanics
         var keep = new Aion2CombatState();
         foreach (ObjectCast c in casts)
         {
-            keep.NoteObjectCast(c, firstOnly: c.Actor != waveId);
+            keep.NoteObjectCast(c, onceWithin: c.Actor != waveId ? TimeSpan.FromSeconds(bingo!.Seconds + 1) : null);
         }
 
         var all = board.Select(t => t.Entity).ToHashSet();

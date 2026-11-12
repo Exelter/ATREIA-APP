@@ -119,9 +119,6 @@ public sealed class Aion2CombatState
     private readonly List<ObjectCast> _objectCastLog = new();
     private readonly Dictionary<(int Actor, int Skill), DateTime> _objectCastKept = new();
 
-    /// <summary>A tile keeps hurting on its beat after it lit up; one cast of the same object and skill this soon after the last kept one is that beat.</summary>
-    private static readonly TimeSpan TileBeatWindow = TimeSpan.FromSeconds(25);
-
     /// <summary>The NPC id of an entity (the directory's word; null: unknown): kept with a fight's replay so its boards and waves are told apart later too.</summary>
     public Func<int, int?>? NpcOf { get; set; }
     private readonly List<DeathRecord> _deathLog = new();
@@ -376,14 +373,15 @@ public sealed class Aion2CombatState
 
     /// <summary>
     /// A cast of an object of a boss's mechanics (12 November 2026, the owner: "the actual bingo etc for ludra etc. all visible"): a tile of a board is kept only
-    /// once (<paramref name="firstOnly"/>: its first cast is when it lit up, the beats after it are left out), a wave every time it sets out.
+    /// once: its first cast is when it lit up, and it keeps hurting on its beat until the board is gone, so a cast of the same object and skill within
+    /// <paramref name="onceWithin"/> of the kept one (the board's life: the game gives the id to another object after that) is left out. A wave: every time it sets out.
     /// </summary>
-    public void NoteObjectCast(ObjectCast cast, bool firstOnly)
+    public void NoteObjectCast(ObjectCast cast, TimeSpan? onceWithin)
     {
         lock (_gate)
         {
             var key = (cast.Actor, cast.SkillId);
-            if (firstOnly && _objectCastKept.TryGetValue(key, out DateTime kept) && cast.At - kept >= TimeSpan.Zero && cast.At - kept < TileBeatWindow)
+            if (onceWithin is TimeSpan window && _objectCastKept.TryGetValue(key, out DateTime kept) && cast.At - kept >= TimeSpan.Zero && cast.At - kept < window)
             {
                 return;
             }

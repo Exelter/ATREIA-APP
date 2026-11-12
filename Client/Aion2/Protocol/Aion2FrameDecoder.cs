@@ -2130,8 +2130,8 @@ public sealed class Aion2FrameDecoder
             else if (_entities.NpcIdOf(actor) is int npc && Aion2MechanicAreas.WatchesCasts(npc))
             {
                 // an object of a boss's mechanics the replay draws: a tile of a board lights up (its first cast), a wave sets out (where, and which way)
-                bool tile = Aion2MechanicAreas.FloorOf(npc) is not null;
-                _entities.Combat.NoteObjectCast(new ObjectCast(timestamp, actor, skillId, facing, (int)x, (int)y, hasPosition), firstOnly: tile);
+                TimeSpan? tile = Aion2MechanicAreas.FloorOf(npc) is { } floor ? TimeSpan.FromSeconds(floor.Seconds + 1) : null;
+                _entities.Combat.NoteObjectCast(new ObjectCast(timestamp, actor, skillId, facing, (int)x, (int)y, hasPosition), onceWithin: tile);
             }
         }
     }
