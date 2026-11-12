@@ -28,7 +28,8 @@ public sealed partial class ChecklistWindow : Window
     /// <summary>The access times shown: the three levels of the Abyss and the Spacetime Rift.</summary>
     private static readonly int[] TimeTickets = { 3, 9, 13, 6 };
 
-    /// <summary>The daily part after the mandatory tasks (refilled at every daily reset): Shugo Festival, Dimensional Invasion, Nightmare, the two daily dungeons.</summary>
+    /// <summary>The daily part after the mandatory tasks (refilled at every daily reset): Shugo Festival, Dimensional Invasion, Nightmare, the two daily dungeons
+    /// (those two not while they are in <see cref="NotOnGlobal"/>).</summary>
     private static readonly int[] DailyTickets = { 1, 8, 4, 102, 103 };
 
     /// <summary>The weekly part after the daily dungeon's entries (refilled on Wednesday): Ascension Trial, Subjugation.</summary>
@@ -52,8 +53,10 @@ public sealed partial class ChecklistWindow : Window
     /// owner: "make sure the things u add are global only not kr and tw too"): Expedition: Ordeal, and the Sanctuaries Corroded Decontamination Facility and
     /// Chalice of Muspel (in the Global client's data, not announced for Global; Ludra's Abyssal Forge is, since 4 November 2026). Every one of the 44 logins on
     /// the recordings of 7 to 10 November carried all the counters, released or not, so what the login sends tells nothing; take an id out once it comes to Global.
+    /// The two small daily dungeons too, Abandoned Balaur Fortress and Fafnium Laboratory (12 November 2026, a tester: "its just datamined"; the owner: "remove
+    /// these 2 for now"): their entry counts stood full at 7 / 7 on every character.
     /// </summary>
-    internal static readonly HashSet<int> NotOnGlobal = new() { 60015101, 90000003, 90000004, 90000005, 90000006 };
+    internal static readonly HashSet<int> NotOnGlobal = new() { 60015101, 90000003, 90000004, 90000005, 90000006, 102, 103 };
 
     /// <summary>The weekly counter of the daily dungeon (the unknown fissure's entry count).</summary>
     private const int DailyDungeonTicket = 101;
@@ -1062,7 +1065,7 @@ public sealed partial class ChecklistWindow : Window
             grid.Children.Add(tick);
         }
 
-        foreach (int id in DailyTickets)
+        foreach (int id in DailyTickets.Where(t => !NotOnGlobal.Contains(t)))
         {
             if (Aion2Tickets.Find(id) is { } def && (character.Tickets.ContainsKey(id) || Aion2Tickets.IsLocked(character, id)))
             {
