@@ -114,6 +114,12 @@ NCSOFT has not approved this or any other damage meter. Use it at your own respo
 Updates install themselves from atreia.app. The game's pictures (icons, maps) are not part of this repository: the app downloads them
 once from atreia.app on its first start.
 
+### Linux
+
+The meter also runs on Linux, while AION 2 runs through Proton or Wine (Steam, Lutris, Heroic, Bottles; the Steam Deck in Desktop Mode):
+download [Atreia-App-Linux-x64.tar.gz](https://atreia.app/download/Atreia-App-Linux-x64.tar.gz), unpack it and run `./install.sh` in
+the unpacked folder. See [Linux/README.md](Linux/README.md).
+
 ## License
 
 Copyright (c) 2026 Atreia. All rights reserved: you may install and use the app, but the source code may not be copied,

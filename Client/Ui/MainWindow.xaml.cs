@@ -3267,6 +3267,7 @@ public partial class MainWindow : Window
 
             ApplyIdentity(row, sourceId);
             var mine = heals.Where(ev => ev.SourceObjectId == sourceId).ToList();
+            row.RdpsView = false; // a line kept from the rDPS view showed its old rDPS as the healing rate, and was ordered by it
             row.IsEstimated = false;
             row.Damage = mine.Sum(ev => ev.Amount);
             double seconds = spanSeconds ?? (mine.Max(ev => ev.Timestamp) - mine.Min(ev => ev.Timestamp)).TotalSeconds;
@@ -3383,6 +3384,7 @@ public partial class MainWindow : Window
 
             ApplyIdentity(row, targetId);
             var mine = hits.Where(ev => ev.TargetObjectId == targetId).ToList();
+            row.RdpsView = false; // as in the heal lines: no old rDPS as the rate
             row.IsEstimated = false;
             row.Damage = mine.Sum(ev => ev.Amount);
             row.Absorbed = absorbs.Where(ev => ev.TargetObjectId == targetId).Sum(ev => ev.Amount);

@@ -104,14 +104,14 @@ public sealed class NpcapCaptureService : IDisposable
                 // skipped rather than aborting the whole capture (VPN adapters do this).
                 try
                 {
-                    device.Open(new DeviceConfiguration { ReadTimeout = 250, Mode = DeviceModes.None, KernelBufferSize = KernelBufferBytes });
+                    device.Open(CaptureConfiguration());
                     device.Filter = Filter;
                     device.OnPacketArrival += OnPacketArrival;
                     device.StartCapture();
                     _devices.Add(device);
                     opened++;
                 }
-                catch (PcapException)
+                catch (Exception ex) when (ex is PcapException or PlatformNotSupportedException)
                 {
                     device.Dispose();
                 }
@@ -133,6 +133,12 @@ public sealed class NpcapCaptureService : IDisposable
             _onStatus(SourceState.Error, $"Packet capture could not start: {ex.GetBaseException().Message}");
         }
     }
+
+    /// <summary>How a device is opened. The driver's buffer is set the platform's way: Npcap's kernel buffer on Windows (as always), libpcap's capture
+    /// buffer elsewhere (the Linux app; SharpPcap refuses the kernel buffer there with an exception that ended the app).</summary>
+    private static DeviceConfiguration CaptureConfiguration() => OperatingSystem.IsWindows()
+        ? new DeviceConfiguration { ReadTimeout = 250, Mode = DeviceModes.None, KernelBufferSize = KernelBufferBytes }
+        : new DeviceConfiguration { ReadTimeout = 250, Mode = DeviceModes.None, BufferSize = KernelBufferBytes };
 
     private void OnPacketArrival(object sender, PacketCapture e)
     {

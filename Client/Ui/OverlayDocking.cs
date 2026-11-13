@@ -5,18 +5,6 @@ using System.Windows.Threading;
 
 namespace AionDPS.Ui;
 
-/// <summary>Where an overlay hangs on another one: the side of the parent it touches and how far along that side it starts.</summary>
-public sealed class OverlayDock
-{
-    public string Parent { get; set; } = "";
-
-    /// <summary>Left, Right, Top or Bottom: the side of the parent the overlay touches.</summary>
-    public string Side { get; set; } = "Bottom";
-
-    /// <summary>Distance of the overlay's start from the parent's start along the shared side (in screen units).</summary>
-    public double Offset { get; set; }
-}
-
 /// <summary>
 /// Placing overlays on a grid and docking them to each other (two switches in the settings). While an overlay is dragged its place snaps to the grid and,
 /// close to another overlay, flush against its edge; letting go there docks it. A docked overlay follows its parent: when the parent is moved or changes its
