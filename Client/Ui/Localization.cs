@@ -2,8 +2,6 @@ using System.Globalization;
 using System.ComponentModel;
 using System.IO;
 using System.Text.Json;
-using System.Windows.Data;
-using System.Windows.Markup;
 
 namespace AionDPS.Ui;
 
@@ -51,6 +49,9 @@ public sealed class LocalizationManager : INotifyPropertyChanged
 
     public static LocalizationManager Instance { get; } = new();
 
+    /// <summary>The indexer's name in a change notice ("Item[]", WPF's Binding.IndexerName): every binding to a string of the table repaints.</summary>
+    private const string IndexerName = "Item[]";
+
     private readonly Dictionary<string, Dictionary<string, string>> _table = new();
     private string _language;
 
@@ -76,7 +77,7 @@ public sealed class LocalizationManager : INotifyPropertyChanged
 
             _language = value;
             Aion2.Protocol.Aion2SkillNames.Language = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(Binding.IndexerName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(IndexerName));
         }
     }
 
@@ -192,33 +193,5 @@ public sealed class LocalizationManager : INotifyPropertyChanged
             // A missing or corrupt table must not stop the meter from starting -- every lookup
             // above already falls back to the raw key, same as it does for one missing entry.
         }
-    }
-}
-
-/// <summary>
-/// XAML usage: `Header="{loc:Loc MenuFile}"` (with `xmlns:loc="clr-namespace:AionDPS.Ui"` on
-/// the window root). Resolves to a live one-way binding against
-/// <see cref="LocalizationManager.Instance"/>'s indexer, not a one-shot string lookup -- so
-/// changing the language in Settings repaints this element immediately, the same way any other
-/// data-bound value would, with no extra code in the window behind it.
-/// </summary>
-public sealed class LocExtension : MarkupExtension
-{
-    public string Key { get; set; } = "";
-
-    public LocExtension()
-    {
-    }
-
-    public LocExtension(string key) => Key = key;
-
-    public override object ProvideValue(IServiceProvider serviceProvider)
-    {
-        var binding = new Binding($"[{Key}]")
-        {
-            Source = LocalizationManager.Instance,
-            Mode = BindingMode.OneWay,
-        };
-        return binding.ProvideValue(serviceProvider);
     }
 }

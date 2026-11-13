@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Atreia App for Linux (13 November 2026, the owner: the app on Linux, the game itself running through Proton or Wine; the Windows app stays as it is,
+    with its own installer). One app of its own: the game reading, the meter's math, the uploads and the data are the Windows app's own files, compiled in
+    here unchanged (Client/, linked below); what Windows does differently - the window toolkit (WPF), the packet driver (Npcap), the game's connections
+    (iphlpapi) - is done here the Linux way: Avalonia for the windows, libpcap for the capture (Platform/), /proc for the game's connections.
+    See README.md next to this file.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AionDPS</RootNamespace>
+    <AssemblyName>AtreiaApp</AssemblyName>
+    <Product>Atreia App</Product>
+    <AssemblyTitle>Atreia App</AssemblyTitle>
+    <!-- The same version as the Windows release it is built with (the release passes -p:Version); the site takes uploads from the current version only. -->
+    <Version>2.0.16</Version>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <!-- The shared files call a few Windows-only things that are only reached on Windows (or fail softly elsewhere): no warning for each. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.18" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.18" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.18" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.18" />
+    <!-- Draws the windows without a screen: the pictures of the build (Program "render") and the checks. -->
+    <PackageReference Include="Avalonia.Headless" Version="11.3.18" />
+    <!-- Packet capture through libpcap (SharpPcap finds libpcap.so on Linux), as the Windows app does through Npcap. -->
+    <PackageReference Include="SharpPcap" Version="6.3.0" />
+    <PackageReference Include="PacketDotNet" Version="1.4.7" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.9" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.13" />
+  </ItemGroup>
+
+  <!-- The Windows app's own files that need nothing of Windows, compiled in unchanged. A file listed under Exclude has a Linux counterpart in Platform/
+       (the same class, done the Linux way) or is a part of the Windows app only (its windows, its installer, the screen reading of the minimap). -->
+  <ItemGroup>
+    <Compile Include="..\Client\AtomicFile.cs;..\Client\Brand.cs;..\Client\Links.cs" LinkBase="Shared" />
+    <Compile Include="..\Client\Aion2\**\*.cs" LinkBase="Shared\Aion2"
+             Exclude="..\Client\Aion2\GameWindow.cs;..\Client\Aion2\MapRaster.cs;..\Client\Aion2\Capture\GameConnections.cs;..\Client\Aion2\Capture\CaptureAdapters.cs;..\Client\Aion2\Capture\NpcapAvailability.cs" />
+    <Compile Include="..\Client\Combat\**\*.cs" LinkBase="Shared\Combat" Exclude="..\Client\Combat\SelfCheck*.cs" />
+    <Compile Include="..\Client\History\**\*.cs" LinkBase="Shared\History" />
+    <Compile Include="..\Client\Upload\**\*.cs" LinkBase="Shared\Upload" />
+    <Compile Include="..\Client\Data\**\*.cs" LinkBase="Shared\Data" />
+    <Compile Include="..\Client\Feedback\**\*.cs" LinkBase="Shared\Feedback" />
+    <Compile Include="..\Client\Announcements\**\*.cs" LinkBase="Shared\Announcements" />
+    <Compile Include="..\Client\Schedule\**\*.cs" LinkBase="Shared\Schedule" />
+    <Compile Include="..\Client\Streaming\**\*.cs" LinkBase="Shared\Streaming" />
+    <Compile Include="..\Client\Update\AppVersion.cs;..\Client\Update\BetaAccess.cs;..\Client\Update\ImagePack.cs;..\Client\Update\UpdateNotes.cs" LinkBase="Shared\Update" />
+    <!-- From the Windows app's Ui folder, the parts without WPF in them: the settings, the languages, the privacy answer, the player row, the boss's health. -->
+    <Compile Include="..\Client\Ui\AudioOutput.cs;..\Client\Ui\CombatOverlayData.cs;..\Client\Ui\EffectAura.cs;..\Client\Ui\Localization.cs;..\Client\Ui\MeterSettings.cs;..\Client\Ui\OverlayDock.cs;..\Client\Ui\PlayerRow.cs;..\Client\Ui\PrivacyConsent.cs" LinkBase="Shared\Ui" />
+    <!-- The Windows app's own checks that need no window: the Linux app runs them too (Program "selftest", Checks/LinuxSelfCheck.cs). -->
+    <Compile Include="..\Client\Combat\SelfCheckAion2.cs;..\Client\Combat\SelfCheckBossPattern.cs;..\Client\Combat\SelfCheckBossTimers.cs;..\Client\Combat\SelfCheckBuffUpload.cs;..\Client\Combat\SelfCheckCombatOverlay.cs;..\Client\Combat\SelfCheckCpPlan.cs;..\Client\Combat\SelfCheckDamageIndex.cs;..\Client\Combat\SelfCheckEstimateRescale.cs;..\Client\Combat\SelfCheckFieldBosses.cs;..\Client\Combat\SelfCheckGatherTally.cs;..\Client\Combat\SelfCheckGroupFinder.cs;..\Client\Combat\SelfCheckHistory.cs;..\Client\Combat\SelfCheckHitKinds.cs;..\Client\Combat\SelfCheckIdentity.cs;..\Client\Combat\SelfCheckInstanceTimer.cs;..\Client\Combat\SelfCheckLegion.cs;..\Client\Combat\SelfCheckMechanics.cs;..\Client\Combat\SelfCheckNews.cs;..\Client\Combat\SelfCheckOverheal.cs;..\Client\Combat\SelfCheckProtocolHealth.cs;..\Client\Combat\SelfCheckRaidDps.cs;..\Client\Combat\SelfCheckReplay.cs;..\Client\Combat\SelfCheckRotation.cs;..\Client\Combat\SelfCheckSafety.cs;..\Client\Combat\SelfCheckSessions.cs;..\Client\Combat\SelfCheckStatCalc.cs;..\Client\Combat\SelfCheckStream.cs;..\Client\Combat\SelfCheckTickets.cs;..\Client\Combat\SelfCheckVerify.cs" LinkBase="Shared\Combat" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The game data, the languages, the sounds: the Windows app's assets folder, next to the program as there. The game's pictures are not in it; the
+         app downloads them as the image pack on its first start (Update/ImagePack.cs). -->
+    <None Include="..\Client\assets\**\*.*" LinkBase="assets" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The website's faces (see Client/Fonts/OFL.txt), compiled in like on Windows. -->
+    <AvaloniaResource Include="..\Client\Fonts\*.ttf" Link="Fonts\%(Filename)%(Extension)" />
+    <None Include="..\Client\Fonts\OFL.txt" Link="licenses\OFL-fonts.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\LICENSE" Link="licenses\LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\THIRD-PARTY-NOTICES.md" Link="licenses\THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The installer and its counterpart, next to the program in the folder the download unpacks to. -->
+    <None Update="packaging\install.sh" Link="install.sh" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="packaging\uninstall.sh" Link="uninstall.sh" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

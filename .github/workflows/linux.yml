@@ -1,0 +1,92 @@
+name: Linux
+
+# The Linux app (Linux/): built on Linux, its checks run there (the Windows app's checks that need no window, then the Linux parts), pictures of its
+# meter drawn without a screen, and the download players unpack (atreia-app-linux-x64-<version>.tar.gz) kept with the run. The Linux app compiles the
+# Windows app's own files (Client/), so a change there runs this too: the Linux app must keep building.
+on:
+  push:
+    branches: [main, cross-platform]
+    paths: ["Linux/**", "Client/**", ".github/workflows/linux.yml"]
+  pull_request:
+    paths: ["Linux/**", "Client/**", ".github/workflows/linux.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, checks and download
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+      # The version of the last release: the site takes uploads from the current version only, the same for both apps.
+      - name: Version
+        id: version
+        run: echo "version=$(git describe --tags --abbrev=0 --match 'v*' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+      - name: Build
+        run: >
+          dotnet publish Linux/AtreiaApp.Linux.csproj -c Release -r linux-x64 --self-contained true --nologo
+          -p:Version=${{ steps.version.outputs.version }} -o out/atreia-app
+      # The download, before anything else goes into the folder (the game's pictures below are for the checks only: they are NCSOFT's and never shipped).
+      - name: Download for players
+        run: |
+          chmod +x out/atreia-app/AtreiaApp out/atreia-app/install.sh out/atreia-app/uninstall.sh
+          tar -C out -czf atreia-app-linux-x64-${{ steps.version.outputs.version }}.tar.gz atreia-app
+          ls -l atreia-app-linux-x64-*.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atreia-app-linux-x64-${{ steps.version.outputs.version }}
+          path: atreia-app-linux-x64-*.tar.gz
+          retention-days: 30
+      - name: libpcap for the checks
+        run: sudo apt-get update -q && sudo apt-get install -y -q libpcap-dev
+      # The image pack the app downloads, from atreia.app, unpacked into the build for the checks and the pictures.
+      - name: Game pictures
+        run: |
+          set -eu
+          index=$(curl -fsSL --retry 4 --retry-delay 10 -A AtreiaApp-checks https://atreia.app/app/updates/images.json)
+          url=$(printf '%s' "$index" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("url") or "https://atreia.app/app/updates/" + d["file"])')
+          sha=$(printf '%s' "$index" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sha256"].lower())')
+          curl -fsSL --retry 4 --retry-delay 10 -A AtreiaApp-checks -o /tmp/images.zip "$url"
+          echo "$sha  /tmp/images.zip" | sha256sum -c -
+          unzip -q -o /tmp/images.zip -d out/atreia-app/assets
+          echo "$(find out/atreia-app/assets -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.webp' \) | wc -l) pictures in the build"
+          ls out/atreia-app/assets/classes/icons | head -20
+      - name: Self-checks
+        run: |
+          set +e
+          out/atreia-app/AtreiaApp selftest > selftest.txt 2> selftest-errors.txt
+          code=$?
+          cat selftest.txt
+          if [ -s selftest-errors.txt ]; then echo "--- errors ---"; cat selftest-errors.txt; fi
+          if [ $code -ne 0 ] || ! grep -q '\[selftest\] ALL CHECKS PASSED' selftest.txt; then
+            awk '/^\[selftest\]/{head=$0} /(^|[^A-Za-z])False([^A-Za-z]|$)/{print "::error title=Self-check failed::" head " " $0}' selftest.txt | head -25
+            echo "::error::The self-checks failed (exit $code)."
+            exit 1
+          fi
+      - name: Capture check
+        run: out/atreia-app/AtreiaApp capture-check
+      - name: Pictures of the meter
+        run: |
+          set -eu
+          mkdir -p screens
+          for scene in meter heal taken waiting permission; do
+            out/atreia-app/AtreiaApp render "screens/linux-$scene.png" "$scene"
+          done
+          # in the log too (collapsed), for a look without downloading the run's files
+          for f in screens/*.png; do
+            echo "::group::$f (base64)"
+            base64 -w 0 "$f"; echo
+            echo "::endgroup::"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-screens
+          path: screens/*.png
+          retention-days: 14
