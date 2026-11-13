@@ -8,9 +8,11 @@ namespace AionDPS.Ui;
 public static partial class PrivacyConsent
 {
     /// <summary>Raise with every change of the privacy texts (website page and the client's texts): the accepted version in the settings is then too old and the player is asked again.</summary>
-    public const int Version = 6; // 3: the map accuracy data (5 November 2026); 4: the Genus and pets for the player window, the pictures of the game window (5 November 2026);
+    public const int Version = 7; // 3: the map accuracy data (5 November 2026); 4: the Genus and pets for the player window, the pictures of the game window (5 November 2026);
                                   // 5: every upload switched on with the answer (5 November 2026, the owner: "all these should be ticked since we requested consent");
-                                  // 6: the map accuracy data names the game window's size and the minimap's zoom (10 November 2026)
+                                  // 6: the map accuracy data names the game window's size and the minimap's zoom (10 November 2026);
+                                  // 7: the check of the character and the legion's list named, and a legion's own site that gets them too once linked in the
+                                  //    Atreia account window (Upload/OwnSite.cs); the updates come from atreia.app, not GitHub (14 November 2026)
 
     public const int NotAsked = 0, Accepted = 1, Declined = 2;
 

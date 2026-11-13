@@ -1597,6 +1597,8 @@ public partial class MainWindow : Window
             AionDPS.Upload.CharacterVerify.Start(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory);
             // the legion's member list from the login, for the Discord servers that follow the legion (signed in and verified only; the account window can switch it off)
             AionDPS.Upload.LegionShare.Start(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory);
+            // the same check and list to the legion's own site too, while the app is linked to one (the account window, "Your legion's own site")
+            AionDPS.Upload.OwnSiteShare.Start(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory);
             // the CP calculator checked against the game's own Combat Power at every login (the legion list carries it), per character, kept in a local file
             AionDPS.Combat.CpChecks.Start(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory);
             AionDPS.Upload.CharacterVerify.Verified += (name, server) => Dispatcher.BeginInvoke(new Action(() =>

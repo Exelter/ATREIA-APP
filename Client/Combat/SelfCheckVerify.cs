@@ -40,9 +40,29 @@ public static class SelfCheckVerify
         // a server outside Europe: no region (its numbers aren't confirmed yet), the site looks in every region
         bool unsure = CharacterVerify.Build(played with { ServerId = 1401 }, account) is { Region: null, Character: { ServerId: 1401 } };
         Console.WriteLine($"  -> the login sent: character, its list, the region={built}; as the site reads it={shape}; nothing for a restored record={restored}, a character not in the list={unlisted}, one listed on the server it was made on={otherServer}; no region outside Europe={unsure}");
-        bool ok = built && shape && restored && unlisted && otherServer && unsure && LegionList(played, account);
+        bool ok = built && shape && restored && unlisted && otherServer && unsure && LegionList(played, account) && OwnSiteAddresses();
         Console.WriteLine(ok ? "  -> OK" : "  -> FAILED");
         return ok;
+    }
+
+    /// <summary>A legion's own site's address as the account window takes it (Upload/OwnSite.cs): https only, the address alone, a name (no IP address, no
+    /// single word), never atreia.app or its old address; and only that site's own pages are opened from it.</summary>
+    private static bool OwnSiteAddresses()
+    {
+        bool typed = OwnSiteAddress.Normalize("mylegion.gg") == "https://mylegion.gg"
+            && OwnSiteAddress.Normalize("  https://WWW.MyLegion.GG/tools/guild?x=1 ") == "https://www.mylegion.gg"
+            && OwnSiteAddress.Normalize("https://mylegion.gg:8443/") == "https://mylegion.gg:8443";
+        bool refused = new[] { "", "   ", "http://mylegion.gg", "ftp://mylegion.gg", "localhost", "https://127.0.0.1", "https://[::1]", "my legion.gg", "https://user:pw@mylegion.gg",
+                "atreia.app", "https://www.atreia.app/x", "admin.atreia.app", "aion2helper.com", "https://ATREIA.APP" }
+            .All(a => OwnSiteAddress.Normalize(a) is null);
+        bool atreia = OwnSiteAddress.IsAtreiaAddress("atreia.app") && OwnSiteAddress.IsAtreiaAddress("https://www.atreia.app/tools") && !OwnSiteAddress.IsAtreiaAddress("mylegion.gg")
+            && !OwnSiteAddress.IsAtreiaAddress("notatreia.app");
+        bool pages = OwnSiteAddress.IsOnSite("https://mylegion.gg/meter/link?code=AB12", "https://mylegion.gg") && OwnSiteAddress.IsOnSite("https://MYLEGION.gg/x", "https://mylegion.gg")
+            && !OwnSiteAddress.IsOnSite("https://atreia.app/meter/link?code=AB12", "https://mylegion.gg") && !OwnSiteAddress.IsOnSite("http://mylegion.gg/x", "https://mylegion.gg")
+            && !OwnSiteAddress.IsOnSite("https://mylegion.gg.evil.example/x", "https://mylegion.gg") && !OwnSiteAddress.IsOnSite("https://mylegion.gg:444/x", "https://mylegion.gg")
+            && !OwnSiteAddress.IsOnSite(null, "https://mylegion.gg") && OwnSiteAddress.HostOf("https://mylegion.gg") == "mylegion.gg";
+        Console.WriteLine($"  -> a legion's own site: its address as typed={typed}; refused: not https, no name, atreia.app={refused}; atreia.app told apart={atreia}; only its own pages opened={pages}");
+        return typed && refused && atreia && pages;
     }
 
     /// <summary>The legion's member list for the site (Upload/LegionShare.cs): the game's numbers of every member, under the legion of the character played, and

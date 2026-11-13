@@ -66,6 +66,8 @@ internal sealed class LegionPage : Grid
             _timer.Start();
             LegionShare.Changed += OnShared;
             Account.Changed += OnShared;
+            OwnSiteShare.Changed += OnShared;
+            OwnSite.Changed += OnShared;
         }
     }
 
@@ -74,6 +76,8 @@ internal sealed class LegionPage : Grid
         _timer.Stop();
         LegionShare.Changed -= OnShared;
         Account.Changed -= OnShared;
+        OwnSiteShare.Changed -= OnShared;
+        OwnSite.Changed -= OnShared;
     }
 
     /// <summary>A send of the list had an outcome, or the sign-in changed: the Discord box anew (not on the UI thread).</summary>
@@ -402,7 +406,7 @@ internal sealed class LegionPage : Grid
             off.Margin = new Thickness(0, 4, 0, 0);
             stack.Children.Add(off);
         }
-        else if (!Account.SignedIn)
+        else if (!Account.SignedIn && !OwnSite.Linked)
         {
             TextBlock why = Wrapped(Loc["Legion.Send.SignIn"], "Brush.TextMuted", 12);
             why.Margin = new Thickness(0, 4, 0, 8);
@@ -416,8 +420,20 @@ internal sealed class LegionPage : Grid
         }
         else
         {
-            // the list kept here, to the website now (the game need not run): the roster of every Discord server following the legion fills from it
-            TextBlock said = Wrapped(LegionShare.Last is { } last && last.Legion == legion.Legion ? AccountWindow.LegionText(last) : Loc["Legion.Send.What"], "Brush.TextSubtle", 11.5);
+            // the list kept here, to the website now (the game need not run): the roster of every Discord server following the legion fills from it; to the
+            // legion's own site as well while the app is linked to one (OwnSite), its line named by its address
+            var known = new List<string>();
+            if (Account.SignedIn && LegionShare.Last is { } last && last.Legion == legion.Legion)
+            {
+                known.Add(AccountWindow.LegionText(last));
+            }
+
+            if (OwnSite.Host is { } ownHost && OwnSiteShare.LastLegion is { } ownLast && ownLast.Legion == legion.Legion)
+            {
+                known.Add(ownHost + " - " + AccountWindow.LegionText(ownLast));
+            }
+
+            TextBlock said = Wrapped(known.Count > 0 ? string.Join("\n", known) : Loc["Legion.Send.What"], "Brush.TextSubtle", 11.5);
             said.Margin = new Thickness(0, 4, 0, 8);
             var send = new Button { Content = Loc["Legion.Send.Now"], Padding = new Thickness(12, 6, 12, 6), Margin = new Thickness(0, 0, 0, 8), HorizontalAlignment = HorizontalAlignment.Left };
             send.SetResourceReference(Control.BorderBrushProperty, "Brush.Accent");
@@ -425,8 +441,20 @@ internal sealed class LegionPage : Grid
             {
                 send.IsEnabled = false;
                 said.Text = Loc["Legion.Send.Sending"];
-                LegionShareResult? result = await LegionShare.SendNowAsync(legion);
-                said.Text = result is null ? Loc["Legion.Send.Cant"] : AccountWindow.LegionText(result);
+                var lines = new List<string>();
+                if (Account.SignedIn)
+                {
+                    LegionShareResult? result = await LegionShare.SendNowAsync(legion);
+                    lines.Add(result is null ? Loc["Legion.Send.Cant"] : AccountWindow.LegionText(result));
+                }
+
+                if (OwnSite.Host is { } host)
+                {
+                    LegionShareResult? own = await OwnSiteShare.SendLegionNowAsync(legion);
+                    lines.Add(host + " - " + (own is null ? Loc["Legion.Send.Cant"] : AccountWindow.LegionText(own)));
+                }
+
+                said.Text = lines.Count > 0 ? string.Join("\n", lines) : Loc["Legion.Send.Cant"];
                 send.IsEnabled = true;
             };
             stack.Children.Add(said);
