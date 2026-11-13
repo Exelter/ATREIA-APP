@@ -13,7 +13,13 @@
           "kind": "new",
           "area": "App",
           "title": "Atreia App for Linux",
-          "text": "The app now has a Linux version of its own, for playing AION 2 through Proton or Wine (Steam, Lutris, Heroic, Bottles) on Linux and in the Steam Deck's desktop mode. This first version is the meter over the game: damage, healing and damage taken, the Me, Group, Corps and All switch, the boss line with its health, kill time and enrage, and it follows the newest boss fight by itself like the Windows meter. Download it from atreia.app/download/Atreia-App-Linux-x64.tar.gz, unpack it and run install.sh. The app's other windows follow one by one; the Windows app stays as it is."
+          "text": "The app now has a Linux version of its own, for playing AION 2 through Proton or Wine (Steam, Lutris, Heroic, Bottles) on Linux and in the Steam Deck's desktop mode. This first version is the meter over the game, as on Windows: DPS, rDPS, healing, damage taken, Buffs on you and All in one; the Me, Group, Corps and All switch with the Stagger and Grind views; the bars in parts with their legend; the boss line with its health, kill time and enrage, and the boss's next casts; the dummy parse and the counters at its foot. It folds to its bar between fights, follows the newest boss fight by itself, locks in place, can let your clicks through to the game and gets wider or bigger by its corner grip. Download it on atreia.app/app, unpack it and run install.sh. The app's other windows follow one by one; the Windows app stays as it is."
+        },
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "Healing and damage taken after rDPS",
+          "text": "After the meter showed rDPS, a player's line in Healing or Damage taken could still show that player's rDPS as the rate and be ordered by it. Those views now show the healing and the damage taken again, whatever the meter showed before."
         }
       ]
     },

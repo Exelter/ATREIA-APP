@@ -504,8 +504,19 @@ internal sealed class MeterView : Border
         }
 
         var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        int ticks = 0;
         timer.Tick += (_, _) =>
         {
+            if (++ticks == 5 && menu.Items.OfType<MenuItem>().FirstOrDefault() is MenuItem first)
+            {
+                // TEMPORARY: why the items give no place on the X server of the workflow
+                Avalonia.Visual? parent = Avalonia.VisualTree.VisualExtensions.GetVisualParent(first);
+                Avalonia.Rendering.IRenderRoot? root = Avalonia.VisualTree.VisualExtensions.GetVisualRoot(first);
+                LinuxLog.Write($"ui-debug: open {menu.IsOpen}, {menu.Items.Count} items; '{first.Header}' visible {first.IsVisible}/{first.IsEffectivelyVisible}, "
+                    + $"bounds {first.Bounds}, desired {first.DesiredSize}, measured {first.IsMeasureValid}/{first.IsArrangeValid}, parent {parent?.GetType().Name ?? "none"}, "
+                    + $"root {root?.GetType().Name ?? "none"}, top level {TopLevel.GetTopLevel(first)?.GetType().Name ?? "none"}");
+            }
+
             if (!menu.IsOpen)
             {
                 timer.Stop();

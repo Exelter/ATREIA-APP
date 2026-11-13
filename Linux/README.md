@@ -15,8 +15,10 @@ otherwise `libpcap0.8` on Debian/Ubuntu, `libpcap` on Fedora, Arch and SteamOS) 
 program (`setcap cap_net_raw,cap_net_admin=eip`, the way Wireshark's capture tool gets it). The meter's status line says when one of them is missing and
 what to do. `atreia-app capture-check` in a terminal shows what the app can see.
 
-- **Lock** (the padlock in the meter's head) lets the clicks go through to the game; the padlock itself keeps taking them, to unlock. This works on X11 and
-  for the game and the meter under Xwayland in a Wayland session (the usual way Proton games run).
+- **Lock** (the padlock in the meter's head) keeps the meter in place, as on Windows. **Let the clicks through to the game** (the `⋯` menu) passes every
+  click to the game but on the bar's buttons. This works on X11 and for the game and the meter under Xwayland in a Wayland session (the usual way Proton
+  games run).
+- The corner grip makes the meter wider or longer; with Ctrl it gets bigger, text and all; a double-click gives it its own size back.
 - **Steam Deck**: in Desktop Mode. Gaming Mode shows no other windows over the game.
 - Settings, characters and history are kept in `~/.config/AtreiaApp`; `linux.log` there notes how the capture started. `~/.local/share/atreia-app/uninstall.sh`
   removes the app (the settings stay).
@@ -25,9 +27,12 @@ what to do. `atreia-app capture-check` in a terminal shows what the app can see.
 
 ## What is in it so far
 
-The meter over the game: damage, healing and damage taken; the scope switch (me, the group, the corps, everyone); the boss line with its health, when it
-dies and its enrage; the fight following the newest boss on its own, the automatic reset between fights and the boss's next attempt, as on Windows. The
-game's pictures (the image pack) come on the first start. The other windows of the Windows app follow one by one.
+The meter over the game, as the Windows meter: DPS, rDPS (buffs credited), healing, damage taken, Buffs on you and All in one, picked in its pill; the
+switch for me, the group, the corps and everyone, with the Stagger and Grind views; the bars in parts (own damage, buffs for others, healing on others) and
+their legend; the boss line with its health, when it dies and its enrage, and the boss's next casts; the dummy parse; the counters at its foot. It folds to
+its bar between fights, follows the newest boss fight on its own and resets between fights, as on Windows. The `⋯` menu pauses it, counts the open world
+too, keeps it on top, checks the capture, opens the data folder and quits. The game's pictures (the image pack) come on the first start. The other windows
+of the Windows app follow one by one.
 
 ## For the code
 
@@ -41,14 +46,16 @@ the uploads, the data) unchanged, and adds what Linux does differently:
 | `Platform/NpcapAvailability.cs` - libpcap | `Client/Aion2/Capture/NpcapAvailability.cs` (Npcap) |
 | `Platform/CaptureRights.cs` - the right to read the network | (Windows needs none) |
 | `Platform/X11Shape.cs` - clicks through the meter | WS_EX_TRANSPARENT |
-| `Meter/MeterEngine.cs` - the meter, method by method as in `MainWindow.xaml.cs` | the meter part of `Client/Ui/MainWindow*.cs` (WPF) |
+| `Platform/X11Pointer.cs` - the meter moved by its head | DragMove |
+| `Meter/MeterEngine*.cs` - the meter, method by method as in `MainWindow*.cs` | the meter part of `Client/Ui/MainWindow*.cs` (WPF) |
 | `Ui/` - the windows, with Avalonia | `Client/Ui/` (WPF) |
 
-`Meter/MeterEngine.cs` follows the Windows main window's meter method by method under the same names: a change to the meter's rules there belongs here
+`Meter/MeterEngine*.cs` follow the Windows main window's meter method by method under the same names: a change to the meter's rules there belongs here
 too.
 
 Builds and checks run on GitHub Actions (`.github/workflows/linux.yml`, on every change to `Linux/` or `Client/`): the build, the checks (`AtreiaApp
-selftest`: the Windows app's checks that need no window, then the Linux parts), pictures of the meter (`AtreiaApp render <out.png>
-[meter|heal|taken|waiting|permission|fonts]`), the real window on an X server (locked: only its lock button takes clicks) and a download of the build. A
-release (`.github/workflows/release.yml`) builds the Linux download after the Windows one and puts it on atreia.app with `updates/linux.json`. By hand:
+selftest`: the Windows app's checks that need no window, then the Linux parts), pictures of the meter (`AtreiaApp render <out.png> [meter|raid|heal|
+taken|all|buffs|callout|stagger|stagger-failed|grind|dummy|bar|waiting|permission|fonts]`), the real window on an X server with every button clicked
+(`packaging/ci/ui-test.py`), the download installed the way a player does and run against made-up game traffic, and a download of the build. A release
+(`.github/workflows/release.yml`) builds the Linux download after the Windows one and puts it on atreia.app with `updates/linux.json`. By hand:
 `dotnet publish Linux/AtreiaApp.Linux.csproj -c Release -r linux-x64 --self-contained -o out`.

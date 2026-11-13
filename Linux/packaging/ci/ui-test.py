@@ -85,10 +85,16 @@ def shot(name):
     subprocess.run(f"xwd -root -silent | convert xwd:- '{path}'", shell=True, check=False)
 
 
+menus_seen = set()
+
+
 def menu_item(menu, item, pattern, what):
     since = mark()
     if not click(menu):
         return
+    if menu not in menus_seen:  # a picture of each menu, open
+        menus_seen.add(menu)
+        shot(menu + "-open")
     if click("item:" + item):
         expect(pattern, what, since)
     else:
