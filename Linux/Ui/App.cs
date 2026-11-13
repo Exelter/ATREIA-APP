@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Layout;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
@@ -23,6 +24,11 @@ internal sealed class App : Application
         Name = Brand.AppName;
         RequestedThemeVariant = ThemeVariant.Dark;
         Styles.Add(new FluentTheme());
+        // the menus as wide as their longest item (Fluent stops a flyout at 456 pixels, and the pill's dummy item was cut off)
+        Styles.Add(new Style(x => x.OfType<MenuFlyoutPresenter>())
+        {
+            Setters = { new Setter(Layoutable.MaxWidthProperty, 760d) },
+        });
     }
 
     public override void OnFrameworkInitializationCompleted()

@@ -78,6 +78,11 @@ def mark():
     return len(log_text())
 
 
+def settle():
+    """After the window moved or changed its size: its buttons' new places are in the log a moment later."""
+    time.sleep(1.0)
+
+
 def shot(name):
     global shots
     shots += 1
@@ -174,6 +179,7 @@ try:
         if not moved:
             failures.append("the head did not move the meter")
         expect(r"action: moved to -?\d+,-?\d+", "the meter keeps where it was moved to", since)
+        settle()
         shot("moved")
 
     # the lock: in place, no grip, the buttons still work
@@ -198,6 +204,7 @@ try:
         since = mark()
         if click("lock"):
             expect(r"action: unlocked", "the lock again", since)
+            settle()
 
     # the grip: wider, then with Ctrl bigger, then a double-click gives the meter its own size back
     grip = where("grip")
@@ -207,8 +214,8 @@ try:
         since = mark()
         drag(grip, (60, 0))
         expect(r"size: width 530, lines up to ten, scale 1\.00", "the grip makes the meter wider", since)
+        settle()
         shot("wider")
-        time.sleep(1.3)  # the grip's new place comes with the meter's next second
         grip = where("grip")
         if grip is None:
             fail("no grip after the meter got wider")
@@ -216,8 +223,8 @@ try:
             since = mark()
             drag(grip, (53, 53), ctrl=True)
             expect(r"size: width 530, lines up to ten, scale 1\.1\d", "the grip with Ctrl makes it bigger", since)
+            settle()
             shot("bigger")
-            time.sleep(1.3)
             grip = where("grip")
         if grip is None:
             fail("no grip after the meter got bigger")
@@ -227,6 +234,7 @@ try:
             time.sleep(0.2)
             xdo("click", "--repeat", 2, "--delay", 80, 1)
             expect(r"size: width the bar's, lines up to ten", "a double-click on the grip gives the meter its width back", since)
+            settle()
 
     # the menu: pause and on again, the open world, always on top, the clicks through
     menu_item("menu", "Pause (nothing is counted until you go on)", r"action: menu Pause.* -> .*paused", "the pause")

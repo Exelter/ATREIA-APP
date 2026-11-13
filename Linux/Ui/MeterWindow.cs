@@ -81,6 +81,11 @@ internal sealed class MeterWindow : Window
 
         _view = new MeterView(engine) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
         _view.HeaderPressed += BeginMove;
+        if (UiTest.Enabled)
+        {
+            PositionChanged += (_, _) => _view.NoteWhere(); // the buttons' new places on the screen for the workflow's test
+        }
+
         PointerMoved += (_, _) => Move();
         PointerReleased += (_, e) => EndMove(e.Pointer);
         PointerCaptureLost += (_, e) =>

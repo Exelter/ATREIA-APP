@@ -118,6 +118,11 @@ internal sealed class MeterView : Border
 
     public MeterView(MeterEngine engine)
     {
+        if (UiTest.Enabled)
+        {
+            LayoutUpdated += (_, _) => NoteWhere();
+        }
+
         _engine = engine;
         Background = Palette.GlassBg;
         BorderBrush = Palette.GlassEdge;
@@ -487,7 +492,7 @@ internal sealed class MeterView : Border
     }
 
     /// <summary>For the workflow's test (ATREIA_UI_TEST=1): where the bar's buttons, the scope switch, the grip and a free spot of the head are.</summary>
-    private void NoteWhere()
+    internal void NoteWhere()
     {
         if (!UiTest.Enabled)
         {
