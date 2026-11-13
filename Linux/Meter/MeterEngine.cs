@@ -3,6 +3,7 @@ using AionDPS.Aion2.Protocol;
 using AionDPS.Combat;
 using AionDPS.Combat.Sources;
 using AionDPS.History;
+using AionDPS.Linux.Platform;
 using AionDPS.Ui;
 
 namespace AionDPS.Linux.Meter;
@@ -228,9 +229,18 @@ public sealed class MeterEngine : IDisposable
         _source = source;
         source.StatusChanged += status =>
         {
+            SourceState before;
             lock (_statusGate)
             {
+                before = _status.State;
                 _status = status;
+            }
+
+            // what the capture does, in linux.log for a player's report: each change of its state (waiting, the game found, an error), not the
+            // counters it updates every few seconds
+            if (status.State != before && source is Aion2PacketCombatSource)
+            {
+                LinuxLog.Write($"capture: {status.State} - {status.Message}");
             }
         };
         source.Start();

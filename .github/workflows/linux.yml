@@ -126,6 +126,48 @@ jobs:
           # locked: only the lock button takes the mouse, the rest of the clicks go to the game
           grep -q "input region: the lock button alone" "$home/.config/AtreiaApp/linux.log" || { echo "::error::the locked meter did not let the clicks through"; exit 1; }
           echo "::group::screens/linux-x11.png (base64)"; base64 -w 0 screens/linux-x11.png; echo; echo "::endgroup::"
+      # A player's way, end to end: the download unpacked in a new home, install.sh (with its sudo setcap), then the installed command started on an X
+      # server while the made-up game traffic plays. The meter must open with the right to read the network, find the game's traffic, fetch the game's
+      # pictures on this first start and keep running; then uninstall.sh takes it all away again.
+      - name: A player's install, end to end
+        run: |
+          set -eu
+          home=$(mktemp -d)
+          mkdir "$home/Downloads"
+          tar -C "$home/Downloads" -xzf atreia-app-linux-x64-${{ steps.version.outputs.version }}.tar.gz
+          (cd "$home/Downloads/atreia-app" && env -u XDG_DATA_HOME HOME="$home" ./install.sh)
+          app="$home/.local/share/atreia-app/AtreiaApp"
+          getcap "$app" | grep -q 'cap_net_admin,cap_net_raw=eip' || { echo "::error::install.sh did not give the app the right to read the network"; getcap "$app"; exit 1; }
+          [ -f "$home/.local/share/applications/atreia-app.desktop" ] || { echo "::error::no menu entry"; exit 1; }
+          HOME="$home" "$home/.local/bin/atreia-app" --version
+          export XDG_CONFIG_HOME="$home/.config"
+          mkdir -p "$home/.config/AtreiaApp"
+          echo '{"X": 40, "Y": 40, "Width": 470, "Height": 330, "Locked": false, "Topmost": true}' > "$home/.config/AtreiaApp/linux-window.json"
+          HOME="$home" xvfb-run -a -s "-screen 0 1100x700x24" sh -c '
+            "$HOME/.local/bin/atreia-app" > installed.log 2>&1 & app=$!
+            sleep 6
+            python3 Linux/packaging/ci/game-traffic.py
+            sleep 3
+            xwd -root -silent | convert xwd:- screens/linux-installed.png
+            waited=0
+            while [ ! -f "$HOME/.config/AtreiaApp/images/pack.json" ] && [ $waited -lt 120 ]; do sleep 2; waited=$((waited + 2)); done
+            sleep 2
+            xwd -root -silent | convert xwd:- screens/linux-installed-pictures.png
+            if kill -0 $app 2>/dev/null; then kill $app; echo "the installed app ran"; else echo "::error::the installed app ended by itself"; cat installed.log; exit 1; fi'
+          log="$home/.config/AtreiaApp/linux.log"
+          cat "$log"
+          if [ -s "$home/.config/AtreiaApp/crash.log" ]; then echo "::error::crash.log was written"; cat "$home/.config/AtreiaApp/crash.log"; exit 1; fi
+          grep -q "capture rights: Granted" "$log" || { echo "::error::the installed app may not read the network"; exit 1; }
+          grep -q "capture: Connected - Aion 2: Game traffic from 127.0.0.1:13328" "$log" || { echo "::error::the installed app did not find the game's traffic"; exit 1; }
+          if [ -f "$home/.config/AtreiaApp/images/pack.json" ]; then echo "the game's pictures came: $(cat "$home/.config/AtreiaApp/images/pack.json")"; else echo "::warning::the game's pictures did not come within two minutes"; fi
+          for f in screens/linux-installed.png screens/linux-installed-pictures.png; do
+            echo "::group::$f (base64)"; base64 -w 0 "$f"; echo; echo "::endgroup::"
+          done
+          env -u XDG_DATA_HOME HOME="$home" "$home/.local/share/atreia-app/uninstall.sh"
+          for left in "$home/.local/share/atreia-app" "$home/.local/bin/atreia-app" "$home/.local/share/applications/atreia-app.desktop"; do
+            [ ! -e "$left" ] || { echo "::error::uninstall.sh left $left"; exit 1; }
+          done
+          echo "uninstall.sh removed the app"
       - uses: actions/upload-artifact@v4
         with:
           name: linux-screens
