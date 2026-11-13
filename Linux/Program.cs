@@ -11,6 +11,7 @@ namespace AionDPS.Linux;
 /// <list type="bullet">
 /// <item><c>selftest</c> - the checks (Checks/LinuxSelfCheck.cs): exit code 0 when all passed.</item>
 /// <item><c>capture-check</c> - what the app can see of the network and the game, and the command that gives it the right to read the network.</item>
+/// <item><c>listen [seconds]</c> - the capture alone: what it says and every hit it reads (Platform/Listen.cs).</item>
 /// <item><c>render &lt;out.png&gt; [scene]</c> - a picture of the meter, drawn without a screen (Ui/Render.cs).</item>
 /// <item><c>--version</c> - the version.</item>
 /// </list>
@@ -31,6 +32,8 @@ internal static class Program
                 return ok ? 0 : 1;
             case "capture-check":
                 return CaptureCheck.Run();
+            case "listen":
+                return Listen.Run(args);
             case "render":
                 return Render.Run(args);
             case "--version":

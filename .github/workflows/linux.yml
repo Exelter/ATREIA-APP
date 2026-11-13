@@ -72,6 +72,25 @@ jobs:
           fi
       - name: Capture check
         run: out/atreia-app/AtreiaApp capture-check
+      # The capture for real, the way a player's install runs it: the program given the right to read the network (install.sh's setcap), started as the
+      # user, reading made-up game traffic on this machine (Linux/packaging/ci/game-traffic.py: the real capture's damage frames from port 13328).
+      - name: The capture reads game traffic
+        run: |
+          set -eu
+          sudo setcap cap_net_raw,cap_net_admin=eip out/atreia-app/AtreiaApp
+          getcap out/atreia-app/AtreiaApp
+          out/atreia-app/AtreiaApp listen 14 > listen.txt 2>&1 &
+          listener=$!
+          sleep 5
+          python3 Linux/packaging/ci/game-traffic.py
+          wait $listener
+          cat listen.txt
+          hits=$(grep -c '^event:' listen.txt || true)
+          if [ "$hits" -lt 4 ] || ! grep -q 'Keen Strike 588 crit' listen.txt || ! grep -q 'Blood Absorption 65 heal' listen.txt; then
+            echo "::error::The capture read $hits hit(s) of the made-up game traffic (20 sent)."
+            exit 1
+          fi
+          sudo setcap -r out/atreia-app/AtreiaApp
       - name: Pictures of the meter
         run: |
           set -eu
