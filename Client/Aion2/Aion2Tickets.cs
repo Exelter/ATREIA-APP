@@ -297,6 +297,19 @@ public static class Aion2Tickets
         }
     }
 
+    /// <summary>The character logged in now, else the one most likely in game (<see cref="NoteLikelyCharacter"/>: the meter started, or an update restarted
+    /// it, while a character already was in game); null while neither is known.</summary>
+    public static string? PlayingName
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return _current ?? _likely;
+            }
+        }
+    }
+
     /// <summary>Forget everything (a test, a replay).</summary>
     public static void Reset()
     {

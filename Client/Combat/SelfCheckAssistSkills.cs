@@ -57,11 +57,19 @@ public static class SelfCheckAssistSkills
         Aion2Cooldowns.Receive(new List<CooldownEntry> { new(unknown, 12000) }, t0.AddMinutes(1));
         Check("with a cooldown from the game after all", Of(unknown) == "listed" && Aion2Cooldowns.LearnedVersion != before && Aion2Cooldowns.IsKnown(unknown), Of(unknown));
 
-        // the client's table by the specialization in use: Judgment has 5 s, with the specializations 3 and 5 (12,240,350) none - left off from its first use
+        // a specialization's 0 in the client's table is left to the uses (13 November 2026): Judgment has 5 s, with the specializations 3 and 5 (12,240,350)
+        // 0 - its first use counts the 5 s; used every 1.5 s, its seventh use leaves it off (the fifth specialization takes the cooldown away)
         string judgmentBefore = Of(12240000);
-        Aion2Cooldowns.NoteOwnCast(12240350, t0.AddMinutes(2));
-        Check("Judgment with the specializations 3 and 5 has none (the client's table)", judgmentBefore == "listed" && Of(12240000) == "NoCooldown",
-            $"{judgmentBefore}, then {Of(12240000)}");
+        DateTime judged = t0.AddMinutes(2);
+        Aion2Cooldowns.NoteOwnCast(12240350, judged);
+        bool judgmentCounts = Of(12240000) == "listed" && Aion2Cooldowns.Length(12240000) == 5 && Aion2Cooldowns.View(12240000, judged.AddSeconds(1)).Running;
+        for (int use = 1; use < 7; use++)
+        {
+            Aion2Cooldowns.NoteOwnCast(12240350, judged.AddSeconds(1.5 * use));
+        }
+
+        Check("Judgment with the specializations 3 and 5 (0 in the client's table): its 5 s counted at first, left off after seven quick uses",
+            judgmentBefore == "listed" && judgmentCounts && Of(12240000) == "NoCooldown", $"{judgmentBefore}, counted {judgmentCounts}, then {Of(12240000)}");
 
         // a skill with a cooldown used as soon as it is back is never one without (Warding Strike, every 23.5 s)
         for (int use = 0; use < 8; use++)
@@ -77,16 +85,21 @@ public static class SelfCheckAssistSkills
         Check("kept from the last session", Of(unknown) == "NoCooldown", Of(unknown));
         Aion2Cooldowns.Reset();
 
-        // a skill on the bar stays on the screen whatever its specialization's entry says or its uses taught (11 November 2026, a player: "block skill ...
-        // disappears"): Focused Block (20 s, 0 with every specialization) after a use, and a learned Overhead Slam, both on the bar; a basic attack on the
-        // bar (Rending Blow) and Focused Block off the bar stay out
-        Aion2Cooldowns.NoteOwnCast(11110010, t0.AddMinutes(5));
+        // a skill on the bar stays on the screen whatever its uses taught (11 November 2026, a player: "block skill ... disappears"), and a specialization's 0
+        // in the client's table takes no cooldown away (13 November 2026, the same player: "now it doesnt count its timer", the game counting 18 s): Focused
+        // Block (20 s, 0 with every specialization) used with one counts its 20 s and is listed on the bar and off it; a learned Overhead Slam on the bar
+        // stays, a ready tile; a basic attack on the bar (Rending Blow) and the learned Overhead Slam off the bar stay out
+        DateTime blocked = t0.AddMinutes(5);
+        Aion2Cooldowns.NoteOwnCast(11110010, blocked);
         Aion2Cooldowns.SeedLearned(new[] { 11170000 });
         int[] gladiatorBar = { 11010000, 11110000, 11170000, 11100000 };
-        bool blockStays = Ui.AssistPanel.Listed(11110000, gladiatorBar) && Ui.AssistPanel.Listed(11170000, gladiatorBar);
-        bool basicOut = !Ui.AssistPanel.Listed(11010000, gladiatorBar) && !Ui.AssistPanel.Listed(11110000, new[] { 11100000 });
-        Check("Focused Block and a learned Overhead Slam on the bar stay, a basic attack does not", Of(11110000) == "NoCooldown" && blockStays && basicOut,
-            $"{Of(11110000)}, on the bar {blockStays}, basic attack and off the bar out {basicOut}");
+        CooldownView block = Aion2Cooldowns.View(11110000, blocked.AddSeconds(1));
+        bool blockCounts = Of(11110000) == "listed" && Aion2Cooldowns.Length(11110000) == 20 && block.Running && Math.Abs(block.Seconds - 19) < 1e-6
+            && !Aion2Cooldowns.View(11110000, blocked.AddSeconds(20.1)).Running;
+        bool stay = Ui.AssistPanel.Listed(11110000, gladiatorBar) && Ui.AssistPanel.Listed(11110000, new[] { 11100000 }) && Ui.AssistPanel.Listed(11170000, gladiatorBar);
+        bool leftOut = !Ui.AssistPanel.Listed(11010000, gladiatorBar) && !Ui.AssistPanel.Listed(11170000, new[] { 11100000 });
+        Check("Focused Block counts its 20 s after a use with a specialization; it and a learned Overhead Slam on the bar stay, a basic attack does not",
+            blockCounts && stay && leftOut, $"{Of(11110000)}, {block.Seconds:0.0} s left after 1 s ({blockCounts}), listed {stay}, left out {leftOut}");
         Aion2Cooldowns.Reset();
 
         Countdown(Check);

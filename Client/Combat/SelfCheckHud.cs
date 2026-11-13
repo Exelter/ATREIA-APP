@@ -3,7 +3,8 @@ using AionDPS.Ui;
 namespace AionDPS.Combat;
 
 /// <summary>Game windows told by the screen (<see cref="HudWatcher"/>): the HUD is learnt in fights, a covered HUD hides the overlays and an uncovered one
-/// brings them back, parts shown only in fights are dropped, and the meter's own overlays and a black picture decide nothing.</summary>
+/// brings them back, parts shown only in fights are dropped, and the meter's own overlays and a black picture decide nothing; a wide screen needs fewer
+/// points, and a HUD learnt just above the need keeps working without its fight-only parts.</summary>
 public static class SelfCheckHud
 {
     public static bool Run()
@@ -101,6 +102,67 @@ public static class SelfCheckHud
 
         bool noneLearnt = !noHud.Ready;
         Console.WriteLine($"  -> a screen without a steady HUD teaches nothing ({noneLearnt})");
-        return notYet && learnt && shown && pruned && early && hidden && stays && back && fight && underOverlays && black && noneLearnt;
+
+        // a wide screen (13 November 2026, a 3440x1440 player whose HUD was never learnt): the HUD keeps its size while the points spread over the width, so
+        // fewer are needed there - 50 steady points are learnt on a 3440x1440 window and not on a 2560x1440 one
+        bool needs = HudWatcher.NeedPointsFor(1920, 1080) == 60 && HudWatcher.NeedPointsFor(2560, 1600) == 60 && HudWatcher.NeedPointsFor(3440, 1440) == 45
+            && HudWatcher.NeedPointsFor(5120, 1440) == 30;
+        var wide = new HudWatcher();
+        wide.SizeForCheck(new System.Drawing.Size(3440, 1440));
+        var plain = new HudWatcher();
+        plain.SizeForCheck(new System.Drawing.Size(2560, 1440));
+        for (int i = 0; i < HudWatcher.NeedLooks; i++)
+        {
+            var e = new float[n];
+            for (int k = 0; k < n; k++)
+            {
+                e[k] = k < 50 ? 60 + (float)rnd.NextDouble() * 8 : (float)rnd.NextDouble() * 120;
+            }
+
+            t = t.AddSeconds(1);
+            wide.Judge(e, none, true, t);
+            plain.Judge(e, none, true, t);
+        }
+
+        bool wideLearnt = needs && wide.Ready && !plain.Ready;
+        Console.WriteLine($"  -> a wide screen needs fewer HUD points: 60 up to 16:9, 45 at 3440x1440, 30 at 5120x1440; 50 learnt there, not on 2560x1440 ({wideLearnt})");
+
+        // a HUD learnt just above the need loses its fight-only parts between fights: it is kept while two thirds of the need are left (66 learnt, 10 of
+        // them only in fights: 56 kept, with a point of the moving world that looked steady by chance perhaps), given up below (66 learnt, 30 of them only in
+        // fights: 36 left)
+        HudWatcher Learnt(int steady, int fightOnly)
+        {
+            var w = new HudWatcher();
+            w.SizeForCheck(new System.Drawing.Size(2560, 1440));
+            for (int i = 0; i < HudWatcher.NeedLooks; i++)
+            {
+                var e = new float[n];
+                for (int k = 0; k < n; k++)
+                {
+                    e[k] = k < steady ? 60 + (float)rnd.NextDouble() * 8 : (float)rnd.NextDouble() * 120;
+                }
+
+                w.Judge(e, none, true, t = t.AddSeconds(1));
+            }
+
+            for (int i = 0; i < 40; i++)
+            {
+                var e = new float[n];
+                for (int k = 0; k < n; k++)
+                {
+                    e[k] = k < steady - fightOnly ? 60 + (float)rnd.NextDouble() * 8 : k < steady ? 3 : (float)rnd.NextDouble() * 120;
+                }
+
+                w.Judge(e, none, false, t = t.AddSeconds(0.3));
+            }
+
+            return w;
+        }
+
+        HudWatcher few = Learnt(66, 10), fewer = Learnt(66, 30);
+        bool kept = few.Ready && few.HudPoints is >= 56 and <= 60 && !fewer.Ready;
+        Console.WriteLine($"  -> a HUD learnt just above the need keeps working without its fight-only parts ({few.Ready}, {few.HudPoints} points); "
+            + $"given up below two thirds of the need ({!fewer.Ready}) ({kept})");
+        return notYet && learnt && shown && pruned && early && hidden && stays && back && fight && underOverlays && black && noneLearnt && wideLearnt && kept;
     }
 }

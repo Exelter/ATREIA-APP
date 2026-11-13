@@ -65,6 +65,12 @@ public static class Aion2Inventories
     /// <summary>The character logged in now (a test sets its own).</summary>
     public static Func<string?> CurrentName { get; set; } = () => Aion2Tickets.CurrentName;
 
+    /// <summary>
+    /// The character whose keys the cube alerts go by: the one logged in now, else the one most likely in game when the app started, or restarted for an update,
+    /// in the middle of a game (its last saved record: the game names the character only at a login). A test sets its own.
+    /// </summary>
+    public static Func<string?> PlayingName { get; set; } = () => CurrentName() ?? Aion2Tickets.PlayingName;
+
     /// <summary>The server and account of a character (the tickets' record of it; a test sets its own).</summary>
     public static Func<string, (int ServerId, string? Account)> Whereabouts { get; set; } = name =>
         Aion2Tickets.Snapshot().FirstOrDefault(c => c.Name == name) is { } who ? (who.ServerId, who.Account) : (0, null);

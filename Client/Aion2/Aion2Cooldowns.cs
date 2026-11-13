@@ -539,7 +539,7 @@ public static class Aion2Cooldowns
     private static double? LengthOf(int id)
     {
         int variant = Variants.TryGetValue(id, out int v) ? v : id;
-        double? table = TableOf(variant, id);
+        double? table = CountedTableOf(variant, id);
         List<double> gaps = Gaps.TryGetValue(variant, out List<double>? all) ? all.Where(g => g > NoCooldownSeconds).OrderBy(g => g).ToList() : new List<double>();
         if (gaps.Count >= GapsForLength && table is not (<= NoCooldownSeconds))
         {
@@ -833,17 +833,19 @@ public static class Aion2Cooldowns
                 return NotWorthListing.Chain;
             }
 
-            // the lists, what was learned, or the client's table for the variant in use (Judgment with the specializations 3 and 5 has none) - unless the
-            // game sent a cooldown of more than 2 s for it
+            // the lists, what was learned, or the client's table for the variant in use where the skill itself has none either (a specialization's 0 under
+            // a skill with a cooldown is left to the uses: Judgment's fifth takes it away, Focused Block's do not) - unless the game sent a cooldown of more
+            // than 2 s for it
             bool none = noCooldown.Contains(id) || Learned.Contains(id)
-                || (!Timed.Contains(id) && TableOf(Variants.TryGetValue(id, out int v) ? v : id, id) is <= NoCooldownSeconds);
+                || (!Timed.Contains(id) && CountedTableOf(Variants.TryGetValue(id, out int v) ? v : id, id) is <= NoCooldownSeconds);
             return none ? NotWorthListing.NoCooldown : null;
         }
     }
 
     /// <summary>
     /// Whether a skill surely has no cooldown: the lists (basic attacks, fillers) or the client's table for the skill itself - not what its uses taught nor a
-    /// specialization's own entry (11 November 2026: Focused Block has 20 s, every one of its specializations 0, and its tile went at its first use).
+    /// specialization's own entry (11 November 2026: Focused Block has 20 s, every one of its specializations 0, and its tile went at its first use; it
+    /// counts its 20 s since 13 November).
     /// </summary>
     public static bool SurelyNoCooldown(int skillId)
     {
@@ -858,9 +860,21 @@ public static class Aion2Cooldowns
     /// <summary>The client's cooldowns (the skill lists' "cooldowns", seconds): a variant's own when it differs from its skill's, else the skill's.</summary>
     private static Dictionary<int, double> Table() => (_lists ??= LoadLists()).Lengths;
 
-    /// <summary>The client's cooldown of a variant (falling back on its skill's), null for a skill the table does not have.</summary>
+    /// <summary>The client's cooldown of a variant (falling back on its skill's), null for a skill the table does not have - as the table has it, a
+    /// specialization's 0 included (what the uses may teach: a skill without a cooldown).</summary>
     private static double? TableOf(int variant, int id) =>
         Table().TryGetValue(variant, out double own) ? own : Table().TryGetValue(id, out double skill) ? skill : null;
+
+    /// <summary>
+    /// The client's cooldown of a variant as the countdown takes it: a specialization's 0 under a skill with a cooldown counts as the skill's own (13
+    /// November 2026, a player: Focused Block "doesnt count its timer" - 20 s in the table, 0 with every one of its specializations, while the game counted
+    /// 18 s after the use). The table's 0 holds for a few (Judgment's fifth specialization takes the cooldown away): their uses teach it, six quick ones.
+    /// </summary>
+    private static double? CountedTableOf(int variant, int id)
+    {
+        double? table = TableOf(variant, id);
+        return table is <= NoCooldownSeconds && variant != id && Table().TryGetValue(id, out double skill) && skill > NoCooldownSeconds ? skill : table;
+    }
 
     private static (HashSet<int>, HashSet<int>, Dictionary<int, double>) LoadLists()
     {
@@ -879,7 +893,7 @@ public static class Aion2Cooldowns
                 {
                     foreach (JsonProperty p in cooldowns.EnumerateObject())
                     {
-                        if (int.TryParse(p.Name, out int id) && p.Value.TryGetDouble(out double seconds) && seconds >= 0) // 0: a variant with none
+                        if (int.TryParse(p.Name, out int id) && p.Value.TryGetDouble(out double seconds) && seconds >= 0) // 0: a variant with none in the table
                         {
                             lengths[id] = seconds;
                         }

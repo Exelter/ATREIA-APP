@@ -161,8 +161,23 @@ public static class SelfCheckBlackCloud
             // how many (9 November 2026): the bag's and the storage's apart, other items not counted, an unknown bag none at all
             && Aion2Inventories.CubeKeys("Keyed") == (1, 0) && Aion2Inventories.CubeKeys("Keyless") == (0, 2) && Aion2Inventories.CubeKeys("Nobody") is null
             && new AionDPS.Ui.MeterSettings().CubeNeedsKey;
+        // the alerts with "Only when I carry a key" (13 November 2026, the owner: no key, the switch on, and it beeped - the bag was not known): with a key in the
+        // bag they come; without one, with the bag not known and with no character known they stay quiet; switched off they always come
+        var cubeSettings = new AionDPS.Ui.MeterSettings();
+        Func<string?> playing = Aion2Inventories.PlayingName;
+        bool Alerts(string? name)
+        {
+            Aion2Inventories.PlayingName = () => name;
+            return cubeSettings.CubeAlertsNow();
+        }
+
+        bool alerts = Alerts("Keyed") && !Alerts("Keyless") && !Alerts("Nobody") && !Alerts(null);
+        cubeSettings.CubeNeedsKey = false;
+        alerts = alerts && Alerts("Keyless") && Alerts("Nobody") && Alerts(null);
+        Aion2Inventories.PlayingName = playing;
         Aion2Inventories.Reset();
         Console.WriteLine($"  -> Odyle Energy 40 and Small Odyle Energy 10 each, the 7-day ones marked ({each}); a bag of 3 + 1 in storage, 30 small 7-day and 2 small: 3 kinds, 480 energy ({items}); a Hidden Cube key in the bag ({keys})");
-        return read && onlyOk && needs && tabs && renewOk && each && items && keys;
+        Console.WriteLine($"  -> the cube alerts with \"Only when I carry a key\": with a key, none without one, none while the bag or the character is not known; all when switched off ({alerts})");
+        return read && onlyOk && needs && tabs && renewOk && each && items && keys && alerts;
     }
 }
