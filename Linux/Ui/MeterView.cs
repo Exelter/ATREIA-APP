@@ -213,6 +213,7 @@ internal sealed class MeterView : Border
         Child = dock;
 
         ContextMenu = BuildMenu();
+        ShowLocked(false);
         Update();
     }
 
@@ -240,7 +241,12 @@ internal sealed class MeterView : Border
         _statusActionText = action;
         _statusAction.Content = action;
         _statusAction.IsVisible = action is not null;
+        _statusWarns = warning;
+        _empty.IsVisible = _engine.ShownRows.Count == 0 && !warning;
     }
+
+    /// <summary>The status line says what keeps the meter from working: the body says nothing of its own then.</summary>
+    private bool _statusWarns;
 
     /// <summary>Fills the panel from the engine (once a second, and after each click).</summary>
     public void Update()
@@ -328,7 +334,7 @@ internal sealed class MeterView : Border
             }
         }
 
-        _empty.IsVisible = rows.Count == 0;
+        _empty.IsVisible = rows.Count == 0 && !_statusWarns;
         _empty.Text = _engine.Paused ? "Paused - nothing is counted until you go on."
             : _engine.Capturing ? "No fight yet: the meter counts dungeons, arenas, boss fights and training dummies (the open world too when it is switched on)."
             : "Waiting for the game.";

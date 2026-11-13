@@ -28,6 +28,19 @@ internal static class Render
             .WithInterFont()
             .SetupWithoutStarting();
 
+        // which faces the app carries and which one the meter's text gets (the Linux workflow prints it)
+        try
+        {
+            var assets = Avalonia.Platform.AssetLoader.GetAssets(new Uri("avares://AtreiaApp/"), null).Select(u => u.AbsolutePath).ToList();
+            Console.WriteLine($"render: {assets.Count} resources: {string.Join(", ", assets.Take(12))}");
+            bool found = FontManager.Current.TryGetGlyphTypeface(new Typeface(Palette.UiFont), out IGlyphTypeface? face);
+            Console.WriteLine($"render: the meter's face {Palette.UiFont} -> {(found ? face!.FamilyName + " " + face.Weight : "not found")}; default {FontManager.Current.DefaultFontFamily.Name}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("render: faces could not be listed: " + ex.Message);
+        }
+
         using var engine = new MeterEngine();
         var settings = new MeterSettings { AutoScope = false, ViewScope = "Group" };
         if (scene is not ("waiting" or "permission"))
