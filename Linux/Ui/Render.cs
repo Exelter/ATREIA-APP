@@ -71,7 +71,7 @@ internal static class Render
             Height = view.Height + 40,
             Content = backdrop,
             SystemDecorations = SystemDecorations.None,
-            FontFamily = Theme.UiFont,
+            FontFamily = Palette.UiFont,
         };
         window.Show();
         for (int i = 0; i < 3; i++)

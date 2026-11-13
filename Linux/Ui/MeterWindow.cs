@@ -44,7 +44,7 @@ internal sealed class MeterWindow : Window
         MinHeight = 140;
         Width = _spot.Width;
         Height = _spot.Height;
-        FontFamily = Theme.UiFont;
+        FontFamily = Palette.UiFont;
         WindowStartupLocation = _spot.X is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.Manual;
         if (_spot.X is int x && _spot.Y is int y)
         {

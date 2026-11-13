@@ -6,7 +6,7 @@ namespace AionDPS.Linux.Ui;
 /// The Windows app's dark theme (Client/Ui/Themes/Dark.xaml), the colours the meter uses: the panel over the game, its text, the muted text, the gold
 /// accent, the healing green, the warning and danger reds. And the website's faces, compiled into the app (Client/Fonts).
 /// </summary>
-internal static class Theme
+internal static class Palette
 {
     public static readonly IBrush OverlayBg = Brush("#EB121016");
     public static readonly IBrush Panel = Brush("#1B1820");

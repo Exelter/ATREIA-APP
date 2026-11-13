@@ -21,30 +21,30 @@ internal sealed class MeterView : Border
     private readonly MeterEngine _engine;
 
     private readonly Image _ownIcon = new() { Width = 24, Height = 24, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
-    private readonly TextBlock _ownName = Text(15, FontWeight.SemiBold, Theme.OverlayText);
-    private readonly TextBlock _ownPower = Text(11, FontWeight.Normal, Theme.TextMuted);
-    private readonly TextBlock _time = Text(16, FontWeight.SemiBold, Theme.OverlayText);
-    private readonly TextBlock _modeText = Text(12, FontWeight.SemiBold, Theme.OverlayText);
+    private readonly TextBlock _ownName = Text(15, FontWeight.SemiBold, Palette.OverlayText);
+    private readonly TextBlock _ownPower = Text(11, FontWeight.Normal, Palette.TextMuted);
+    private readonly TextBlock _time = Text(16, FontWeight.SemiBold, Palette.OverlayText);
+    private readonly TextBlock _modeText = Text(12, FontWeight.SemiBold, Palette.OverlayText);
     private readonly Button _modeButton;
     private readonly Button _pauseButton;
-    private readonly ShapePath _pauseIcon = new() { Fill = Theme.TextSubtle, Width = 12, Height = 12, Stretch = Stretch.Uniform };
+    private readonly ShapePath _pauseIcon = new() { Fill = Palette.TextSubtle, Width = 12, Height = 12, Stretch = Stretch.Uniform };
     private readonly Button _lockButton;
-    private readonly ShapePath _lockIcon = new() { Stroke = Theme.TextSubtle, StrokeThickness = 1.4, Fill = Theme.TextSubtle, Width = 12, Height = 13, Stretch = Stretch.Uniform };
+    private readonly ShapePath _lockIcon = new() { Stroke = Palette.TextSubtle, StrokeThickness = 1.4, Fill = Palette.TextSubtle, Width = 12, Height = 13, Stretch = Stretch.Uniform };
 
-    private readonly TextBlock _target = Text(12, FontWeight.Normal, Theme.TextMuted);
-    private readonly TextBlock _rate = Text(26, FontWeight.SemiBold, Theme.Accent);
-    private readonly TextBlock _unit = Text(13, FontWeight.Normal, Theme.TextMuted);
+    private readonly TextBlock _target = Text(12, FontWeight.Normal, Palette.TextMuted);
+    private readonly TextBlock _rate = Text(26, FontWeight.SemiBold, Palette.Accent);
+    private readonly TextBlock _unit = Text(13, FontWeight.Normal, Palette.TextMuted);
     private readonly StackPanel _scopes = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 2) };
 
     private readonly Grid _bossLine = new() { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto"), Margin = new Thickness(12, 2, 12, 4), IsVisible = false };
-    private readonly TextBlock _bossNumbers = Text(13, FontWeight.SemiBold, Theme.OverlayText);
-    private readonly TextBlock _bossName = Text(12, FontWeight.Normal, Theme.TextMuted);
-    private readonly TextBlock _bossKill = Text(12, FontWeight.SemiBold, Theme.Green);
-    private readonly TextBlock _bossRage = Text(12, FontWeight.SemiBold, Theme.TextMuted);
+    private readonly TextBlock _bossNumbers = Text(13, FontWeight.SemiBold, Palette.OverlayText);
+    private readonly TextBlock _bossName = Text(12, FontWeight.Normal, Palette.TextMuted);
+    private readonly TextBlock _bossKill = Text(12, FontWeight.SemiBold, Palette.Green);
+    private readonly TextBlock _bossRage = Text(12, FontWeight.SemiBold, Palette.TextMuted);
 
     private readonly StackPanel _lines = new() { Margin = new Thickness(0, 4, 0, 2) };
-    private readonly TextBlock _empty = Text(12, FontWeight.Normal, Theme.TextMuted);
-    private readonly TextBlock _status = Text(11, FontWeight.Normal, Theme.TextMuted);
+    private readonly TextBlock _empty = Text(12, FontWeight.Normal, Palette.TextMuted);
+    private readonly TextBlock _status = Text(11, FontWeight.Normal, Palette.TextMuted);
     private readonly Button _statusAction;
     private readonly List<RowView> _rowViews = new();
 
@@ -65,8 +65,8 @@ internal sealed class MeterView : Border
     public MeterView(MeterEngine engine)
     {
         _engine = engine;
-        Background = Theme.OverlayBg;
-        BorderBrush = Theme.Border;
+        Background = Palette.OverlayBg;
+        BorderBrush = Palette.Border;
         BorderThickness = new Thickness(1);
         CornerRadius = new CornerRadius(10);
         ClipToBounds = true;
@@ -83,8 +83,8 @@ internal sealed class MeterView : Border
             Content = _modeText,
             Padding = new Thickness(10, 2, 10, 3),
             Margin = new Thickness(0, 0, 6, 0),
-            Background = Theme.Control,
-            BorderBrush = Theme.Border,
+            Background = Palette.Control,
+            BorderBrush = Palette.Border,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(6),
             VerticalAlignment = VerticalAlignment.Center,
@@ -100,7 +100,7 @@ internal sealed class MeterView : Border
 
         _modeButton.Flyout = modeMenu;
 
-        Button clear = IconButton(new ShapePath { Data = Geometry.Parse("M 10.2,4.2 A 4.6,4.6 0 1 0 10.9,8 M 10.6,0.9 L 10.4,4.5 L 6.9,4.2"), Stroke = Theme.TextSubtle, StrokeThickness = 1.4, Width = 12, Height = 12, Stretch = Stretch.Uniform }, "Clear: start the meter from zero");
+        Button clear = IconButton(new ShapePath { Data = Geometry.Parse("M 10.2,4.2 A 4.6,4.6 0 1 0 10.9,8 M 10.6,0.9 L 10.4,4.5 L 6.9,4.2"), Stroke = Palette.TextSubtle, StrokeThickness = 1.4, Width = 12, Height = 12, Stretch = Stretch.Uniform }, "Clear: start the meter from zero");
         clear.Click += (_, _) => _engine.Clear();
         _pauseButton = IconButton(_pauseIcon, "Pause: nothing is counted until you go on");
         _pauseButton.Click += (_, _) =>
@@ -110,7 +110,7 @@ internal sealed class MeterView : Border
         };
         _lockButton = IconButton(_lockIcon, "Lock: the meter lets the clicks through to the game (this button stays)");
         _lockButton.Click += (_, _) => LockClicked?.Invoke();
-        Button close = IconButton(new ShapePath { Data = Geometry.Parse("M 1,1 L 11,11 M 11,1 L 1,11"), Stroke = Theme.TextSubtle, StrokeThickness = 1.5, Width = 10, Height = 10, Stretch = Stretch.Uniform }, "Close Atreia App");
+        Button close = IconButton(new ShapePath { Data = Geometry.Parse("M 1,1 L 11,11 M 11,1 L 1,11"), Stroke = Palette.TextSubtle, StrokeThickness = 1.5, Width = 10, Height = 10, Stretch = Stretch.Uniform }, "Close Atreia App");
         close.Click += (_, _) => CloseClicked?.Invoke();
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
@@ -146,7 +146,7 @@ internal sealed class MeterView : Border
         fought.Children.Add(rateLine);
         foreach (MeterEngine.MeterScope scope in new[] { MeterEngine.MeterScope.Me, MeterEngine.MeterScope.Group, MeterEngine.MeterScope.Corps, MeterEngine.MeterScope.All })
         {
-            var label = Text(12, FontWeight.Normal, Theme.TextMuted);
+            var label = Text(12, FontWeight.Normal, Palette.TextMuted);
             label.Text = scope.ToString();
             var pill = new Border { Child = label, Padding = new Thickness(8, 2, 8, 3), CornerRadius = new CornerRadius(5), Tag = scope, Background = Brushes.Transparent, Cursor = new Cursor(StandardCursorType.Hand) };
             pill.PointerPressed += (_, e) =>
@@ -157,7 +157,7 @@ internal sealed class MeterView : Border
             _scopes.Children.Add(pill);
         }
 
-        var scopeBox = new Border { Child = _scopes, Background = Theme.Control, CornerRadius = new CornerRadius(7), Padding = new Thickness(2), VerticalAlignment = VerticalAlignment.Bottom };
+        var scopeBox = new Border { Child = _scopes, Background = Palette.Control, CornerRadius = new CornerRadius(7), Padding = new Thickness(2), VerticalAlignment = VerticalAlignment.Bottom };
         var middle = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(12, 2, 12, 2) };
         Place(middle, fought, 0);
         Place(middle, scopeBox, 1);
@@ -178,8 +178,8 @@ internal sealed class MeterView : Border
         {
             Padding = new Thickness(8, 2, 8, 3),
             Margin = new Thickness(8, 0, 0, 0),
-            Background = Theme.Control,
-            BorderBrush = Theme.Border,
+            Background = Palette.Control,
+            BorderBrush = Palette.Border,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(5),
             VerticalAlignment = VerticalAlignment.Center,
@@ -196,7 +196,7 @@ internal sealed class MeterView : Border
 
         var dock = new DockPanel { LastChildFill = true };
         DockPanel.SetDock(head, Dock.Top);
-        var rule = new Border { Height = 1, Background = Theme.Separator, Margin = new Thickness(10, 0, 10, 4) };
+        var rule = new Border { Height = 1, Background = Palette.Separator, Margin = new Thickness(10, 0, 10, 4) };
         DockPanel.SetDock(rule, Dock.Top);
         DockPanel.SetDock(middle, Dock.Top);
         DockPanel.SetDock(_bossLine, Dock.Top);
@@ -226,8 +226,8 @@ internal sealed class MeterView : Border
         _lockIcon.Data = Geometry.Parse(locked
             ? "M 2,6 L 10,6 L 10,12 L 2,12 Z M 3.6,6 L 3.6,4 A 2.4,2.4 0 0 1 8.4,4 L 8.4,6"
             : "M 2,6 L 10,6 L 10,12 L 2,12 Z M 3.6,6 L 3.6,4 A 2.4,2.4 0 0 1 8.4,4 L 8.4,4.6");
-        _lockIcon.Fill = locked ? Theme.Accent : Theme.TextSubtle;
-        _lockIcon.Stroke = locked ? Theme.Accent : Theme.TextSubtle;
+        _lockIcon.Fill = locked ? Palette.Accent : Palette.TextSubtle;
+        _lockIcon.Stroke = locked ? Palette.Accent : Palette.TextSubtle;
         ToolTip.SetTip(_lockButton, locked ? "Unlock: the meter takes the mouse again" : "Lock: the meter lets the clicks through to the game (this button stays)");
     }
 
@@ -235,7 +235,7 @@ internal sealed class MeterView : Border
     public void ShowStatus(string text, bool warning, string? action = null)
     {
         _status.Text = text;
-        _status.Foreground = warning ? Theme.Warning : Theme.TextMuted;
+        _status.Foreground = warning ? Palette.Warning : Palette.TextMuted;
         _status.IsVisible = text.Length > 0;
         _statusActionText = action;
         _statusAction.Content = action;
@@ -258,7 +258,7 @@ internal sealed class MeterView : Border
         _modeText.Text = _engine.Unit;
 
         _pauseIcon.Data = Geometry.Parse(_engine.Paused ? "M 2,1 L 11,6.5 L 2,12 Z" : "M 2,1 L 5,1 L 5,12 L 2,12 Z M 7,1 L 10,1 L 10,12 L 7,12 Z");
-        _pauseIcon.Fill = _engine.Paused ? Theme.Warning : Theme.TextSubtle;
+        _pauseIcon.Fill = _engine.Paused ? Palette.Warning : Palette.TextSubtle;
         ToolTip.SetTip(_pauseButton, _engine.Paused ? "Go on counting" : "Pause: nothing is counted until you go on");
 
         _target.Text = _engine.TargetText;
@@ -267,10 +267,10 @@ internal sealed class MeterView : Border
         foreach (Border pill in _scopes.Children.OfType<Border>())
         {
             bool on = pill.Tag is MeterEngine.MeterScope s && s == _engine.ShownScope;
-            pill.Background = on ? Theme.ScopeOn : Brushes.Transparent;
+            pill.Background = on ? Palette.ScopeOn : Brushes.Transparent;
             if (pill.Child is TextBlock label)
             {
-                label.Foreground = on ? Theme.Accent : Theme.TextMuted;
+                label.Foreground = on ? Palette.Accent : Palette.TextMuted;
             }
         }
 
@@ -293,11 +293,11 @@ internal sealed class MeterView : Border
         _bossName.Text = named && boss.Max > 0 ? share + " left" : boss.Name.Length > 0 ? boss.Name : loc["Overlay.BossBar.Boss"];
         bool rageFirst = boss.Kill is TimeSpan k && boss.Rage is TimeSpan r && r > TimeSpan.Zero && k > r;
         _bossKill.Text = boss.Kill is TimeSpan dies ? string.Format(CultureInfo.CurrentCulture, loc["Overlay.BossLine.Kill"], Clock(dies)) : loc["Overlay.BossLine.NoKill"];
-        _bossKill.Foreground = boss.Kill is null ? Theme.TextMuted : rageFirst ? Theme.Danger : Theme.Green;
+        _bossKill.Foreground = boss.Kill is null ? Palette.TextMuted : rageFirst ? Palette.Danger : Palette.Green;
         if (boss.Rage is TimeSpan left)
         {
             _bossRage.Text = left > TimeSpan.Zero ? string.Format(CultureInfo.CurrentCulture, loc["Overlay.BossLine.Enrage"], Clock(left)) : loc["Overlay.Enraged"];
-            _bossRage.Foreground = left <= TimeSpan.FromSeconds(20) ? Theme.Danger : left <= TimeSpan.FromSeconds(60) ? Theme.Amber : Theme.TextMuted;
+            _bossRage.Foreground = left <= TimeSpan.FromSeconds(20) ? Palette.Danger : left <= TimeSpan.FromSeconds(60) ? Palette.Amber : Palette.TextMuted;
             _bossRage.IsVisible = true;
         }
         else
@@ -412,11 +412,11 @@ internal sealed class RowView : Grid
 {
     private readonly FillBar _bar = new();
     private readonly Image _icon = new() { Width = 18, Height = 18, Margin = new Thickness(8, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
-    private readonly TextBlock _name = MeterView.Text(13, FontWeight.SemiBold, Theme.OverlayText);
-    private readonly TextBlock _power = MeterView.Text(11, FontWeight.Normal, Theme.TextMuted);
-    private readonly TextBlock _rate = MeterView.Text(14, FontWeight.Bold, Theme.OverlayText);
-    private readonly TextBlock _share = MeterView.Text(12, FontWeight.Normal, Theme.TextMuted);
-    private readonly TextBlock _total = MeterView.Text(12, FontWeight.Normal, Theme.TextSubtle);
+    private readonly TextBlock _name = MeterView.Text(13, FontWeight.SemiBold, Palette.OverlayText);
+    private readonly TextBlock _power = MeterView.Text(11, FontWeight.Normal, Palette.TextMuted);
+    private readonly TextBlock _rate = MeterView.Text(14, FontWeight.Bold, Palette.OverlayText);
+    private readonly TextBlock _share = MeterView.Text(12, FontWeight.Normal, Palette.TextMuted);
+    private readonly TextBlock _total = MeterView.Text(12, FontWeight.Normal, Palette.TextSubtle);
 
     public RowView()
     {
@@ -460,7 +460,7 @@ internal sealed class RowView : Grid
         _power.Text = row.CombatPowerText;
         _power.IsVisible = row.CombatPowerText.Length > 0;
         _rate.Text = row.DpsCompact;
-        _rate.Foreground = mode == MeterEngine.MeterMode.Heal ? Theme.Heal : Theme.OverlayText;
+        _rate.Foreground = mode == MeterEngine.MeterMode.Heal ? Palette.Heal : Palette.OverlayText;
         _share.Text = row.ShareDisplay;
         _total.Text = row.DamageCompact;
     }
