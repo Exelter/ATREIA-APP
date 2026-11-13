@@ -15,6 +15,12 @@
           "title": "Only your own fight in the open world",
           "text": "When the open world was counted (its switch, the Grind switch, a boss nearby, or after the app started or restarted for an update in the middle of a game, until your next loading screen), the meter took in every hit around you, so on All it listed every player killing monsters near you. Now it counts only your fight there: you, your group and your summons, the monsters you fight and the other players hitting those, and an open-world boss with everybody at it. Dungeons and arenas count everything, as before.",
           "example": "Grinding Kerubiel with the meter on All: only you and the player who hits your Kerubiel too are on it, not the five players killing monsters next to you."
+        },
+        {
+          "kind": "new",
+          "area": "Skill Assist",
+          "title": "Pick the buffs you want to watch",
+          "text": "The Buffs tab listed only the effects on you right now, so you couldn't choose a buff before it came. Under them it now lists the buffs you can get: your class's own and the ones you've had before. Untick one to keep it off the overlay, or switch on “Only the buffs I tick” and tick just the ones you want to see."
         }
       ]
     },

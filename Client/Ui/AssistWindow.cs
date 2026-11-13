@@ -82,6 +82,27 @@ public sealed class AssistWindow : Window
         });
         _effects.ShowInOverlayChanged = _panel.ShowInOverlayChanged;
         _effects.SortByTime = settings.AssistSortByTime;
+        // the buffs: unticked ones (by key), or only the ticked ones; the ones the character had, to list when they are not on it
+        _effects.HiddenEffects = settings.AssistBuffsHidden.ToHashSet();
+        _effects.EffectHiddenChanged = (key, hidden) => Change(s =>
+        {
+            s.AssistBuffsHidden.Remove(key);
+            if (hidden)
+            {
+                s.AssistBuffsHidden.Add(key);
+            }
+        });
+        _effects.PickedOnly = settings.AssistBuffsPickedOnly;
+        _effects.Picked = settings.AssistBuffsPicked.ToHashSet();
+        _effects.PickedChanged = (key, on) => Change(s =>
+        {
+            s.AssistBuffsPicked.Remove(key);
+            if (on)
+            {
+                s.AssistBuffsPicked.Add(key);
+            }
+        });
+        _effects.Seen = settings.AssistBuffsSeen.ToDictionary(kv => kv.Key, kv => kv.Value.ToList());
         // the class's other skills ticked to show on the screen too
         _panel.Extra = settings.AssistExtraSkills.ToHashSet();
         _panel.ExtraChanged = (id, shown) => Change(s =>
@@ -113,6 +134,12 @@ public sealed class AssistWindow : Window
         {
             _effects.SortByTime = on;
             Change(s => s.AssistSortByTime = on);
+            _effects.Refresh(_directory());
+        }));
+        buffSwitches.Children.Add(Switch(loc["Assist.PickedOnly"], settings.AssistBuffsPickedOnly, on =>
+        {
+            _effects.PickedOnly = on;
+            Change(s => s.AssistBuffsPickedOnly = on);
             _effects.Refresh(_directory());
         }));
         buffSwitches.Children.Add(OverlayControls.ResetButton(OverlayPlaces.Effects));
@@ -205,7 +232,12 @@ public sealed class AssistWindow : Window
         showAll.Click += (_, _) =>
         {
             _panel.Hidden.Clear();
-            Change(s => s.AssistOverlayHidden.Clear());
+            _effects.HiddenEffects.Clear();
+            Change(s =>
+            {
+                s.AssistOverlayHidden.Clear();
+                s.AssistBuffsHidden.Clear();
+            });
             list.Refresh(_directory());
         };
         DockPanel.SetDock(showAll, Dock.Right);

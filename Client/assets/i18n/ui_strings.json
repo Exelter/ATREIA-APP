@@ -8680,6 +8680,42 @@
     "ko": "효과의 체크를 해제하면 목록과 오버레이에서 빠집니다.",
     "zh-TW": "取消勾選某個效果，即可將其從清單和浮動視窗中移除。"
   },
+  "Assist.PickedOnly": {
+    "en": "Only the buffs I tick",
+    "de": "Nur die Buffs, die ich ankreuze",
+    "fr": "Seulement les buffs que je coche",
+    "es": "Solo los buffs que marque",
+    "ru": "Только отмеченные баффы",
+    "zh": "只显示我勾选的增益",
+    "pt": "Só os buffs que eu marcar",
+    "ja": "チェックしたバフだけ",
+    "ko": "체크한 버프만",
+    "zh-TW": "只顯示我勾選的增益"
+  },
+  "Assist.OtherBuffs": {
+    "en": "Buffs you can get",
+    "de": "Buffs, die du bekommen kannst",
+    "fr": "Buffs que tu peux recevoir",
+    "es": "Buffs que puedes recibir",
+    "ru": "Баффы, которые можно получить",
+    "zh": "你可以获得的增益",
+    "pt": "Buffs que você pode receber",
+    "ja": "受けられるバフ",
+    "ko": "받을 수 있는 버프",
+    "zh-TW": "你可以獲得的增益"
+  },
+  "Assist.OtherBuffsHint": {
+    "en": "Your class's buffs and the ones you've had before, while they aren't on you. Untick one to keep it off the overlay; with “Only the buffs I tick”, tick the ones you want to see.",
+    "de": "Die Buffs deiner Klasse und die, die du schon hattest, solange sie nicht auf dir sind. Nimm den Haken weg, um einen vom Overlay fernzuhalten; mit „Nur die Buffs, die ich ankreuze“ kreuzt du die an, die du sehen willst.",
+    "fr": "Les buffs de ta classe et ceux que tu as déjà eus, tant qu'ils ne sont pas sur toi. Décoche-en un pour le garder hors de l'overlay ; avec « Seulement les buffs que je coche », coche ceux que tu veux voir.",
+    "es": "Los buffs de tu clase y los que ya tuviste, mientras no estén sobre ti. Desmarca uno para dejarlo fuera del overlay; con «Solo los buffs que marque», marca los que quieras ver.",
+    "ru": "Баффы твоего класса и те, что уже были на тебе, пока их нет. Сними галочку, чтобы не показывать бафф на оверлее; с «Только отмеченные баффы» отметь те, что хочешь видеть.",
+    "zh": "你职业的增益和你之前获得过的增益（当前不在你身上时）。取消勾选可让它不出现在悬浮窗中；开启「只显示我勾选的增益」后，勾选你想看到的。",
+    "pt": "Os buffs da sua classe e os que você já teve, enquanto não estiverem em você. Desmarque um para deixá-lo fora do overlay; com “Só os buffs que eu marcar”, marque os que quer ver.",
+    "ja": "自分のクラスのバフと、以前に受けたバフ（今は付いていないもの）。チェックを外すとオーバーレイに出なくなります。「チェックしたバフだけ」では、見たいものにチェックを入れます。",
+    "ko": "내 직업의 버프와 전에 받았던 버프(지금 걸려 있지 않은 것). 체크를 해제하면 오버레이에 나오지 않습니다. 「체크한 버프만」을 켜면 보고 싶은 버프에 체크하세요.",
+    "zh-TW": "你職業的增益和你之前獲得過的增益（目前不在你身上時）。取消勾選可讓它不出現在浮動視窗中；開啟「只顯示我勾選的增益」後，勾選你想看到的。"
+  },
   "Assist.Cooldowns": {
     "en": "Cooldowns",
     "de": "Abklingzeiten",

@@ -356,6 +356,22 @@ public sealed class MeterSettings
     /// <summary>Assist window and overlay: list the effects with the least time left first (renewed auras, which never run out, come last). Off: in the order they first appeared.</summary>
     public bool AssistSortByTime { get; set; }
 
+    /// <summary>The effects overlay shows only the buffs ticked in the Buffs tab (<see cref="AssistBuffsPicked"/>); off, every effect but the unticked ones
+    /// (13 November 2026, a player: "it wont show what buffs my character can gain so i cant choose which ones i want to see").</summary>
+    public bool AssistBuffsPickedOnly { get; set; }
+
+    /// <summary>The buffs ticked to show with <see cref="AssistBuffsPickedOnly"/>, by their key (a class skill's effects by the skill's id, any other by its
+    /// own; see AssistPanel.EffectKey).</summary>
+    public List<int> AssistBuffsPicked { get; set; } = new();
+
+    /// <summary>The buffs unticked in the Buffs tab, by their key: the overlay leaves them out (the cooldowns' unticked skills are in
+    /// <see cref="AssistOverlayHidden"/>, which also still holds effects unticked before 13 November 2026, by their own id).</summary>
+    public List<int> AssistBuffsHidden { get; set; } = new();
+
+    /// <summary>The buffs that were on the characters, by class (its two digits, 0 unknown) and key, the newest 300 of each: the Buffs tab lists them to tick
+    /// or untick while they are not on the character.</summary>
+    public Dictionary<int, List<int>> AssistBuffsSeen { get; set; } = new();
+
     /// <summary>The Skill Assist tab chosen last: "cooldowns" or "buffs" (<see cref="AssistWindow.CooldownsTab"/>, <see cref="AssistWindow.BuffsTab"/>).</summary>
     public string AssistTab { get; set; } = "cooldowns";
 

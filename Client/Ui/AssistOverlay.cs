@@ -103,6 +103,11 @@ public sealed class AssistController : IDisposable
     private MeterSettings _settings = MeterSettings.Load();
     private DateTime _settingsAt = DateTime.UtcNow;
     private HashSet<int> _hidden = new();
+
+    /// <summary>The buffs unticked (by key), and the ticked ones for "only the buffs I tick" (see <see cref="MeterSettings.AssistBuffsHidden"/>).</summary>
+    private HashSet<int> _hiddenBuffs = new(), _pickedBuffs = new();
+
+    private DateTime _seenAt = DateTime.MinValue;
     private int _placesSeen = PlacesVersion;
     private CooldownEditBar? _editBar;
 
@@ -371,13 +376,22 @@ public sealed class AssistController : IDisposable
         s.Save();
         _settings = s;
         _settingsAt = DateTime.UtcNow;
-        _hidden = s.AssistOverlayHidden.ToHashSet();
+        TakeLists(s);
         EditBarChanged?.Invoke();
+    }
+
+    /// <summary>What the overlays leave out or show, from the settings.</summary>
+    private void TakeLists(MeterSettings s)
+    {
+        _hidden = s.AssistOverlayHidden.ToHashSet();
+        _hiddenBuffs = s.AssistBuffsHidden.ToHashSet();
+        _pickedBuffs = s.AssistBuffsPicked.ToHashSet();
     }
 
     public AssistController(Func<Aion2EntityDirectory?> directory)
     {
         _directory = directory;
+        TakeLists(_settings);
         Aion2Cooldowns.SeedLearned(_settings.AssistNoCooldownSkills);
         Aion2Cooldowns.SeedKnown(_settings.AssistKnownSkills);
         Aion2Cooldowns.SeedGaps(_settings.AssistCooldownGaps);
@@ -428,13 +442,57 @@ public sealed class AssistController : IDisposable
             _reloadAsked = false;
             _settings = MeterSettings.Load();
             _settingsAt = DateTime.UtcNow;
-            _hidden = _settings.AssistOverlayHidden.ToHashSet();
+            TakeLists(_settings);
             Keep();
         }
 
+        NoteSeenBuffs();
         bool inGame = GameWindow.OverlayMayShow();
         RunSkills(inGame);
         Run(ref _effects, _settings.EffectsOverlayOn, inGame);
+    }
+
+    /// <summary>
+    /// The buffs that come on the character, kept by class (once a second, a new one written at once): the Buffs tab lists them to tick or untick while
+    /// they are not on it, with the class's own (13 November 2026, a player: "it wont show what buffs my character can gain").
+    /// </summary>
+    private void NoteSeenBuffs()
+    {
+        if (DateTime.UtcNow - _seenAt < TimeSpan.FromSeconds(1) || _directory() is not { LocalPlayerId: >= 0 and int self } dir)
+        {
+            return;
+        }
+
+        _seenAt = DateTime.UtcNow;
+        int cls = Aion2Cooldowns.CurrentClass(SkillBars.For(dir));
+        List<int>? seen = _settings.AssistBuffsSeen.TryGetValue(cls, out List<int>? had) ? had : null;
+        var fresh = new List<int>();
+        foreach (var group in dir.Combat.BuffsOn(self, DateTime.Now).GroupBy(b => AssistPanel.EffectKey(b.SkillId)))
+        {
+            int id = group.First().SkillId;
+            if (seen?.Contains(group.Key) != true && !Aion2.Protocol.Aion2Artwork.IsDebuffEffect(id) && AssistPanel.ListedEffect(id, group.All(b => b.DurationMs < 0)))
+            {
+                fresh.Add(group.Key);
+            }
+        }
+
+        if (fresh.Count == 0)
+        {
+            return;
+        }
+
+        var s = MeterSettings.Load();
+        List<int> list = s.AssistBuffsSeen.TryGetValue(cls, out List<int>? kept) ? kept : (s.AssistBuffsSeen[cls] = new List<int>());
+        list.AddRange(fresh.Where(key => !list.Contains(key)));
+        if (list.Count > 300)
+        {
+            list.RemoveRange(0, list.Count - 300);
+        }
+
+        s.Save();
+        _settings = s;
+        _settingsAt = DateTime.UtcNow;
+        TakeLists(s);
     }
 
     /// <summary>What the cooldowns learned (the skills with none, the skills with one, the gaps between uses), kept for the next start.</summary>
@@ -821,6 +879,9 @@ public sealed class AssistController : IDisposable
         window ??= new AssistOverlayWindow(true);
         window.ApplyLockedIfChanged(locked);
         window.Panel.Hidden = _hidden;
+        window.Panel.HiddenEffects = _hiddenBuffs;
+        window.Panel.Picked = _pickedBuffs;
+        window.Panel.PickedOnly = _settings.AssistBuffsPickedOnly;
         window.Panel.SortByTime = _settings.AssistSortByTime;
         window.Panel.Look = _settings.AssistCooldownStyle == CooldownArt.Tiles ? CooldownArt.Tiles : CooldownArt.Bars;
         window.Panel.BarWidth = Math.Clamp(_settings.AssistBarWidth, 90, 400);

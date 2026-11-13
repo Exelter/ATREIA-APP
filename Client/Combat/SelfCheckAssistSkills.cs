@@ -121,6 +121,23 @@ public static class SelfCheckAssistSkills
             Aion2.Protocol.Aion2Artwork.IsWorldEffectName("Test PLATE Equippable") && Aion2.Protocol.Aion2Artwork.IsWorldEffectName("Test_PLATE Equippable")
             && !Aion2.Protocol.Aion2Artwork.IsWorldEffectName("Poison") && !Aion2.Protocol.Aion2Artwork.IsWorldEffectName("Testudo Guard"), "names");
         Check("a scroll and a boss's timed zone stay", !Ui.AssistPanel.IsWorldEffect(4321, "Courage Scroll", false) && !Ui.AssistPanel.IsWorldEffect(4322, "Flame Zone", false), "timed");
+        // the Buffs tab (13 November 2026, a player: "it wont show what buffs my character can gain so i cant choose which ones i want to see"): a class
+        // skill's effects are one buff by the skill (Sprint Mantra 18160032 and 18160002: 18160000), any other effect its own (Courage Scroll 2210105); a
+        // Templar's skills give Shield of Protection and Noble Armor, no basic attack and nothing of another class; an unticked buff stays off the overlay
+        // (and one unticked by its own id before), and with "only the buffs I tick" only a ticked one shows
+        bool keys = Ui.AssistPanel.EffectKey(18160032) == 18160000 && Ui.AssistPanel.EffectKey(18160002) == 18160000 && Ui.AssistPanel.EffectKey(2210105) == 2210105;
+        IReadOnlyList<int> templarBuffs = Ui.AssistPanel.ClassBuffs(12);
+        bool classBuffs = templarBuffs.Contains(12110000) && templarBuffs.Contains(12230000) && !templarBuffs.Contains(12010000)
+            && templarBuffs.All(id => id / 1_000_000 == 12 && id % 10_000 == 0) && Ui.AssistPanel.ClassBuffs(0).Count == 0;
+        var noIds = new HashSet<int>();
+        bool picks = Ui.AssistPanel.Shows(18160000, new[] { 18160032 }, false, noIds, noIds, noIds)
+            && !Ui.AssistPanel.Shows(18160000, new[] { 18160032 }, false, noIds, new HashSet<int> { 18160000 }, noIds)
+            && !Ui.AssistPanel.Shows(18160000, new[] { 18160032 }, false, noIds, noIds, new HashSet<int> { 18160032 })
+            && !Ui.AssistPanel.Shows(2210105, new[] { 2210105 }, true, noIds, noIds, noIds)
+            && Ui.AssistPanel.Shows(2210105, new[] { 2210105 }, true, new HashSet<int> { 2210105 }, new HashSet<int> { 2210105 }, noIds);
+        Check("the Buffs tab: an effect's key, the buffs a Templar can get, unticked and ticked buffs", keys && classBuffs && picks,
+            $"keys {keys}, {templarBuffs.Count} Templar buffs ({string.Join(", ", templarBuffs.Select(id => Aion2.Protocol.Aion2SkillNames.NameOf(id)))}) {classBuffs}, choices {picks}");
+
         // the class's other skills offered to tick onto the screen (5 November 2026): a Templar's Doom Shield and Shield of Protection are both there,
         // a basic attack (Vicious Strike) and a filler (Pummel) are not; no class known, none
         var templar = Aion2Cooldowns.ClassSkills(12);
