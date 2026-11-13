@@ -10,7 +10,8 @@ name: Build a release for atreia.app
 # said. A version with a suffix ("1.21.0-alpha.1") is a test release. Test versions are compared letter by letter, capitals before small letters: after
 # "1.21.0-Beta" comes "1.21.0-Beta.2" (not "1.21.0-alpha.2", which counts as older, so an installed test copy would never be offered it).
 #
-# Releases are not published on GitHub (9 November 2026): the installer and the updates are on the website. This builds the release, runs the checks,
+# Releases are not published on GitHub by this (9 November 2026): the installer and the updates are on the website (a release can be put on GitHub's
+# Releases page as well afterwards, by hand: github-release.yml, from this run's artifacts). This builds the release, runs the checks,
 # and puts it straight on atreia.app: into the site's file storage (Cloudflare R2, bucket "atreia-app"), which the site serves its downloads and the
 # app's updates from (the site's src/gate.js, appFile). It needs the repository secrets R2_ENDPOINT, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY.
 # Without them, the result is only kept as the run's artifact ("Atreia-App-v<version>"), to put on the site by hand: drag it onto the site folder's
