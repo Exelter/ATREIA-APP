@@ -124,6 +124,7 @@ internal sealed class MeterWindow : Window
     public void StartCapture(MeterSettings settings)
     {
         _rights = CaptureRights.Check();
+        LinuxLog.Write($"{Brand.AppName} {Update.AppVersion.Text} starts; capture rights: {_rights}; {CaptureCheck.Summary()}");
         if (_rights != CaptureRights.Rights.Granted)
         {
             _engine.ApplySettings(settings);
@@ -180,6 +181,7 @@ internal sealed class MeterWindow : Window
         if (newer != _newVersion)
         {
             _newVersion = newer;
+            LinuxLog.Write(newer is null ? "update check: this is the newest" : $"update check: {newer} is out");
             ShowStatus();
         }
     }
@@ -246,6 +248,7 @@ internal sealed class MeterWindow : Window
     }
 
     private (int X, int Y, int W, int H)? _shapeApplied;
+    private bool _shapeFailSaid;
 
     /// <summary>Locked: only the lock button takes the mouse; unlocked: the whole window.</summary>
     private void ApplyClickThrough()
@@ -261,6 +264,7 @@ internal sealed class MeterWindow : Window
             {
                 X11Shape.ClearInputRegion(handle.Handle);
                 _shapeApplied = null;
+                LinuxLog.Write("input region: the whole window again");
             }
 
             return;
@@ -282,6 +286,12 @@ internal sealed class MeterWindow : Window
         if (X11Shape.SetInputRegion(handle.Handle, new[] { part }))
         {
             _shapeApplied = part;
+            LinuxLog.Write($"input region: the lock button alone ({part.Item1},{part.Item2} {part.Item3}x{part.Item4} px): the clicks go through the rest");
+        }
+        else if (!_shapeFailSaid)
+        {
+            _shapeFailSaid = true;
+            LinuxLog.Write("input region: no X server to ask (a Wayland-only window): the locked meter still takes its clicks");
         }
     }
 
