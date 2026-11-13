@@ -241,8 +241,32 @@ public sealed class EnemyCardWindow : MovableOverlay
     }
 }
 
-/// <summary>Runs the enemy card: a few times a second it reads the selection, and shows the card while the game is in front and an enemy player is selected
-/// (a sample while it is placed).</summary>
+/// <summary>
+/// How long the enemy card stays (13 November 2026, the owner: "should disappear after 10 seconds"; a player had the card of an enemy he kept selected over the
+/// game for ten minutes): ten seconds from when it came up for a selection. Selecting him again, or another player, brings it back for ten more.
+/// </summary>
+public sealed class EnemyCardClock
+{
+    public static readonly TimeSpan ShownFor = TimeSpan.FromSeconds(10);
+    private (int EntityId, DateTime At)? _selection;
+    private DateTime _since;
+
+    /// <summary>Whether the card of <paramref name="selection"/> (the selected player and when he was selected) still shows at <paramref name="now"/>; the first
+    /// call for a selection starts its ten seconds.</summary>
+    public bool Shows((int EntityId, DateTime At) selection, DateTime now)
+    {
+        if (_selection != selection)
+        {
+            _selection = selection;
+            _since = now;
+        }
+
+        return now - _since < ShownFor;
+    }
+}
+
+/// <summary>Runs the enemy card: a few times a second it reads the selection, and shows the card for ten seconds when an enemy player is selected
+/// (<see cref="EnemyCardClock"/>), while the game is in front (a sample while it is placed).</summary>
 public sealed class EnemyCardController : IDisposable
 {
     private readonly System.Windows.Threading.DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(250) };
@@ -252,6 +276,7 @@ public sealed class EnemyCardController : IDisposable
     private DateTime _settingsAt = DateTime.UtcNow;
     private int? _ownPower;
     private DateTime _ownPowerAt = DateTime.MinValue;
+    private readonly EnemyCardClock _clock = new();
 
     // What the website and the official pages told of players the game's frame told too little of (by "name|server"), and the lookups going on.
     private readonly Dictionary<string, (FoundPlayer? Found, int? CombatPower, int? ItemLevel, DateTime At)> _looked = new(StringComparer.OrdinalIgnoreCase);
@@ -320,6 +345,13 @@ public sealed class EnemyCardController : IDisposable
 
         // never in a dungeon or raid (only its sample while it is being placed)
         EnemyCardData? card = dir is null || Aion2.Protocol.Aion2Zones.IsPveHere(dir.ZoneId, dir.LiveMobs) ? null : EnemyCardData.Of(dir, _settings.EnemyCardAllies, _ownPower);
+        // ten seconds a selection, then it goes (nothing more is looked up for it either)
+        bool over = card is not null && dir?.OwnTarget is { } selection && !_clock.Shows(selection, DateTime.UtcNow);
+        if (over)
+        {
+            card = null;
+        }
+
         if (card is { Incomplete: true } && dir is not null)
         {
             card = Complete(card, dir);
@@ -340,7 +372,8 @@ public sealed class EnemyCardController : IDisposable
         if (dir?.OwnTarget is { } target && dir.IsPlayer(target.EntityId) && target.EntityId != dir.LocalPlayerId)
         {
             string who = dir.NameFor(target.EntityId) ?? "a player";
-            string state = card is null || card.Sample ? $"{who} selected: not taken for an enemy (faction {dir.FactionOf(target.EntityId) ?? "unknown"}, own {EnemyCardData.OwnFaction(dir) ?? "unknown"})"
+            string state = over ? $"{who} selected: the card went after its {EnemyCardClock.ShownFor.TotalSeconds:0} seconds"
+                : card is null || card.Sample ? $"{who} selected: not taken for an enemy (faction {dir.FactionOf(target.EntityId) ?? "unknown"}, own {EnemyCardData.OwnFaction(dir) ?? "unknown"})"
                 : mayShow ? $"{who} shown" : $"{who} hidden: the game is not the window in front";
             PvpLog.Note("card", state, state);
         }

@@ -587,7 +587,7 @@ public partial class MainWindow
             new("FPS and ping", "The game's frames per second and its 1% low (from Windows' own frame timing) and your ping to the game server (from the game's own "
                 + "traffic), side by side or either alone. Nothing touches the game.", s => s.ShowFpsOverlay,
                 (s, v) => s.ShowFpsOverlay = v, null, () => OverlayPlaces.Reset(OverlayPlaces.Fps), null, "fps", Pick: OverlayQuick.FpsShows),
-            new("Enemy card", "Select an enemy player in the Abyss: his class, level, Combat Power and item level, and how his Combat Power compares with yours.",
+            new("Enemy card", "Select an enemy player in the Abyss: for ten seconds, his class, level, Combat Power and item level, and how his Combat Power compares with yours.",
                 s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v, null, () => OverlayPlaces.Reset(OverlayPlaces.EnemyCard), null, "enemy",
                 new OverlayOption("Players of your side too", s => s.EnemyCardAllies, (s, v) => s.EnemyCardAllies = v)),
             new("Enemy radar", "Every enemy player in view, the strongest first, with class, Combat Power and your record against each; a warning when a much stronger one comes.",
