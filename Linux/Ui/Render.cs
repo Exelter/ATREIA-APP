@@ -45,6 +45,11 @@ internal static class Render
             Console.WriteLine("render: faces could not be listed: " + ex.Message);
         }
 
+        if (scene == "fonts")
+        {
+            return Fonts(output);
+        }
+
         using var engine = new MeterEngine();
         var settings = new MeterSettings { AutoScope = false, ViewScope = "Group" };
         if (scene is not ("waiting" or "permission"))
@@ -116,5 +121,32 @@ internal static class Render
         Console.WriteLine($"render: {scene} -> {output} ({frame.PixelSize.Width}x{frame.PixelSize.Height})");
         window.Close();
         return 0;
+    }
+
+    /// <summary>The faces side by side (a check of the look: the site's face must be the one drawn, not the system's).</summary>
+    private static int Fonts(string output)
+    {
+        var panel = new StackPanel { Margin = new Thickness(12), Spacing = 4 };
+        foreach ((string label, FontFamily family) in new[]
+        {
+            ("A2H Sans", Palette.UiFont),
+            ("A2H Sans, file", new FontFamily("avares://AtreiaApp/Fonts/A2HSans-Regular.ttf#A2H Sans")),
+            ("Inter", new FontFamily("fonts:Inter#Inter")),
+            ("DejaVu Sans", new FontFamily("DejaVu Sans")),
+            ("Cinzel", Palette.TitleFont),
+        })
+        {
+            foreach (FontWeight weight in new[] { FontWeight.Normal, FontWeight.SemiBold })
+            {
+                panel.Children.Add(new TextBlock { Text = $"{label} {weight}: Transcendent Bakarma 28.2K DPS 1:51", FontFamily = family, FontWeight = weight, FontSize = 15, Foreground = Brushes.White });
+            }
+        }
+
+        var window = new Window { Width = 560, Height = 330, Content = panel, Background = Brushes.Black, SystemDecorations = SystemDecorations.None };
+        window.Show();
+        WriteableBitmap? frame = window.CaptureRenderedFrame();
+        frame?.Save(output);
+        Console.WriteLine($"render: fonts -> {output}");
+        return frame is null ? 1 : 0;
     }
 }
