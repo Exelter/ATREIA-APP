@@ -79,12 +79,14 @@ jobs:
           set -eu
           sudo setcap cap_net_raw,cap_net_admin=eip out/atreia-app/AtreiaApp
           getcap out/atreia-app/AtreiaApp
+          out/atreia-app/AtreiaApp --version || echo "::warning::--version with the rights failed ($?)"
           out/atreia-app/AtreiaApp listen 14 > listen.txt 2>&1 &
           listener=$!
           sleep 5
           python3 Linux/packaging/ci/game-traffic.py
-          wait $listener
+          code=0; wait $listener || code=$?
           cat listen.txt
+          [ $code -eq 0 ] || { echo "::error::listen ended with $code"; exit 1; }
           hits=$(grep -c '^event:' listen.txt || true)
           if [ "$hits" -lt 4 ] || ! grep -q 'Keen Strike 588 crit' listen.txt || ! grep -q 'Blood Absorption 65 heal' listen.txt; then
             echo "::error::The capture read $hits hit(s) of the made-up game traffic (20 sent)."
