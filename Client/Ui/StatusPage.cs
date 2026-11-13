@@ -19,7 +19,7 @@ namespace AionDPS.Ui;
 /// Status (the column's bottom, 6 November 2026, the owner: "reliability before new features ... a small health panel and a one-click diagnostics report"):
 /// what the app is doing right now, each part with a dot - green when it works, amber when it waits for something, red when something is wrong - and one
 /// line of what it sees: the game connection, the character read, the Atreia account and the character's verification, the legion list and its send, the
-/// game window's pictures and what the app itself costs. "Copy the report" puts all of it on the clipboard as text to paste into a message;
+/// minimap, the game window's pictures and what the app itself costs. "Copy the report" puts all of it on the clipboard as text to paste into a message;
 /// nothing secret is in it (no sign-in token, no stream key, no file of the player's).
 /// </summary>
 internal sealed class StatusPage : Grid
@@ -251,7 +251,21 @@ internal sealed class StatusPage : Grid
             lines.Add(new Line(Loc["Status.Legion"], Mark.None, Loc["Status.LegionNone"]));
         }
 
-        // the game window's pictures (only the Black Cloud shop's marks take them, while that page is open)
+        // the minimap, and the game window's pictures it and the Black Cloud shop's marks take
+        string minimap = MinimapReader.State switch
+        {
+            MinimapReader.ReadState.Off => Loc["Cubes.MinimapOff"],
+            MinimapReader.ReadState.Searching => Loc["Cubes.MinimapSearching"],
+            MinimapReader.ReadState.Reading => F("Cubes.MinimapReading", MinimapReader.RecentFixes, Math.Round(MinimapReader.LastMs)),
+            MinimapReader.ReadState.NotSeen => Loc["Cubes.MinimapNotSeen"],
+            _ => Loc["Cubes.MinimapWaiting"],
+        };
+        lines.Add(new Line(Loc["Status.Minimap"], MinimapReader.State switch
+        {
+            MinimapReader.ReadState.Reading => Mark.Good,
+            MinimapReader.ReadState.Searching or MinimapReader.ReadState.NotSeen => Mark.Wait,
+            _ => Mark.None,
+        }, minimap));
         var (perSecond, average, longest, shared) = GameCapture.Stats(TimeSpan.FromSeconds(10));
         lines.Add(new Line(Loc["Status.Pictures"], perSecond > 4.5 || longest > 120 ? Mark.Wait : Mark.Good,
             perSecond <= 0 ? Loc["Status.PicturesNone"] : F("Status.PicturesRate", perSecond.ToString("0.0", CultureInfo.CurrentCulture), Math.Round(average), Math.Round(longest)),

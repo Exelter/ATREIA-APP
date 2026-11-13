@@ -12,7 +12,7 @@ public static partial class PrivacyConsent
     public const int Version = 6; // 3: the map accuracy data (5 November 2026); 4: the Genus and pets for the player window, the pictures of the game window (5 November 2026);
                                   // 5: every upload switched on with the answer (5 November 2026, the owner: "all these should be ticked since we requested consent");
                                   // 6: the map accuracy data names the game window's size and the minimap's zoom (10 November 2026);
-                                  // still 6: the map accuracy data and the pictures for the minimap and the game windows taken out (13 November 2026)
+                                  // still 6: the map accuracy data and the pictures for the game windows taken out (13 November 2026)
 
     public const int NotAsked = 0, Accepted = 1, Declined = 2;
 

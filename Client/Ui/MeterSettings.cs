@@ -940,6 +940,14 @@ public sealed class MeterSettings
 
     /// <summary>The steps of Home's "Get set up" card whose page was opened from it: done.</summary>
     public List<string> HomeSetupOpened { get; set; } = new();
+    /// <summary>The game's minimap is read for an exact own position (MinimapReader: the game window's picture matched against the map, while a Hidden Cube is in
+    /// range or the map overlay is on). On by default (the owner, 2 Nov 2026), with a note on the meter the first time it gives a position.</summary>
+    public bool MinimapReading { get; set; } = true;
+    /// <summary>The note that the minimap is read was shown once.</summary>
+    public bool MinimapNoticeShown { get; set; }
+    /// <summary>Where the minimap is on screen, per game window size ("2560x1440"): its middle x, y and radius in the window's pixels, and metres per pixel.
+    /// Found by the reader itself.</summary>
+    public Dictionary<string, double[]> MinimapLayouts { get; set; } = new();
     /// <summary>Buff alerts (MainWindow.BuffAlerts.cs): a line on the meter when a damage buff, a scroll or food drops off the player while he fights. On by default.</summary>
     public bool BuffDropAlert { get; set; } = true;
     /// <summary>The buff alert's sound (Windows' exclamation). Off by default.</summary>

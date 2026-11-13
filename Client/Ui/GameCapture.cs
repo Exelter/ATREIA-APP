@@ -8,8 +8,8 @@ namespace AionDPS.Ui;
 /// The game window's picture, taken once for everyone who needs it (6 November 2026, the lag: the HUD watcher and the minimap reader each drew the whole
 /// window with PrintWindow, up to eight times a second together at 2560x1440, and the game feels every one). A picture younger than what the asker can live
 /// with is handed out again instead of a new one; one at a time, so two never overlap. What it costs is counted for the Status page.
-/// Since 2.0.21 (13 November 2026) only the Black Cloud shop's marks take pictures, while that page is open: the HUD watcher and the minimap reader were
-/// taken out (the owner, after a tester's Discord stream of the game kept pausing while the app ran).
+/// Since 2.0.21 (13 November 2026) the HUD watcher takes none (the owner, after a tester's Discord stream of the game kept pausing while the app ran): only the
+/// minimap reader (while a Hidden Cube is near or the map overlay is on) and the Black Cloud shop's marks (while that page is open) do.
 /// </summary>
 internal static class GameCapture
 {

@@ -52,6 +52,7 @@ public static class SelfCheck
         ok &= SelfCheckVerify.Run();
         ok &= SelfCheckPetRoute.Run();
         ok &= SelfCheckPositionTrack.Run();
+        ok &= SelfCheckMinimap.Run();
         ok &= SelfCheckAssistSkills.Run();
         ok &= SelfCheckNaturalVoice.Run();
         ok &= SelfCheckInstanceTimer.Run();

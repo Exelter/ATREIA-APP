@@ -13222,7 +13222,7 @@
     "zh-TW": "用戶端讀取和上傳的內容"
   },
   "Privacy.Text": {
-    "en": "The meter reads the game's network traffic on your PC, passively; it never sends anything to the game. When you accept, the sharing below is switched on; you can switch any of it off at any time in Settings > Upload, and a switch turned off sends nothing more. The Combat Power changes and the look-ups near the end of this list need no account; everything else goes only while you are signed in to Atreia with Discord (Atreia account, at the bottom of the column on the left).\n\n• Your character's profile (on; Settings > Upload): a few seconds after a login, your character as the game sent it - name, class, level, server, legion, gear with its stones and stats, skills, Daevanion boards, titles, pets and Genus Insight - goes to Atreia, so you can be found on the website.\n• Other players you see (on; Settings > Upload): with your uploads go the name, class, level, gear, legion and the position in fights of the other players the meter has seen, and the members of your own legion. With it off, only your own character is sent.\n• Boss fights (on: uploaded by themselves a few seconds after the boss died; Settings > Upload; or when you press Upload): the fight as the meter shows it - the boss, when the fight started and ended, your server, and for every player in it their name, class and server, their damage, healing and damage taken by skill, the buffs they had and who gave them, deaths, and the effects the players put on the boss.\n• The positions of a boss fight (on; Settings > Upload): with each boss upload, where the players and the boss moved, for the replay on the fight's page.\n• Atreia keeps the fight under your Discord account. You choose who can see it: only you, anyone with its link (the default), or everyone. On the fight's page you can change that or delete the fight at any time. Removing your Discord connection on the site deletes all your fights.\n• Your Genus Insight, pets and combat stats (while signed in; switch it off in the Atreia account window): after a login the meter sends your character's name and server with its Genus Insight (each genus's level and rolled lines), its pet collection (each pet and its level) and its combat stats as the game sends them to the meter (the values the character window's Attack, Defense, Accuracy, Critical Hit, HP and the like are made of, at most every few minutes while they change), so other players who look your character up in Atreia App see them. Switching it off deletes what was sent.\n• Combat Power changes (on; Settings > Upload): each change the CP calculator measures at a login is sent without your name, server, legion or account: your class, region, the day, your Item Level and Combat Power (rounded) and how they and your stats changed, with a random number of this installation. Atreia keeps no IP address with it and uses the changes to refit its Combat Power model.\n• The CP calculator reads your character's public page through atreia.app once per login (it asks with the character's name and server, which that page shows to anyone), for your manastones' values. It also loads the site's current Combat Power model (nothing is sent).\n• Pictures of the game window: while the Black Cloud shop's Pets page is open with pets you still need, to frame their cards on it, and once in the first-start setup, to show it over your own game, the meter takes pictures of the game's own window (on the shop's page about once a second). They are read on your PC and not kept. No picture is ever uploaded.\n• The meter asks GitHub for updates (the request itself, nothing else).\n\nThe full privacy policy is on atreia.app/terms."
+    "en": "The meter reads the game's network traffic on your PC, passively; it never sends anything to the game. When you accept, the sharing below is switched on; you can switch any of it off at any time in Settings > Upload, and a switch turned off sends nothing more. The Combat Power changes and the look-ups near the end of this list need no account; everything else goes only while you are signed in to Atreia with Discord (Atreia account, at the bottom of the column on the left).\n\n• Your character's profile (on; Settings > Upload): a few seconds after a login, your character as the game sent it - name, class, level, server, legion, gear with its stones and stats, skills, Daevanion boards, titles, pets and Genus Insight - goes to Atreia, so you can be found on the website.\n• Other players you see (on; Settings > Upload): with your uploads go the name, class, level, gear, legion and the position in fights of the other players the meter has seen, and the members of your own legion. With it off, only your own character is sent.\n• Boss fights (on: uploaded by themselves a few seconds after the boss died; Settings > Upload; or when you press Upload): the fight as the meter shows it - the boss, when the fight started and ended, your server, and for every player in it their name, class and server, their damage, healing and damage taken by skill, the buffs they had and who gave them, deaths, and the effects the players put on the boss.\n• The positions of a boss fight (on; Settings > Upload): with each boss upload, where the players and the boss moved, for the replay on the fight's page.\n• Atreia keeps the fight under your Discord account. You choose who can see it: only you, anyone with its link (the default), or everyone. On the fight's page you can change that or delete the fight at any time. Removing your Discord connection on the site deletes all your fights.\n• Your Genus Insight, pets and combat stats (while signed in; switch it off in the Atreia account window): after a login the meter sends your character's name and server with its Genus Insight (each genus's level and rolled lines), its pet collection (each pet and its level) and its combat stats as the game sends them to the meter (the values the character window's Attack, Defense, Accuracy, Critical Hit, HP and the like are made of, at most every few minutes while they change), so other players who look your character up in Atreia App see them. Switching it off deletes what was sent.\n• Combat Power changes (on; Settings > Upload): each change the CP calculator measures at a login is sent without your name, server, legion or account: your class, region, the day, your Item Level and Combat Power (rounded) and how they and your stats changed, with a random number of this installation. Atreia keeps no IP address with it and uses the changes to refit its Combat Power model.\n• The CP calculator reads your character's public page through atreia.app once per login (it asks with the character's name and server, which that page shows to anyone), for your manastones' values. It also loads the site's current Combat Power model (nothing is sent).\n• Pictures of the game window: to read your minimap (your exact position for the map and the Hidden Cube finder, while a cube is near or the map overlay is on), to frame the pets you still need on the Black Cloud shop's page while it is open, and to show the first-start setup over your own game, the meter takes pictures of the game's own window, a few times a second while it needs them. They are read on your PC and not kept. When the minimap can't be read, a few small pictures of it are saved in the Debug folder beside the settings on your PC (only the newest), so the problem can be checked. No picture is ever uploaded.\n• The meter asks GitHub for updates (the request itself, nothing else).\n\nThe full privacy policy is on atreia.app/terms."
   },
   "Privacy.Link": {
     "en": "Read the full privacy policy on atreia.app",
@@ -14792,6 +14792,150 @@
     "en": "Open the interactive map →",
     "de": "Interaktive Karte öffnen →",
     "fr": "Ouvrir la carte interactive →"
+  },
+  "Minimap.Notice": {
+    "en": "Atreia App now reads your minimap for an exact position (map arrow and Hidden Cube distance). It only looks at the game's picture, like streaming does. Switch it off under Tools → Cube finder.",
+    "de": "Atreia App liest jetzt deine Minikarte für eine genaue Position (Pfeil auf der Karte und Abstand zu Hidden Cubes). Es schaut nur auf das Bild des Spiels, wie beim Streamen. Abschalten unter Werkzeuge → Würfelfinder.",
+    "fr": "Atreia App lit maintenant votre mini-carte pour une position exacte (flèche de la carte et distance aux cubes cachés). Il ne regarde que l'image du jeu, comme un stream. Désactivez-le dans Tools → Détecteur de cubes.",
+    "es": "Atreia App ahora lee tu minimapa para una posición exacta (flecha del mapa y distancia a los cubos ocultos). Solo mira la imagen del juego, como al hacer streaming. Desactívalo en Tools → Cube finder.",
+    "ru": "Atreia App теперь читает вашу мини-карту для точной позиции (стрелка на карте и расстояние до скрытых кубов). Он смотрит только на изображение игры, как при стриме. Отключить: Tools → Cube finder.",
+    "zh": "Atreia App 现在会读取你的小地图以获得精确位置（地图箭头和隐藏魔方距离）。它只看游戏画面，就像直播一样。可在 Tools → Cube finder 中关闭。",
+    "pt": "O Atreia App agora lê seu minimapa para uma posição exata (seta do mapa e distância até os cubos ocultos). Ele só olha a imagem do jogo, como numa transmissão. Desative em Tools → Cube finder.",
+    "ja": "Atreia App はミニマップを読み取って正確な位置を表示するようになりました（マップの矢印と隠しキューブまでの距離）。配信と同じくゲーム画面を見るだけです。Tools → Cube finder でオフにできます。",
+    "ko": "Atreia App가 이제 미니맵을 읽어 정확한 위치를 표시합니다(지도 화살표와 숨겨진 큐브까지의 거리). 방송처럼 게임 화면만 봅니다. Tools → Cube finder에서 끌 수 있습니다.",
+    "zh-TW": "Atreia App 現在會讀取你的小地圖以取得精確位置（地圖箭頭和隱藏魔方距離）。它只看遊戲畫面，就像直播一樣。可在 Tools → Cube finder 中關閉。"
+  },
+  "Cubes.Minimap": {
+    "en": "Read the minimap for an exact position",
+    "de": "Minikarte für eine genaue Position lesen",
+    "fr": "Lire la mini-carte pour une position exacte",
+    "es": "Leer el minimapa para una posición exacta",
+    "ru": "Читать мини-карту для точной позиции",
+    "zh": "读取小地图以获得精确位置",
+    "pt": "Ler o minimapa para uma posição exata",
+    "ja": "ミニマップを読み取って正確な位置にする",
+    "ko": "미니맵을 읽어 정확한 위치 사용",
+    "zh-TW": "讀取小地圖以取得精確位置"
+  },
+  "Cubes.MinimapTip": {
+    "en": "Compares the game's minimap with the map a few times a second while a Hidden Cube is near or the map overlay is on: your arrow and the cube distance land within about a metre. Only the game window's picture is looked at; nothing is read from the game. Where there is no minimap (dungeons, a menu over it) the network's guess is used as before. Streaming the game on Discord? If the stream pauses at those moments, switch this off while you stream.",
+    "de": "Vergleicht die Minikarte des Spiels einige Male pro Sekunde mit der Karte, solange ein Hidden Cube in der Nähe ist oder das Karten-Overlay an ist: dein Pfeil und der Würfelabstand liegen dann auf etwa einen Meter genau. Es wird nur das Bild des Spielfensters angesehen, nichts aus dem Spiel gelesen. Ohne Minikarte (Dungeons, ein Menü darüber) gilt wie bisher die Schätzung aus dem Netzwerk. Streamst du das Spiel auf Discord? Pausiert der Stream in diesen Momenten, schalte das beim Streamen aus.",
+    "fr": "Compare la mini-carte du jeu avec la carte plusieurs fois par seconde quand un cube caché est proche ou que la carte en superposition est active : votre flèche et la distance au cube sont précises à environ un mètre. Seule l'image de la fenêtre du jeu est regardée, rien n'est lu dans le jeu. Sans mini-carte (donjons, un menu par-dessus), l'estimation réseau est utilisée comme avant. Vous diffusez le jeu sur Discord ? Si le stream se met en pause à ces moments-là, désactivez ceci pendant la diffusion.",
+    "es": "Compara el minimapa del juego con el mapa varias veces por segundo mientras haya un cubo oculto cerca o el mapa superpuesto esté activo: tu flecha y la distancia al cubo quedan a un metro aproximadamente. Solo se mira la imagen de la ventana del juego; no se lee nada del juego. Donde no hay minimapa (mazmorras, un menú encima) se usa la estimación de red como antes. ¿Transmites el juego en Discord? Si la transmisión se pausa en esos momentos, desactiva esto mientras transmites.",
+    "ru": "Несколько раз в секунду сравнивает мини-карту игры с картой, пока рядом скрытый куб или включена карта-оверлей: ваша стрелка и расстояние до куба точны примерно до метра. Смотрится только изображение окна игры, из игры ничего не читается. Без мини-карты (подземелья, меню поверх) используется сетевая оценка, как раньше. Транслируете игру в Discord? Если трансляция в эти моменты встаёт на паузу, отключите это на время трансляции.",
+    "zh": "在附近有隐藏魔方或地图悬浮窗开启时，每秒数次将游戏小地图与地图比对：你的箭头和魔方距离误差约一米。只查看游戏窗口画面，不读取游戏内任何数据。没有小地图时（副本、菜单遮挡）照旧使用网络估算。在 Discord 上直播游戏？如果直播在这些时候暂停，直播时请关闭此项。",
+    "pt": "Compara o minimapa do jogo com o mapa algumas vezes por segundo enquanto houver um cubo oculto por perto ou o mapa sobreposto estiver ligado: sua seta e a distância até o cubo ficam com cerca de um metro de precisão. Só a imagem da janela do jogo é vista; nada é lido do jogo. Sem minimapa (masmorras, um menu por cima) usa-se a estimativa da rede, como antes. Transmitindo o jogo no Discord? Se a transmissão pausar nesses momentos, desligue isto enquanto transmite.",
+    "ja": "隠しキューブが近くにあるときやマップオーバーレイがオンのとき、ゲームのミニマップを毎秒数回マップと照合します。矢印とキューブまでの距離が約1メートルの精度になります。ゲームウィンドウの画面を見るだけで、ゲームから何も読み取りません。ミニマップがない場所（ダンジョン、メニューが重なっているとき）は従来どおりネットワークの推定を使います。Discordでゲームを配信していますか？その間に配信が一時停止する場合は、配信中はこれをオフにしてください。",
+    "ko": "숨겨진 큐브가 근처에 있거나 지도 오버레이가 켜져 있을 때 게임 미니맵을 초당 몇 번 지도와 비교합니다. 화살표와 큐브 거리가 약 1미터 정확도가 됩니다. 게임 창의 화면만 보며 게임에서 아무것도 읽지 않습니다. 미니맵이 없는 곳(던전, 메뉴가 가린 경우)에서는 전처럼 네트워크 추정을 사용합니다. Discord로 게임을 방송하나요? 그때 방송이 일시 정지되면 방송하는 동안 이 기능을 끄세요.",
+    "zh-TW": "在附近有隱藏魔方或地圖覆蓋層開啟時，每秒數次將遊戲小地圖與地圖比對：你的箭頭和魔方距離誤差約一公尺。只查看遊戲視窗畫面，不讀取遊戲內任何資料。沒有小地圖時（副本、選單遮擋）照舊使用網路估算。在 Discord 上直播遊戲？如果直播在這些時候暫停，直播時請關閉此項。"
+  },
+  "Cubes.MinimapOff": {
+    "en": "Off: the position comes from the network alone.",
+    "de": "Aus: die Position kommt nur aus dem Netzwerk.",
+    "fr": "Désactivé : la position vient du réseau seul.",
+    "es": "Desactivado: la posición viene solo de la red.",
+    "ru": "Выключено: позиция только из сети.",
+    "zh": "已关闭：位置仅来自网络。",
+    "pt": "Desligado: a posição vem só da rede.",
+    "ja": "オフ：位置はネットワークのみから得ます。",
+    "ko": "꺼짐: 위치는 네트워크에서만 가져옵니다.",
+    "zh-TW": "已關閉：位置僅來自網路。"
+  },
+  "Cubes.MinimapWaiting": {
+    "en": "Waits for a Hidden Cube in range or the map overlay, with the game in front.",
+    "de": "Wartet auf einen Hidden Cube in Reichweite oder das Karten-Overlay, mit dem Spiel im Vordergrund.",
+    "fr": "Attend un cube caché à portée ou la carte en superposition, avec le jeu au premier plan.",
+    "es": "Espera un cubo oculto al alcance o el mapa superpuesto, con el juego en primer plano.",
+    "ru": "Ждёт скрытый куб рядом или карту-оверлей, когда игра на переднем плане.",
+    "zh": "等待附近出现隐藏魔方或开启地图悬浮窗，且游戏在前台。",
+    "pt": "Aguarda um cubo oculto ao alcance ou o mapa sobreposto, com o jogo em primeiro plano.",
+    "ja": "隠しキューブが範囲内に入るかマップオーバーレイがオンで、ゲームが前面にあるときに動きます。",
+    "ko": "숨겨진 큐브가 범위 안에 있거나 지도 오버레이가 켜져 있고 게임이 앞에 있을 때 작동합니다.",
+    "zh-TW": "等待附近出現隱藏魔方或開啟地圖覆蓋層，且遊戲在前景。"
+  },
+  "Cubes.MinimapSearching": {
+    "en": "Looking for the minimap on the screen…",
+    "de": "Sucht die Minikarte auf dem Bildschirm …",
+    "fr": "Recherche de la mini-carte à l'écran…",
+    "es": "Buscando el minimapa en la pantalla…",
+    "ru": "Ищет мини-карту на экране…",
+    "zh": "正在屏幕上寻找小地图…",
+    "pt": "Procurando o minimapa na tela…",
+    "ja": "画面上でミニマップを探しています…",
+    "ko": "화면에서 미니맵을 찾는 중…",
+    "zh-TW": "正在螢幕上尋找小地圖…"
+  },
+  "Cubes.MinimapReading": {
+    "en": "Exact: {0} positions in the last 10 s, {1} ms each.",
+    "de": "Genau: {0} Positionen in den letzten 10 s, je {1} ms.",
+    "fr": "Exact : {0} positions dans les 10 dernières s, {1} ms chacune.",
+    "es": "Exacto: {0} posiciones en los últimos 10 s, {1} ms cada una.",
+    "ru": "Точно: {0} позиций за последние 10 с, по {1} мс.",
+    "zh": "精确：最近 10 秒 {0} 个位置，每个 {1} 毫秒。",
+    "pt": "Exato: {0} posições nos últimos 10 s, {1} ms cada.",
+    "ja": "正確：直近10秒で {0} 回、各 {1} ミリ秒。",
+    "ko": "정확: 최근 10초 동안 {0}개 위치, 각 {1}ms.",
+    "zh-TW": "精確：最近 10 秒 {0} 個位置，每個 {1} 毫秒。"
+  },
+  "Cubes.MinimapNotSeen": {
+    "en": "Minimap not seen right now (a dungeon, a menu over it, another map): the network's guess is used.",
+    "de": "Minikarte gerade nicht zu sehen (Dungeon, ein Menü darüber, eine andere Karte): die Schätzung aus dem Netzwerk gilt.",
+    "fr": "Mini-carte non visible pour l'instant (donjon, menu par-dessus, autre carte) : l'estimation réseau est utilisée.",
+    "es": "Minimapa no visible ahora (mazmorra, un menú encima, otro mapa): se usa la estimación de red.",
+    "ru": "Мини-карта сейчас не видна (подземелье, меню поверх, другая карта): используется сетевая оценка.",
+    "zh": "暂时看不到小地图（副本、菜单遮挡或其他地图）：使用网络估算。",
+    "pt": "Minimapa não visível agora (masmorra, um menu por cima, outro mapa): usa-se a estimativa da rede.",
+    "ja": "今はミニマップが見えません（ダンジョン、メニューが重なっている、別のマップ）：ネットワークの推定を使います。",
+    "ko": "지금은 미니맵이 보이지 않습니다(던전, 메뉴가 가림, 다른 지도): 네트워크 추정을 사용합니다.",
+    "zh-TW": "暫時看不到小地圖（副本、選單遮擋或其他地圖）：使用網路估算。"
+  },
+  "Cubes.MinimapSave": {
+    "en": "Save minimap picture",
+    "de": "Minikarten-Bild speichern",
+    "fr": "Enregistrer l'image de la mini-carte",
+    "es": "Guardar imagen del minimapa",
+    "ru": "Сохранить снимок мини-карты",
+    "zh": "保存小地图图片",
+    "pt": "Salvar imagem do minimapa",
+    "ja": "ミニマップ画像を保存",
+    "ko": "미니맵 이미지 저장",
+    "zh-TW": "儲存小地圖圖片"
+  },
+  "Cubes.MinimapFind": {
+    "en": "Find the minimap again",
+    "de": "Minikarte neu suchen",
+    "fr": "Rechercher à nouveau la mini-carte",
+    "es": "Buscar el minimapa de nuevo",
+    "ru": "Найти мини-карту заново",
+    "zh": "重新寻找小地图",
+    "pt": "Procurar o minimapa de novo",
+    "ja": "ミニマップを探し直す",
+    "ko": "미니맵 다시 찾기",
+    "zh-TW": "重新尋找小地圖"
+  },
+  "Cubes.MinimapSaved": {
+    "en": "Picture saved: {0}",
+    "de": "Bild gespeichert: {0}",
+    "fr": "Image enregistrée : {0}",
+    "es": "Imagen guardada: {0}",
+    "ru": "Снимок сохранён: {0}",
+    "zh": "图片已保存：{0}",
+    "pt": "Imagem salva: {0}",
+    "ja": "画像を保存しました：{0}",
+    "ko": "이미지 저장됨: {0}",
+    "zh-TW": "圖片已儲存：{0}"
+  },
+  "Cubes.MinimapAccuracy": {
+    "en": "On {2}, readings are typically {0:0.0} m from the game's own positions (checked {1} times, at your skills and hits).",
+    "de": "Auf {2} liegen die Messungen im Mittel {0:0.0} m neben den Positionen des Spiels ({1}-mal geprüft, bei Fertigkeiten und Treffern).",
+    "fr": "Sur {2}, les lectures sont en moyenne à {0:0.0} m des positions du jeu ({1} vérifications, lors de vos compétences et coups).",
+    "es": "En {2}, las lecturas están de media a {0:0.0} m de las posiciones del juego ({1} comprobaciones, en tus habilidades y golpes).",
+    "ru": "На карте {2} показания в среднем в {0:0.0} м от позиций игры (проверено {1} раз, по умениям и ударам).",
+    "zh": "在{2}，读数与游戏自身位置平均相差 {0:0.0} 米（已在技能和命中时检查 {1} 次）。",
+    "pt": "Em {2}, as leituras ficam em média a {0:0.0} m das posições do jogo ({1} verificações, nas suas habilidades e golpes).",
+    "ja": "{2}では、読み取り位置はゲーム自身の位置から平均 {0:0.0} m です（スキルと命中時に {1} 回確認）。",
+    "ko": "{2}에서 판독 위치는 게임 자체 위치와 평균 {0:0.0}m 차이입니다(스킬과 타격 시 {1}회 확인).",
+    "zh-TW": "在{2}，讀數與遊戲自身位置平均相差 {0:0.0} 公尺（已在技能和命中時檢查 {1} 次）。"
   },
   "Cubes.Note": {
     "en": "The game only announces a cube within about 100 m, so the meter cannot see cubes farther away.",
@@ -22217,11 +22361,14 @@
   "Status.LegionNone": {
     "en": "No legion list yet: the game sends it at a login"
   },
+  "Status.Minimap": {
+    "en": "Minimap"
+  },
   "Status.Pictures": {
     "en": "Game window pictures"
   },
   "Status.PicturesNone": {
-    "en": "None taken now (only the Black Cloud shop's pet frames take them, while that page is open)"
+    "en": "None taken now (the minimap reading and the Black Cloud shop's pet frames take them while they need them)"
   },
   "Status.PicturesRate": {
     "en": "{0} a second, {1} ms each, at most {2} ms"
