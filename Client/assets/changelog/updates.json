@@ -6,6 +6,18 @@
   ],
   "versions": [
     {
+      "version": "2.0.18",
+      "date": "2026-11-13",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Overlays",
+          "title": "The enemy card goes away after ten seconds",
+          "text": "When you select an enemy player, the enemy card now shows for ten seconds and then goes away, even while he stays selected. Select him again, or another player, and it comes back for ten seconds. Before, it stayed over the game for as long as he was selected."
+        }
+      ]
+    },
+    {
       "version": "2.0.17",
       "date": "2026-11-13",
       "items": [

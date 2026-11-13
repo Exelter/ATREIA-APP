@@ -5,13 +5,13 @@ namespace AionDPS.Combat;
 /// <summary>
 /// The fights with players (Aion2/Aion2Pvp.cs): a death recap - the burst that killed (an older hit left out), each attacker with his share and skills, the
 /// killing blow, the heals in it, the seconds - and the rivals: a fight counted once per five minutes, a death of the own character for every player in it (the
-/// last blow: killed by), a kill when another player dies with the own hits in his last seconds.
+/// last blow: killed by), a kill when another player dies with the own hits in his last seconds; the enemy card's ten seconds.
 /// </summary>
 public static class SelfCheckPvp
 {
     public static bool Run()
     {
-        Console.WriteLine("[selftest] Fights with players (death recap, rivals):");
+        Console.WriteLine("[selftest] Fights with players (death recap, rivals, the enemy card):");
         Aion2Pvp.ResetForCheck();
         const int me = 1, kraeger = 2, morrigane = 3, mob = 4, healer = 5;
         DateTime t = new(2026, 11, 10, 20, 0, 0, DateTimeKind.Local);
@@ -71,7 +71,26 @@ public static class SelfCheckPvp
         Console.WriteLine($"  -> rivals: the death counts for both players, killed by Kraeger, no monster: {rivals}; Kraeger dying with the own hits: a kill: {kill}; 20 minutes later a new fight: {again}");
         Console.WriteLine($"  -> kills, assists, deaths 1 / 1 / 1 (the healer's last blow an assist): {tally}; the players who traded hits are enemies, the healer and the monster not: {enemies}");
         bool radar = Radar();
-        return burst && killer && order && rivals && kill && again && tally && enemies && radar;
+        bool card = CardClock(t, kraeger, morrigane);
+        return burst && killer && order && rivals && kill && again && tally && enemies && radar && card;
+    }
+
+    /// <summary>
+    /// The enemy card's ten seconds (Ui/EnemyCard.cs, <see cref="AionDPS.Ui.EnemyCardClock"/>; 13 November 2026: a player had it over the game for ten minutes):
+    /// shown for a selection, gone ten seconds later while the player stays selected; the same player selected again, or another, brings it back.
+    /// </summary>
+    private static bool CardClock(DateTime t, int kraeger, int morrigane)
+    {
+        var clock = new AionDPS.Ui.EnemyCardClock();
+        var selected = (EntityId: kraeger, At: t);
+        bool tenSeconds = clock.Shows(selected, t) && clock.Shows(selected, t.AddSeconds(9.9)) && !clock.Shows(selected, t.AddSeconds(10))
+            && !clock.Shows(selected, t.AddMinutes(10));
+        var selectedAgain = (EntityId: kraeger, At: t.AddMinutes(10));
+        var another = (EntityId: morrigane, At: t.AddMinutes(11));
+        bool back = clock.Shows(selectedAgain, t.AddMinutes(10)) && !clock.Shows(selectedAgain, t.AddMinutes(10).AddSeconds(10)) && clock.Shows(another, t.AddMinutes(11))
+            && !clock.Shows(another, t.AddMinutes(11).AddSeconds(12));
+        Console.WriteLine($"  -> the enemy card: ten seconds for a selection, then gone while the player stays selected: {tenSeconds}; selected again, or another player: back for ten seconds: {back}");
+        return tenSeconds && back;
     }
 
     /// <summary>
