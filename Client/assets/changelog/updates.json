@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "2.0.20",
+      "date": "2026-11-13",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Meter",
+          "title": "Only your own fight in the open world",
+          "text": "When the open world was counted (its switch, the Grind switch, a boss nearby, or after the app started or restarted for an update in the middle of a game, until your next loading screen), the meter took in every hit around you, so on All it listed every player killing monsters near you. Now it counts only your fight there: you, your group and your summons, the monsters you fight and the other players hitting those, and an open-world boss with everybody at it. Dungeons and arenas count everything, as before.",
+          "example": "Grinding Kerubiel with the meter on All: only you and the player who hits your Kerubiel too are on it, not the five players killing monsters next to you."
+        }
+      ]
+    },
+    {
       "version": "2.0.19",
       "date": "2026-11-13",
       "items": [

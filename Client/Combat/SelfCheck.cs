@@ -42,6 +42,7 @@ public static class SelfCheck
         ok &= SelfCheckFightReport.Run();
         ok &= SelfCheckMenu.Run();
         ok &= SelfCheckHud.Run();
+        ok &= SelfCheckOwnFight.Run();
         ok &= SelfCheckSettings.Run();
         ok &= SelfCheckStream.Run();
         ok &= SelfCheckHitKinds.Run();

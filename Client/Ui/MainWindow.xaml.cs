@@ -1804,12 +1804,20 @@ public partial class MainWindow : Window
             || _dummy?.Model.State is DummyState.Armed or DummyState.Running;
     }
 
-    /// <summary>A poll's events as the meter counts them: in the open world without a boss or a dummy (and the button off) none, the zone changes kept.</summary>
+    /// <summary>
+    /// A poll's events as the meter counts them: in the open world without a boss or a dummy (and the button off) none, the zone changes kept; counted
+    /// there, the own fight's only (<see cref="OwnFight"/>: no players killing their own monsters around); in a dungeon, an arena and PvP mode everything.
+    /// </summary>
     private CombatBatch Counted(CombatBatch batch)
     {
-        if (CountingNow() || (batch.Damage.Count == 0 && batch.Avoids.Count == 0 && batch.Kills.Count == 0))
+        if (batch.Damage.Count == 0 && batch.Avoids.Count == 0 && batch.Kills.Count == 0)
         {
             return batch;
+        }
+
+        if (CountingNow())
+        {
+            return InInstanceNow() || _pvpOnly ? batch : OwnFightOf(batch);
         }
 
         if (DateTime.Now - _notCountedSaid > TimeSpan.FromMinutes(2) && batch.Damage.Count > 0)
@@ -1819,6 +1827,22 @@ public partial class MainWindow : Window
         }
 
         return batch with { Damage = Array.Empty<DamageEvent>(), Avoids = Array.Empty<AvoidEvent>(), Kills = Array.Empty<KillEvent>() };
+    }
+
+    private readonly OwnFight _ownFight = new();
+
+    /// <summary>The open world's events of the own fight: the own character, its group and their summons, what they fight, and bosses (see <see cref="OwnFight"/>).</summary>
+    private CombatBatch OwnFightOf(CombatBatch batch)
+    {
+        if (_liveSource?.Entities is not Aion2.Aion2EntityDirectory directory || (directory.LocalPlayerId < 0 && directory.InferLocalPlayer() is null))
+        {
+            return batch; // the own character not known yet: nothing to tell its fight by
+        }
+
+        return _ownFight.Keep(batch,
+            id => IsGroupMember(id, directory) || (directory.SummonOwnerOf(id) is int owner && owner != id && IsGroupMember(owner, directory)),
+            id => directory.BossNpcIdOf(id) is not null,
+            directory.IsKnownPlayer);
     }
 
     private void OnOpenWorldClicked(object sender, RoutedEventArgs e)
