@@ -343,14 +343,14 @@ internal static class WindowCapture
 
         // Windows fills the frame pool from threads of its own: the device is guarded against two at once
         Guid multithreadId = IidMultithread;
-        if (Marshal.QueryInterface(device, ref multithreadId, out IntPtr multithread) >= 0)
+        if (Marshal.QueryInterface(device, in multithreadId, out IntPtr multithread) >= 0)
         {
             Slot<SetMultithreadProtectedFn>(multithread, 5)(multithread, 1);
             Marshal.Release(multithread);
         }
 
         Guid dxgiId = IidDxgiDevice;
-        hr = Marshal.QueryInterface(device, ref dxgiId, out IntPtr dxgi);
+        hr = Marshal.QueryInterface(device, in dxgiId, out IntPtr dxgi);
         if (hr < 0)
         {
             Release(ref context);
@@ -450,7 +450,7 @@ internal static class WindowCapture
         try
         {
             Guid id = IidCaptureSession3;
-            if (Marshal.QueryInterface(inspectable, ref id, out IntPtr session3) < 0)
+            if (Marshal.QueryInterface(inspectable, in id, out IntPtr session3) < 0)
             {
                 return false;
             }
@@ -555,7 +555,7 @@ internal static class WindowCapture
         try
         {
             Guid accessId = IidDxgiInterfaceAccess;
-            if (Marshal.QueryInterface(inspectable, ref accessId, out IntPtr access) < 0)
+            if (Marshal.QueryInterface(inspectable, in accessId, out IntPtr access) < 0)
             {
                 return IntPtr.Zero;
             }
