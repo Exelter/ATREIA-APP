@@ -1,11 +1,10 @@
-using System.Runtime.InteropServices;
-
 namespace AionDPS.Ui;
 
 /// <summary>
-/// Hides the meter's overlays while a game window is open (Arcana, enchanting, the inventory ...), by two signs: the mouse cursor (see <see cref="MenuDetector"/>,
-/// only in the control mode that hides it while playing) and the game window's picture (see <see cref="HudWatcher"/>, PrintWindow: the game's HUD is
-/// covered, in every control mode).
+/// Hides the meter's overlays while a game window is open (Arcana, enchanting, the inventory ...), by the mouse cursor (see <see cref="MenuDetector"/>): in the
+/// control mode that hides it while playing, the game shows it for its windows. No pictures of the game are taken for this any more (the owner, 13 November
+/// 2026, after a tester's Discord stream of the game kept pausing while the app ran: until 2.0.20 the game window's picture was also looked at, to see its HUD
+/// covered); in the classic control mode, where the cursor shows all the time, nothing tells a game window, so nothing is hidden there.
 /// <see cref="Hidden"/> is what <see cref="GameWindow"/> reads, so every overlay that is shown only while the game is in front steps aside by itself. Runs on the
 /// UI thread, so the flag needs no lock.
 /// </summary>
@@ -13,8 +12,6 @@ public sealed class MenuWatcher : IDisposable
 {
     private readonly System.Windows.Threading.DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(50) };
     private readonly MenuDetector _detector = new();
-    private readonly HudWatcher _hud = new();
-    private DateTime _lastHudLook = DateTime.MinValue;
     private readonly ControlModeLearner _learner = new();
     private MeterSettings _settings = MeterSettings.Load();
     private DateTime _settingsAt = DateTime.UtcNow;
@@ -32,12 +29,6 @@ public sealed class MenuWatcher : IDisposable
     /// <summary>True while a menu is open and the overlays should be out of the way.</summary>
     public static bool Hidden { get; private set; }
 
-    /// <summary>Whether the game's HUD has been learnt from the screen (then game windows are told in every control mode).</summary>
-    public static bool ScreenReady { get; private set; }
-
-    /// <summary>How many looks in fights the screen has learnt from so far (it needs <see cref="HudWatcher.NeedLooks"/>).</summary>
-    public static int ScreenLearnt { get; private set; }
-
     /// <summary>The control mode seen so far (also kept in the settings).</summary>
     public static ControlMode Mode { get; private set; } = ControlMode.Unknown;
 
@@ -47,18 +38,8 @@ public sealed class MenuWatcher : IDisposable
     public void Dispose()
     {
         _timer.Stop();
-        _hud.Dispose();
         Hidden = false;
     }
-
-    /// <summary>
-    /// How often the game window's picture is taken: each look draws the whole window (PrintWindow), which the game feels at high resolutions (3 November
-    /// 2026 review: 3.3 a second all the time). About three a second only while a game window can open any moment (the cursor shows, no fight) or one is
-    /// open (so the overlays come back quickly); in a fight and in action-camera play once a second, which is what the learning takes - a window opened
-    /// then steps the overlays aside within a second.
-    /// </summary>
-    private TimeSpan HudEvery(bool cursor) =>
-        _hud.MenuOpen || (cursor && DateTime.UtcNow - _lastOwnHit >= TimeSpan.FromSeconds(1.5)) ? TimeSpan.FromMilliseconds(400) : TimeSpan.FromSeconds(1);
 
     public static bool AllOverlaysLocked(MeterSettings s) => UnlockedOverlays(s).Count == 0;
 
@@ -116,43 +97,16 @@ public sealed class MenuWatcher : IDisposable
             onDisk.Save();
         }
 
-        if (!_settings.HideDuringMenus)
+        // the cursor shows all the time in the classic mode: it tells nothing there
+        if (!_settings.HideDuringMenus || Mode == ControlMode.Classic)
         {
             _detector.Reset();
-            _hud.Reset();
             Hidden = false;
             return;
         }
 
-        // an unlocked overlay (being placed) pauses only the cursor's sign: the cursor shows while one drags it. The screen still tells a game window,
-        // also while overlays are unlocked (their own windows are left out of what it looks at)
+        // an unlocked overlay (being placed) pauses the hiding: the cursor shows while one drags it
         bool placing = !AllOverlaysLocked(_settings);
-        ScreenReady = _hud.Ready;
-        ScreenLearnt = _hud.LearntLooks;
-        bool hudMenu = false;
-        if (!inGame)
-        {
-            _hud.Reset();
-        }
-        else if (DateTime.UtcNow - _lastHudLook >= HudEvery(cursor) && GameWindow.ForegroundClientArea(ignoreMenu: true) is { } area)
-        {
-            _lastHudLook = DateTime.UtcNow;
-            // the picture in the window's real pixels (Windows' scaling of another monitor made it 4480 x 2520 for a 2560 x 1440 window)
-            IntPtr game = GameWindow.ForegroundGame();
-            System.Drawing.Rectangle real = GameWindow.ClientSizeInPixels(game) is { } size ? new System.Drawing.Rectangle(area.Location, size) : area;
-            hudMenu = _hud.Look(game, real, DateTime.UtcNow - _lastOwnHit < TimeSpan.FromSeconds(1.5), DateTime.UtcNow);
-        }
-        else
-        {
-            hudMenu = _hud.MenuOpen;
-        }
-
-        if (Mode == ControlMode.Classic)
-        {
-            _detector.Reset();
-            Hidden = hudMenu; // the cursor shows all the time in this mode: only the screen tells
-            return;
-        }
 
         // the keys are asked only while the cursor shows, and every other look: during play this costs nothing
         if (!cursor)
@@ -170,7 +124,6 @@ public sealed class MenuWatcher : IDisposable
             _lastClick = DateTime.UtcNow;
         }
 
-        bool menu = _detector.Update(DateTime.UtcNow, inGame, cursor, _held, placing, _lastClick);
-        Hidden = menu || hudMenu;
+        Hidden = _detector.Update(DateTime.UtcNow, inGame, cursor, _held, placing, _lastClick);
     }
 }

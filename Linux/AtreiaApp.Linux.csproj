@@ -39,11 +39,11 @@
   </ItemGroup>
 
   <!-- The Windows app's own files that need nothing of Windows, compiled in unchanged. A file listed under Exclude has a Linux counterpart in Platform/
-       (the same class, done the Linux way) or is a part of the Windows app only (its windows, its installer, the screen reading of the minimap). -->
+       (the same class, done the Linux way) or is a part of the Windows app only (its windows, its installer). -->
   <ItemGroup>
     <Compile Include="..\Client\AtomicFile.cs;..\Client\Brand.cs;..\Client\Links.cs" LinkBase="Shared" />
     <Compile Include="..\Client\Aion2\**\*.cs" LinkBase="Shared\Aion2"
-             Exclude="..\Client\Aion2\GameWindow.cs;..\Client\Aion2\MapRaster.cs;..\Client\Aion2\Capture\GameConnections.cs;..\Client\Aion2\Capture\CaptureAdapters.cs;..\Client\Aion2\Capture\NpcapAvailability.cs" />
+             Exclude="..\Client\Aion2\GameWindow.cs;..\Client\Aion2\Capture\GameConnections.cs;..\Client\Aion2\Capture\CaptureAdapters.cs;..\Client\Aion2\Capture\NpcapAvailability.cs" />
     <Compile Include="..\Client\Combat\**\*.cs" LinkBase="Shared\Combat" Exclude="..\Client\Combat\SelfCheck*.cs" />
     <Compile Include="..\Client\History\**\*.cs" LinkBase="Shared\History" />
     <Compile Include="..\Client\Upload\**\*.cs" LinkBase="Shared\Upload" />

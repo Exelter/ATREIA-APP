@@ -118,7 +118,7 @@ public sealed class ReplayView : FrameworkElement
         _fitted = true;
     }
 
-    // the game's y grows to the south, as on its map (Aion2/MapRaster.cs): down the screen
+    // the game's y grows to the south, as on its map (Aion2/Protocol/Aion2Maps.cs): down the screen
     private Point ToScreen(double x, double y) => new(ActualWidth / 2 + (x - _origin.X) * _scale, ActualHeight / 2 + (y - _origin.Y) * _scale);
 
     protected override void OnRender(DrawingContext dc)

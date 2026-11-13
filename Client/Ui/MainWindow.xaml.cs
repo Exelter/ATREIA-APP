@@ -131,7 +131,6 @@ public partial class MainWindow : Window
     private LootOverlayController? _loot;
     private GatherOverlayController? _gatherOverlay;
     private SeasonOverlayController? _seasonOverlay;
-    private MinimapReader? _minimapReader;
     private CraftOverlayController? _craft;
     private CombatOverlayController? _combat;
     private MenuWatcher? _menuWatcher;
@@ -1622,8 +1621,6 @@ public partial class MainWindow : Window
             _loot ??= new LootOverlayController();
             _gatherOverlay ??= new GatherOverlayController();
             _seasonOverlay ??= new SeasonOverlayController();
-            // the exact own position from the game's minimap (Tools, Cube finder): a note on the meter the first time it gives one
-            _minimapReader ??= new MinimapReader(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory, text => ShowUploadStatus(text));
             _craft ??= new CraftOverlayController(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory);
             _menuWatcher ??= new MenuWatcher();
             _streamTimer.Tick += (_, _) => StreamTick();
@@ -2449,7 +2446,6 @@ public partial class MainWindow : Window
         _loot?.Dispose();
         _gatherOverlay?.Dispose();
         _seasonOverlay?.Dispose();
-        _minimapReader?.Dispose();
         _craft?.Dispose();
         _storeFlush?.Dispose();
         _combat?.Dispose();
@@ -2463,7 +2459,6 @@ public partial class MainWindow : Window
         _deathRecap?.Dispose();
         _dummy?.Dispose();
         FlushStores(force: true);
-        AionDPS.Upload.MapShare.Flush(); // the map accuracy checks still waiting (a few seconds at most)
         _timetableReminder?.Dispose();
         _petFarmController?.Dispose();
         _petFarm?.Close();
