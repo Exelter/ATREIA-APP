@@ -28,6 +28,7 @@ internal static class LinuxSelfCheck
         ok &= SelfCheckRotation.Run();
         ok &= SelfCheckRaidDps.Run();
         ok &= SelfCheckOverheal.Run();
+        ok &= SelfCheckOwnFight.Run();
         ok &= SelfCheckGroupFinder.Run();
         ok &= SelfCheckBuffUpload.Run();
         ok &= SelfCheckStream.Run();

@@ -42,6 +42,65 @@ public sealed class AssistPanel : StackPanel
         return endless && skillId < FirstSkillId && Aion2SkillIcons.PathFor(skillId) is null && Aion2Artwork.EffectIconPath(skillId) is null;
     }
 
+    /// <summary>
+    /// An effect's key in the Buffs tab: a class skill's effects by the skill (Sprint Mantra comes as 18160032 or 18160002, both 18160000; its picture and
+    /// name are the skill's), any other by its own id (Courage Scroll 2210105, Superior Courage Scroll 2210106).
+    /// </summary>
+    public static int EffectKey(int effectId) => effectId is >= 11_000_000 and < 20_000_000 ? effectId / 10_000 * 10_000 : effectId;
+
+    /// <summary>An effect worth a row: not a passive skill's standing effect, not the zone's own state or a test state, not a nameless one.</summary>
+    public static bool ListedEffect(int effectId, bool endless)
+    {
+        if (Aion2Artwork.IsPassiveEffect(effectId))
+        {
+            return false; // a passive skill's standing effect (Identify Weakness, weapon training ...) is not something put on you
+        }
+
+        string english = Aion2SkillNames.NameOf(effectId);
+        if (IsWorldEffect(effectId, english, endless))
+        {
+            return false; // the zone's own state, an artifact's bonus on the whole faction, a test state of the game's data: nothing the player does or watches
+        }
+
+        // a nameless state (rest, speed ...) says nothing to the player
+        return !(long.TryParse(english, out _) && Aion2SkillIcons.PathFor(effectId) is null && Aion2Artwork.EffectIconPath(effectId) is null);
+    }
+
+    /// <summary>
+    /// Whether an effect shows in the effects overlay: with "only the buffs I tick" (<paramref name="pickedOnly"/>) when its key is ticked; else unless its
+    /// key was unticked, or one of its own ids before 13 November 2026 (<paramref name="hiddenBefore"/>, the list the cooldowns' unticked skills are in).
+    /// </summary>
+    public static bool Shows(int key, IEnumerable<int> ids, bool pickedOnly, ICollection<int> picked, ICollection<int> hidden, ICollection<int> hiddenBefore) =>
+        pickedOnly ? picked.Contains(key) : !hidden.Contains(key) && !ids.Any(hiddenBefore.Contains);
+
+    private static readonly Dictionary<int, IReadOnlyList<int>> ClassBuffCache = new();
+
+    /// <summary>
+    /// The buffs a class's own skills give (13 November 2026, a player: "it wont show what buffs my character can gain"): its active skills (the game's
+    /// skill list) that the game lists as buffs ("B"), with a picture in the game's table - no basic attack, no chain skill (a Templar's Shield of Protection,
+    /// Noble Armor, Empyrean Lord's Punishment; a Gladiator's Zikel's Blessing, Survival Stance). By key (the skill's id).
+    /// </summary>
+    public static IReadOnlyList<int> ClassBuffs(int cls)
+    {
+        if (cls == 0)
+        {
+            return Array.Empty<int>();
+        }
+
+        lock (ClassBuffCache)
+        {
+            if (!ClassBuffCache.TryGetValue(cls, out IReadOnlyList<int>? buffs))
+            {
+                ClassBuffCache[cls] = buffs = Aion2SkillNames.Load().Keys
+                    .Where(id => id / 1_000_000 == cls && id % 10_000 == 0 && id / 10_000 % 100 != 0 && Aion2Artwork.SkillKind(id) == "a" && Aion2Artwork.IsBeneficialEffect(id)
+                        && Aion2SkillIcons.TokenOf(id) is not null && !Aion2Cooldowns.SurelyNoCooldown(id) && Aion2Cooldowns.NotWorth(id) != NotWorthListing.Chain)
+                    .OrderBy(id => id).ToList();
+            }
+
+            return buffs;
+        }
+    }
+
     /// <summary>Skill ids from here are real skills; the small ids are shared cooldown groups.</summary>
     private const int FirstSkillId = 10_000_000;
 
@@ -73,6 +132,9 @@ public sealed class AssistPanel : StackPanel
         public DateTime LastActive { get; set; }
         public BuffNotice? Buff { get; set; }
 
+        /// <summary>The effect's own ids seen under its key (an unticked one of before 13 November 2026 is kept by its own id).</summary>
+        public HashSet<int> Ids { get; } = new();
+
         /// <summary>How often the end of the effect moved forward while it was still running (a renewal).</summary>
         public int Renewals { get; set; }
 
@@ -97,6 +159,26 @@ public sealed class AssistPanel : StackPanel
 
     /// <summary>Skill ids the player does not want in the overlay (see <see cref="MeterSettings.AssistOverlayHidden"/>). The overlay leaves them out; the window lists them with an unticked box.</summary>
     public HashSet<int> Hidden { get; set; } = new();
+
+    /// <summary>The buffs unticked in the Buffs tab, by key (<see cref="MeterSettings.AssistBuffsHidden"/>).</summary>
+    public HashSet<int> HiddenEffects { get; set; } = new();
+
+    /// <summary>Only the ticked buffs show (<see cref="MeterSettings.AssistBuffsPickedOnly"/>); which ones: <see cref="Picked"/>.</summary>
+    public bool PickedOnly { get; set; }
+
+    /// <summary>The buffs ticked to show with <see cref="PickedOnly"/>, by key (<see cref="MeterSettings.AssistBuffsPicked"/>).</summary>
+    public HashSet<int> Picked { get; set; } = new();
+
+    /// <summary>The buffs that were on the character, by class and key (<see cref="MeterSettings.AssistBuffsSeen"/>): listed under the buffs it can get.</summary>
+    public Dictionary<int, List<int>> Seen { get; set; } = new();
+
+    /// <summary>A buff's box was clicked: its key and whether it is unticked now (not <see cref="PickedOnly"/>).</summary>
+    public Action<int, bool>? EffectHiddenChanged { get; set; }
+
+    /// <summary>A buff's box was clicked with <see cref="PickedOnly"/>: its key and whether it is ticked now.</summary>
+    public Action<int, bool>? PickedChanged { get; set; }
+
+    private bool ShowsEffect(int key, IEnumerable<int> ids) => Shows(key, ids, PickedOnly, Picked, HiddenEffects, Hidden);
 
     /// <summary>
     /// Whether a skill is listed (the window and the screen): a skill on the skill bar (<paramref name="bar"/>), or known to have a cooldown - never a basic
@@ -232,6 +314,23 @@ public sealed class AssistPanel : StackPanel
             _noEffects = Label(loc["Assist.NoBuffs"], "Brush.TextMuted", 12);
             card.Children.Add(_noEffects);
             card.Children.Add(_effectList);
+            if (Part == AssistPart.Effects)
+            {
+                // the buffs the character can get, not on it now: the class's own and the ones it had before, to tick or untick ahead
+                var head = new StackPanel { Margin = new Thickness(ListRow.Inset, 16, ListRow.Inset, 6) };
+                var line = new Border { Height = 1, Margin = new Thickness(-ListRow.Inset, 0, -ListRow.Inset, 10) };
+                line.SetResourceReference(Border.BackgroundProperty, "Brush.Border");
+                head.Children.Add(line);
+                head.Children.Add(Label(loc["Assist.OtherBuffs"], "Brush.Text", 13, bold: true));
+                var sub = Label(loc["Assist.OtherBuffsHint"], "Brush.TextMuted", 11.5);
+                sub.TextWrapping = TextWrapping.Wrap;
+                sub.Margin = new Thickness(0, 2, 0, 0);
+                head.Children.Add(sub);
+                _otherBuffHead = head;
+                card.Children.Add(head);
+                card.Children.Add(_otherBuffList);
+            }
+
             Children.Add(Card(card));
         }
     }
@@ -442,31 +541,21 @@ public sealed class AssistPanel : StackPanel
         if (dir is not null && dir.LocalPlayerId is >= 0 and int self)
         {
             // one entry per effect: a short effect that is renewed all the time (the Chanter's mantras) gets a new instance or a new end every few
-            // seconds, so they are kept in the order they first appeared and stay a moment after their end instead of vanishing and coming back
-            foreach (var group in dir.Combat.BuffsOn(self, now).GroupBy(b => b.SkillId))
+            // seconds, so they are kept in the order they first appeared and stay a moment after their end instead of vanishing and coming back; a class
+            // skill's effects by the skill (EffectKey: Sprint Mantra 18160032 and 18160002 are one)
+            foreach (var group in dir.Combat.BuffsOn(self, now).GroupBy(b => EffectKey(b.SkillId)))
             {
-                if (_overlay && Hidden.Contains(group.Key))
-                {
-                    continue; // unticked in the assist window
-                }
-
-                if (Aion2Artwork.IsPassiveEffect(group.Key))
-                {
-                    continue; // a passive skill's standing effect (Identify Weakness, weapon training ...) is not something put on you
-                }
-
-                string english = Aion2SkillNames.NameOf(group.Key);
-                if (IsWorldEffect(group.Key, english, group.All(b => b.DurationMs < 0)))
-                {
-                    continue; // the zone's own state, an artifact's bonus on the whole faction, a test state of the game's data: nothing the player does or watches
-                }
-
-                if (long.TryParse(english, out _) && Aion2SkillIcons.PathFor(group.Key) is null && Aion2Artwork.EffectIconPath(group.Key) is null)
-                {
-                    continue; // a nameless state (rest, speed ...) says nothing to the player
-                }
-
                 BuffNotice best = group.OrderBy(b => b.Ends is null ? DateTime.MaxValue : b.Ends.Value).Last();
+                if (!ListedEffect(best.SkillId, group.All(b => b.DurationMs < 0)))
+                {
+                    continue;
+                }
+
+                if (_overlay && !ShowsEffect(group.Key, group.Select(b => b.SkillId)))
+                {
+                    continue; // unticked in the Buffs tab, or not ticked with "only the buffs I tick"
+                }
+
                 if (!_effects.TryGetValue(group.Key, out var known))
                 {
                     known = new EffectRow(++_order);
@@ -477,6 +566,7 @@ public sealed class AssistPanel : StackPanel
                 (known.Renewals, known.Aura) = EffectAura.Next(known.Buff?.Ends, best.Ends, now, best.DurationMs, known.Renewals, known.Aura);
                 known.LastActive = now;
                 known.Buff = best;
+                known.Ids.UnionWith(group.Select(b => b.SkillId));
             }
 
             // by first appearance - or by time left: the running ones with the least left first, auras and effects without an end after them
@@ -550,14 +640,32 @@ public sealed class AssistPanel : StackPanel
             return shown.Count;
         }
 
-        if (layout != _effectLayout)
+        // the window: the effects on you, then the buffs you can get (the class's own and the ones that were on the character), each with its box
+        int cls = Aion2Cooldowns.CurrentClass(SkillBars.For(dir));
+        var on = shown.Select(e => e.Id).ToHashSet();
+        foreach (int key in on.Where(k => _effects.TryGetValue(k, out EffectRow? r) && r.Buff is { } b && !Aion2Artwork.IsDebuffEffect(b.SkillId)))
         {
-            _effectLayout = layout;
+            List<int> seen = Seen.TryGetValue(cls, out List<int>? list) ? list : (Seen[cls] = new List<int>());
+            if (!seen.Contains(key))
+            {
+                seen.Add(key);
+            }
+        }
+
+        var others = ClassBuffs(cls)
+            .Concat((Seen.TryGetValue(cls, out List<int>? had) ? had : new List<int>()).OrderBy(k => Aion2SkillNames.DisplayOf(k), StringComparer.CurrentCulture))
+            .Where(k => !on.Contains(k)).Distinct().ToList();
+        string BoxOf(int key) => ShowsEffect(key, _effects.TryGetValue(key, out EffectRow? r) ? r.Ids : Enumerable.Empty<int>()) ? "" : "-";
+        string listLayout = (PickedOnly ? "p|" : "a|") + string.Join(",", shown.Select(e => BoxOf(e.Id) + e.Id.ToString(CultureInfo.InvariantCulture)))
+            + "|" + string.Join(",", others.Select(k => BoxOf(k) + k.ToString(CultureInfo.InvariantCulture)));
+        if (listLayout != _effectLayout)
+        {
+            _effectLayout = listLayout;
             _effectList.Children.Clear();
             foreach ((int id, _, _, _, _) in shown)
             {
                 ListRow row = EffectRowOf(id);
-                row.Box.IsChecked = !Hidden.Contains(id);
+                row.Box.IsChecked = BoxOf(id) == "";
                 row.Fade();
                 _effectList.Children.Add(row);
             }
@@ -565,6 +673,20 @@ public sealed class AssistPanel : StackPanel
             if (_noEffects is not null)
             {
                 _noEffects.Visibility = shown.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            _otherBuffList.Children.Clear();
+            foreach (int key in others)
+            {
+                ListRow row = OtherBuffRowOf(key);
+                row.Box.IsChecked = BoxOf(key) == "";
+                row.Fade();
+                _otherBuffList.Children.Add(row);
+            }
+
+            if (_otherBuffHead is not null)
+            {
+                _otherBuffHead.Visibility = others.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -576,6 +698,63 @@ public sealed class AssistPanel : StackPanel
         }
 
         return shown.Count;
+    }
+
+    /// <summary>A buff's box clicked (an effect on you or one you can get): with "only the buffs I tick" it is ticked or not; else unticked or not.</summary>
+    private void SetEffectShown(int key, bool on)
+    {
+        if (PickedOnly)
+        {
+            if (on)
+            {
+                Picked.Add(key);
+            }
+            else
+            {
+                Picked.Remove(key);
+            }
+
+            PickedChanged?.Invoke(key, on);
+            return;
+        }
+
+        if (on)
+        {
+            HiddenEffects.Remove(key);
+            // unticked before 13 November 2026 by its own id: ticked again for good
+            foreach (int id in _effects.TryGetValue(key, out EffectRow? row) ? row.Ids.Where(Hidden.Contains).ToList() : new List<int>())
+            {
+                Hidden.Remove(id);
+                ShowInOverlayChanged?.Invoke(id, true);
+            }
+        }
+        else
+        {
+            HiddenEffects.Add(key);
+        }
+
+        EffectHiddenChanged?.Invoke(key, !on);
+    }
+
+    private readonly Dictionary<int, ListRow> _otherBuffRows = new();
+    private readonly StackPanel _otherBuffList = new();
+    private FrameworkElement? _otherBuffHead;
+
+    private ListRow OtherBuffRowOf(int key)
+    {
+        if (!_otherBuffRows.TryGetValue(key, out ListRow? row))
+        {
+            string name = Aion2SkillNames.DisplayOf(key);
+            var picture = new SkillTile(IconOf(key, name), ListTile);
+            _otherBuffRows[key] = row = new ListRow(key, picture, picture, name, LocalizationManager.Instance["Assist.ShowInOverlay"]);
+            row.Box.Click += (_, _) =>
+            {
+                SetEffectShown(key, row.Box.IsChecked == true);
+                row.Fade();
+            };
+        }
+
+        return row;
     }
 
     private EffectTile EffectTileOf(int id)
@@ -607,18 +786,8 @@ public sealed class AssistPanel : StackPanel
             _effectRows[id] = row = new ListRow(id, picture, picture, name, LocalizationManager.Instance["Assist.ShowInOverlay"]);
             row.Box.Click += (_, _) =>
             {
-                bool on = row.Box.IsChecked == true;
-                if (on)
-                {
-                    Hidden.Remove(id);
-                }
-                else
-                {
-                    Hidden.Add(id);
-                }
-
+                SetEffectShown(id, row.Box.IsChecked == true);
                 row.Fade();
-                ShowInOverlayChanged?.Invoke(id, on);
             };
         }
 

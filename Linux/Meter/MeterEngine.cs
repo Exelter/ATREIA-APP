@@ -464,12 +464,23 @@ public sealed partial class MeterEngine : IDisposable
             || _dummy?.Model.State is DummyState.Armed or DummyState.Running;
     }
 
-    /// <summary>A poll's events as the meter counts them: in the open world without a boss or a dummy (and the switch off) none, the zone changes kept.</summary>
+    /// <summary>A poll's events as the meter counts them: in the open world without a boss or a dummy (and the switch off) none, the zone changes kept;
+    /// counted there, the own fight's only (<see cref="OwnFight"/>, as on Windows); in a dungeon or an arena everything.</summary>
     private CombatBatch Counted(CombatBatch batch)
     {
-        if (CountingNow() || (batch.Damage.Count == 0 && batch.Avoids.Count == 0 && batch.Kills.Count == 0))
+        if (batch.Damage.Count == 0 && batch.Avoids.Count == 0 && batch.Kills.Count == 0)
         {
             return batch;
+        }
+
+        if (CountingNow())
+        {
+            return InInstanceNow() || GameDirectory is not { } directory || (directory.LocalPlayerId < 0 && directory.InferLocalPlayer() is null)
+                ? batch
+                : _ownFight.Keep(batch,
+                    id => IsGroupMember(id, directory) || (directory.SummonOwnerOf(id) is int owner && owner != id && IsGroupMember(owner, directory)),
+                    id => directory.BossNpcIdOf(id) is not null,
+                    directory.IsKnownPlayer);
         }
 
         if (DateTime.Now - _notCountedSaid > TimeSpan.FromMinutes(2) && batch.Damage.Count > 0)
@@ -481,6 +492,8 @@ public sealed partial class MeterEngine : IDisposable
 
         return batch with { Damage = Array.Empty<DamageEvent>(), Avoids = Array.Empty<AvoidEvent>(), Kills = Array.Empty<KillEvent>() };
     }
+
+    private readonly OwnFight _ownFight = new();
 
     private bool InInstanceNow() =>
         _source is Aion2PacketCombatSource source && source.CurrentZoneId is > 0 and var zone && (Aion2Zones.IsInstance(zone) || Aion2Zones.IsArena(zone));
