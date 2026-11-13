@@ -262,42 +262,6 @@ public partial class MainWindow
                 s.PetMapGatherItems.Add("Hidden Cube");
             }
         });
-        // the minimap read for an exact position (MinimapReader): its switch, what it does now, and two helpers for checking it
-        Switch(loc["Cubes.Minimap"], loc["Cubes.MinimapTip"], s0.MinimapReading, (s, v) => s.MinimapReading = v);
-        var minimapState = Wrapped("", "Brush.TextMuted", 12);
-        minimapState.Margin = new Thickness(26, -6, 0, 6);
-        switches.Children.Add(minimapState);
-        var minimapTools = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(26, 0, 0, 12) };
-        TextBlock savePicture = ShellLink(loc["Cubes.MinimapSave"], () => MinimapReader.SaveNext = true);
-        savePicture.Margin = new Thickness(0, 0, 18, 0);
-        minimapTools.Children.Add(savePicture);
-        minimapTools.Children.Add(ShellLink(loc["Cubes.MinimapFind"], () => MinimapReader.ForgetPlace = true));
-        switches.Children.Add(minimapTools);
-        void ShowMinimap()
-        {
-            string text = MinimapReader.State switch
-            {
-                MinimapReader.ReadState.Off => loc["Cubes.MinimapOff"],
-                MinimapReader.ReadState.Searching => loc["Cubes.MinimapSearching"],
-                MinimapReader.ReadState.Reading => string.Format(CultureInfo.CurrentCulture, loc["Cubes.MinimapReading"], MinimapReader.RecentFixes, Math.Round(MinimapReader.LastMs)),
-                MinimapReader.ReadState.NotSeen => loc["Cubes.MinimapNotSeen"],
-                _ => loc["Cubes.MinimapWaiting"],
-            };
-            if (MinimapReader.State == MinimapReader.ReadState.Reading && MinimapReader.Accuracy is { Count: >= 3 } accuracy)
-            {
-                text += " " + string.Format(CultureInfo.CurrentCulture, loc["Cubes.MinimapAccuracy"], accuracy.Metres, accuracy.Count, accuracy.Map);
-            }
-
-            if (MinimapReader.LastSaved is { } saved)
-            {
-                text += " " + string.Format(CultureInfo.CurrentCulture, loc["Cubes.MinimapSaved"], saved);
-            }
-
-            minimapState.Text = text;
-        }
-
-        ShowMinimap();
-        timer.Tick += (_, _) => ShowMinimap();
         column.Children.Add(HomeCard(loc["Cubes.Alerts"], alerts, null, 0));
         column.Children.Add(HomeCard(loc["Cubes.OnMap"], switches, null, 0));
 
