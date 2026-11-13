@@ -14,6 +14,13 @@
           "area": "Cubes",
           "title": "No cube alerts without a key, also after a restart",
           "text": "With “Only when I carry a key” on, the cube note, the sounds, the meter’s line and the map stayed quiet only once the app had seen your bag at login. Started (or restarted for an update) in the middle of a game, it didn’t know your bag yet and let every alert through, beeps and all, key or not. Now they wait for a key: the app goes by your character’s bag from its last login, and while it knows no bag at all, the alerts stay quiet. The Cube finder page says why. The cubes still show on the map."
+        },
+        {
+          "kind": "fixed",
+          "area": "Overlays",
+          "title": "Overlays step aside for the game’s windows on wide screens",
+          "text": "The overlays hide while one of the game’s windows (the inventory, the map, Arcana …) covers the screen, once the app has learnt where your HUD is from a few fights. On ultrawide screens (21:9 and wider) it never learnt it: the HUD’s parts lie further apart there, and the app wanted as many of them as on a 16:9 screen. It wants fewer on a wider screen now. A HUD it has learnt also stays learnt when it leaves out the parts that show only in fights (a boss’s bar, your target’s frame); before, that could lose it again on any screen.",
+          "example": "On a 3440×1440 screen the overlays stayed over the inventory and the map all evening; after the update they step aside from the first fight."
         }
       ]
     },

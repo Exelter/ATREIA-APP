@@ -43,6 +43,35 @@ internal sealed class HudWatcher : IDisposable
     /// <summary>Whether the HUD has been learnt for the game window's size (until then nothing is hidden by the screen).</summary>
     public bool Ready => _mask is not null;
 
+    /// <summary>
+    /// The HUD points needed before the watcher judges, for a game window of this size: <see cref="NeedPoints"/> on a 16:9 window or a narrower one, fewer on a
+    /// wider one. The game's HUD keeps its size there while the points spread over the whole width, so fewer of them fall on it (13 November 2026: on a
+    /// 3440x1440 screen every fight showed 45 to 56 steady points, never the 60 a 16:9 screen asks, so the HUD was never learnt and the overlays never
+    /// stepped aside for the game's windows).
+    /// </summary>
+    public static int NeedPointsFor(int width, int height)
+    {
+        double aspect = height > 0 ? (double)width / height : 0;
+        return aspect > 16.0 / 9 ? Math.Max(NeedPoints / 3, (int)Math.Round(NeedPoints * (16.0 / 9) / aspect)) : NeedPoints;
+    }
+
+    private int Need => NeedPointsFor(_size.Width, _size.Height);
+
+    /// <summary>
+    /// Once learnt, the HUD is kept while two thirds of the points it needed are left: dropping the parts shown only in fights must not lose a HUD that was
+    /// learnt just above the need (13 November 2026: a HUD learnt with 66 points was gone a minute later, and the points dropped never count again).
+    /// </summary>
+    private int Keep => Need * 2 / 3;
+
+    private bool _quiet;
+
+    /// <summary>For the self-test: the size of the game window the looks come from (the live watcher takes it from the window); it writes no log then.</summary>
+    internal void SizeForCheck(System.Drawing.Size size)
+    {
+        _size = size;
+        _quiet = true;
+    }
+
     // ---- a small diagnostic log beside the settings (hud-log.txt): what the watcher decided, to find out why it does not hide on someone's screen ----
 
     private sealed class MinuteTally
@@ -75,7 +104,7 @@ internal sealed class HudWatcher : IDisposable
 
     private void Note(string text)
     {
-        if (_size.Width == 0)
+        if (_size.Width == 0 || _quiet)
         {
             return; // the self-test: no file
         }
@@ -221,7 +250,7 @@ internal sealed class HudWatcher : IDisposable
             }
         }
 
-        if (counted < NeedPoints / 2)
+        if (counted < Need / 2)
         {
             _low = _high = 0;
             _minute.Covered++;
@@ -311,7 +340,7 @@ internal sealed class HudWatcher : IDisposable
             left++;
         }
 
-        if (left < NeedPoints)
+        if (left < Keep)
         {
             _mask = null;
             _maskMean = null;
@@ -502,7 +531,7 @@ internal sealed class HudWatcher : IDisposable
             }
         }
 
-        if (n >= NeedPoints)
+        if (n >= Need)
         {
             if (_mask is null)
             {
@@ -514,7 +543,7 @@ internal sealed class HudWatcher : IDisposable
         }
         else if (_looks >= NeedLooks && (int)_looks % 20 == 0)
         {
-            Note($"no steady HUD found yet: {n} points from {(int)_looks} looks in fights (needs {NeedPoints})");
+            Note($"no steady HUD found yet: {n} points from {(int)_looks} looks in fights (needs {Need})");
         }
     }
 
@@ -562,7 +591,7 @@ internal sealed class HudWatcher : IDisposable
 
     private void Save()
     {
-        if (_size.Width == 0 || _looks == 0)
+        if (_size.Width == 0 || _looks == 0 || _quiet)
         {
             return;
         }
