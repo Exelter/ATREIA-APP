@@ -22868,8 +22868,8 @@
     "de": "Nur wenn ich einen Schlüssel dabeihabe"
   },
   "Cubes.OnlyKeyTip": {
-    "en": "The note, the sounds, the meter's line and the map coming up only while your character has a Hidden Cube key in its bag, so a character without keys isn't sent to cubes it can't open. The cube still shows on the map. Until the app has seen your bag (at your login), the alerts come as usual. On by default.",
-    "de": "Hinweis, Töne, die Zeile des Meters und die aufklappende Karte nur, solange dein Charakter einen Schlüssel für Versteckte Würfel im Inventar hat, damit ein Charakter ohne Schlüssel nicht zu Würfeln geschickt wird, die er nicht öffnen kann. Der Würfel bleibt auf der Karte. Bis die App dein Inventar gesehen hat (beim Login), kommen die Hinweise wie gewohnt. Standardmäßig an."
+    "en": "The note, the sounds, the meter's line and the map coming up only while your character has a Hidden Cube key in its bag, so a character without keys isn't sent to cubes it can't open. The cube still shows on the map. Until the app has seen your bag (at your login), the alerts stay quiet. On by default.",
+    "de": "Hinweis, Töne, die Zeile des Meters und die aufklappende Karte nur, solange dein Charakter einen Schlüssel für Versteckte Würfel im Inventar hat, damit ein Charakter ohne Schlüssel nicht zu Würfeln geschickt wird, die er nicht öffnen kann. Der Würfel bleibt auf der Karte. Bis die App dein Inventar gesehen hat (beim Login), bleiben die Hinweise still. Standardmäßig an."
   },
   "Cubes.KeyShort": {
     "en": "1 key",
@@ -22920,6 +22920,16 @@
     "en": "{0}’s keys show once the app has seen the bag (at login).",
     "de": "Die Schlüssel von {0} erscheinen, sobald die App das Inventar gesehen hat (beim Login).",
     "fr": "Les clés de {0} s’affichent dès que l’application a vu le sac (à la connexion)."
+  },
+  "Cubes.KeysUnknownQuiet": {
+    "en": "{0}’s keys show once the app has seen the bag (at login). Until then the cube alerts stay quiet; the cubes still show on the map.",
+    "de": "Die Schlüssel von {0} erscheinen, sobald die App das Inventar gesehen hat (beim Login). Bis dahin bleiben die Würfel-Hinweise still; die Würfel bleiben auf der Karte.",
+    "fr": "Les clés de {0} s’affichent dès que l’application a vu le sac (à la connexion). D’ici là, les alertes de cube restent silencieuses ; les cubes restent sur la carte."
+  },
+  "Cubes.KeysNoCharacter": {
+    "en": "The cube alerts stay quiet until the app has seen your character’s bag: log in once while the app runs. The cubes still show on the map.",
+    "de": "Die Würfel-Hinweise bleiben still, bis die App das Inventar deines Charakters gesehen hat: logge dich einmal ein, während die App läuft. Die Würfel bleiben auf der Karte.",
+    "fr": "Les alertes de cube restent silencieuses tant que l’application n’a pas vu le sac de ton personnage : connecte-toi une fois pendant que l’application tourne. Les cubes restent sur la carte."
   },
   "Images.Fetching": {
     "en": "Downloading the game's pictures (icons and maps). This happens only once.",

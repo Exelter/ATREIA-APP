@@ -6,6 +6,18 @@
   ],
   "versions": [
     {
+      "version": "2.0.19",
+      "date": "2026-11-13",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Cubes",
+          "title": "No cube alerts without a key, also after a restart",
+          "text": "With “Only when I carry a key” on, the cube note, the sounds, the meter’s line and the map stayed quiet only once the app had seen your bag at login. Started (or restarted for an update) in the middle of a game, it didn’t know your bag yet and let every alert through, beeps and all, key or not. Now they wait for a key: the app goes by your character’s bag from its last login, and while it knows no bag at all, the alerts stay quiet. The Cube finder page says why. The cubes still show on the map."
+        }
+      ]
+    },
+    {
       "version": "2.0.18",
       "date": "2026-11-13",
       "items": [

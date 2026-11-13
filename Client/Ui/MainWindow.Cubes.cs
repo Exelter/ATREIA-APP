@@ -80,10 +80,10 @@ public partial class MainWindow
         text.Text = (distance is not null ? what + " · " + distance : what) + (CubeKeysShort() is { } keys ? " · " + keys : "");
     }
 
-    /// <summary>"3 keys", "1 key" for the cube lines (the meter's, the cube note); null while the logged-in character's bag is not known.</summary>
+    /// <summary>"3 keys", "1 key" for the cube lines (the meter's, the cube note); null while the bag of the character in game is not known.</summary>
     internal static string? CubeKeysShort()
     {
-        if (Aion2Inventories.CubeKeys(Aion2Inventories.CurrentName()) is not { } keys)
+        if (Aion2Inventories.CubeKeys(Aion2Inventories.PlayingName()) is not { } keys)
         {
             return null;
         }
@@ -93,21 +93,22 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// The logged-in character's Hidden Cube keys, for the Cube finder page: how many in the bag (and in storage), and when there are none in the bag with the
-    /// alerts set to need a key, that they stay quiet for this character. Null text while no character is known.
+    /// The Hidden Cube keys of the character in game (or most likely in game), for the Cube finder page: how many in the bag (and in storage), and when there are
+    /// none in the bag - or the bag is not known yet - with the alerts set to need a key, that they stay quiet. Null while no character is known and the
+    /// alerts do not need a key.
     /// </summary>
     private static (string Text, bool None)? CubeKeysLine(bool needsKey)
     {
         LocalizationManager loc = LocalizationManager.Instance;
-        string? name = Aion2Inventories.CurrentName();
+        string? name = Aion2Inventories.PlayingName();
         if (name is null)
         {
-            return null;
+            return needsKey ? (loc["Cubes.KeysNoCharacter"], true) : null;
         }
 
         if (Aion2Inventories.CubeKeys(name) is not { } keys)
         {
-            return (string.Format(CultureInfo.CurrentCulture, loc["Cubes.KeysUnknown"], name), false);
+            return (string.Format(CultureInfo.CurrentCulture, loc[needsKey ? "Cubes.KeysUnknownQuiet" : "Cubes.KeysUnknown"], name), needsKey);
         }
 
         string text = keys.Bag == 0 ? string.Format(CultureInfo.CurrentCulture, loc["Cubes.KeysNone"], name)
