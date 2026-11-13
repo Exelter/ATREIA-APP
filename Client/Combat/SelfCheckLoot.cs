@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.IO;
 using AionDPS.Aion2;
 using AionDPS.Combat.Sources;
 
@@ -89,8 +90,46 @@ public static class SelfCheckLoot
         return two && apart && rates && reset;
     }
 
+    /// <summary>
+    /// The monsters' pictures on Grind and Loot (13 November 2026, the owner: "a lot of icons are missing from grind": Abyss Elite Drakan, Priest and
+    /// Officer, Chief's Sentinel, Blades Elite Sentinel had their initial): by the model each wears, its own picture, another colour of it, another of its
+    /// family or race, or the race its name says; never a creature of another kind (the BeritraC family's guard dog for a Drakan soldier) and no creature's
+    /// picture for a cannon or a totem. With the image pack there (the checks of the builds), the five of the owner's screenshot have one.
+    /// </summary>
+    private static bool MonsterPictures()
+    {
+        string[] pictures = { "drakan_02", "drakanelite_03_v01", "altknife_04", "altknife_06", "beritrac_03", "beritrac_06", "krallelite_01", "krallwar_01",
+            "dracowar_01_v03", "daevawar_04", "lycan_04", "owlelite_01_cv01_b" };
+        (string? Model, string Name, string? Picture)[] cases =
+        {
+            ("lycan_04", "Ferocious Horn Mau Totem Shaman", "lycan_04"),
+            ("dracowar_01_v01", "Abyss Draconute Superior Combatant", "dracowar_01_v03"),
+            ("drakanelite_01", "Abyss Elite Priest", "drakanelite_03_v01"),
+            ("altknife_05", "Blades Elite Sentinel", "altknife_04"),
+            ("krallarc_01_v01", "Chief's Sentinel", "krallelite_01"),
+            ("beritrac_01", "Abyss Drakan Brawler", "drakan_02"),
+            ("beritrac_03", "Drakan Guard Dog", "beritrac_03"),
+            (null, "Urugugu Soldier", "owlelite_01_cv01_b"),
+            ("altknife_08", "Blades Defense Cannon", null),
+            ("dstrarchon_02", "Soulless Body", null),
+            (null, "Blazing Totem", null),
+        };
+        var wrong = cases.Where(c => AionDPS.Ui.MonsterArt.PictureModel(c.Model, c.Name, pictures) != c.Picture)
+            .Select(c => $"{c.Name}: {AionDPS.Ui.MonsterArt.PictureModel(c.Model, c.Name, pictures) ?? "none"} (wants {c.Picture ?? "none"})").ToList();
+        bool rules = wrong.Count == 0;
+        // the real pictures: the pack is there in the builds' checks, not always on a developer's PC
+        bool pack = File.Exists(AionDPS.Aion2.GameArt.PathOf("aion2", "bosses", "field", "mob_drakanelite_03_v01.png"));
+        int[] screenshot = { 2600074, 2600076, 2400610, 2400505, 2600077 };
+        int found = screenshot.Count(id => AionDPS.Ui.MonsterArt.PathOf(id) is { } file && File.Exists(file));
+        bool real = !pack || found == screenshot.Length;
+        Console.WriteLine($"  -> monster pictures by the model worn: {cases.Length - wrong.Count} of {cases.Length} as they should be{(rules ? "" : " (" + string.Join("; ", wrong) + ")")}; "
+            + (pack ? $"the owner's screenshot's five with a picture: {found} of {screenshot.Length}" : "no image pack here: the real pictures not checked") + $": {(rules && real ? "ok" : "FAIL")}");
+        return rules && real;
+    }
+
     public static bool Run()
     {
+        bool pictures = MonsterPictures();
         Console.WriteLine("[selftest] Loot log (ground drop, inventory, pickup):");
         Aion2Loot.Clear();
         Aion2Loot.NoteZone(1010);
@@ -264,6 +303,6 @@ public static class SelfCheckLoot
         // a Hidden Cube's loot (the drop's "monster" is the cube): to the cube log, one entry per cube, and in no area and no drop table
         bool cubes = Cubes(t.AddHours(8));
         Aion2Loot.Clear();
-        return one && souls && stones && second && again && legacy && everyMap && guess && named && kills && perKill && rate && newRun && icons && gear && shows && cubes;
+        return pictures && one && souls && stones && second && again && legacy && everyMap && guess && named && kills && perKill && rate && newRun && icons && gear && shows && cubes;
     }
 }
