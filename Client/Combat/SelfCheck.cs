@@ -41,6 +41,7 @@ public static class SelfCheck
         ok &= SelfCheckDummy.Run();
         ok &= SelfCheckFightReport.Run();
         ok &= SelfCheckMenu.Run();
+        ok &= SelfCheckHud.Run();
         ok &= SelfCheckOwnFight.Run();
         ok &= SelfCheckSettings.Run();
         ok &= SelfCheckStream.Run();
@@ -52,6 +53,7 @@ public static class SelfCheck
         ok &= SelfCheckVerify.Run();
         ok &= SelfCheckPetRoute.Run();
         ok &= SelfCheckPositionTrack.Run();
+        ok &= SelfCheckMinimap.Run();
         ok &= SelfCheckAssistSkills.Run();
         ok &= SelfCheckNaturalVoice.Run();
         ok &= SelfCheckInstanceTimer.Run();

@@ -54,9 +54,10 @@ public partial class SettingsWindow : Window
         UploadOtherProfilesBox.IsChecked = settings.UploadOtherPlayersProfiles;
         UploadReplayBox.IsChecked = settings.UploadReplay;
         ShareCpBox.IsChecked = settings.ShareCpMeasurements;
+        ShareMapBox.IsChecked = settings.ShareMapData;
         ShowPrivacyStatus();
         // switching an upload on needs the privacy policy to be accepted: it is asked again when it was declined (set after the values above, so loading does not ask)
-        foreach (CheckBox uploadSwitch in new[] { AutoUploadProfileBox, AutoUploadBossBox, UploadOtherProfilesBox, ShareCpBox })
+        foreach (CheckBox uploadSwitch in new[] { AutoUploadProfileBox, AutoUploadBossBox, UploadOtherProfilesBox, ShareCpBox, ShareMapBox })
         {
             uploadSwitch.Checked += OnUploadSwitchChecked;
         }
@@ -173,8 +174,8 @@ public partial class SettingsWindow : Window
         StreamPortBox.Text = settings.StreamOverlayPort.ToString();
         ShowMenuControlStatus(settings.MenuControlMode);
         var unlocked = MenuWatcher.UnlockedOverlays(settings);
-        // an unlocked overlay (being placed) pauses the hiding: the cursor shows while one drags it
-        MenuPausedStatus.Visibility = settings.HideDuringMenus && unlocked.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        // an unlocked overlay pauses only the cursor's sign: once the screen knows the HUD, game windows hide the overlays all the same
+        MenuPausedStatus.Visibility = settings.HideDuringMenus && unlocked.Count > 0 && !MenuWatcher.ScreenReady ? Visibility.Visible : Visibility.Collapsed;
         MenuPausedStatus.Text = string.Format(LocalizationManager.Instance["Settings.Menu.Paused"], string.Join(", ", unlocked.Select(k => LocalizationManager.Instance[k])));
         PopulateCaptureAdapters(settings.CaptureAdapterId);
 
@@ -1040,6 +1041,7 @@ public partial class SettingsWindow : Window
         _settings.UploadReplay = UploadReplayBox.IsChecked ?? false;
         _settings.ShareLoginWithLegion = ShareLoginBox.IsChecked ?? false;
         _settings.ShareCpMeasurements = ShareCpBox.IsChecked ?? false;
+        _settings.ShareMapData = ShareMapBox.IsChecked ?? false;
         _settings.LoginShareEligible = onDisk.LoginShareEligible;
         _settings.HotkeyHideUi = (string?)HotkeyHideUiBox.Tag ?? "";
         _settings.HotkeyPause = (string?)HotkeyPauseBox.Tag ?? "";
@@ -1823,6 +1825,8 @@ public partial class SettingsWindow : Window
         MenuControlStatus.Text = Enum.TryParse(mode, true, out ControlMode parsed) && parsed != ControlMode.Unknown
             ? loc["Settings.Menu.Status." + parsed]
             : loc["Settings.Menu.Status.Unknown"];
+        MenuControlStatus.Text += "\n" + (MenuWatcher.ScreenReady ? loc["Settings.Menu.Screen.Ready"]
+            : loc["Settings.Menu.Screen.Learning"] + $" ({Math.Min(MenuWatcher.ScreenLearnt, HudWatcher.NeedLooks)}/{HudWatcher.NeedLooks})");
     }
 
     /// <summary>The combat overlay's page: the two switches, the elements and their options.</summary>

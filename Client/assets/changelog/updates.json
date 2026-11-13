@@ -6,18 +6,6 @@
   ],
   "versions": [
     {
-      "version": "2.0.21",
-      "date": "2026-11-13",
-      "items": [
-        {
-          "kind": "fixed",
-          "area": "App",
-          "title": "No more pictures of the game while you stream",
-          "text": "A Discord stream of the game could pause (“… has minimized their application”) while the app was open. The app took pictures of the game’s window several times a second, to read your minimap and to see when one of the game’s windows was open, and now it doesn’t. The minimap reading is gone, and with it the map accuracy sharing in Settings › Upload: the map’s arrow and the Hidden Cube distances go by the positions the game sends, as before. The overlays still step aside while a game window is open, by the mouse cursor, in the control mode that hides it while you play; in the classic one, where the cursor always shows, they now stay up. Only the Black Cloud shop’s pet frames still take pictures, while that shop page is open."
-        }
-      ]
-    },
-    {
       "version": "2.0.20",
       "date": "2026-11-13",
       "items": [

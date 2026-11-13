@@ -7,7 +7,7 @@ namespace AionDPS.Ui;
 
 /// <summary>
 /// A picture of the player's own game for the look setup's preview (5 November 2026, the owner: "add a picture of their game once the app opens, not a random
-/// picture"): the game window's own picture (PrintWindow, the window's client area: never the screen, so none of the meter's
+/// picture"): the game window's own picture, as the minimap reader takes it (PrintWindow, the window's client area: never the screen, so none of the meter's
 /// overlays and nothing else over the game is in it), made small and kept in memory only while the setup is open; never saved, never sent. Without the game
 /// running (or minimized, or drawn black): the picture that comes with the app (assets/setup/game.jpg), else none.
 /// </summary>
