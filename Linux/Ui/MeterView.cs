@@ -220,6 +220,9 @@ internal sealed class MeterView : Border
     /// <summary>The lock button's place in the window (device-independent units): what keeps taking clicks while the meter lets the rest through.</summary>
     public Control LockButton => _lockButton;
 
+    /// <summary>The status line's button ("Copy the command", "Get it"): it takes clicks while it is there, locked or not.</summary>
+    public Control StatusButton => _statusAction;
+
     /// <summary>Shows the lock as closed or open.</summary>
     public void ShowLocked(bool locked)
     {

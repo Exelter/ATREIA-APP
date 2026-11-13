@@ -6,6 +6,18 @@
   ],
   "versions": [
     {
+      "version": "2.0.17",
+      "date": "2026-11-13",
+      "items": [
+        {
+          "kind": "new",
+          "area": "App",
+          "title": "Atreia App for Linux",
+          "text": "The app now has a Linux version of its own, for playing AION 2 through Proton or Wine (Steam, Lutris, Heroic, Bottles) on Linux and in the Steam Deck's desktop mode. This first version is the meter over the game: damage, healing and damage taken, the Me, Group, Corps and All switch, the boss line with its health, kill time and enrage, and it follows the newest boss fight by itself like the Windows meter. Download it from atreia.app/download/Atreia-App-Linux-x64.tar.gz, unpack it and run install.sh. The app's other windows follow one by one; the Windows app stays as it is."
+        }
+      ]
+    },
+    {
       "version": "2.0.16",
       "date": "2026-11-13",
       "items": [

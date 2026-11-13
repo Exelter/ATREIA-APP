@@ -5,7 +5,7 @@ installer; this is an app of its own next to it.
 
 ## For players
 
-1. Download `atreia-app-linux-x64-<version>.tar.gz` and unpack it.
+1. Download [Atreia-App-Linux-x64.tar.gz](https://atreia.app/download/Atreia-App-Linux-x64.tar.gz) and unpack it (`tar xzf Atreia-App-Linux-x64.tar.gz`).
 2. In the unpacked `atreia-app` folder, run `./install.sh` in a terminal. It installs the app for you alone (`~/.local/share/atreia-app`, a menu entry, the
    command `atreia-app`) and gives its program the right to read network traffic, which asks for your password once.
 3. Start Atreia App from the menu, then the game. The meter finds the game by itself.
@@ -18,7 +18,10 @@ what to do. `atreia-app capture-check` in a terminal shows what the app can see.
 - **Lock** (the padlock in the meter's head) lets the clicks go through to the game; the padlock itself keeps taking them, to unlock. This works on X11 and
   for the game and the meter under Xwayland in a Wayland session (the usual way Proton games run).
 - **Steam Deck**: in Desktop Mode. Gaming Mode shows no other windows over the game.
-- Settings, characters and history are kept in `~/.config/AtreiaApp`. `~/.local/share/atreia-app/uninstall.sh` removes the app (the settings stay).
+- Settings, characters and history are kept in `~/.config/AtreiaApp`; `linux.log` there notes how the capture started. `~/.local/share/atreia-app/uninstall.sh`
+  removes the app (the settings stay).
+- A newer version is said on the meter's status line. Download it again and run its `install.sh`: it replaces the old one and gives the new program the right
+  to read the network.
 
 ## What is in it so far
 
@@ -44,6 +47,8 @@ the uploads, the data) unchanged, and adds what Linux does differently:
 `Meter/MeterEngine.cs` follows the Windows main window's meter method by method under the same names: a change to the meter's rules there belongs here
 too.
 
-Builds and checks run on GitHub Actions (`.github/workflows/linux.yml`): the build, the checks (`AtreiaApp selftest`: the Windows app's checks that need
-no window, then the Linux parts), pictures of the meter (`AtreiaApp render <out.png> [meter|heal|taken|waiting|permission]`) and the download
-(`atreia-app-linux-x64-<version>.tar.gz`). By hand: `dotnet publish Linux/AtreiaApp.Linux.csproj -c Release -r linux-x64 --self-contained -o out`.
+Builds and checks run on GitHub Actions (`.github/workflows/linux.yml`, on every change to `Linux/` or `Client/`): the build, the checks (`AtreiaApp
+selftest`: the Windows app's checks that need no window, then the Linux parts), pictures of the meter (`AtreiaApp render <out.png>
+[meter|heal|taken|waiting|permission|fonts]`), the real window on an X server (locked: only its lock button takes clicks) and a download of the build. A
+release (`.github/workflows/release.yml`) builds the Linux download after the Windows one and puts it on atreia.app with `updates/linux.json`. By hand:
+`dotnet publish Linux/AtreiaApp.Linux.csproj -c Release -r linux-x64 --self-contained -o out`.

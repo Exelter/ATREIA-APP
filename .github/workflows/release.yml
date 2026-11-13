@@ -42,6 +42,12 @@ jobs:
     runs-on: windows-latest
     env:
       R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+    # for the Linux job below: the same commit and version
+    outputs:
+      tag: ${{ steps.tag.outputs.name }}
+      ref: ${{ steps.tag.outputs.ref }}
+      number: ${{ steps.version.outputs.number }}
+      channel: ${{ steps.version.outputs.channel }}
     steps:
       - name: Determine tag
         id: tag
@@ -248,3 +254,71 @@ jobs:
             git tag "$tag" "${{ steps.tag.outputs.ref }}"
             git push origin "refs/tags/$tag"
           fi
+
+  # Atreia App for Linux (Linux/, an app of its own next to the Windows one): built from the same commit with the same version once the Windows release is
+  # out, its checks run with the game's pictures, then put on atreia.app as download/Atreia-App-Linux-x64.tar.gz, with updates/linux.json beside the
+  # Windows update index (the Linux app reads it to say a newer version is out). The site serves both from its file storage like the Windows files
+  # (src/gate.js, appFile). Stable releases only: a test release is for the Windows testers.
+  linux:
+    needs: release
+    if: needs.release.outputs.channel == 'stable'
+    runs-on: ubuntu-24.04
+    env:
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release.outputs.ref }}
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+      - name: Build
+        run: >
+          dotnet publish Linux/AtreiaApp.Linux.csproj -c Release -r linux-x64 --self-contained true --nologo
+          -p:Version=${{ needs.release.outputs.number }} -o out/atreia-app
+      # The download, before the game's pictures go into the folder for the checks (they are NCSOFT's and never shipped).
+      - name: The download
+        run: |
+          set -eu
+          chmod +x out/atreia-app/AtreiaApp out/atreia-app/install.sh out/atreia-app/uninstall.sh
+          tar -C out -czf Atreia-App-Linux-x64.tar.gz atreia-app
+          sha=$(sha256sum Atreia-App-Linux-x64.tar.gz | cut -d' ' -f1)
+          size=$(stat -c %s Atreia-App-Linux-x64.tar.gz)
+          printf '{"version":"%s","file":"Atreia-App-Linux-x64.tar.gz","sha256":"%s","size":%s}\n' "${{ needs.release.outputs.number }}" "$sha" "$size" > linux.json
+          cat linux.json
+      - name: Self-checks
+        run: |
+          set -eu
+          sudo apt-get update -q && sudo apt-get install -y -q libpcap-dev > /dev/null
+          index=$(curl -fsSL --retry 4 --retry-delay 10 -A AtreiaApp-checks https://atreia.app/app/updates/images.json)
+          url=$(printf '%s' "$index" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("url") or "https://atreia.app/app/updates/" + d["file"])')
+          sha=$(printf '%s' "$index" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sha256"].lower())')
+          curl -fsSL --retry 4 --retry-delay 10 -A AtreiaApp-checks -o /tmp/images.zip "$url"
+          echo "$sha  /tmp/images.zip" | sha256sum -c -
+          unzip -q -o /tmp/images.zip -d out/atreia-app/assets
+          out/atreia-app/AtreiaApp selftest > selftest.txt 2>&1 || { tail -60 selftest.txt; echo "::error::The Linux app's self-checks failed: nothing goes on atreia.app."; exit 1; }
+          grep -q '\[selftest\] ALL CHECKS PASSED' selftest.txt || { tail -60 selftest.txt; exit 1; }
+          tail -3 selftest.txt
+      - name: Put it on atreia.app
+        if: env.R2_ENDPOINT != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          set -eu
+          # the download first, then the index that names it
+          aws s3 cp Atreia-App-Linux-x64.tar.gz s3://atreia-app/download/Atreia-App-Linux-x64.tar.gz --endpoint-url "$R2_ENDPOINT" --content-type application/gzip --only-show-errors
+          aws s3 cp linux.json s3://atreia-app/updates/linux.json --endpoint-url "$R2_ENDPOINT" --content-type application/json --only-show-errors
+          echo "### Atreia App for Linux ${{ needs.release.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "On atreia.app: https://atreia.app/download/Atreia-App-Linux-x64.tar.gz" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: Atreia-App-Linux-${{ needs.release.outputs.tag }}
+          path: |
+            Atreia-App-Linux-x64.tar.gz
+            linux.json
+          retention-days: 30
+          compression-level: 0

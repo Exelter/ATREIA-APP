@@ -247,7 +247,7 @@ internal sealed class MeterWindow : Window
         Say(locked ? "Locked: the clicks go through to the game. The lock button unlocks it." : "Unlocked: drag the meter by its head, size it by its corner.", TimeSpan.FromSeconds(6));
     }
 
-    private (int X, int Y, int W, int H)? _shapeApplied;
+    private string? _shapeApplied;
     private bool _shapeFailSaid;
 
     /// <summary>Locked: only the lock button takes the mouse; unlocked: the whole window.</summary>
@@ -270,23 +270,33 @@ internal sealed class MeterWindow : Window
             return;
         }
 
-        Control button = _view.LockButton;
-        if (button.TranslatePoint(new Point(0, 0), this) is not Point at)
+        // the lock button, and the status line's button while it is there (the command to copy, the new version): the rest lets the clicks through
+        var parts = new List<(int X, int Y, int Width, int Height)>();
+        foreach (Control button in new[] { _view.LockButton, _view.StatusButton })
+        {
+            if (button.IsEffectivelyVisible && button.TranslatePoint(new Point(0, 0), this) is Point at)
+            {
+                double scale = RenderScaling;
+                parts.Add(((int)Math.Floor(at.X * scale) - 2, (int)Math.Floor(at.Y * scale) - 2, (int)Math.Ceiling(button.Bounds.Width * scale) + 4, (int)Math.Ceiling(button.Bounds.Height * scale) + 4));
+            }
+        }
+
+        if (parts.Count == 0)
         {
             return;
         }
 
-        double scale = RenderScaling;
-        var part = ((int)Math.Floor(at.X * scale) - 2, (int)Math.Floor(at.Y * scale) - 2, (int)Math.Ceiling(button.Bounds.Width * scale) + 4, (int)Math.Ceiling(button.Bounds.Height * scale) + 4);
-        if (_shapeApplied == part)
+        string shape = string.Join(" ", parts);
+        if (_shapeApplied == shape)
         {
             return;
         }
 
-        if (X11Shape.SetInputRegion(handle.Handle, new[] { part }))
+        if (X11Shape.SetInputRegion(handle.Handle, parts))
         {
-            _shapeApplied = part;
-            LinuxLog.Write($"input region: the lock button alone ({part.Item1},{part.Item2} {part.Item3}x{part.Item4} px): the clicks go through the rest");
+            _shapeApplied = shape;
+            var lockPart = parts[0];
+            LinuxLog.Write($"input region: the lock button alone ({lockPart.X},{lockPart.Y} {lockPart.Width}x{lockPart.Height} px){(parts.Count > 1 ? " and the status line's button" : "")}: the clicks go through the rest");
         }
         else if (!_shapeFailSaid)
         {
