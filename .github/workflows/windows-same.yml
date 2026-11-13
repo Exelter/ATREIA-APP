@@ -1,0 +1,43 @@
+name: Windows app unchanged
+
+# Temporary check for the Linux pull request (removed before it is merged): the Windows app built from main and from this branch draws every picture of
+# the Screens workflow, and the two sets are compared pixel by pixel; the self-checks of both run too. Any difference is printed with both pictures.
+on:
+  push:
+    branches: [cross-platform]
+    paths: [".github/workflows/windows-same.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: branch
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          path: main
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+      - name: Build both
+        shell: pwsh
+        run: |
+          dotnet build main/Client/AionDPS.csproj -c Release --nologo -o out-main
+          if ($LASTEXITCODE) { exit 1 }
+          dotnet build branch/Client/AionDPS.csproj -c Release --nologo -o out-branch
+          if ($LASTEXITCODE) { exit 1 }
+      - name: Game pictures
+        shell: pwsh
+        run: |
+          pwsh main/Tools/release/images.ps1 -Dir out-main
+          pwsh main/Tools/release/images.ps1 -Dir out-branch
+      - name: Draw and compare
+        shell: pwsh
+        run: |
+          python -m pip install --quiet pillow
+          python branch/.github/compare-windows.py
