@@ -97,7 +97,7 @@ jobs:
         run: |
           set -eu
           mkdir -p screens
-          for scene in meter heal taken waiting permission; do
+          for scene in meter raid heal taken all callout buffs stagger stagger-failed grind dummy bar waiting permission; do
             out/atreia-app/AtreiaApp render "screens/linux-$scene.png" "$scene"
           done
           # in the log too (collapsed), for a look without downloading the run's files
@@ -106,8 +106,8 @@ jobs:
             base64 -w 0 "$f"; echo
             echo "::endgroup::"
           done
-      # The real window on an X server (no screen: Xvfb), locked, for a few seconds: it must open and keep running, and its picture is kept. Its own
-      # data folder, so the run starts like a first start.
+      # The real window on an X server (no screen: Xvfb), locked in place and letting the clicks through, for a few seconds: it must open and keep running,
+      # and its picture is kept. Its own data folder, so the run starts like a first start.
       - name: The window on an X server
         run: |
           set -eu
@@ -115,7 +115,8 @@ jobs:
           home=$(mktemp -d)
           export XDG_CONFIG_HOME="$home/.config"
           mkdir -p "$home/.config/AtreiaApp"
-          echo '{"X": 40, "Y": 40, "Width": 470, "Height": 330, "Locked": true, "Topmost": true}' > "$home/.config/AtreiaApp/linux-window.json"
+          echo '{"X": 40, "Y": 40, "Locked": true, "Topmost": true}' > "$home/.config/AtreiaApp/linux-window.json"
+          echo '{"CompactClickThrough": true}' > "$home/.config/AtreiaApp/meter-settings.json"
           HOME="$home" xvfb-run -a -s "-screen 0 1100x700x24" sh -c '
             out/atreia-app/AtreiaApp > window.log 2>&1 & app=$!
             sleep 10
@@ -123,8 +124,8 @@ jobs:
             if kill -0 $app 2>/dev/null; then kill $app; echo "the window ran for 10 seconds"; else echo "::error::the app ended by itself"; cat window.log; exit 1; fi'
           if [ -s "$home/.config/AtreiaApp/crash.log" ]; then echo "::error::crash.log was written"; cat "$home/.config/AtreiaApp/crash.log"; exit 1; fi
           cat "$home/.config/AtreiaApp/linux.log"
-          # locked: only the lock button takes the mouse, the rest of the clicks go to the game
-          grep -q "input region: the lock button alone" "$home/.config/AtreiaApp/linux.log" || { echo "::error::the locked meter did not let the clicks through"; exit 1; }
+          # letting the clicks through: only the bar's buttons take the mouse, the rest of the clicks go to the game
+          grep -q "input region: the bar's buttons alone" "$home/.config/AtreiaApp/linux.log" || { echo "::error::the meter did not let the clicks through"; exit 1; }
           echo "::group::screens/linux-x11.png (base64)"; base64 -w 0 screens/linux-x11.png; echo; echo "::endgroup::"
       # A player's way, end to end: the download unpacked in a new home, install.sh (with its sudo setcap), then the installed command started on an X
       # server while the made-up game traffic plays. The meter must open with the right to read the network, find the game's traffic, fetch the game's
@@ -142,7 +143,7 @@ jobs:
           HOME="$home" "$home/.local/bin/atreia-app" --version
           export XDG_CONFIG_HOME="$home/.config"
           mkdir -p "$home/.config/AtreiaApp"
-          echo '{"X": 40, "Y": 40, "Width": 470, "Height": 330, "Locked": false, "Topmost": true}' > "$home/.config/AtreiaApp/linux-window.json"
+          echo '{"X": 40, "Y": 40, "Locked": false, "Topmost": true}' > "$home/.config/AtreiaApp/linux-window.json"
           HOME="$home" xvfb-run -a -s "-screen 0 1100x700x24" sh -c '
             "$HOME/.local/bin/atreia-app" > installed.log 2>&1 & app=$!
             sleep 6

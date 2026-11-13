@@ -23,7 +23,7 @@ def render(build, shot):
     out_dir = os.path.join(root, "out-" + build)
     target = os.path.join(root, "shots-" + build, shot[1])
     exe = os.path.join(out_dir, "AtreiaApp.exe")
-    result = subprocess.run([exe, shot[0], target] + shot[2:], cwd=out_dir, capture_output=True, text=True, timeout=180)
+    result = subprocess.run([exe, shot[0], target] + shot[2:], cwd=out_dir, capture_output=True, encoding="utf-8", errors="replace", timeout=180)
     return target, result.returncode
 
 
@@ -33,6 +33,9 @@ def show(label, path):
         print(base64.b64encode(f.read()).decode())
     print("::endgroup::")
 
+
+# pictures that differ by design: the What's new page shows the branch's new update notes, the timetable overlay's clocks tick between the two drawings
+EXPECTED = {"app-updates.png": "the new update notes", "app-updates-open.png": "the new update notes", "timers-overlay.png": "its clocks tick"}
 
 different = 0
 for shot in shots:
@@ -60,18 +63,21 @@ for shot in shots:
         print(f"same     {name} (same pixels, other bytes)")
         continue
     count = sum(1 for px in diff.getdata() if px != (0, 0, 0, 0))
-    print(f"DIFFERS  {name}: {count} pixel(s) in {box}")
-    different += 1
+    if shot[1] in EXPECTED:
+        print(f"expected {name}: {count} pixel(s) in {box} ({EXPECTED[shot[1]]})")
+    else:
+        print(f"DIFFERS  {name}: {count} pixel(s) in {box}")
+        different += 1
     show("main " + shot[1], a)
     show("branch " + shot[1], b)
 
 for build in ("main", "branch"):
     out_dir = os.path.join(root, "out-" + build)
-    result = subprocess.run([os.path.join(out_dir, "AtreiaApp.exe"), "selftest"], cwd=out_dir, capture_output=True, text=True, timeout=900)
-    lines = result.stdout.splitlines()
+    result = subprocess.run([os.path.join(out_dir, "AtreiaApp.exe"), "selftest"], cwd=out_dir, capture_output=True, encoding="utf-8", errors="replace", timeout=900)
+    lines = (result.stdout or "").splitlines()
     passed = any("ALL CHECKS PASSED" in line for line in lines)
     print(f"selftest {build}: exit {result.returncode}, {'ALL CHECKS PASSED' if passed else 'FAILED'}, {len(lines)} lines")
-    open(f"selftest-{build}.txt", "w", encoding="utf-8").write(result.stdout)
+    open(f"selftest-{build}.txt", "w", encoding="utf-8").write(result.stdout or "")
     if not passed:
         different += 1
         print("\n".join(lines[-40:]))

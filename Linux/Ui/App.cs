@@ -35,6 +35,12 @@ internal sealed class App : Application
                 e.Handled = true; // noted; one bad click must not end the meter
             };
 
+            // the stores the meter's foot and its Grind view read, kept on disk as on Windows (MainWindow.OnSourceInitialized)
+            Aion2.Aion2Tickets.EnablePersistence();
+            Aion2.Aion2Tickets.Changed += () => Aion2.Aion2Tickets.Flush();
+            Aion2.Aion2Loot.EnablePersistence();
+            Aion2.Aion2Grind.EnablePersistence();
+
             AionDPS.Ui.MeterSettings settings = AionDPS.Ui.MeterSettings.Load();
             if (settings.Language.Length > 0)
             {

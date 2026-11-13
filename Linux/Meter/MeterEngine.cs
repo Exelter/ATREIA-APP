@@ -16,9 +16,11 @@ namespace AionDPS.Linux.Meter;
 /// (damage, healing, damage taken) and the scope (all, the group, the corps, me), and the meter follows the newest boss fight by itself, as the Windows
 /// meter over the game does. Runs on the window thread; the capture reports from its own.
 /// </summary>
-public sealed class MeterEngine : IDisposable
+public sealed partial class MeterEngine : IDisposable
 {
-    public enum MeterMode { Damage, Heal, Taken }
+    /// <summary>What the lines measure (the Windows meter's modes): damage, rDPS (the buffs credited to who gave them), healing, damage taken, and damage,
+    /// healing and damage taken side by side ("All in one").</summary>
+    public enum MeterMode { Damage, Raid, Heal, Taken, All }
 
     /// <summary>Whose lines are shown: everybody, the own group, the corps (two groups together), or the own character alone.</summary>
     public enum MeterScope { All, Group, Corps, Me }
@@ -40,7 +42,7 @@ public sealed class MeterEngine : IDisposable
     private readonly Dictionary<int, (DateTime First, DateTime Last)> _bossActivity = new();
     private readonly Dictionary<int, bool> _dummyTargets = new();
 
-    /// <summary>The bosses (and, in a later PvP view, players) fought since the last clear: the Windows meter's Mob/Boss list.</summary>
+    /// <summary>The bosses and players fought since the last clear: the Windows meter's Mob/Boss list.</summary>
     private readonly List<(int TargetId, string Name)> _mobBossEntries = new();
 
     private ICombatSource? _source;
@@ -157,9 +159,9 @@ public sealed class MeterEngine : IDisposable
     public string TimeText => _shownSpan is (DateTime first, DateTime last) && last > first ? (last - first).ToString(@"m\:ss") : "";
 
     /// <summary>The group's rate in big: the sum of the lines' rates (DPS, HPS or DTPS by the mode).</summary>
-    public double TotalRate => _rows.Where(r => !r.IsEnemy).Sum(r => r.Dps ?? 0);
+    public double TotalRate => _rows.Where(r => !r.IsEnemy).Sum(r => (r.RdpsView ? r.Rdps ?? r.Dps : r.Dps) ?? 0);
 
-    public string Unit => _mode switch { MeterMode.Heal => "HPS", MeterMode.Taken => "DTPS", _ => "DPS" };
+    public string Unit => _mode switch { MeterMode.Heal => "HPS", MeterMode.Taken => "DTPS", MeterMode.Raid => "rDPS", _ => "DPS" };
 
     /// <summary>The own character as the game named it, and its combat power ("196.5K"), for the meter's head.</summary>
     public (string? Name, string Power) Own
@@ -224,6 +226,7 @@ public sealed class MeterEngine : IDisposable
             }
 
             source = live;
+            _dummy ??= new DummyRunner(() => GameDirectory); // the training dummy's parse reads the live game only
         }
 
         _source = source;
@@ -256,7 +259,20 @@ public sealed class MeterEngine : IDisposable
         _scope = Enum.TryParse(settings.ViewScope, true, out MeterScope scope) ? scope : MeterScope.Group;
         _autoScope = settings.AutoScope;
         _trackOpenWorld = settings.TrackOpenWorld;
-        _mode = settings.LastMode switch { "Heal" => MeterMode.Heal, "Taken" => MeterMode.Taken, _ => MeterMode.Damage };
+        _mode = settings.LastMode switch
+        {
+            "Raid" => MeterMode.Raid, "Heal" => MeterMode.Heal, "Taken" => MeterMode.Taken, "All" or "AllCompact" => MeterMode.All, _ => MeterMode.Damage,
+        };
+        _settings = settings;
+        _barBuffs = settings.BarBuffsOn;
+        _barHeals = settings.BarHealsOn;
+        _meterGrind = settings.MeterGrind;
+        _foldIdle = settings.MeterFoldIdle;
+        _showTickets = settings.MeterShowTickets;
+        _bossLineOn = settings.MeterBossLine;
+        _bossTimersOn = settings.OverlayBossTimers;
+        _barLegendSessions = settings.BarLegendSessions;
+        ShowGrind = settings.MeterGrindView;
     }
 
     private void MergeIds(int oldId, int newId)
@@ -283,6 +299,11 @@ public sealed class MeterEngine : IDisposable
         }
 
         CombatBatch batch = Counted(captured);
+        if (!batch.IsEmpty)
+        {
+            _dummy?.Feed(batch, _source?.Entities); // the training dummy's parse (Windows: FeedSessions)
+        }
+
         UpdateScopeContext();
 
         // Hits a summon dealt before its owner was known go to the owner once found, instead of staying on a "Player #id" line.
@@ -334,6 +355,8 @@ public sealed class MeterEngine : IDisposable
             ApplyBatch(batch);
         }
 
+        NoteDummy();
+        UpdateBuffs();
         Changed?.Invoke();
     }
 
@@ -390,6 +413,7 @@ public sealed class MeterEngine : IDisposable
     /// <summary>Starts from zero (the Clear button, a map change, a new fight).</summary>
     public void Clear()
     {
+        _hadFight = false; // the meter folds again until the next boss fight (Windows: ClearDamageData)
         _aggregator.Clear();
         _groupNames.Clear();
         _avoids.Clear();
@@ -430,13 +454,14 @@ public sealed class MeterEngine : IDisposable
 
     private bool CountingNow()
     {
-        if (_trackOpenWorld || _source is not Aion2PacketCombatSource source || source.CurrentZoneId <= 0)
+        if (_trackOpenWorld || _meterGrind || _source is not Aion2PacketCombatSource source || source.CurrentZoneId <= 0)
         {
             return true;
         }
 
         DateTime now = DateTime.Now;
-        return InInstanceNow() || now - _lastBossFight < BossFightHold || now - _lastPvpFight < BossFightHold || now - _lastDummyHit < TimeSpan.FromSeconds(20);
+        return InInstanceNow() || now - _lastBossFight < BossFightHold || now - _lastPvpFight < BossFightHold || now - _lastDummyHit < TimeSpan.FromSeconds(20)
+            || _dummy?.Model.State is DummyState.Armed or DummyState.Running;
     }
 
     /// <summary>A poll's events as the meter counts them: in the open world without a boss or a dummy (and the switch off) none, the zone changes kept.</summary>
@@ -450,7 +475,8 @@ public sealed class MeterEngine : IDisposable
         if (DateTime.Now - _notCountedSaid > TimeSpan.FromMinutes(2) && batch.Damage.Count > 0)
         {
             _notCountedSaid = DateTime.Now;
-            Note?.Invoke(LocalizationManager.Instance["Main.OpenWorld.NotCounted"]);
+            // (the Windows note names its client's Open world button; here it is in the meter's menu)
+            Note?.Invoke("The open world is not counted (dungeons, boss fights, PvP and training dummies are): \"Count the open world too\" in the meter's menu (…) turns it on.");
         }
 
         return batch with { Damage = Array.Empty<DamageEvent>(), Avoids = Array.Empty<AvoidEvent>(), Kills = Array.Empty<KillEvent>() };
@@ -461,7 +487,7 @@ public sealed class MeterEngine : IDisposable
 
     private void UpdateScopeContext()
     {
-        bool atDummy = DateTime.Now - _lastDummyHit < TimeSpan.FromSeconds(20);
+        bool atDummy = DateTime.Now - _lastDummyHit < TimeSpan.FromSeconds(20) || _dummy?.Model.State is DummyState.Armed or DummyState.Running;
         ScopeContext context = atDummy ? ScopeContext.Dummy : InInstanceNow() ? ScopeContext.Instance : ScopeContext.World;
         if (context == _scopeContext)
         {
@@ -639,13 +665,13 @@ public sealed class MeterEngine : IDisposable
     private bool IsKnownBoss(int targetId) =>
         GameDirectory is { } directory ? directory.BossNpcIdOf(targetId) is not null : _source?.Entities is ISampleDirectory sample && sample.IsBoss(targetId);
 
-    /// <summary>Adds the newly fought bosses to the list of targets (never removes - only a clear does).</summary>
+    /// <summary>Adds the newly fought bosses and players to the list of targets (never removes - only a clear does).</summary>
     private void RefreshMobBossFilterItems()
     {
         var knownIds = _mobBossEntries.Select(entry => entry.TargetId).ToHashSet();
         foreach (int targetId in _aggregator.Events.Where(ev => !ev.IsHeal).Select(ev => ev.TargetObjectId).Distinct().ToList())
         {
-            if (knownIds.Contains(targetId) || IsPlayerName(targetId) || !IsKnownBoss(targetId))
+            if (knownIds.Contains(targetId) || (!IsPlayerName(targetId) && !IsKnownBoss(targetId)))
             {
                 continue;
             }
@@ -755,8 +781,8 @@ public sealed class MeterEngine : IDisposable
             }
         }
 
-        int newest = -1;
-        DateTime newestHit = DateTime.MinValue;
+        int newest = -1, newestBoss = -1;
+        DateTime newestHit = DateTime.MinValue, newestBossHit = DateTime.MinValue;
         for (int i = 0; i < entries.Count; i++)
         {
             if (lastHits[i] > newestHit)
@@ -764,6 +790,18 @@ public sealed class MeterEngine : IDisposable
                 newestHit = lastHits[i];
                 newest = i;
             }
+
+            if (lastHits[i] > newestBossHit && IsKnownBoss(entries[i].TargetId))
+            {
+                newestBossHit = lastHits[i];
+                newestBoss = i;
+            }
+        }
+
+        // a boss fought within the gap stays on screen while its adds (or another player) were hit last
+        if (newestBoss >= 0 && newestBossHit >= newestHit - TimeSpan.FromSeconds(RunClusterGapSeconds))
+        {
+            newest = newestBoss;
         }
 
         if (newest >= 0)
@@ -887,6 +925,7 @@ public sealed class MeterEngine : IDisposable
         (DateTime, DateTime)? filteredSpan = filtered.Count == 0 ? null : (filtered.Min(ev => ev.Timestamp), filtered.Max(ev => ev.Timestamp));
         _shownHits = filtered;
         _shownSpan = filteredSpan;
+        _bossShown = ShownIsBossFight(filtered);
 
         if (_mode == MeterMode.Heal)
         {
@@ -902,10 +941,34 @@ public sealed class MeterEngine : IDisposable
             return;
         }
 
+        bool all = _mode == MeterMode.All;
         var healSourceIds = filteredSpan is (DateTime spanStart, DateTime spanEnd)
             ? _aggregator.Events.Where(ev => ev.IsHeal && ev.Timestamp >= spanStart && ev.Timestamp <= spanEnd && IsPlayerName(ev.SourceObjectId)).Select(ev => ev.SourceObjectId)
             : Enumerable.Empty<int>();
-        var sourceIds = filtered.Select(ev => ev.SourceObjectId).Distinct().Union(healSourceIds).Where(IsPlayerName).ToList();
+
+        // All in one: the healing done and the damage taken from monsters per player, over the same span the Heal and Taken modes use
+        Dictionary<int, long> healingById = all
+            ? HealsInSpan(filteredSpan).GroupBy(ev => ev.SourceObjectId).ToDictionary(g => g.Key, g => g.Sum(ev => ev.Amount))
+            : new Dictionary<int, long>();
+        Dictionary<int, long> hostileTakenById = all
+            ? HostileHitsTaken(filteredSpan).GroupBy(ev => ev.TargetObjectId).ToDictionary(g => g.Key, g => g.Sum(ev => ev.Amount))
+            : new Dictionary<int, long>();
+
+        // the bar's green part: each player's healing on the others over the same span, not on themself (a self-heal helps nobody else)
+        Dictionary<int, long> healOthersById = BarPartsOn
+            ? HealsInSpan(filteredSpan).Where(ev => ev.TargetObjectId != ev.SourceObjectId).GroupBy(ev => ev.SourceObjectId).ToDictionary(g => g.Key, g => g.Sum(ev => ev.Amount))
+            : new Dictionary<int, long>();
+        double healSeconds = filteredSpan is (DateTime healFrom, DateTime healTo) && healTo > healFrom ? (healTo - healFrom).TotalSeconds : 0;
+
+        // All in one: what the group's shields absorbed from monsters, beside the damage taken
+        Dictionary<int, long> absorbedById = all
+            ? _aggregator.Shields
+                .Where(ev => ShieldSkills.IsAbsorb(ev) && IsPlayerName(ev.TargetObjectId) && !IsPlayerName(ev.SourceObjectId)
+                    && (filteredSpan is not (DateTime from, DateTime to) || (ev.Timestamp >= from && ev.Timestamp <= to)))
+                .GroupBy(ev => ev.TargetObjectId).ToDictionary(g => g.Key, g => g.Sum(ev => ev.Amount))
+            : new Dictionary<int, long>();
+
+        var sourceIds = filtered.Select(ev => ev.SourceObjectId).Distinct().Union(healSourceIds).Union(hostileTakenById.Keys).Where(IsPlayerName).ToList();
         sourceIds = sourceIds.Where(IsInScope).ToList();
 
         // A passer-by the meter knows by no name, with one single hit seen, is no line: in the open world every stranger fighting within sight would add a
@@ -965,20 +1028,47 @@ public sealed class MeterEngine : IDisposable
                 : allBySource is not null
                     ? DpsCalculator.AllDpsWallClock(allBySource.GetValueOrDefault(sourceId) ?? new List<DamageEvent>(), sourceId)
                     : SharedRate(row.Damage, filteredSpan);
-            row.AllMode = false;
+            row.AllMode = all;
             row.AllCompact = false;
-            row.Healing = 0;
-            row.HealOthers = 0;
-            row.HealOthersRate = null;
-            row.Absorbed = 0;
-            row.DamageTaken = 0;
+            row.Healing = healingById.GetValueOrDefault(sourceId);
+            row.HealOthers = healOthersById.GetValueOrDefault(sourceId);
+            row.HealOthersRate = healSeconds > 0 && row.HealOthers > 0 ? row.HealOthers / healSeconds : null;
+            row.Absorbed = absorbedById.GetValueOrDefault(sourceId);
+            row.DamageTaken = all ? hostileTakenById.GetValueOrDefault(sourceId) : 0;
             ShowDeaths(row, sourceId, filteredSpan);
             row.ShowShareBar = _showShareBars;
             row.ShowDamageTaken = false;
             row.Faction = directory?.FactionOf(sourceId) ?? "";
         }
 
+        UpdateRaidDps(filteredSpan);
         RankRows();
+    }
+
+    /// <summary>Whether the fight on screen is a boss fight (Windows: ShownIsBossFight): the target followed is a boss, or with all targets shown a boss was hit.</summary>
+    private bool ShownIsBossFight(IReadOnlyList<DamageEvent> shownHits)
+    {
+        if (GameDirectory is null && _source?.Entities is not ISampleDirectory)
+        {
+            return false;
+        }
+
+        if (_selectedTargetId is int target)
+        {
+            return IsKnownBoss(target);
+        }
+
+        var asked = new HashSet<int>();
+        for (int i = shownHits.Count - 1; i >= 0; i--)
+        {
+            int id = shownHits[i].TargetObjectId;
+            if (!shownHits[i].IsHeal && asked.Add(id) && IsKnownBoss(id))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Keeps one line per id: drops the lines of ids no longer shown, adds the new ones.</summary>
@@ -1014,6 +1104,7 @@ public sealed class MeterEngine : IDisposable
             PlayerRow row = _rowsByObjectId[sourceId];
             ApplyIdentity(row, sourceId);
             var mine = heals.Where(ev => ev.SourceObjectId == sourceId).ToList();
+            row.RdpsView = false; // a line kept from the rDPS view would show its old rDPS as the healing rate
             row.IsEstimated = false;
             row.Damage = mine.Sum(ev => ev.Amount);
             double seconds = spanSeconds ?? (mine.Max(ev => ev.Timestamp) - mine.Min(ev => ev.Timestamp)).TotalSeconds;
@@ -1050,6 +1141,7 @@ public sealed class MeterEngine : IDisposable
             PlayerRow row = _rowsByObjectId[targetId];
             ApplyIdentity(row, targetId);
             var mine = hits.Where(ev => ev.TargetObjectId == targetId).ToList();
+            row.RdpsView = false;
             row.IsEstimated = false;
             row.Damage = mine.Sum(ev => ev.Amount);
             row.Absorbed = absorbs.Where(ev => ev.TargetObjectId == targetId).Sum(ev => ev.Amount);
@@ -1121,21 +1213,56 @@ public sealed class MeterEngine : IDisposable
                 && (span is not (DateTime from, DateTime to) || (ev.Timestamp >= from && ev.Timestamp <= to)))
             .ToList();
 
-    /// <summary>Ranks, shares and bar lengths among the lines on screen, then the lines the meter shows (the best ten, the own one kept).</summary>
+    /// <summary>Ranks, shares and bar lengths among the lines on screen (Windows: RankRows), then the lines the meter shows (the best ten by what the list is
+    /// sorted by, the own one kept; Windows: PickOverlayLines). In the rDPS view by rDPS; the bar's parts after the own part where they are on.</summary>
     private void RankRows()
     {
-        long shownTotal = _rows.Sum(r => r.Damage);
-        bool taken = _mode == MeterMode.Taken;
-        long shownMax = _rows.Count > 0 ? _rows.Max(r => r.Damage + (taken ? r.Absorbed : 0)) : 0;
-        int rank = 0;
-        List<PlayerRow> ordered = _rows.OrderByDescending(r => r.Damage).ThenBy(r => r.ObjectId).ToList();
-        foreach (PlayerRow row in ordered)
+        if (_rows.Count > 0 && _rows[0].RdpsView)
         {
-            row.Rank = ++rank;
-            row.SharePercent = shownTotal > 0 ? 100.0 * row.Damage / shownTotal : 0;
-            row.FillPercent = shownMax > 0 ? 100.0 * row.Damage / shownMax : 0;
-            row.AbsorbedFillPercent = taken && shownMax > 0 && row.Absorbed > 0 ? 100.0 * (row.Damage + row.Absorbed) / shownMax : 0;
+            // the rDPS view: rank, share and bar by rDPS (what each player made possible)
+            double rdpsTotal = _rows.Sum(r => r.Rdps ?? r.Dps ?? 0), rdpsMax = _rows.Max(r => r.Rdps ?? r.Dps ?? 0);
+            int place = 0;
+            foreach (PlayerRow row in _rows.OrderByDescending(r => r.SortKey).ThenBy(r => r.ObjectId))
+            {
+                double value = row.Rdps ?? row.Dps ?? 0;
+                row.Rank = ++place;
+                row.SharePercent = rdpsTotal > 0 ? 100.0 * value / rdpsTotal : 0;
+                row.FillPercent = rdpsMax > 0 ? 100.0 * value / rdpsMax : 0;
+                row.AbsorbedFillPercent = 0;
+            }
+
+            // the bar in parts: nDPS, the buffs given (to rDPS), the healing on the others; or rDPS alone as before
+            MeterBarParts.Apply(_rows, rdpsView: true, BarBuffsOn, BarHealsOn, _rdpsSeconds);
         }
+        else
+        {
+            long shownTotal = _rows.Sum(r => r.Damage);
+            bool taken = _mode == MeterMode.Taken;
+            long shownMax = _rows.Count > 0 ? _rows.Max(r => r.Damage + (taken ? r.Absorbed : 0)) : 0;
+            int rank = 0;
+            foreach (PlayerRow row in _rows.OrderByDescending(r => r.Damage).ThenBy(r => r.ObjectId))
+            {
+                row.Rank = ++rank;
+                row.SharePercent = shownTotal > 0 ? 100.0 * row.Damage / shownTotal : 0;
+                row.FillPercent = shownMax > 0 ? 100.0 * row.Damage / shownMax : 0;
+                row.AbsorbedFillPercent = taken && shownMax > 0 && row.Absorbed > 0 ? 100.0 * (row.Damage + row.Absorbed) / shownMax : 0;
+            }
+
+            if (BarPartsOn)
+            {
+                // the damage, the damage the buffs gave the others, the healing on the others, against the longest of those bars
+                MeterBarParts.Apply(_rows, rdpsView: false, BarBuffsOn, BarHealsOn, _rdpsSeconds);
+            }
+            else
+            {
+                foreach (PlayerRow row in _rows)
+                {
+                    MeterBarParts.Clear(row);
+                }
+            }
+        }
+
+        List<PlayerRow> ordered = _rows.OrderByDescending(r => r.SortKey).ThenBy(r => r.ObjectId).ToList();
 
         // the combat power after each name, from what the game showed of the player
         if (GameDirectory is { } powers)
@@ -1168,6 +1295,7 @@ public sealed class MeterEngine : IDisposable
         }
 
         ShownRows = shown;
+        UpdateBarLegend();
     }
 
     /// <summary>The own character's combat power (Windows: MainWindow.OwnCombatPower): the game's live number, else the legion list's, else the CP checks'.</summary>
@@ -1255,6 +1383,8 @@ public sealed class MeterEngine : IDisposable
 
     public void Dispose()
     {
+        _dummy?.Dispose();
+        _dummy = null;
         _source?.Dispose();
         _source = null;
     }
@@ -1274,6 +1404,9 @@ public interface ISampleDirectory : IEntityDirectory
     string? ClassOf(int id);
 
     int? PowerOf(int id);
+
+    /// <summary>What the player's buffs gave the others, per second (the bar's grey part, rDPS); null for none.</summary>
+    double? GivenOf(int id);
 
     IReadOnlySet<string> Party { get; }
 

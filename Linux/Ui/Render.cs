@@ -13,7 +13,9 @@ namespace AionDPS.Linux.Ui;
 /// <summary>
 /// The pictures of the build (Program "render &lt;out.png&gt; [scene]"), drawn without a screen, as the Windows app's render modes draw its windows for the
 /// checks of its look: the meter over a dark stand-in for the game, filled from the made-up boss fight (<see cref="SampleFight"/>) through the real engine.
-/// Scenes: meter (damage), heal, taken, waiting (no game yet), permission (the right to read the network missing); fonts (the faces side by side).
+/// Scenes (the Windows render-overlay's): meter (damage, the bar's parts and their legend), raid (rDPS), heal, taken, all (All in one), callout (the boss's next
+/// casts), buffs, stagger, stagger-failed, grind, dummy, bar (folded between fights), waiting (no game yet), permission (the right to read the network
+/// missing); fonts (the faces side by side).
 /// </summary>
 internal static class Render
 {
@@ -34,24 +36,97 @@ internal static class Render
         }
 
         using var engine = new MeterEngine();
+        DateTime now = DateTime.Now;
         var settings = new MeterSettings { AutoScope = false, ViewScope = "Group" };
-        if (scene is not ("waiting" or "permission"))
-        {
-            engine.Start(settings, new SampleFight(DateTime.Now.AddSeconds(-115)));
-            engine.Tick();
-            engine.Mode = scene switch { "heal" => MeterEngine.MeterMode.Heal, "taken" => MeterEngine.MeterMode.Taken, _ => MeterEngine.MeterMode.Damage };
-        }
-        else
+        if (scene is "waiting" or "permission")
         {
             engine.ApplySettings(settings);
         }
+        else if (scene == "bar")
+        {
+            // folded between fights: the bar (the own character) and the counters, nothing of a fight
+            engine.Start(settings, new SampleFight(now, seconds: 0, withBoss: false));
+            engine.Tick();
+        }
+        else
+        {
+            engine.Start(settings, new SampleFight(now.AddSeconds(-115)));
+            engine.Tick();
+        }
 
-        var view = new MeterView(engine);
+        // the counters at the foot, as on any meter in the game (the Windows pictures show the same)
+        if (scene is not ("waiting" or "permission"))
+        {
+            engine.SampleTickets = MeterEngine.SampleTicketList();
+        }
+
+        switch (scene)
+        {
+            case "heal":
+                engine.Mode = MeterEngine.MeterMode.Heal;
+                break;
+            case "taken":
+                engine.Mode = MeterEngine.MeterMode.Taken;
+                break;
+            case "raid":
+                engine.Mode = MeterEngine.MeterMode.Raid;
+                break;
+            case "all":
+                engine.Mode = MeterEngine.MeterMode.All;
+                break;
+            case "callout":
+                // the boss's next casts as the uploads learnt them, and its enrage
+                engine.SampleCallout = new AionDPS.Upload.BossCalloutFrame(SampleFight.BossName,
+                    new[] { new AionDPS.Upload.BossCallout("Searing Breath", 4.2, false), new AionDPS.Upload.BossCallout("Tail Sweep", 13.6, false) }, TimeSpan.FromSeconds(129), 42);
+                break;
+            case "buffs":
+                engine.SampleBuffs = new[]
+                {
+                    new BuffLine("Blessing of Rock", null, 100, false), new BuffLine("Word of Inspiration", null, 86, false), new BuffLine("Promise of Wind", null, 74, false),
+                    new BuffLine("Fury", null, 41, false), new BuffLine("Weakening Brand", null, 18, true),
+                };
+                engine.ShowForPicture("buffs");
+                break;
+            case "stagger" or "stagger-failed":
+            {
+                // a check running 5.2 s into an 8 s cast, or failed with the next one expected; the boss's earlier checks as chips under it
+                bool failed = scene == "stagger-failed";
+                var (checks, at) = StaggerSample.Series(failed);
+                engine.SampleStagger = (checks, checks[^1], StaggerSample.People, failed ? "Next stagger check: Extinction for Eternity in 41 s" : null);
+                engine.SampleStaggerAt = at;
+                engine.ShowForPicture("stagger");
+                break;
+            }
+
+            case "grind":
+                // 34 minutes farmed: Kinah and Abyss Points an hour in big, kills and loot under them
+                engine.SampleGrind = GrindSample.Current(now);
+                engine.SampleGrindBook = GrindSample.Book();
+                engine.ShowForPicture("grind");
+                break;
+            case "dummy":
+            {
+                // a dummy parse running: its card stands in for the lines
+                var t0 = new DateTime(2026, 11, 5, 12, 0, 0);
+                var hits = new List<AionDPS.Combat.DamageEvent>();
+                for (int i = 0; i < 180; i++)
+                {
+                    AionDPS.Combat.HitKinds kinds = (i % 9 == 0 ? AionDPS.Combat.HitKinds.Perfect : 0) | (i % 6 == 0 ? AionDPS.Combat.HitKinds.Double : 0)
+                        | (i % 4 == 0 ? AionDPS.Combat.HitKinds.Back : AionDPS.Combat.HitKinds.Front);
+                    hits.Add(new AionDPS.Combat.DamageEvent(t0.AddSeconds(i * 0.23), 1, 900, 4_000 + (i * 37 % 9_000), false, IsCritical: i % 5 < 2, Kinds: kinds));
+                }
+
+                engine.SampleDummy = ("0:19", 0.32, "Run 3  ·  running", "0:41 / 1:00", 27_600, hits);
+                engine.ShowForPicture("dummy");
+                break;
+            }
+        }
+
+        engine.UpdateCallout(now);
+        var view = new MeterView(engine) { Width = 470 };
         view.Update();
         (string text, bool warning, string? action) = StatusLine.For(scene == "permission" ? CaptureRights.Rights.NotGiven : CaptureRights.Rights.Granted, engine, null, null);
         view.ShowStatus(text, warning, action);
-        view.Width = 470;
-        view.Height = scene is "waiting" or "permission" ? 230 : 330;
 
         // a dark, uneven stand-in for the game behind the see-through panel
         var backdrop = new Border
@@ -72,8 +147,7 @@ internal static class Render
         };
         var window = new Window
         {
-            Width = view.Width + 40,
-            Height = view.Height + 40,
+            SizeToContent = SizeToContent.WidthAndHeight,
             Content = backdrop,
             SystemDecorations = SystemDecorations.None,
             FontFamily = Palette.UiFont,

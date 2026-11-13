@@ -30,6 +30,26 @@ internal static class Palette
 
     public static readonly IBrush Separator = Brush("#26FFFFFF");
 
+    /// <summary>The theme's soft red (the damage taken in All in one).</summary>
+    public static readonly IBrush DangerSoft = Brush("#F09A8E");
+
+    // the overlays' own colours (Client/Ui/CombatOverlayViews.cs, OverlayPictures): the boss line's muted text, its red and amber, the green of a kill in time
+    public static readonly IBrush OverlayMuted = Brush("#9DB3C2");
+    public static readonly IBrush OverlayRed = Brush("#FF5A5A");
+    public static readonly IBrush OverlayAmber = Brush("#FFBA42");
+    public static readonly IBrush KillGreen = Brush("#6CD48A");
+
+    /// <summary>The meter's panel in its usual look (Windows: Meter look's "Clear" at the usual opacity, 0.92): see-through dark glass with a faint edge.</summary>
+    public static readonly IBrush GlassBg = Brush("#8108080A");
+    public static readonly IBrush GlassEdge = Brush("#14FFFFFF");
+
+    /// <summary>The chosen one of the meter's scope switch (Windows: ScopeOnBrush, ScopeOnText).</summary>
+    public static readonly IBrush ScopeOnBg = Brush("#2BDCB877");
+    public static readonly IBrush ScopeOnText = Brush("#E6C88F");
+
+    /// <summary>The capture reads the game (the foot's dot; Windows: OverlayLiveBrush).</summary>
+    public static readonly IBrush Live = Brush("#8FD19A");
+
     /// <summary>
     /// Inter (it comes with Avalonia). Not the bundled A2H Sans: its files (Client/Fonts) hold only the space, A, B and the accented letters - the
     /// rest of the alphabet is not in them - so on Windows nearly all text is drawn in its fallback, Segoe UI, which Linux does not have; Inter is the

@@ -132,5 +132,8 @@ internal sealed class SampleFight : ICombatSource
         public string? ClassOf(int id) => _known.TryGetValue(id, out var e) ? e.Class : null;
 
         public int? PowerOf(int id) => _known.TryGetValue(id, out var e) && e.Power > 0 ? e.Power : null;
+
+        /// <summary>The Chanter's and the Gladiator's buffs give the others the most, the Cleric's a little (the Windows pictures' group).</summary>
+        public double? GivenOf(int id) => ClassOf(id) switch { "Chanter" => 1_500, "Gladiator" => 210, "Cleric" => 195, _ => null };
     }
 }

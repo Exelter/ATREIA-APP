@@ -6,8 +6,8 @@ using AionDPS.Linux.Platform;
 namespace AionDPS.Linux.Ui;
 
 /// <summary>
-/// What the meter's status line says: first what keeps it from working (the right to read the network, libpcap), then what the capture says, the image
-/// pack's download and a passing note. The Windows app says the same things about Npcap; here they name what a Linux system has instead.
+/// What the meter's own line says (over its foot, which says whether the game is read): first what keeps it from working (the right to read the network,
+/// libpcap), then a passing note, the image pack's download and a newer version. The Windows app says the same things about Npcap; here they name what a Linux system has instead.
 /// </summary>
 internal static class StatusLine
 {
@@ -41,13 +41,10 @@ internal static class StatusLine
             text = status.Message.Replace("Npcap", "libpcap", StringComparison.Ordinal);
             warning = true;
         }
-        else if (engine.Source is null || (status.State == SourceState.Waiting && !engine.Capturing))
+        else if ((engine.Source is null || (status.State == SourceState.Waiting && !engine.Capturing)) && GameConnections.GameRunning())
         {
-            text = GameConnections.GameRunning() ? "The game is running - waiting for its traffic (it comes with the first fight or map change)." : "Waiting for the game.";
-        }
-        else if (engine.Paused)
-        {
-            text = "Paused.";
+            // the foot says "Waiting for the game"; with the game running, why nothing comes yet
+            text = "The game is running - waiting for its traffic (it comes with the first fight or map change).";
         }
         else
         {

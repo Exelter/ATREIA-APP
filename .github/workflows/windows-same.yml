@@ -5,7 +5,7 @@ name: Windows app unchanged
 on:
   push:
     branches: [cross-platform]
-    paths: [".github/workflows/windows-same.yml"]
+    paths: [".github/workflows/windows-same.yml", ".github/compare-windows.py", "Client/**"]
 
 permissions:
   contents: read

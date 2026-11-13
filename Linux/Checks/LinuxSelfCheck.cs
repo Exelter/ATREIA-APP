@@ -54,6 +54,8 @@ internal static class LinuxSelfCheck
         ok &= RunGameConnectionsScenario();
         ok &= RunCaptureRightsScenario();
         ok &= RunMeterScenario();
+        ok &= RunMeterPartsScenario();
+        ok &= RunMeterViewsScenario();
         ok &= RunPicturesScenario();
         return ok;
     }
@@ -174,6 +176,102 @@ internal static class LinuxSelfCheck
         bool cleared = engine.ShownRows.Count == 0 && engine.TimeText.Length == 0;
         Console.WriteLine($"  -> the scope Me leaves the own line alone, Clear empties the meter: {me && cleared}");
         return five && ranked && target && rate && classes && boss && healer && tank && me && cleared;
+    }
+
+    /// <summary>The bar's parts and the measures of the pill's menu (Windows: RankRows, UpdateRaidDps, MeterBarParts): the buffs given and the healing on the
+    /// others after the own damage, rDPS crediting the buffs, All in one, and the heal lines leaving the rDPS view behind.</summary>
+    private static bool RunMeterPartsScenario()
+    {
+        Console.WriteLine("[selftest] Linux: the bar's parts, rDPS and All in one:");
+        using var engine = new MeterEngine();
+        engine.Start(new MeterSettings { AutoScope = false, ViewScope = "Group" }, new SampleFight(DateTime.Now.AddSeconds(-115)));
+        engine.Tick();
+        PlayerRow Line(string name) => engine.AllRows.First(r => r.Name == name);
+        PlayerRow chanter = Line("Draegor"), cleric = Line("Lumiael"), sorcerer = Line("Seraphyne");
+        bool grey = chanter.BarGivenText.StartsWith('+') && chanter.GivenFillPercent > chanter.FillPercent + 0.5 && sorcerer.BarGivenText.Length == 0;
+        bool green = cleric.BarHealText.StartsWith('+') && cleric.HealFillPercent > cleric.GivenFillPercent + 0.5;
+        bool longest = engine.AllRows.Max(r => r.HealFillPercent) is > 99.9 and <= 100.0001;
+        bool legend = engine.Legend is { Rdps: false, Buffs: true, Heals: true };
+        Console.WriteLine($"  -> the Chanter's buffs given go on in grey after its damage ({chanter.BarGivenText}), the Sorcerer gives none: {grey}");
+        Console.WriteLine($"  -> the Cleric's healing on the others goes on in green ({cleric.BarHealText}): {green}");
+        Console.WriteLine($"  -> the longest whole bar fills the line, the legend says what the colours are: {longest && legend}");
+
+        engine.PickMode(MeterEngine.MeterMode.Raid);
+        bool rdpsView = engine.AllRows.All(r => r.RdpsView) && engine.Unit == "rDPS" && engine.ModeShort == "rDPS";
+        bool credited = (chanter.Rdps ?? 0) > (chanter.Dps ?? 0) && (sorcerer.Rdps ?? 0) < (sorcerer.Dps ?? 0);
+        bool ordered = engine.ShownRows.Select(r => r.Rdps ?? 0).SequenceEqual(engine.ShownRows.Select(r => r.Rdps ?? 0).OrderByDescending(v => v));
+        double sumDps = engine.AllRows.Sum(r => r.Dps ?? 0), sumRdps = engine.AllRows.Sum(r => r.Rdps ?? 0);
+        Console.WriteLine($"  -> rDPS: the view and its word, the Chanter credited its buffs, the others less: {rdpsView && credited} ({chanter.Rdps:0} vs {chanter.Dps:0})");
+        Console.WriteLine($"  -> the lines ordered by rDPS, the group's rDPS adds up to its DPS: {ordered && Math.Abs(sumDps - sumRdps) < 1}");
+
+        engine.PickMode(MeterEngine.MeterMode.Heal);
+        bool healLines = engine.AllRows.All(r => !r.RdpsView) && engine.ShownRows.FirstOrDefault()?.Name == "Lumiael" && engine.ModeShort == "Heal"
+            && engine.ShownRows[0].DpsCompact == PlayerRow.Compact((long)Math.Round(engine.ShownRows[0].Dps ?? 0));
+        Console.WriteLine($"  -> the healing after rDPS: the lines leave the rDPS view, the Cleric first with its own rate: {healLines}");
+
+        engine.PickMode(MeterEngine.MeterMode.All);
+        PlayerRow tank = Line("Nyxelle");
+        bool all = engine.AllRows.All(r => r.AllMode) && Line("Lumiael").Healing > 0 && tank.DamageTaken > 0 && tank.TotalOrTakenCompact == PlayerRow.Compact(tank.DamageTaken)
+            && engine.ModeShort == "All";
+        Console.WriteLine($"  -> All in one: the healing and the damage taken beside the damage: {all}");
+
+        engine.PickMode(MeterEngine.MeterMode.Taken);
+        bool takenParts = engine.AllRows.All(r => r.GivenFillPercent == r.FillPercent && r.BarGivenText.Length == 0) && engine.Legend is null && engine.ModeShort == "Tank";
+        Console.WriteLine($"  -> damage taken has no parts and no legend: {takenParts}");
+        return grey && green && longest && legend && rdpsView && credited && ordered && Math.Abs(sumDps - sumRdps) < 1 && healLines && all && takenParts;
+    }
+
+    /// <summary>The fold between fights and the views in place of the lines (Windows: UpdateOverlayFold, the scope switch's Stagger and Grind, Buffs on you).</summary>
+    private static bool RunMeterViewsScenario()
+    {
+        Console.WriteLine("[selftest] Linux: the fold and the views:");
+        DateTime now = DateTime.Now;
+        using var quiet = new MeterEngine();
+        quiet.Start(new MeterSettings { AutoScope = false, ViewScope = "Group" }, new SampleFight(now, seconds: 0, withBoss: false));
+        quiet.Tick();
+        bool folded = !quiet.Open(now) && quiet.ShownRows.Count == 0;
+        Console.WriteLine($"  -> no fight yet: the meter is its bar alone: {folded}");
+
+        using var engine = new MeterEngine();
+        engine.Start(new MeterSettings { AutoScope = false, ViewScope = "Group" }, new SampleFight(now.AddSeconds(-115)));
+        engine.Tick();
+        bool open = engine.Open(now);
+        engine.Clear();
+        bool closed = !engine.Open(now);
+        Console.WriteLine($"  -> a boss fight opens it, a clear folds it again: {open && closed}");
+
+        using var views = new MeterEngine();
+        views.Start(new MeterSettings { AutoScope = false, ViewScope = "Group" }, new SampleFight(now.AddSeconds(-115)));
+        views.Tick();
+        views.ScopeClicked("Stagger");
+        bool stagger = views.ShowStagger && views.ModeShort == "Stagger" && views.Open(now);
+        views.ScopeClicked("Grind");
+        bool grind = views.ShowGrind && !views.ShowStagger && views.ModeShort == "Grind" && views.Total(now).Unit == "Kinah/h";
+        views.ScopeClicked("Grind");
+        bool grindOff = !views.ShowGrind && !views.ShowStagger;
+        views.PickBuffs();
+        bool buffs = views.ShowBuffs && views.ModeShort == "Buffs" && views.Total(now).Unit == "buffs" && views.Legend is null;
+        views.ScopeClicked("Stagger");
+        bool swapped = views.ShowStagger && !views.ShowBuffs;
+        views.ScopeClicked("Me");
+        bool scope = !views.ShowStagger && views.ShownScope == MeterEngine.MeterScope.Me && views.ShownRows.Count == 1;
+        views.ChangeSetting(s => s.MeterGrind = true);
+        bool everything = views.CountsEverything && views.ModeShort == "DPS · Grind";
+        Console.WriteLine($"  -> Stagger in place of the lines, Grind in place of Stagger, Grind again brings the lines back: {stagger && grind && grindOff}");
+        Console.WriteLine($"  -> Buffs on you, then Stagger, then a scope: one view at a time, the scope closes them: {buffs && swapped && scope}");
+        Console.WriteLine($"  -> Grind: every fight shows on the pill: {everything}");
+
+        var hits = new List<DamageEvent>();
+        for (int i = 0; i < 40; i++)
+        {
+            hits.Add(new DamageEvent(now.AddSeconds(i * 0.5), 1, 900, 1_000 + i * 10, false, IsCritical: i % 4 == 0, Kinds: i % 2 == 0 ? HitKinds.Back : HitKinds.Front));
+        }
+
+        IReadOnlyList<(string Label, string Value)> stats = MeterEngine.DummyStatsOf(hits);
+        bool dummy = stats.Count == 8 && stats[0].Value == PlayerRow.Compact(hits.Sum(h => h.Amount)) && stats[^1] == ("Max hit", PlayerRow.Compact(1_390))
+            && stats.First(s => s.Label == LocalizationManager.Instance["Look.ColCrit"]).Value == "25%";
+        Console.WriteLine($"  -> the dummy card's figures: {dummy} ({string.Join(", ", stats.Select(s => s.Label + " " + s.Value))})");
+        return folded && open && closed && stagger && grind && grindOff && buffs && swapped && scope && everything && dummy;
     }
 
     /// <summary>

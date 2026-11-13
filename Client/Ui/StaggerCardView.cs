@@ -7,9 +7,6 @@ using AionDPS.Combat;
 
 namespace AionDPS.Ui;
 
-/// <summary>A player of the group as the stagger card names them: their id in the fight, name and class.</summary>
-public sealed record StaggerPerson(int Id, string Name, string ClassName);
-
 /// <summary>
 /// A stagger check at a glance (7 November 2026, the owner: "groups where we don't manage to stagger but people say they used theirs ... if you keep wiping
 /// to the same boss I can't sit down after the fight and go look at logs ... give exact stagger value at a time period, and showcase when mechanics start in
