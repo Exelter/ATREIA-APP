@@ -39,7 +39,7 @@ jobs:
           chmod +x out/atreia-app/AtreiaApp out/atreia-app/install.sh out/atreia-app/uninstall.sh
           tar -C out -czf atreia-app-linux-x64-${{ steps.version.outputs.version }}.tar.gz atreia-app
           ls -l atreia-app-linux-x64-*.tar.gz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: atreia-app-linux-x64-${{ steps.version.outputs.version }}
           path: atreia-app-linux-x64-*.tar.gz
@@ -195,7 +195,7 @@ jobs:
             [ ! -e "$left" ] || { echo "::error::uninstall.sh left $left"; exit 1; }
           done
           echo "uninstall.sh removed the app"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: linux-screens
           path: screens/*.png

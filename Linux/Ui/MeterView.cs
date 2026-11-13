@@ -159,7 +159,7 @@ internal sealed class MeterView : Border
             VerticalAlignment = VerticalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center,
         };
         ToolTip.SetTip(_modeButton, "What the meter shows: DPS, rDPS, healing, damage taken, buffs, a dummy parse, Grind");
-        var modeMenu = new MenuFlyout();
+        var modeMenu = NewMenu();
         modeMenu.Opening += (_, _) => FillModeMenu(modeMenu);
         modeMenu.Opened += (_, _) => NoteItems(modeMenu);
         modeMenu.Closed += (_, _) => ItemsGone(modeMenu);
@@ -181,7 +181,7 @@ internal sealed class MeterView : Border
         }
 
         _menuButton = IconButton(dots, "More: pause, the open world, always on top, the capture check, the data folder, quit");
-        var menu = new MenuFlyout();
+        var menu = NewMenu();
         menu.Opening += (_, _) => FillMenu(menu);
         menu.Opened += (_, _) => NoteItems(menu);
         menu.Closed += (_, _) => ItemsGone(menu);
@@ -474,6 +474,18 @@ internal sealed class MeterView : Border
     /// <summary>Notes a click and what the meter shows after it.</summary>
     private void Did(string what) => LinuxLog.Write($"action: {what} -> {State}");
 
+    /// <summary>
+    /// A menu filled anew each time it opens (its Opening). Its item list is made here, before its first opening: Avalonia (11.3) makes the menu's
+    /// presenter on the first opening before Opening fills the items, and a presenter made while the menu had no list of its own yet keeps an empty one -
+    /// the menu opened empty (the workflow's button test found it).
+    /// </summary>
+    private static MenuFlyout NewMenu()
+    {
+        var menu = new MenuFlyout();
+        menu.Items.Clear();
+        return menu;
+    }
+
     /// <summary>For the workflow's test (ATREIA_UI_TEST=1): where the bar's buttons, the scope switch, the grip and a free spot of the head are.</summary>
     private void NoteWhere()
     {
@@ -504,19 +516,8 @@ internal sealed class MeterView : Border
         }
 
         var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
-        int ticks = 0;
         timer.Tick += (_, _) =>
         {
-            if (++ticks == 5 && menu.Items.OfType<MenuItem>().FirstOrDefault() is MenuItem first)
-            {
-                // TEMPORARY: why the items give no place on the X server of the workflow
-                Avalonia.Visual? parent = Avalonia.VisualTree.VisualExtensions.GetVisualParent(first);
-                Avalonia.Rendering.IRenderRoot? root = Avalonia.VisualTree.VisualExtensions.GetVisualRoot(first);
-                LinuxLog.Write($"ui-debug: open {menu.IsOpen}, {menu.Items.Count} items; '{first.Header}' visible {first.IsVisible}/{first.IsEffectivelyVisible}, "
-                    + $"bounds {first.Bounds}, desired {first.DesiredSize}, measured {first.IsMeasureValid}/{first.IsArrangeValid}, parent {parent?.GetType().Name ?? "none"}, "
-                    + $"root {root?.GetType().Name ?? "none"}, top level {TopLevel.GetTopLevel(first)?.GetType().Name ?? "none"}");
-            }
-
             if (!menu.IsOpen)
             {
                 timer.Stop();
