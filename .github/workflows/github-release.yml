@@ -1,0 +1,95 @@
+name: Put a release on GitHub
+
+# A release built by "Build a release for atreia.app" (release.yml), put on this repository's Releases page as well (14 November 2026, the owner:
+# "put the latest release, all of it on github"): every file of it, taken from that run's artifacts (kept 30 days) — the Windows installer
+# (Atreia-App-Setup.exe), the update packages and index the installed app reads (*.nupkg, releases.stable.json, assets.stable.json, updates.json),
+# SHA256SUMS.txt, and the Linux download (Atreia-App-Linux-x64.tar.gz, linux.json) — with the update notes of that version (and of those since the
+# release before it on GitHub) as its text (Tools/release/github-notes.py). GitHub adds the source code of the tag by itself.
+#
+# Started by hand: Actions > "Put a release on GitHub" > Run workflow, with the version (empty: the newest released). A stable release only: a test
+# release stays with the testers (release.yml). Run again for the same version, it replaces the text and the files.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (like 2.0.21; empty: the newest released)"
+        required: false
+
+permissions:
+  contents: write # the release and its files
+  actions: read # the release run's artifacts
+
+concurrency:
+  group: github-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the tags
+
+      - name: Which release
+        id: v
+        shell: bash
+        env:
+          INPUT: ${{ github.event.inputs.version }}
+        run: |
+          set -eu
+          v="${INPUT#v}"
+          if [ -z "$v" ]; then v=$(git tag -l | sed 's/^v//' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1); fi
+          if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::\"$INPUT\" is no stable version (write it like 2.0.21): a test release stays with the testers."; exit 1
+          fi
+          git rev-parse -q --verify "refs/tags/v$v" > /dev/null || { echo "::error::There is no tag v$v: that version was never released."; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "tag=v$v" >> "$GITHUB_OUTPUT"
+
+      - name: Its files, from the release run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
+        run: |
+          set -eu
+          mkdir -p out
+          for name in "Atreia-App-$TAG" "Atreia-App-Linux-$TAG"; do
+            run=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$name&per_page=30" \
+              --jq '[.artifacts[] | select(.expired | not)] | sort_by(.created_at) | last | .workflow_run.id // empty')
+            if [ -z "$run" ]; then
+              echo "::error::The files of $TAG ($name) are gone: a release run keeps them 30 days. Build that version again, or put its files on the release by hand."
+              exit 1
+            fi
+            gh run download "$run" -R "$GITHUB_REPOSITORY" -n "$name" -D out
+          done
+          [ -f "out/Atreia-App-Setup.exe" ] || { echo "::error::The installer is not among the files of $TAG."; exit 1; }
+          ls -la out
+
+      - name: The release's text
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -eu
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | select(.draft | not) | .tag_name' > on-github.txt
+          python3 Tools/release/github-notes.py "$V" out/updates.json on-github.txt > notes.md
+          cat notes.md
+
+      - name: On GitHub
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -eu
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --title "Atreia App $V" --notes-file notes.md --draft=false --prerelease=false --latest
+            gh release upload "$TAG" -R "$GITHUB_REPOSITORY" out/* --clobber
+          else
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --verify-tag --title "Atreia App $V" --notes-file notes.md --latest out/*
+          fi
+          echo "### Atreia App $V is on GitHub: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"
