@@ -132,7 +132,18 @@ internal sealed class MeterWindow : Window
             return;
         }
 
-        _engine.Start(settings);
+        try
+        {
+            _engine.Start(settings);
+        }
+        catch (Exception ex)
+        {
+            // the capture could not start (a device libpcap refuses ...): said on the status line, the app stays
+            CrashLog.Write("the capture did not start", ex);
+            LinuxLog.Write("the capture did not start: " + ex.GetBaseException().Message);
+            Say("The capture could not start: " + ex.GetBaseException().Message, TimeSpan.FromDays(1));
+        }
+
         ShowStatus();
     }
 
