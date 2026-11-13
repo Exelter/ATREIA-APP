@@ -131,10 +131,13 @@ internal static class LinuxSelfCheck
         bool given = CaptureRights.EffectiveFrom("CapEff:\t0000000000003000\n") is ulong caps && (caps & (1UL << 13)) != 0 && (caps & (1UL << 12)) != 0;
         bool none = CaptureRights.EffectiveFrom("CapEff:\t0000000000000000\n") == 0 && CaptureRights.EffectiveFrom(null) is null;
         bool command = CaptureRights.SetcapCommand.StartsWith("sudo setcap cap_net_raw,cap_net_admin=eip '", StringComparison.Ordinal);
+        bool updates = LinuxUpdates.Newer("2.0.17", "2.0.16") == "2.0.17" && LinuxUpdates.Newer("2.0.16", "2.0.16") is null
+            && LinuxUpdates.Newer("2.0.9", "2.0.16") is null && LinuxUpdates.Newer(null, "2.0.16") is null;
+        Console.WriteLine($"  -> a newer version on atreia.app is told from this one and older ones: {updates}");
         Console.WriteLine($"  -> root's capabilities, the two the installer gives, none: {root && given && none}");
         Console.WriteLine($"  -> the command that gives them names this program: {command} ({CaptureRights.SetcapCommand})");
         Console.WriteLine($"  -> this run: {CaptureRights.Check()} (libpcap: {NpcapAvailability.Detect().Location ?? "missing"})");
-        return root && given && none && command;
+        return root && given && none && command && updates;
     }
 
     /// <summary>The meter's lines from a boss fight (the made-up one of the pictures), through the same engine the window uses.</summary>

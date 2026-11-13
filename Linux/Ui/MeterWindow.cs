@@ -29,6 +29,9 @@ internal sealed class MeterWindow : Window
     private string? _note;
     private DateTime _noteUntil = DateTime.MinValue;
     private string? _images;
+    private string? _newVersion;
+    private string? _action;
+    private readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromHours(3) };
 
     public MeterWindow(MeterEngine engine)
     {
@@ -102,7 +105,10 @@ internal sealed class MeterWindow : Window
             ApplyClickThrough();
             ShowStatus();
             _timer.Start();
+            _ = CheckForUpdateAsync();
+            _updateTimer.Start();
         };
+        _updateTimer.Tick += (_, _) => _ = CheckForUpdateAsync();
         LayoutUpdated += (_, _) =>
         {
             if (_spot.Locked)
@@ -161,16 +167,33 @@ internal sealed class MeterWindow : Window
     /// <summary>The status line: what keeps the meter from working first, then what the capture says, the image pack's download and the notes.</summary>
     private void ShowStatus()
     {
-        (string text, bool warning, string? action) = StatusLine.For(_rights, _engine, _note is not null && DateTime.Now < _noteUntil ? _note : null, _images);
+        (string text, bool warning, string? action) = StatusLine.For(_rights, _engine, _note is not null && DateTime.Now < _noteUntil ? _note : null, _images, _newVersion);
+        _action = action;
         _view.ShowStatus(text, warning, action);
+    }
+
+    /// <summary>Asks atreia.app whether a newer Linux app is out (at the start and every three hours).</summary>
+    private async Task CheckForUpdateAsync()
+    {
+        using var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        string? newer = await LinuxUpdates.NewerAsync(cancel.Token);
+        if (newer != _newVersion)
+        {
+            _newVersion = newer;
+            ShowStatus();
+        }
     }
 
     private async void OnStatusAction()
     {
-        if (_rights == CaptureRights.Rights.NotGiven && Clipboard is { } clipboard)
+        if (_action == StatusLine.CopyCommand && Clipboard is { } clipboard)
         {
             await clipboard.SetTextAsync(CaptureRights.SetcapCommand);
             Say("The command is copied: paste it into a terminal, then start Atreia App again.", TimeSpan.FromSeconds(30));
+        }
+        else if (_action == StatusLine.GetUpdate)
+        {
+            LinuxUpdates.OpenDownload();
         }
     }
 
@@ -275,6 +298,7 @@ internal sealed class MeterWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _timer.Stop();
+        _updateTimer.Stop();
         _engine.Dispose();
         base.OnClosed(e);
     }

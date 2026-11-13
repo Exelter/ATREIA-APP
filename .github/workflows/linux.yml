@@ -85,6 +85,22 @@ jobs:
             base64 -w 0 "$f"; echo
             echo "::endgroup::"
           done
+      # The real window on an X server (no screen: Xvfb), locked, for a few seconds: it must open and keep running, and its picture is kept. Its own
+      # data folder, so the run starts like a first start.
+      - name: The window on an X server
+        run: |
+          set -eu
+          sudo apt-get install -y -q xvfb x11-apps imagemagick > /dev/null
+          home=$(mktemp -d)
+          mkdir -p "$home/.config/AtreiaApp"
+          echo '{"X": 40, "Y": 40, "Width": 470, "Height": 330, "Locked": true, "Topmost": true}' > "$home/.config/AtreiaApp/linux-window.json"
+          HOME="$home" xvfb-run -a -s "-screen 0 1100x700x24" sh -c '
+            out/atreia-app/AtreiaApp > window.log 2>&1 & app=$!
+            sleep 10
+            xwd -root -silent | convert xwd:- screens/linux-x11.png
+            if kill -0 $app 2>/dev/null; then kill $app; echo "the window ran for 10 seconds"; else echo "::error::the app ended by itself"; cat window.log; exit 1; fi'
+          if [ -s "$home/.config/AtreiaApp/crash.log" ]; then echo "::error::crash.log was written"; cat "$home/.config/AtreiaApp/crash.log"; exit 1; fi
+          echo "::group::screens/linux-x11.png (base64)"; base64 -w 0 screens/linux-x11.png; echo; echo "::endgroup::"
       - uses: actions/upload-artifact@v4
         with:
           name: linux-screens

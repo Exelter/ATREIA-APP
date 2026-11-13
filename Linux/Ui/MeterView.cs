@@ -256,8 +256,7 @@ internal sealed class MeterView : Border
         _ownName.Text = name ?? "Atreia App";
         _ownPower.Text = power;
         _ownPower.IsVisible = power.Length > 0;
-        string? ownClass = _engine.AllRows.FirstOrDefault(r => _engine.Source?.Entities.IsLocalPlayer(r.ObjectId) == true)?.ClassName;
-        Bitmap? ownIcon = ClassLook.Icon(ownClass) ?? Pictures.Load(System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "app", "a2h-emblem.png"));
+        Bitmap? ownIcon = ClassLook.Icon(_engine.OwnClass) ?? Pictures.Load(System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "app", "a2h-emblem.png"));
         _ownIcon.Source = ownIcon;
         _ownIcon.IsVisible = ownIcon is not null;
         _time.Text = _engine.TimeText;

@@ -183,6 +183,22 @@ public sealed class MeterEngine : IDisposable
         }
     }
 
+    /// <summary>The own character's class ("Gladiator"), null while unknown: its emblem goes in the meter's head.</summary>
+    public string? OwnClass
+    {
+        get
+        {
+            int me = GameDirectory is { } dir ? (dir.LocalPlayerId >= 0 ? dir.LocalPlayerId : dir.InferLocalPlayer() ?? -1) : _source?.Entities.LocalPlayerId ?? -1;
+            if (me < 0)
+            {
+                return null;
+            }
+
+            string name = ResolveClassName(me);
+            return name == "?" ? null : name;
+        }
+    }
+
     /// <summary>
     /// Starts reading: the game's traffic through libpcap (<see cref="Aion2PacketCombatSource"/>, as the Windows app's StartCapture), or the source
     /// given (a sample for the pictures and checks).

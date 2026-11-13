@@ -13,7 +13,9 @@ internal static class StatusLine
 {
     public const string CopyCommand = "Copy the command";
 
-    public static (string Text, bool Warning, string? Action) For(CaptureRights.Rights rights, MeterEngine engine, string? note, string? images)
+    public const string GetUpdate = "Get it";
+
+    public static (string Text, bool Warning, string? Action) For(CaptureRights.Rights rights, MeterEngine engine, string? note, string? images, string? newVersion = null)
     {
         switch (rights)
         {
@@ -52,9 +54,16 @@ internal static class StatusLine
             text = "";
         }
 
+        string? action = null;
         if (note is not null)
         {
             text = note;
+        }
+        else if (newVersion is not null && !warning)
+        {
+            // a newer Linux app on atreia.app (Platform/LinuxUpdates.cs): unpacked and installed again with its install.sh
+            text = $"Atreia App {newVersion} is out: {LinuxUpdates.DownloadUrl.Replace("https://", "", StringComparison.Ordinal)} - unpack it and run install.sh again.";
+            action = GetUpdate;
         }
 
         if (images is not null)
@@ -62,6 +71,6 @@ internal static class StatusLine
             text = text.Length > 0 ? images + "  ·  " + text : images;
         }
 
-        return (text, warning, null);
+        return (text, warning, action);
     }
 }
