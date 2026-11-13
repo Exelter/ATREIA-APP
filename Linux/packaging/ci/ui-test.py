@@ -87,8 +87,13 @@ def shot(name):
 
 def menu_item(menu, item, pattern, what):
     since = mark()
-    if click(menu) and click("item:" + item):
+    if not click(menu):
+        return
+    if click("item:" + item):
         expect(pattern, what, since)
+    else:
+        xdo("key", "Escape")  # the menu closes, so the next click is not taken by it
+        time.sleep(0.4)
 
 
 def window_xy():
@@ -152,13 +157,18 @@ try:
     time.sleep(1.3)
     before = window_xy()
     head = where("head")
-    if head and before:
+    if head is None or before is None:
+        fail(f"no head to move the meter by ({head}, {before})")
+    else:
+        since = mark()
         drag(head, (90, 60))
         after = window_xy()
         moved = after is not None and abs(after[0] - before[0] - 90) <= 6 and abs(after[1] - before[1] - 60) <= 6
         print(("ok    " if moved else "FAIL  ") + f"the head moves the meter: {before} -> {after}")
         if not moved:
             failures.append("the head did not move the meter")
+        expect(r"action: moved to -?\d+,-?\d+", "the meter keeps where it was moved to", since)
+        shot("moved")
 
     # the lock: in place, no grip, the buttons still work
     since = mark()
@@ -185,24 +195,32 @@ try:
 
     # the grip: wider, then with Ctrl bigger, then a double-click gives the meter its own size back
     grip = where("grip")
-    if grip:
+    if grip is None:
+        fail("no grip on the unlocked meter")
+    else:
         since = mark()
         drag(grip, (60, 0))
         expect(r"size: width 530, lines up to ten, scale 1\.00", "the grip makes the meter wider", since)
         shot("wider")
         time.sleep(1.3)  # the grip's new place comes with the meter's next second
         grip = where("grip")
-        since = mark()
-        drag(grip, (53, 53), ctrl=True)
-        expect(r"size: width 530, lines up to ten, scale 1\.1\d", "the grip with Ctrl makes it bigger", since)
-        shot("bigger")
-        time.sleep(1.3)
-        grip = where("grip")
-        since = mark()
-        xdo("mousemove", grip[0], grip[1])
-        time.sleep(0.2)
-        xdo("click", "--repeat", 2, "--delay", 80, 1)
-        expect(r"size: width the bar's, lines up to ten", "a double-click on the grip gives the meter its width back", since)
+        if grip is None:
+            fail("no grip after the meter got wider")
+        else:
+            since = mark()
+            drag(grip, (53, 53), ctrl=True)
+            expect(r"size: width 530, lines up to ten, scale 1\.1\d", "the grip with Ctrl makes it bigger", since)
+            shot("bigger")
+            time.sleep(1.3)
+            grip = where("grip")
+        if grip is None:
+            fail("no grip after the meter got bigger")
+        else:
+            since = mark()
+            xdo("mousemove", grip[0], grip[1])
+            time.sleep(0.2)
+            xdo("click", "--repeat", 2, "--delay", 80, 1)
+            expect(r"size: width the bar's, lines up to ten", "a double-click on the grip gives the meter its width back", since)
 
     # the menu: pause and on again, the open world, always on top, the clicks through
     menu_item("menu", "Pause (nothing is counted until you go on)", r"action: menu Pause.* -> .*paused", "the pause")

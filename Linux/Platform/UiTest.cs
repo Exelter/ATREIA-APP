@@ -40,4 +40,16 @@ internal static class UiTest
         Said[name] = where;
         LinuxLog.Write($"ui: {name} {where}");
     }
+
+    /// <summary>Notes that a part is gone from the screen (the items of a menu that closed).</summary>
+    public static void Gone(string name)
+    {
+        if (!Enabled || (Said.TryGetValue(name, out string? before) && before == "hidden"))
+        {
+            return;
+        }
+
+        Said[name] = "hidden";
+        LinuxLog.Write($"ui: {name} hidden");
+    }
 }

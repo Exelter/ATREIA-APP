@@ -80,11 +80,14 @@ internal sealed class MeterWindow : Window
         _clickThrough = settings.CompactClickThrough;
 
         _view = new MeterView(engine) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-        _view.HeaderPressed += e =>
+        _view.HeaderPressed += BeginMove;
+        PointerMoved += (_, _) => Move();
+        PointerReleased += (_, e) => EndMove(e.Pointer);
+        PointerCaptureLost += (_, e) =>
         {
-            if (!_spot.Locked)
+            if (ReferenceEquals(e.Source, this))
             {
-                BeginMoveDrag(e);
+                EndMove(null);
             }
         };
         _view.LockClicked += () => SetLocked(!_spot.Locked);
@@ -281,6 +284,70 @@ internal sealed class MeterWindow : Window
         LinuxLog.Write($"action: {(locked ? "locked in place" : "unlocked")} -> {_view.State}");
     }
 
+    // ---- moved by its head (Windows: DragMove) ----
+
+    private PixelPoint _moveFromPointer, _moveFromWindow, _moveTo;
+    private bool _moving;
+
+    /// <summary>A press on the head: the meter follows the mouse until it is let go, by the mouse's place on the screen (<see cref="X11Pointer"/>) - the
+    /// window moves under the mouse, so its own positions would lag. Without an X server to ask, the window manager moves it. Locked, it stays.</summary>
+    private void BeginMove(PointerPressedEventArgs e)
+    {
+        if (_spot.Locked)
+        {
+            return;
+        }
+
+        if (!X11Pointer.TryGet(out PixelPoint pointer))
+        {
+            BeginMoveDrag(e);
+            return;
+        }
+
+        _moving = true;
+        _moveFromPointer = pointer;
+        _moveFromWindow = _moveTo = Position;
+        e.Pointer.Capture(this);
+        e.Handled = true;
+    }
+
+    private void Move()
+    {
+        if (!_moving || !X11Pointer.TryGet(out PixelPoint pointer))
+        {
+            return;
+        }
+
+        var to = new PixelPoint(_moveFromWindow.X + pointer.X - _moveFromPointer.X, _moveFromWindow.Y + pointer.Y - _moveFromPointer.Y);
+        if (to != _moveTo)
+        {
+            _moveTo = to;
+            Position = to;
+        }
+    }
+
+    /// <summary>Let go (or the mouse taken by something else): where the meter stands is kept.</summary>
+    private void EndMove(IPointer? pointer)
+    {
+        if (!_moving)
+        {
+            return;
+        }
+
+        if (pointer is not null)
+        {
+            Move();
+        }
+
+        _moving = false;
+        pointer?.Capture(null);
+        if (_moveTo != _moveFromWindow)
+        {
+            Remember(_moveTo);
+            LinuxLog.Write($"action: moved to {_moveTo.X},{_moveTo.Y}");
+        }
+    }
+
     // ---- the size: the player's width, the lines' room, the scale (Windows: SetCompactOverlaySize, OnCompactOverlayResize) ----
 
     private Point _gripFrom;
@@ -459,10 +526,12 @@ internal sealed class MeterWindow : Window
         }
     }
 
-    private void Remember()
+    /// <summary>Keeps where the meter stands (where it was just moved to: the window's own place may come a moment later) and whether it is on top.</summary>
+    private void Remember(PixelPoint? at = null)
     {
-        _spot.X = Position.X;
-        _spot.Y = Position.Y;
+        PixelPoint spot = at ?? Position;
+        _spot.X = spot.X;
+        _spot.Y = spot.Y;
         _spot.Topmost = Topmost;
         _spot.Save();
     }

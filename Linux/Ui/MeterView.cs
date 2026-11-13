@@ -162,6 +162,7 @@ internal sealed class MeterView : Border
         var modeMenu = new MenuFlyout();
         modeMenu.Opening += (_, _) => FillModeMenu(modeMenu);
         modeMenu.Opened += (_, _) => NoteItems(modeMenu);
+        modeMenu.Closed += (_, _) => ItemsGone(modeMenu);
         _modeButton.Flyout = modeMenu;
 
         Button reset = _resetButton = IconButton(new ShapePath { Data = Geometry.Parse("M 10.2,4.2 A 4.6,4.6 0 1 0 10.9,8 M 10.6,0.9 L 10.4,4.5 L 6.9,4.2"), Stroke = Palette.TextSubtle, StrokeThickness = 1.4, Width = 11, Height = 11, Stretch = Stretch.Uniform },
@@ -183,6 +184,7 @@ internal sealed class MeterView : Border
         var menu = new MenuFlyout();
         menu.Opening += (_, _) => FillMenu(menu);
         menu.Opened += (_, _) => NoteItems(menu);
+        menu.Closed += (_, _) => ItemsGone(menu);
         _menuButton.Flyout = menu;
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
@@ -492,7 +494,8 @@ internal sealed class MeterView : Border
         }
     }
 
-    /// <summary>For the workflow's test: where the items of the menu just opened are (once it is laid out).</summary>
+    /// <summary>For the workflow's test: where the items of the menu just opened are, for as long as it is open (its popup is laid out and placed a moment
+    /// after it opens).</summary>
     private static void NoteItems(MenuFlyout menu)
     {
         if (!UiTest.Enabled)
@@ -500,13 +503,33 @@ internal sealed class MeterView : Border
             return;
         }
 
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        timer.Tick += (_, _) =>
         {
+            if (!menu.IsOpen)
+            {
+                timer.Stop();
+                return;
+            }
+
             foreach (MenuItem item in menu.Items.OfType<MenuItem>())
             {
-                UiTest.Where("item:" + item.Header, item);
+                if (item.IsEffectivelyVisible && item.Bounds.Width > 0)
+                {
+                    UiTest.Where("item:" + item.Header, item);
+                }
             }
-        }, Avalonia.Threading.DispatcherPriority.Background);
+        };
+        timer.Start();
+    }
+
+    /// <summary>For the workflow's test: the menu closed, its items are gone.</summary>
+    private static void ItemsGone(MenuFlyout menu)
+    {
+        foreach (MenuItem item in menu.Items.OfType<MenuItem>())
+        {
+            UiTest.Gone("item:" + item.Header);
+        }
     }
 
     /// <summary>A few times a second (the window's quick timer): the boss's next casts and the dummy's countdown move on their own.</summary>
