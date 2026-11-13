@@ -76,7 +76,7 @@ jobs:
         run: |
           set -eu
           mkdir -p screens
-          for scene in meter heal taken waiting permission fonts; do
+          for scene in meter heal taken waiting permission; do
             out/atreia-app/AtreiaApp render "screens/linux-$scene.png" "$scene"
           done
           # in the log too (collapsed), for a look without downloading the run's files

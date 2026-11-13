@@ -30,8 +30,12 @@ internal static class Palette
 
     public static readonly IBrush Separator = Brush("#26FFFFFF");
 
-    /// <summary>A2H Sans (Source Sans 3 under the site's name); Avalonia's own face (Inter) stands in for a letter it lacks.</summary>
-    public static readonly FontFamily UiFont = new("avares://AtreiaApp/Fonts#A2H Sans");
+    /// <summary>
+    /// Inter (it comes with Avalonia). Not the bundled A2H Sans: its files (Client/Fonts) hold only the space, A, B and the accented letters - the
+    /// rest of the alphabet is not in them - so on Windows nearly all text is drawn in its fallback, Segoe UI, which Linux does not have; Inter is the
+    /// nearest face to it here.
+    /// </summary>
+    public static readonly FontFamily UiFont = new("fonts:Inter#Inter");
 
     /// <summary>Cinzel, the site's title face.</summary>
     public static readonly FontFamily TitleFont = new("avares://AtreiaApp/Fonts#Cinzel");

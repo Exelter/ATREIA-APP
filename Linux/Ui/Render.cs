@@ -4,7 +4,6 @@ using Avalonia.Headless;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using AionDPS.Linux.Meter;
 using AionDPS.Linux.Platform;
 using AionDPS.Ui;
@@ -14,7 +13,7 @@ namespace AionDPS.Linux.Ui;
 /// <summary>
 /// The pictures of the build (Program "render &lt;out.png&gt; [scene]"), drawn without a screen, as the Windows app's render modes draw its windows for the
 /// checks of its look: the meter over a dark stand-in for the game, filled from the made-up boss fight (<see cref="SampleFight"/>) through the real engine.
-/// Scenes: meter (damage), heal, taken, waiting (no game yet), permission (the right to read the network missing).
+/// Scenes: meter (damage), heal, taken, waiting (no game yet), permission (the right to read the network missing); fonts (the faces side by side).
 /// </summary>
 internal static class Render
 {
@@ -28,22 +27,6 @@ internal static class Render
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
             .WithInterFont()
             .SetupWithoutStarting();
-
-        // which faces the app carries and which one the meter's text gets (the Linux workflow prints it)
-        try
-        {
-            var assets = Avalonia.Platform.AssetLoader.GetAssets(new Uri("avares://AtreiaApp/"), null).Select(u => u.AbsolutePath).ToList();
-            Console.WriteLine($"render: {assets.Count} resources: {string.Join(", ", assets.Take(12))}");
-            foreach (FontWeight weight in new[] { FontWeight.Normal, FontWeight.SemiBold, FontWeight.Bold })
-            {
-                bool found = FontManager.Current.TryGetGlyphTypeface(new Typeface(Palette.UiFont, FontStyle.Normal, weight), out IGlyphTypeface? face);
-                Console.WriteLine($"render: the meter's face {Palette.UiFont} {weight} -> {(found ? face!.FamilyName + " " + face.Weight : "not found")}; default {FontManager.Current.DefaultFontFamily.Name}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("render: faces could not be listed: " + ex.Message);
-        }
 
         if (scene == "fonts")
         {
@@ -102,8 +85,6 @@ internal static class Render
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         }
 
-        TextBlock? sample = view.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Text is { Length: > 0 });
-        Console.WriteLine($"render: a line of the meter (\"{sample?.Text}\") is drawn in {sample?.FontFamily} {sample?.FontWeight}");
         WriteableBitmap? frame = window.CaptureRenderedFrame();
         if (frame is null)
         {
