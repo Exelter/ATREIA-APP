@@ -504,6 +504,12 @@
                                 <TextBlock x:Name="MenuPausedStatus" Style="{StaticResource CardHint}" Margin="0,6,0,0" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Warning}" Visibility="Collapsed"/>
                             </StackPanel>
                         </Border>
+<Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <CheckBox x:Name="WindowsCaptureBox" Content="{local:Loc Settings.Pictures.Windows}"/>
+                                <TextBlock Style="{StaticResource CardHint}" Text="{local:Loc Settings.Pictures.Hint}" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Border>
 <Border x:Name="LoginShareCard" Style="{StaticResource SettingsCard}" Visibility="Collapsed">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource CardTitle}" Text="{local:Loc Settings.LoginShare.Title}"/>
@@ -668,6 +674,7 @@
                                 <CheckBox x:Name="UploadReplayBox" Content="{local:Loc Settings.UploadReplay}"
                                           ToolTip="Sends where your character, the boss and the other monsters were during the fight, for the replay on the fight's page on atreia.app. Other players' positions only with the switch above. Off by default."/>
                                 <CheckBox x:Name="ShareCpBox" Content="{local:Loc Settings.ShareCp}" ToolTip="{local:Loc Settings.ShareCp.Hint}"/>
+                                <CheckBox x:Name="ShareMapBox" Content="{local:Loc Settings.ShareMap}" ToolTip="{local:Loc Settings.ShareMap.Hint}"/>
                             </StackPanel>
                         </Border>
 <Border Style="{StaticResource SettingsCard}">

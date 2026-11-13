@@ -6500,16 +6500,16 @@
     "zh-TW": "開啟遊戲選單時隱藏"
   },
   "Settings.Menu.Hint": {
-    "en": "The meter and its overlays step aside while one of the game's windows is open (Arcana, enchanting, inventory, map, legion, shop, Esc ...) and come back when you close it. The mouse cursor appearing tells it, so this works in the control mode that hides the cursor while you play (not in the classic one, where it always shows). Holding the show-cursor key (Alt by default) keeps the meter up, so you can click it.",
-    "de": "Der Meter und seine Overlays machen Platz, solange eines der Spielfenster offen ist (Arkana, Verzaubern, Inventar, Karte, Legion, Shop, Esc ...), und kommen zurück, wenn du es schließt. Das Erscheinen des Mauszeigers verrät es, daher geht das in der Steuerung, die den Zeiger beim Spielen ausblendet (nicht in der klassischen, wo er immer sichtbar ist). Hältst du die Taste zum Anzeigen des Zeigers (standardmäßig Alt), bleibt der Meter stehen, damit du ihn anklicken kannst.",
-    "fr": "Le compteur et ses overlays s'effacent tant qu'une fenêtre du jeu est ouverte (Arcana, enchantement, inventaire, carte, légion, boutique, Échap ...) et reviennent à la fermeture. C'est l'apparition du curseur qui le révèle : cela marche donc dans le mode de contrôle qui masque le curseur pendant le jeu (pas dans le mode classique, où il est toujours affiché). Maintenir la touche d'affichage du curseur (Alt par défaut) laisse le compteur visible pour pouvoir cliquer dessus.",
-    "es": "El medidor y sus overlays se apartan mientras haya una ventana del juego abierta (Arcana, encantamiento, inventario, mapa, legión, tienda, Esc ...) y vuelven al cerrarla. Lo delata la aparición del cursor, así que funciona en el modo de control que oculta el cursor mientras juegas (no en el clásico, donde siempre se muestra). Mantener la tecla para mostrar el cursor (Alt por defecto) deja el medidor visible para poder pulsarlo.",
-    "ru": "Измеритель и его оверлеи уходят, пока открыто одно из окон игры (Аркана, зачарование, инвентарь, карта, легион, магазин, Esc ...), и возвращаются после закрытия. Это видно по появлению курсора, поэтому работает в режиме управления, где курсор скрыт во время игры (не в классическом, где он виден всегда). Если удерживать клавишу показа курсора (по умолчанию Alt), измеритель остаётся на экране, и его можно нажать.",
-    "zh": "游戏窗口（奥义、强化、背包、地图、军团、商店、Esc 等）打开时，统计器及其悬浮窗会让开，关闭后恢复。依据是光标出现，因此适用于游戏时隐藏光标的操作模式（不适用于光标始终显示的经典模式）。按住显示光标的按键（默认 Alt）可让统计器保持显示，以便点击。",
-    "pt": "O medidor e seus overlays saem do caminho enquanto uma janela do jogo está aberta (Arcana, encantamento, inventário, mapa, legião, loja, Esc ...) e voltam ao fechá-la. O cursor aparecendo indica isso, então funciona no modo de controle que oculta o cursor enquanto você joga (não no clássico, em que ele está sempre visível). Segurar a tecla de mostrar o cursor (Alt por padrão) mantém o medidor visível para você clicar nele.",
-    "ja": "ゲームのウィンドウ（アルカナ、強化、インベントリ、マップ、レギオン、ショップ、Esc など）が開いている間、メーターとオーバーレイは退き、閉じると戻ります。手がかりはカーソルが現れることなので、プレイ中にカーソルを隠す操作モードで働きます（カーソルが常に表示されるクラシックでは働きません）。カーソル表示キー（既定は Alt）を押している間はメーターが表示されたままなので、クリックできます。",
-    "ko": "게임 창(아르카나, 강화, 인벤토리, 지도, 레기온, 상점, Esc 등)이 열려 있는 동안 미터와 오버레이가 비켜나고, 닫으면 다시 나타납니다. 커서가 나타나는 것으로 알아보므로, 플레이 중 커서를 숨기는 조작 방식에서 작동합니다(커서가 항상 보이는 클래식 방식에서는 작동하지 않음). 커서 표시 키(기본 Alt)를 누르고 있으면 미터가 계속 보여 클릭할 수 있습니다.",
-    "zh-TW": "遊戲視窗（奧義、強化、背包、地圖、軍團、商店、Esc 等）開啟時，統計器及其懸浮窗會讓開，關閉後恢復。依據是游標出現，因此適用於遊戲時隱藏游標的操作模式（不適用於游標一直顯示的經典模式）。按住顯示游標的按鍵（預設 Alt）可讓統計器保持顯示，以便點擊。"
+    "en": "The meter and its overlays step aside while one of the game's windows is open (Arcana, enchanting, inventory, map, legion, shop, Esc ...) and come back when you close it. Two signs tell it: the game's HUD (skill bar, minimap frame ...) being covered - this works in every control mode and is learnt from your screen during your first minute or so of fighting, in memory only (the game needs windowed or borderless mode); and, in the control mode that hides the cursor while you play, the cursor appearing. Holding the show-cursor key (Alt by default) keeps the meter up, so you can click it.",
+    "de": "Der Meter und seine Overlays machen Platz, solange eines der Spielfenster offen ist (Arkana, Verzaubern, Inventar, Karte, Legion, Shop, Esc ...), und kommen zurück, wenn du es schließt. Zwei Zeichen verraten es: Das HUD des Spiels (Skillleiste, Minikartenrahmen ...) wird verdeckt - das geht in jeder Steuerung und wird in deiner ersten Kampfminute oder so vom Bildschirm gelernt, nur im Speicher (das Spiel braucht Fenster- oder randlosen Modus); und in der Steuerung, die den Zeiger beim Spielen ausblendet, das Erscheinen des Zeigers. Hältst du die Taste zum Anzeigen des Zeigers (standardmäßig Alt), bleibt der Meter stehen, damit du ihn anklicken kannst.",
+    "fr": "Le compteur et ses overlays s'effacent tant qu'une fenêtre du jeu est ouverte (Arcana, enchantement, inventaire, carte, légion, boutique, Échap ...) et reviennent à la fermeture. Deux signes le révèlent : l'interface du jeu (barre de compétences, cadre de la minicarte ...) est recouverte - cela marche dans tous les modes de contrôle et s'apprend à l'écran pendant votre première minute de combat environ, en mémoire seulement (le jeu doit être en mode fenêtré ou sans bordure) ; et, dans le mode de contrôle qui masque le curseur pendant le jeu, l'apparition du curseur. Maintenir la touche d'affichage du curseur (Alt par défaut) laisse le compteur visible pour pouvoir cliquer dessus.",
+    "es": "El medidor y sus overlays se apartan mientras haya una ventana del juego abierta (Arcana, encantamiento, inventario, mapa, legión, tienda, Esc ...) y vuelven al cerrarla. Lo delatan dos señales: la interfaz del juego (barra de habilidades, marco del minimapa ...) queda tapada - funciona en cualquier modo de control y se aprende de tu pantalla durante tu primer minuto de combate más o menos, solo en memoria (el juego necesita modo ventana o sin bordes); y, en el modo de control que oculta el cursor mientras juegas, la aparición del cursor. Mantener la tecla para mostrar el cursor (Alt por defecto) deja el medidor visible para poder pulsarlo.",
+    "ru": "Измеритель и его оверлеи уходят, пока открыто одно из окон игры (Аркана, зачарование, инвентарь, карта, легион, магазин, Esc ...), и возвращаются после закрытия. Это видно по двум признакам: интерфейс игры (панель умений, рамка миникарты ...) перекрыт - это работает в любом режиме управления и изучается по экрану примерно за первую минуту боя, только в памяти (игре нужен оконный режим или окно без рамки); и, в режиме управления, где курсор скрыт во время игры, появление курсора. Если удерживать клавишу показа курсора (по умолчанию Alt), измеритель остаётся на экране, и его можно нажать.",
+    "zh": "游戏窗口（奥义、强化、背包、地图、军团、商店、Esc 等）打开时，统计器及其悬浮窗会让开，关闭后恢复。依据两个迹象：游戏界面（技能栏、小地图边框等）被遮住——任何操作模式都适用，会在你最初大约一分钟的战斗中从屏幕学会，仅在内存中进行（游戏需使用窗口或无边框模式）；以及在游戏时隐藏光标的操作模式下，光标出现。按住显示光标的按键（默认 Alt）可让统计器保持显示，以便点击。",
+    "pt": "O medidor e seus overlays saem do caminho enquanto uma janela do jogo está aberta (Arcana, encantamento, inventário, mapa, legião, loja, Esc ...) e voltam ao fechá-la. Dois sinais indicam isso: a interface do jogo (barra de habilidades, moldura do minimapa ...) fica coberta - funciona em qualquer modo de controle e é aprendida da sua tela durante mais ou menos o seu primeiro minuto de combate, só na memória (o jogo precisa do modo janela ou sem bordas); e, no modo de controle que oculta o cursor enquanto você joga, o cursor aparecendo. Segurar a tecla de mostrar o cursor (Alt por padrão) mantém o medidor visível para você clicar nele.",
+    "ja": "ゲームのウィンドウ（アルカナ、強化、インベントリ、マップ、レギオン、ショップ、Esc など）が開いている間、メーターとオーバーレイは退き、閉じると戻ります。手がかりは二つです：ゲームのHUD（スキルバー、ミニマップの枠など）が覆われること――どの操作モードでも働き、最初の1分ほどの戦闘中に画面から学習します（メモリ内のみ。ゲームはウィンドウまたはボーダーレスモードが必要）；そして、プレイ中にカーソルを隠す操作モードでは、カーソルが現れること。カーソル表示キー（既定は Alt）を押している間はメーターが表示されたままなので、クリックできます。",
+    "ko": "게임 창(아르카나, 강화, 인벤토리, 지도, 레기온, 상점, Esc 등)이 열려 있는 동안 미터와 오버레이가 비켜나고, 닫으면 다시 나타납니다. 두 가지 신호로 알아봅니다: 게임 HUD(스킬 바, 미니맵 테두리 등)가 가려지는 것 - 모든 조작 방식에서 작동하며 처음 1분 정도의 전투 동안 화면에서 학습합니다(메모리에서만, 게임은 창 모드 또는 테두리 없는 모드여야 함). 그리고 플레이 중 커서를 숨기는 조작 방식에서는 커서가 나타나는 것. 커서 표시 키(기본 Alt)를 누르고 있으면 미터가 계속 보여 클릭할 수 있습니다.",
+    "zh-TW": "遊戲視窗（奧義、強化、背包、地圖、軍團、商店、Esc 等）開啟時，統計器及其懸浮窗會讓開，關閉後恢復。依據兩個跡象：遊戲介面（技能列、小地圖邊框等）被遮住——任何操作模式都適用，會在你最初大約一分鐘的戰鬥中從畫面學會，僅在記憶體中進行（遊戲需使用視窗或無邊框模式）；以及在遊戲時隱藏游標的操作模式下，游標出現。按住顯示游標的按鍵（預設 Alt）可讓統計器保持顯示，以便點擊。"
   },
   "Settings.Menu.Paused": {
     "en": "Paused: unlocked overlay: {0}. Lock it again and the menus will hide the overlays.",
@@ -6522,6 +6522,30 @@
     "ja": "一時停止中：ロック解除中のオーバーレイ：{0}。再びロックすると、メニューでオーバーレイが隠れます。",
     "ko": "일시 중지됨: 잠금 해제된 오버레이: {0}. 다시 잠그면 메뉴가 열릴 때 오버레이가 숨겨집니다.",
     "zh-TW": "已暫停：未鎖定的浮動層：{0}。重新鎖定後，選單才會隱藏浮動層。"
+  },
+  "Settings.Pictures.Windows": {
+    "en": "Take the game's pictures with Windows' own capture (keeps Discord and OBS streams of the game running)",
+    "de": "Bilder des Spiels mit der Aufnahme von Windows selbst machen (Discord- und OBS-Streams des Spiels laufen weiter)",
+    "fr": "Prendre les images du jeu avec la capture de Windows (les streams Discord et OBS du jeu continuent)",
+    "es": "Tomar las imágenes del juego con la captura propia de Windows (las transmisiones de Discord y OBS del juego siguen)",
+    "ru": "Снимать изображения игры собственным захватом Windows (трансляции игры в Discord и OBS не прерываются)",
+    "zh": "使用 Windows 自带的捕获获取游戏画面（游戏的 Discord 和 OBS 直播不会中断）",
+    "zh-TW": "使用 Windows 內建的擷取取得遊戲畫面（遊戲的 Discord 和 OBS 直播不會中斷）",
+    "pt": "Tirar as imagens do jogo com a captura do próprio Windows (as transmissões do jogo no Discord e no OBS continuam)",
+    "ja": "Windows 自身のキャプチャでゲームの画像を取得する（ゲームの Discord・OBS 配信が止まりません）",
+    "ko": "Windows 자체 캡처로 게임 화면 가져오기 (게임의 Discord·OBS 방송이 멈추지 않음)"
+  },
+  "Settings.Pictures.Hint": {
+    "en": "The app looks at pictures of the game's window to see a game window open (the overlays step aside), to read the minimap and to frame pets in the Black Cloud shop. With this on, Windows hands over the frames it shows anyway, the way Discord and OBS take a window, so the game draws nothing extra (Windows 11; older Windows keep the old way). Off: the old way (PrintWindow), which can pause a Discord stream of the game. If a yellow frame shows around the game, switch this off.",
+    "de": "Die App schaut sich Bilder des Spielfensters an, um ein offenes Spielfenster zu erkennen (die Overlays machen Platz), die Minikarte zu lesen und Haustiere im Black-Cloud-Shop zu markieren. Ist das an, gibt Windows die Bilder her, die es ohnehin zeigt – so wie Discord und OBS ein Fenster aufnehmen –, und das Spiel zeichnet nichts zusätzlich (Windows 11; ältere Windows-Versionen bleiben beim alten Weg). Aus: der alte Weg (PrintWindow), der einen Discord-Stream des Spiels pausieren kann. Erscheint ein gelber Rahmen um das Spiel, schalte das aus.",
+    "fr": "L'application regarde des images de la fenêtre du jeu pour voir qu'une fenêtre du jeu est ouverte (les overlays s'effacent), lire la mini-carte et encadrer les familiers dans la boutique Black Cloud. Activé, Windows fournit les images qu'il affiche de toute façon, comme Discord et OBS capturent une fenêtre : le jeu ne dessine rien de plus (Windows 11 ; les versions plus anciennes gardent l'ancienne méthode). Désactivé : l'ancienne méthode (PrintWindow), qui peut mettre en pause un stream Discord du jeu. Si un cadre jaune apparaît autour du jeu, désactivez ceci.",
+    "es": "La aplicación mira imágenes de la ventana del juego para ver si hay una ventana del juego abierta (los overlays se apartan), leer el minimapa y marcar mascotas en la tienda Black Cloud. Activado, Windows entrega las imágenes que muestra de todos modos, como Discord y OBS capturan una ventana, y el juego no dibuja nada extra (Windows 11; las versiones anteriores siguen con el método antiguo). Desactivado: el método antiguo (PrintWindow), que puede pausar una transmisión de Discord del juego. Si aparece un marco amarillo alrededor del juego, desactívalo.",
+    "ru": "Приложение смотрит на изображения окна игры, чтобы видеть открытое окно игры (оверлеи уходят), читать мини-карту и выделять питомцев в магазине Black Cloud. Если включено, Windows отдаёт кадры, которые и так показывает, — как Discord и OBS захватывают окно, — и игра ничего лишнего не рисует (Windows 11; более старые версии используют прежний способ). Выключено: прежний способ (PrintWindow), который может ставить трансляцию игры в Discord на паузу. Если вокруг игры появилась жёлтая рамка, выключите это.",
+    "zh": "应用会查看游戏窗口的画面，用来判断游戏窗口是否打开（悬浮窗会让开）、读取小地图，以及在黑云商店中框出宠物。开启后，Windows 会直接提供它本来就显示的画面，就像 Discord 和 OBS 捕获窗口那样，游戏不需要额外绘制（Windows 11；较旧的 Windows 仍使用旧方式）。关闭：使用旧方式（PrintWindow），可能会让游戏的 Discord 直播暂停。如果游戏周围出现黄色边框，请关闭此项。",
+    "zh-TW": "應用程式會查看遊戲視窗的畫面，用來判斷遊戲視窗是否開啟（懸浮窗會讓開）、讀取小地圖，以及在黑雲商店中框出寵物。開啟後，Windows 會直接提供它本來就顯示的畫面，就像 Discord 和 OBS 擷取視窗那樣，遊戲不需要額外繪製（Windows 11；較舊的 Windows 仍使用舊方式）。關閉：使用舊方式（PrintWindow），可能會讓遊戲的 Discord 直播暫停。如果遊戲周圍出現黃色邊框，請關閉此項。",
+    "pt": "O app olha imagens da janela do jogo para ver quando uma janela do jogo está aberta (os overlays saem do caminho), ler o minimapa e marcar mascotes na loja Black Cloud. Ligado, o Windows entrega as imagens que já mostra, do jeito que o Discord e o OBS capturam uma janela, e o jogo não desenha nada a mais (Windows 11; versões mais antigas continuam do jeito antigo). Desligado: o jeito antigo (PrintWindow), que pode pausar uma transmissão do jogo no Discord. Se aparecer uma moldura amarela em volta do jogo, desligue isto.",
+    "ja": "アプリはゲームウィンドウの画像を見て、ゲーム内のウィンドウが開いていることの判定（オーバーレイが退きます）、ミニマップの読み取り、ブラッククラウド商店のペットの枠表示に使います。オンにすると、Discord や OBS がウィンドウを取り込むのと同じように、Windows がもともと表示している画面をそのまま渡すので、ゲームは余分な描画をしません（Windows 11。古い Windows は従来の方法のまま）。オフ：従来の方法（PrintWindow）で、ゲームの Discord 配信が一時停止することがあります。ゲームの周りに黄色い枠が出る場合はオフにしてください。",
+    "ko": "앱은 게임 창의 화면을 보고 게임 창이 열렸는지 판단(오버레이가 비켜남)하고, 미니맵을 읽고, 블랙 클라우드 상점의 펫을 표시합니다. 켜면 Discord와 OBS가 창을 캡처하는 것처럼 Windows가 원래 보여 주는 화면을 그대로 넘겨 주므로 게임이 따로 그리지 않습니다(Windows 11, 이전 Windows는 기존 방식 유지). 끄면 기존 방식(PrintWindow)을 쓰며, 게임의 Discord 방송이 일시 정지될 수 있습니다. 게임 주위에 노란 테두리가 보이면 이 기능을 끄세요."
   },
   "Settings.Menu.Name.Assist": {
     "en": "Assist",
@@ -6608,16 +6632,40 @@
     "zh-TW": "操作模式：遊戲時隱藏游標 - 此功能可用。"
   },
   "Settings.Menu.Status.Classic": {
-    "en": "Control mode: classic (the cursor is always shown) - game windows can't be told from play in this mode, so the overlays stay up.",
-    "de": "Steuerung: klassisch (der Zeiger ist immer sichtbar) - Spielfenster lassen sich in dieser Steuerung nicht vom Spielen unterscheiden, die Overlays bleiben also stehen.",
-    "fr": "Mode de contrôle : classique (le curseur est toujours affiché) - dans ce mode, les fenêtres du jeu ne se distinguent pas du jeu, les overlays restent donc affichés.",
-    "es": "Modo de control: clásico (el cursor siempre se muestra) - en este modo las ventanas del juego no se distinguen del juego, así que los overlays se quedan.",
-    "ru": "Режим управления: классический (курсор виден всегда) - в этом режиме окна игры не отличить от игры, поэтому оверлеи остаются на экране.",
-    "zh": "操作模式：经典（光标始终显示）- 此模式下无法区分游戏窗口与游戏画面，悬浮窗会保持显示。",
-    "pt": "Modo de controle: clássico (o cursor é sempre mostrado) - nesse modo as janelas do jogo não se distinguem do jogo, então os overlays continuam visíveis.",
-    "ja": "操作モード：クラシック（カーソルが常に表示）- このモードではゲームのウィンドウとプレイを見分けられないため、オーバーレイは表示されたままです。",
-    "ko": "조작 방식: 클래식(커서가 항상 표시됨) - 이 방식에서는 게임 창과 플레이를 구별할 수 없어 오버레이가 그대로 표시됩니다.",
-    "zh-TW": "操作模式：經典（游標一直顯示）- 此模式下無法區分遊戲視窗與遊戲畫面，懸浮窗會保持顯示。"
+    "en": "Control mode: classic (the cursor is always shown) - game windows are told by the screen only.",
+    "de": "Steuerung: klassisch (der Zeiger ist immer sichtbar) - Spielfenster werden nur am Bildschirm erkannt.",
+    "fr": "Mode de contrôle : classique (le curseur est toujours affiché) - les fenêtres du jeu sont reconnues à l'écran seulement.",
+    "es": "Modo de control: clásico (el cursor siempre se muestra) - las ventanas del juego se reconocen solo por la pantalla.",
+    "ru": "Режим управления: классический (курсор виден всегда) - окна игры распознаются только по экрану.",
+    "zh": "操作模式：经典（光标始终显示）- 仅通过屏幕识别游戏窗口。",
+    "pt": "Modo de controle: clássico (o cursor é sempre mostrado) - as janelas do jogo são reconhecidas só pela tela.",
+    "ja": "操作モード：クラシック（カーソルが常に表示）- ゲームのウィンドウは画面だけで判別します。",
+    "ko": "조작 방식: 클래식(커서가 항상 표시됨) - 게임 창은 화면으로만 알아봅니다.",
+    "zh-TW": "操作模式：經典（游標一直顯示）- 僅透過畫面辨識遊戲視窗。"
+  },
+  "Settings.Menu.Screen.Ready": {
+    "en": "Screen: the game's HUD is learnt - opening a game window hides the overlays.",
+    "de": "Bildschirm: Das HUD des Spiels ist gelernt - ein geöffnetes Spielfenster blendet die Overlays aus.",
+    "fr": "Écran : l'interface du jeu est apprise - ouvrir une fenêtre du jeu masque les overlays.",
+    "es": "Pantalla: la interfaz del juego está aprendida - abrir una ventana del juego oculta los overlays.",
+    "ru": "Экран: интерфейс игры изучен - открытое окно игры скрывает оверлеи.",
+    "zh": "屏幕：已学会游戏界面——打开游戏窗口会隐藏悬浮窗。",
+    "pt": "Tela: a interface do jogo foi aprendida - abrir uma janela do jogo esconde os overlays.",
+    "ja": "画面：ゲームのHUDを学習済み - ゲームのウィンドウを開くとオーバーレイが隠れます。",
+    "ko": "화면: 게임 HUD 학습 완료 - 게임 창을 열면 오버레이가 숨겨집니다.",
+    "zh-TW": "畫面：已學會遊戲介面——開啟遊戲視窗會隱藏懸浮窗。"
+  },
+  "Settings.Menu.Screen.Learning": {
+    "en": "Screen: still learning the game's HUD - fight for about a minute (game in windowed or borderless mode).",
+    "de": "Bildschirm: Das HUD des Spiels wird noch gelernt - kämpfe etwa eine Minute (Spiel im Fenster- oder randlosen Modus).",
+    "fr": "Écran : apprentissage de l'interface du jeu en cours - combattez environ une minute (jeu en mode fenêtré ou sans bordure).",
+    "es": "Pantalla: aún aprendiendo la interfaz del juego - combate un minuto más o menos (juego en modo ventana o sin bordes).",
+    "ru": "Экран: интерфейс игры ещё изучается - повоюйте около минуты (игра в оконном режиме или без рамки).",
+    "zh": "屏幕：仍在学习游戏界面——战斗约一分钟（游戏需为窗口或无边框模式）。",
+    "pt": "Tela: ainda aprendendo a interface do jogo - lute por cerca de um minuto (jogo no modo janela ou sem bordas).",
+    "ja": "画面：ゲームのHUDを学習中 - 1分ほど戦闘してください（ゲームはウィンドウまたはボーダーレスモード）。",
+    "ko": "화면: 게임 HUD 학습 중 - 1분 정도 전투하세요(게임은 창 모드 또는 테두리 없는 모드).",
+    "zh-TW": "畫面：仍在學習遊戲介面——戰鬥約一分鐘（遊戲需為視窗或無邊框模式）。"
   },
   "Settings.Hotkey.ShowMenu": {
     "en": "Show overlays during this menu",
@@ -13222,7 +13270,7 @@
     "zh-TW": "用戶端讀取和上傳的內容"
   },
   "Privacy.Text": {
-    "en": "The meter reads the game's network traffic on your PC, passively; it never sends anything to the game. When you accept, the sharing below is switched on; you can switch any of it off at any time in Settings > Upload, and a switch turned off sends nothing more. The Combat Power changes and the look-ups near the end of this list need no account; everything else goes only while you are signed in to Atreia with Discord (Atreia account, at the bottom of the column on the left).\n\n• Your character's profile (on; Settings > Upload): a few seconds after a login, your character as the game sent it - name, class, level, server, legion, gear with its stones and stats, skills, Daevanion boards, titles, pets and Genus Insight - goes to Atreia, so you can be found on the website.\n• Other players you see (on; Settings > Upload): with your uploads go the name, class, level, gear, legion and the position in fights of the other players the meter has seen, and the members of your own legion. With it off, only your own character is sent.\n• Boss fights (on: uploaded by themselves a few seconds after the boss died; Settings > Upload; or when you press Upload): the fight as the meter shows it - the boss, when the fight started and ended, your server, and for every player in it their name, class and server, their damage, healing and damage taken by skill, the buffs they had and who gave them, deaths, and the effects the players put on the boss.\n• The positions of a boss fight (on; Settings > Upload): with each boss upload, where the players and the boss moved, for the replay on the fight's page.\n• Atreia keeps the fight under your Discord account. You choose who can see it: only you, anyone with its link (the default), or everyone. On the fight's page you can change that or delete the fight at any time. Removing your Discord connection on the site deletes all your fights.\n• Your Genus Insight, pets and combat stats (while signed in; switch it off in the Atreia account window): after a login the meter sends your character's name and server with its Genus Insight (each genus's level and rolled lines), its pet collection (each pet and its level) and its combat stats as the game sends them to the meter (the values the character window's Attack, Defense, Accuracy, Critical Hit, HP and the like are made of, at most every few minutes while they change), so other players who look your character up in Atreia App see them. Switching it off deletes what was sent.\n• Combat Power changes (on; Settings > Upload): each change the CP calculator measures at a login is sent without your name, server, legion or account: your class, region, the day, your Item Level and Combat Power (rounded) and how they and your stats changed, with a random number of this installation. Atreia keeps no IP address with it and uses the changes to refit its Combat Power model.\n• The CP calculator reads your character's public page through atreia.app once per login (it asks with the character's name and server, which that page shows to anyone), for your manastones' values. It also loads the site's current Combat Power model (nothing is sent).\n• Pictures of the game window: while the Black Cloud shop's Pets page is open with pets you still need, to frame their cards on it, and once in the first-start setup, to show it over your own game, the meter takes pictures of the game's own window (on the shop's page about once a second). They are read on your PC and not kept. No picture is ever uploaded.\n• The meter asks GitHub for updates (the request itself, nothing else).\n\nThe full privacy policy is on atreia.app/terms."
+    "en": "The meter reads the game's network traffic on your PC, passively; it never sends anything to the game. When you accept, the sharing below is switched on; you can switch any of it off at any time in Settings > Upload, and a switch turned off sends nothing more. The Combat Power changes, the map accuracy data and the look-ups near the end of this list need no account; everything else goes only while you are signed in to Atreia with Discord (Atreia account, at the bottom of the column on the left).\n\n• Your character's profile (on; Settings > Upload): a few seconds after a login, your character as the game sent it - name, class, level, server, legion, gear with its stones and stats, skills, Daevanion boards, titles, pets and Genus Insight - goes to Atreia, so you can be found on the website.\n• Other players you see (on; Settings > Upload): with your uploads go the name, class, level, gear, legion and the position in fights of the other players the meter has seen, and the members of your own legion. With it off, only your own character is sent.\n• Boss fights (on: uploaded by themselves a few seconds after the boss died; Settings > Upload; or when you press Upload): the fight as the meter shows it - the boss, when the fight started and ended, your server, and for every player in it their name, class and server, their damage, healing and damage taken by skill, the buffs they had and who gave them, deaths, and the effects the players put on the boss.\n• The positions of a boss fight (on; Settings > Upload): with each boss upload, where the players and the boss moved, for the replay on the fight's page.\n• Atreia keeps the fight under your Discord account. You choose who can see it: only you, anyone with its link (the default), or everyone. On the fight's page you can change that or delete the fight at any time. Removing your Discord connection on the site deletes all your fights.\n• Your Genus Insight, pets and combat stats (while signed in; switch it off in the Atreia account window): after a login the meter sends your character's name and server with its Genus Insight (each genus's level and rolled lines), its pet collection (each pet and its level) and its combat stats as the game sends them to the meter (the values the character window's Attack, Defense, Accuracy, Critical Hit, HP and the like are made of, at most every few minutes while they change), so other players who look your character up in Atreia App see them. Switching it off deletes what was sent.\n• Combat Power changes (on; Settings > Upload): each change the CP calculator measures at a login is sent without your name, server, legion or account: your class, region, the day, your Item Level and Combat Power (rounded) and how they and your stats changed, with a random number of this installation. Atreia keeps no IP address with it and uses the changes to refit its Combat Power model.\n• Map accuracy data (on; Settings > Upload): when the game reports your exact position while the meter is reading your minimap, both positions go to Atreia without your name, server, legion or account: the map, the two positions (rounded to a metre), your speed, how well the minimap matched, the size of your game window and the minimap's zoom (every PC's reading is off by a little of its own, which these tell apart), the day, and a random number of this installation. Atreia keeps no IP address with it and uses it only to correct where each map's picture lies, so the map, its arrow and the Hidden Cubes are right for everyone.\n• The CP calculator reads your character's public page through atreia.app once per login (it asks with the character's name and server, which that page shows to anyone), for your manastones' values. It also loads the site's current Combat Power model (nothing is sent).\n• Pictures of the game window: to read your minimap (your exact position for the map and the Hidden Cube finder), to see when a game menu is open (the overlays then step aside), and to show the first-start setup over your own game, the meter takes pictures of the game's own window, up to five times a second while it needs them. They are read on your PC and not kept. When the minimap can't be read, a few small pictures of it are saved in the Debug folder beside the settings on your PC (only the newest), so the problem can be checked. No picture is ever uploaded.\n• The meter asks GitHub for updates (the request itself, nothing else).\n\nThe full privacy policy is on atreia.app/terms."
   },
   "Privacy.Link": {
     "en": "Read the full privacy policy on atreia.app",
@@ -14792,6 +14840,150 @@
     "en": "Open the interactive map →",
     "de": "Interaktive Karte öffnen →",
     "fr": "Ouvrir la carte interactive →"
+  },
+  "Minimap.Notice": {
+    "en": "Atreia App now reads your minimap for an exact position (map arrow and Hidden Cube distance). It only looks at the game's picture, like streaming does. Switch it off under Tools → Cube finder.",
+    "de": "Atreia App liest jetzt deine Minikarte für eine genaue Position (Pfeil auf der Karte und Abstand zu Hidden Cubes). Es schaut nur auf das Bild des Spiels, wie beim Streamen. Abschalten unter Werkzeuge → Würfelfinder.",
+    "fr": "Atreia App lit maintenant votre mini-carte pour une position exacte (flèche de la carte et distance aux cubes cachés). Il ne regarde que l'image du jeu, comme un stream. Désactivez-le dans Tools → Détecteur de cubes.",
+    "es": "Atreia App ahora lee tu minimapa para una posición exacta (flecha del mapa y distancia a los cubos ocultos). Solo mira la imagen del juego, como al hacer streaming. Desactívalo en Tools → Cube finder.",
+    "ru": "Atreia App теперь читает вашу мини-карту для точной позиции (стрелка на карте и расстояние до скрытых кубов). Он смотрит только на изображение игры, как при стриме. Отключить: Tools → Cube finder.",
+    "zh": "Atreia App 现在会读取你的小地图以获得精确位置（地图箭头和隐藏魔方距离）。它只看游戏画面，就像直播一样。可在 Tools → Cube finder 中关闭。",
+    "pt": "O Atreia App agora lê seu minimapa para uma posição exata (seta do mapa e distância até os cubos ocultos). Ele só olha a imagem do jogo, como numa transmissão. Desative em Tools → Cube finder.",
+    "ja": "Atreia App はミニマップを読み取って正確な位置を表示するようになりました（マップの矢印と隠しキューブまでの距離）。配信と同じくゲーム画面を見るだけです。Tools → Cube finder でオフにできます。",
+    "ko": "Atreia App가 이제 미니맵을 읽어 정확한 위치를 표시합니다(지도 화살표와 숨겨진 큐브까지의 거리). 방송처럼 게임 화면만 봅니다. Tools → Cube finder에서 끌 수 있습니다.",
+    "zh-TW": "Atreia App 現在會讀取你的小地圖以取得精確位置（地圖箭頭和隱藏魔方距離）。它只看遊戲畫面，就像直播一樣。可在 Tools → Cube finder 中關閉。"
+  },
+  "Cubes.Minimap": {
+    "en": "Read the minimap for an exact position",
+    "de": "Minikarte für eine genaue Position lesen",
+    "fr": "Lire la mini-carte pour une position exacte",
+    "es": "Leer el minimapa para una posición exacta",
+    "ru": "Читать мини-карту для точной позиции",
+    "zh": "读取小地图以获得精确位置",
+    "pt": "Ler o minimapa para uma posição exata",
+    "ja": "ミニマップを読み取って正確な位置にする",
+    "ko": "미니맵을 읽어 정확한 위치 사용",
+    "zh-TW": "讀取小地圖以取得精確位置"
+  },
+  "Cubes.MinimapTip": {
+    "en": "Compares the game's minimap with the map a few times a second while a Hidden Cube is near or the map overlay is on: your arrow and the cube distance land within about a metre. Only the game window's picture is looked at; nothing is read from the game. Where there is no minimap (dungeons, a menu over it) the network's guess is used as before.",
+    "de": "Vergleicht die Minikarte des Spiels einige Male pro Sekunde mit der Karte, solange ein Hidden Cube in der Nähe ist oder das Karten-Overlay an ist: dein Pfeil und der Würfelabstand liegen dann auf etwa einen Meter genau. Es wird nur das Bild des Spielfensters angesehen, nichts aus dem Spiel gelesen. Ohne Minikarte (Dungeons, ein Menü darüber) gilt wie bisher die Schätzung aus dem Netzwerk.",
+    "fr": "Compare la mini-carte du jeu avec la carte plusieurs fois par seconde quand un cube caché est proche ou que la carte en superposition est active : votre flèche et la distance au cube sont précises à environ un mètre. Seule l'image de la fenêtre du jeu est regardée, rien n'est lu dans le jeu. Sans mini-carte (donjons, un menu par-dessus), l'estimation réseau est utilisée comme avant.",
+    "es": "Compara el minimapa del juego con el mapa varias veces por segundo mientras haya un cubo oculto cerca o el mapa superpuesto esté activo: tu flecha y la distancia al cubo quedan a un metro aproximadamente. Solo se mira la imagen de la ventana del juego; no se lee nada del juego. Donde no hay minimapa (mazmorras, un menú encima) se usa la estimación de red como antes.",
+    "ru": "Несколько раз в секунду сравнивает мини-карту игры с картой, пока рядом скрытый куб или включена карта-оверлей: ваша стрелка и расстояние до куба точны примерно до метра. Смотрится только изображение окна игры, из игры ничего не читается. Без мини-карты (подземелья, меню поверх) используется сетевая оценка, как раньше.",
+    "zh": "在附近有隐藏魔方或地图悬浮窗开启时，每秒数次将游戏小地图与地图比对：你的箭头和魔方距离误差约一米。只查看游戏窗口画面，不读取游戏内任何数据。没有小地图时（副本、菜单遮挡）照旧使用网络估算。",
+    "pt": "Compara o minimapa do jogo com o mapa algumas vezes por segundo enquanto houver um cubo oculto por perto ou o mapa sobreposto estiver ligado: sua seta e a distância até o cubo ficam com cerca de um metro de precisão. Só a imagem da janela do jogo é vista; nada é lido do jogo. Sem minimapa (masmorras, um menu por cima) usa-se a estimativa da rede, como antes.",
+    "ja": "隠しキューブが近くにあるときやマップオーバーレイがオンのとき、ゲームのミニマップを毎秒数回マップと照合します。矢印とキューブまでの距離が約1メートルの精度になります。ゲームウィンドウの画面を見るだけで、ゲームから何も読み取りません。ミニマップがない場所（ダンジョン、メニューが重なっているとき）は従来どおりネットワークの推定を使います。",
+    "ko": "숨겨진 큐브가 근처에 있거나 지도 오버레이가 켜져 있을 때 게임 미니맵을 초당 몇 번 지도와 비교합니다. 화살표와 큐브 거리가 약 1미터 정확도가 됩니다. 게임 창의 화면만 보며 게임에서 아무것도 읽지 않습니다. 미니맵이 없는 곳(던전, 메뉴가 가린 경우)에서는 전처럼 네트워크 추정을 사용합니다.",
+    "zh-TW": "在附近有隱藏魔方或地圖覆蓋層開啟時，每秒數次將遊戲小地圖與地圖比對：你的箭頭和魔方距離誤差約一公尺。只查看遊戲視窗畫面，不讀取遊戲內任何資料。沒有小地圖時（副本、選單遮擋）照舊使用網路估算。"
+  },
+  "Cubes.MinimapOff": {
+    "en": "Off: the position comes from the network alone.",
+    "de": "Aus: die Position kommt nur aus dem Netzwerk.",
+    "fr": "Désactivé : la position vient du réseau seul.",
+    "es": "Desactivado: la posición viene solo de la red.",
+    "ru": "Выключено: позиция только из сети.",
+    "zh": "已关闭：位置仅来自网络。",
+    "pt": "Desligado: a posição vem só da rede.",
+    "ja": "オフ：位置はネットワークのみから得ます。",
+    "ko": "꺼짐: 위치는 네트워크에서만 가져옵니다.",
+    "zh-TW": "已關閉：位置僅來自網路。"
+  },
+  "Cubes.MinimapWaiting": {
+    "en": "Waits for a Hidden Cube in range or the map overlay, with the game in front.",
+    "de": "Wartet auf einen Hidden Cube in Reichweite oder das Karten-Overlay, mit dem Spiel im Vordergrund.",
+    "fr": "Attend un cube caché à portée ou la carte en superposition, avec le jeu au premier plan.",
+    "es": "Espera un cubo oculto al alcance o el mapa superpuesto, con el juego en primer plano.",
+    "ru": "Ждёт скрытый куб рядом или карту-оверлей, когда игра на переднем плане.",
+    "zh": "等待附近出现隐藏魔方或开启地图悬浮窗，且游戏在前台。",
+    "pt": "Aguarda um cubo oculto ao alcance ou o mapa sobreposto, com o jogo em primeiro plano.",
+    "ja": "隠しキューブが範囲内に入るかマップオーバーレイがオンで、ゲームが前面にあるときに動きます。",
+    "ko": "숨겨진 큐브가 범위 안에 있거나 지도 오버레이가 켜져 있고 게임이 앞에 있을 때 작동합니다.",
+    "zh-TW": "等待附近出現隱藏魔方或開啟地圖覆蓋層，且遊戲在前景。"
+  },
+  "Cubes.MinimapSearching": {
+    "en": "Looking for the minimap on the screen…",
+    "de": "Sucht die Minikarte auf dem Bildschirm …",
+    "fr": "Recherche de la mini-carte à l'écran…",
+    "es": "Buscando el minimapa en la pantalla…",
+    "ru": "Ищет мини-карту на экране…",
+    "zh": "正在屏幕上寻找小地图…",
+    "pt": "Procurando o minimapa na tela…",
+    "ja": "画面上でミニマップを探しています…",
+    "ko": "화면에서 미니맵을 찾는 중…",
+    "zh-TW": "正在螢幕上尋找小地圖…"
+  },
+  "Cubes.MinimapReading": {
+    "en": "Exact: {0} positions in the last 10 s, {1} ms each.",
+    "de": "Genau: {0} Positionen in den letzten 10 s, je {1} ms.",
+    "fr": "Exact : {0} positions dans les 10 dernières s, {1} ms chacune.",
+    "es": "Exacto: {0} posiciones en los últimos 10 s, {1} ms cada una.",
+    "ru": "Точно: {0} позиций за последние 10 с, по {1} мс.",
+    "zh": "精确：最近 10 秒 {0} 个位置，每个 {1} 毫秒。",
+    "pt": "Exato: {0} posições nos últimos 10 s, {1} ms cada.",
+    "ja": "正確：直近10秒で {0} 回、各 {1} ミリ秒。",
+    "ko": "정확: 최근 10초 동안 {0}개 위치, 각 {1}ms.",
+    "zh-TW": "精確：最近 10 秒 {0} 個位置，每個 {1} 毫秒。"
+  },
+  "Cubes.MinimapNotSeen": {
+    "en": "Minimap not seen right now (a dungeon, a menu over it, another map): the network's guess is used.",
+    "de": "Minikarte gerade nicht zu sehen (Dungeon, ein Menü darüber, eine andere Karte): die Schätzung aus dem Netzwerk gilt.",
+    "fr": "Mini-carte non visible pour l'instant (donjon, menu par-dessus, autre carte) : l'estimation réseau est utilisée.",
+    "es": "Minimapa no visible ahora (mazmorra, un menú encima, otro mapa): se usa la estimación de red.",
+    "ru": "Мини-карта сейчас не видна (подземелье, меню поверх, другая карта): используется сетевая оценка.",
+    "zh": "暂时看不到小地图（副本、菜单遮挡或其他地图）：使用网络估算。",
+    "pt": "Minimapa não visível agora (masmorra, um menu por cima, outro mapa): usa-se a estimativa da rede.",
+    "ja": "今はミニマップが見えません（ダンジョン、メニューが重なっている、別のマップ）：ネットワークの推定を使います。",
+    "ko": "지금은 미니맵이 보이지 않습니다(던전, 메뉴가 가림, 다른 지도): 네트워크 추정을 사용합니다.",
+    "zh-TW": "暫時看不到小地圖（副本、選單遮擋或其他地圖）：使用網路估算。"
+  },
+  "Cubes.MinimapSave": {
+    "en": "Save minimap picture",
+    "de": "Minikarten-Bild speichern",
+    "fr": "Enregistrer l'image de la mini-carte",
+    "es": "Guardar imagen del minimapa",
+    "ru": "Сохранить снимок мини-карты",
+    "zh": "保存小地图图片",
+    "pt": "Salvar imagem do minimapa",
+    "ja": "ミニマップ画像を保存",
+    "ko": "미니맵 이미지 저장",
+    "zh-TW": "儲存小地圖圖片"
+  },
+  "Cubes.MinimapFind": {
+    "en": "Find the minimap again",
+    "de": "Minikarte neu suchen",
+    "fr": "Rechercher à nouveau la mini-carte",
+    "es": "Buscar el minimapa de nuevo",
+    "ru": "Найти мини-карту заново",
+    "zh": "重新寻找小地图",
+    "pt": "Procurar o minimapa de novo",
+    "ja": "ミニマップを探し直す",
+    "ko": "미니맵 다시 찾기",
+    "zh-TW": "重新尋找小地圖"
+  },
+  "Cubes.MinimapSaved": {
+    "en": "Picture saved: {0}",
+    "de": "Bild gespeichert: {0}",
+    "fr": "Image enregistrée : {0}",
+    "es": "Imagen guardada: {0}",
+    "ru": "Снимок сохранён: {0}",
+    "zh": "图片已保存：{0}",
+    "pt": "Imagem salva: {0}",
+    "ja": "画像を保存しました：{0}",
+    "ko": "이미지 저장됨: {0}",
+    "zh-TW": "圖片已儲存：{0}"
+  },
+  "Cubes.MinimapAccuracy": {
+    "en": "On {2}, readings are typically {0:0.0} m from the game's own positions (checked {1} times, at your skills and hits).",
+    "de": "Auf {2} liegen die Messungen im Mittel {0:0.0} m neben den Positionen des Spiels ({1}-mal geprüft, bei Fertigkeiten und Treffern).",
+    "fr": "Sur {2}, les lectures sont en moyenne à {0:0.0} m des positions du jeu ({1} vérifications, lors de vos compétences et coups).",
+    "es": "En {2}, las lecturas están de media a {0:0.0} m de las posiciones del juego ({1} comprobaciones, en tus habilidades y golpes).",
+    "ru": "На карте {2} показания в среднем в {0:0.0} м от позиций игры (проверено {1} раз, по умениям и ударам).",
+    "zh": "在{2}，读数与游戏自身位置平均相差 {0:0.0} 米（已在技能和命中时检查 {1} 次）。",
+    "pt": "Em {2}, as leituras ficam em média a {0:0.0} m das posições do jogo ({1} verificações, nas suas habilidades e golpes).",
+    "ja": "{2}では、読み取り位置はゲーム自身の位置から平均 {0:0.0} m です（スキルと命中時に {1} 回確認）。",
+    "ko": "{2}에서 판독 위치는 게임 자체 위치와 평균 {0:0.0}m 차이입니다(스킬과 타격 시 {1}회 확인).",
+    "zh-TW": "在{2}，讀數與遊戲自身位置平均相差 {0:0.0} 公尺（已在技能和命中時檢查 {1} 次）。"
   },
   "Cubes.Note": {
     "en": "The game only announces a cube within about 100 m, so the meter cannot see cubes farther away.",
@@ -20999,6 +21191,30 @@
     "ja": "上書き？",
     "ko": "덮어쓸까요?"
   },
+  "Settings.ShareMap": {
+    "en": "Share map accuracy data, without my name (makes the map and the cube finder exact for everyone)",
+    "de": "Kartendaten zur Genauigkeit teilen, ohne meinen Namen (macht Karte und Würfelfinder für alle genau)",
+    "fr": "Partager les données de précision de la carte, sans mon nom (rend la carte et le détecteur de cubes précis pour tous)",
+    "es": "Compartir datos de precisión del mapa, sin mi nombre (hace el mapa y el buscador de cubos exactos para todos)",
+    "ru": "Делиться данными о точности карты без моего имени (карта и поиск кубов станут точными для всех)",
+    "zh": "共享地图精度数据，不含我的名字（让所有人的地图和魔方查找更准确）",
+    "zh-TW": "共享地圖精度資料，不含我的名字（讓所有人的地圖和魔方尋找更準確）",
+    "pt": "Compartilhar dados de precisão do mapa, sem meu nome (deixa o mapa e o localizador de cubos exatos para todos)",
+    "ja": "名前なしでマップ精度データを共有する（全員のマップとキューブ探しが正確になります）",
+    "ko": "내 이름 없이 지도 정확도 데이터 공유 (모두의 지도와 큐브 찾기가 정확해집니다)"
+  },
+  "Settings.ShareMap.Hint": {
+    "en": "When the game reports your exact position while the meter reads your minimap, both positions go to atreia.app: the map, the two positions (to a metre), your speed, how well the minimap matched and the day. They show where each map's picture really lies, and the next version ships the corrected maps. No name, server, legion, account or IP address. On by default while the app is in beta.",
+    "de": "Wenn das Spiel deine genaue Position meldet, während der Meter deine Minikarte liest, gehen beide Positionen an atreia.app: die Karte, die zwei Positionen (auf einen Meter), dein Tempo, wie gut die Minikarte passte, und der Tag. Sie zeigen, wo das Bild jeder Karte wirklich liegt, und die nächste Version bringt die korrigierten Karten. Kein Name, Server, Legion, Konto oder IP-Adresse. In der Beta standardmäßig an.",
+    "fr": "Quand le jeu indique ta position exacte pendant que le meter lit ta mini-carte, les deux positions vont à atreia.app : la carte, les deux positions (au mètre près), ta vitesse, la qualité de lecture de la mini-carte et le jour. Elles montrent où se trouve vraiment l'image de chaque carte, et la version suivante livre les cartes corrigées. Ni nom, ni serveur, ni légion, ni compte, ni adresse IP. Activé par défaut pendant la bêta.",
+    "es": "Cuando el juego informa tu posición exacta mientras el medidor lee tu minimapa, ambas posiciones van a atreia.app: el mapa, las dos posiciones (al metro), tu velocidad, qué tan bien coincidió el minimapa y el día. Muestran dónde está realmente la imagen de cada mapa, y la siguiente versión trae los mapas corregidos. Sin nombre, servidor, legión, cuenta ni dirección IP. Activado por defecto durante la beta.",
+    "ru": "Когда игра сообщает твою точную позицию, пока метр читает мини-карту, обе позиции уходят на atreia.app: карта, две позиции (с точностью до метра), скорость, насколько хорошо совпала мини-карта, и день. По ним видно, где на самом деле лежит изображение каждой карты, и следующая версия получит исправленные карты. Без имени, сервера, легиона, аккаунта и IP-адреса. Включено по умолчанию, пока приложение в бете.",
+    "zh": "当游戏报告你的精确位置且计量器正在读取你的小地图时，两个位置会发送到 atreia.app：地图、两个位置（精确到米）、你的速度、小地图匹配程度和日期。它们显示每张地图图片的真实位置，下一版本会带来修正后的地图。不含名字、服务器、军团、账号或 IP 地址。测试版期间默认开启。",
+    "zh-TW": "當遊戲回報你的精確位置且計量器正在讀取你的小地圖時，兩個位置會傳送到 atreia.app：地圖、兩個位置（精確到公尺）、你的速度、小地圖比對程度和日期。它們顯示每張地圖圖片的真實位置，下一版本會帶來修正後的地圖。不含名字、伺服器、軍團、帳號或 IP 位址。測試版期間預設開啟。",
+    "pt": "Quando o jogo informa sua posição exata enquanto o medidor lê seu minimapa, as duas posições vão para atreia.app: o mapa, as duas posições (ao metro), sua velocidade, o quanto o minimapa combinou e o dia. Elas mostram onde a imagem de cada mapa realmente fica, e a próxima versão traz os mapas corrigidos. Sem nome, servidor, legião, conta ou endereço IP. Ligado por padrão enquanto o app está em beta.",
+    "ja": "ミニマップを読み取っている間にゲームが正確な位置を報告すると、両方の位置が atreia.app に送られます：マップ、2つの位置（1メートル単位）、移動速度、ミニマップの一致度、日付。各マップの画像が実際にどこにあるかが分かり、次のバージョンで補正済みのマップが配布されます。名前、サーバー、レギオン、アカウント、IPアドレスは含みません。ベータ版の間は既定でオンです。",
+    "ko": "미니맵을 읽는 동안 게임이 정확한 위치를 알려 주면 두 위치가 atreia.app으로 전송됩니다: 지도, 두 위치(미터 단위), 이동 속도, 미니맵 일치 정도, 날짜. 각 지도 그림의 실제 위치를 알 수 있어 다음 버전에서 보정된 지도를 제공합니다. 이름, 서버, 군단, 계정, IP 주소는 없습니다. 베타 기간에는 기본으로 켜져 있습니다."
+  },
   "Assist.Opacity": {
     "en": "Opacity",
     "de": "Deckkraft",
@@ -22217,17 +22433,29 @@
   "Status.LegionNone": {
     "en": "No legion list yet: the game sends it at a login"
   },
+  "Status.Minimap": {
+    "en": "Minimap"
+  },
   "Status.Pictures": {
     "en": "Game window pictures"
   },
   "Status.PicturesNone": {
-    "en": "None taken now (only the Black Cloud shop's pet frames take them, while that page is open)"
+    "en": "None taken now (the map and the menu watch take them while they need them)"
   },
   "Status.PicturesRate": {
     "en": "{0} a second, {1} ms each, at most {2} ms"
   },
   "Status.PicturesShared": {
     "en": "{0} times a picture just taken did for another part (fewer pictures, a smoother game)"
+  },
+  "Status.PicturesWayWindows": {
+    "en": "taken with Windows' own capture, as Discord and OBS take a window"
+  },
+  "Status.PicturesWayPrint": {
+    "en": "taken with PrintWindow (the game draws its window once more for each)"
+  },
+  "Status.PicturesWayPrintWhy": {
+    "en": "taken with PrintWindow: {0}"
   },
   "Status.App": {
     "en": "The app"

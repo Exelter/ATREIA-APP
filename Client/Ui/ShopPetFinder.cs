@@ -80,7 +80,7 @@ internal sealed class ColorPlanes
 /// <summary>
 /// Finds where a pet's card is in the Black Cloud shop (7 November 2026, players: "put another overlay over the Urugugu Brawler, so you don't have to search
 /// your screen"). The shop's card shows the same portrait as the pet window's icon (assets/aion2/pets/icons), so the icon is looked for in the game window's
-/// own picture (PrintWindow, <see cref="GameCapture"/>): first coarsely at every size a card can have, then finely around the best few places. The
+/// own picture (PrintWindow, as the minimap reader takes it): first coarsely at every size a card can have, then finely around the best few places. The
 /// match is normalised colour correlation (1 = the same picture); on a picture of the shop's Pets page with ten cards each pet scored 0.74 to 0.86 at its own
 /// card. Which pets are on the page shown comes from the shop's own frame, so only those are looked for, and nothing is drawn below <see cref="Enough"/>.
 /// </summary>

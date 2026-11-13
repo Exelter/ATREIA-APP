@@ -134,6 +134,11 @@ public sealed class MeterSettings
     /// <summary>Whether the CP calculator lists a Clash Rune's upgrades (off: players don't raise them for Combat Power; shown last of all when on).</summary>
     public bool CpShowRunes { get; set; }
 
+    /// <summary>Whether the minimap reader's checks against the game's own reports go to the website without a name (Upload/MapShare.cs), to refit where
+    /// each world map's picture lies: on by default while the app is in beta (the owner, 5 November 2026; the privacy terms name it and nothing goes before
+    /// they are accepted), switched off in Settings, Upload.</summary>
+    public bool ShareMapData { get; set; } = true;
+
     /// <summary>The last time the character was seen: in that legion on that server. Decides whether the settings show the switch above; written by the main window, never by the user.</summary>
     public bool LoginShareEligible { get; set; }
 
@@ -567,6 +572,12 @@ public sealed class MeterSettings
     /// <summary>The switch above was turned on once for everyone (the owner: "only have the overlays on the default page"); the player can turn it off again.</summary>
     public bool MenuHideDefaulted { get; set; }
 
+    /// <summary>The game window's pictures (the game windows, the minimap, the Black Cloud shop's pets) are taken with Windows' own capture, the way Discord
+    /// and OBS take a window (WindowCapture), where Windows lets it go without a yellow frame around the game: the game draws nothing more for them. Off:
+    /// PrintWindow, as before 2.0.21, which made the game draw its window again for every picture and paused a Discord stream of it (13 November 2026).
+    /// On by default.</summary>
+    public bool GamePicturesWindowsCapture { get; set; } = true;
+
     /// <summary>The version the shortcuts' icons were last refreshed for (Windows keeps showing an old icon on a shortcut until told to look again).</summary>
     public string? IconRefreshedFor { get; set; }
 
@@ -940,6 +951,14 @@ public sealed class MeterSettings
 
     /// <summary>The steps of Home's "Get set up" card whose page was opened from it: done.</summary>
     public List<string> HomeSetupOpened { get; set; } = new();
+    /// <summary>The game's minimap is read for an exact own position (MinimapReader: the game window's picture matched against the map, while a Hidden Cube is in
+    /// range or the map overlay is on). On by default (the owner, 2 Nov 2026), with a note on the meter the first time it gives a position.</summary>
+    public bool MinimapReading { get; set; } = true;
+    /// <summary>The note that the minimap is read was shown once.</summary>
+    public bool MinimapNoticeShown { get; set; }
+    /// <summary>Where the minimap is on screen, per game window size ("2560x1440"): its middle x, y and radius in the window's pixels, and metres per pixel.
+    /// Found by the reader itself.</summary>
+    public Dictionary<string, double[]> MinimapLayouts { get; set; } = new();
     /// <summary>Buff alerts (MainWindow.BuffAlerts.cs): a line on the meter when a damage buff, a scroll or food drops off the player while he fights. On by default.</summary>
     public bool BuffDropAlert { get; set; } = true;
     /// <summary>The buff alert's sound (Windows' exclamation). Off by default.</summary>
@@ -1511,6 +1530,7 @@ public sealed class MeterSettings
         to.UploadOtherPlayersProfiles = from.UploadOtherPlayersProfiles;
         to.ShareLoginWithLegion = from.ShareLoginWithLegion;
         to.ShareCpMeasurements = from.ShareCpMeasurements;
+        to.ShareMapData = from.ShareMapData;
         to.LoginShareEligible = from.LoginShareEligible;
         to.CheckForUpdates = from.CheckForUpdates;
         to.Aion2CharacterName = from.Aion2CharacterName;

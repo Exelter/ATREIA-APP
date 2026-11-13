@@ -2,17 +2,15 @@ namespace AionDPS.Ui;
 
 /// <summary>
 /// The player's answer to the privacy policy (<see cref="MeterSettings.PrivacyDecision"/>): nothing is uploaded without a current "accepted"; a "declined" also puts the meter in its
-/// restricted mode (see <see cref="Restricted"/>); closing the question without answering is no answer (asked again at the next start). The policy has a version: when its text adds something, <see cref="Version"/> is raised here (and on the website's privacy page, in all
+/// restricted mode (see <see cref="Restricted"/>); closing the question without answering is no answer (asked again at the next start). The policy has a version: when its text changes, <see cref="Version"/> is raised here (and on the website's privacy page, in all
 /// languages) and everybody who accepted is asked once more. Keep the three in step - see the project memory.
 /// </summary>
 public static partial class PrivacyConsent
 {
-    /// <summary>Raise with every change of the privacy texts that adds to or widens what is used or sent (website page and the client's texts): the accepted
-    /// version in the settings is then too old and the player is asked again. A change that only takes something out leaves it (nothing new to agree to).</summary>
+    /// <summary>Raise with every change of the privacy texts (website page and the client's texts): the accepted version in the settings is then too old and the player is asked again.</summary>
     public const int Version = 6; // 3: the map accuracy data (5 November 2026); 4: the Genus and pets for the player window, the pictures of the game window (5 November 2026);
                                   // 5: every upload switched on with the answer (5 November 2026, the owner: "all these should be ticked since we requested consent");
-                                  // 6: the map accuracy data names the game window's size and the minimap's zoom (10 November 2026);
-                                  // still 6: the map accuracy data and the pictures for the minimap and the game windows taken out (13 November 2026)
+                                  // 6: the map accuracy data names the game window's size and the minimap's zoom (10 November 2026)
 
     public const int NotAsked = 0, Accepted = 1, Declined = 2;
 
@@ -52,6 +50,7 @@ public static partial class PrivacyConsent
             s.AutoUploadBoss = true;
             s.UploadReplay = true;
             s.ShareCpMeasurements = true;
+            s.ShareMapData = true;
         }
         else
         {
@@ -60,6 +59,7 @@ public static partial class PrivacyConsent
             s.UploadOtherPlayersProfiles = false;
             s.ShareLoginWithLegion = false;
             s.ShareCpMeasurements = false;
+            s.ShareMapData = false;
         }
 
         s.Save();

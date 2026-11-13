@@ -99,10 +99,10 @@
 ## How it works
 
 It reads the game's own network traffic on your PC through the [Npcap](https://npcap.com) driver, passively: it never sends a
-packet to the game, never reads or changes the game's memory or files, and needs no administrator rights. It takes no pictures of
-the game, except of the game window while the Black Cloud shop's Pets page is open (to frame the pets you still need) and once in
-the first-start setup (PrintWindow); they stay in memory and are never saved or sent. Nothing about your play leaves your PC unless
-you upload it.
+packet to the game, never reads or changes the game's memory or files, and needs no administrator rights. To tell when one of the
+game's menus is open and, for the cube finder, to read your place on the minimap, it asks Windows for a picture of the game window
+a few times a second: on Windows 11 through Windows' own capture, the way Discord and OBS take a window, elsewhere with PrintWindow.
+The picture stays in memory and is never saved or sent. Nothing about your play leaves your PC unless you upload it.
 
 NCSOFT has not approved this or any other damage meter. Use it at your own responsibility and check the game's rules.
 

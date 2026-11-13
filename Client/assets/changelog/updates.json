@@ -12,8 +12,8 @@
         {
           "kind": "fixed",
           "area": "App",
-          "title": "No more pictures of the game while you stream",
-          "text": "A Discord stream of the game could pause (“… has minimized their application”) while the app was open. The app took pictures of the game’s window several times a second, to read your minimap and to see when one of the game’s windows was open, and now it doesn’t. The minimap reading is gone, and with it the map accuracy sharing in Settings › Upload: the map’s arrow and the Hidden Cube distances go by the positions the game sends, as before. The overlays still step aside while a game window is open, by the mouse cursor, in the control mode that hides it while you play; in the classic one, where the cursor always shows, they now stay up. Only the Black Cloud shop’s pet frames still take pictures, while that shop page is open."
+          "title": "Discord streams of the game should keep running",
+          "text": "A Discord stream of the game could pause (“… has minimized their application”) while the app was open. The app looks at pictures of the game’s window, to step the overlays aside for the game’s own windows, to read the minimap and to frame pets in the Black Cloud shop, and it took them in a way that had the game draw its window once more for each. On Windows 11 it now takes them the way Discord and OBS take a window: Windows hands over the frames it shows anyway, and the game draws nothing extra. Everything works as before. Should a yellow frame ever show around the game, switch “Take the game’s pictures with Windows’ own capture” off in Settings."
         }
       ]
     },
