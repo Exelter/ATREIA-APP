@@ -267,9 +267,18 @@ internal sealed class StatusPage : Grid
             _ => Mark.None,
         }, minimap));
         var (perSecond, average, longest, shared) = GameCapture.Stats(TimeSpan.FromSeconds(10));
-        lines.Add(new Line(Loc["Status.Pictures"], perSecond > 4.5 || longest > 120 ? Mark.Wait : Mark.Good,
+        // how they are taken: Windows' own capture (a wait for the game's next frame counts in its time, no work for the game) or PrintWindow
+        bool viaWindows = GameCapture.LastWay == GameCapture.Way.Windows;
+        string? way = GameCapture.LastWay switch
+        {
+            GameCapture.Way.Windows => Loc["Status.PicturesWayWindows"],
+            GameCapture.Way.PrintWindow => WindowCapture.LastError is { } why ? F("Status.PicturesWayPrintWhy", why) : Loc["Status.PicturesWayPrint"],
+            _ => null,
+        };
+        string? sharedText = shared > 0 ? F("Status.PicturesShared", shared) : null;
+        lines.Add(new Line(Loc["Status.Pictures"], perSecond > 4.5 || (longest > 120 && !viaWindows) ? Mark.Wait : Mark.Good,
             perSecond <= 0 ? Loc["Status.PicturesNone"] : F("Status.PicturesRate", perSecond.ToString("0.0", CultureInfo.CurrentCulture), Math.Round(average), Math.Round(longest)),
-            shared > 0 ? F("Status.PicturesShared", shared) : null));
+            way is null ? sharedText : sharedText is null ? way : way + "  ·  " + sharedText));
 
         // the app itself
         var (cpu, memory) = AppPerf.ProcessUse();

@@ -572,6 +572,12 @@ public sealed class MeterSettings
     /// <summary>The switch above was turned on once for everyone (the owner: "only have the overlays on the default page"); the player can turn it off again.</summary>
     public bool MenuHideDefaulted { get; set; }
 
+    /// <summary>The game window's pictures (the game windows, the minimap, the Black Cloud shop's pets) are taken with Windows' own capture, the way Discord
+    /// and OBS take a window (WindowCapture), where Windows lets it go without a yellow frame around the game: the game draws nothing more for them. Off:
+    /// PrintWindow, as before 2.0.21, which made the game draw its window again for every picture and paused a Discord stream of it (13 November 2026).
+    /// On by default.</summary>
+    public bool GamePicturesWindowsCapture { get; set; } = true;
+
     /// <summary>The version the shortcuts' icons were last refreshed for (Windows keeps showing an old icon on a shortcut until told to look again).</summary>
     public string? IconRefreshedFor { get; set; }
 

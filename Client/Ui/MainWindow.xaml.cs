@@ -2454,6 +2454,7 @@ public partial class MainWindow : Window
         _storeFlush?.Dispose();
         _combat?.Dispose();
         _menuWatcher?.Dispose();
+        WindowCapture.Close(); // the game window's capture session (after the HUD watcher and the minimap reader stopped asking)
         _streamTimer.Stop();
         _streamServer?.Dispose();
         _network?.Dispose();

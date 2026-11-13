@@ -504,6 +504,12 @@
                                 <TextBlock x:Name="MenuPausedStatus" Style="{StaticResource CardHint}" Margin="0,6,0,0" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Warning}" Visibility="Collapsed"/>
                             </StackPanel>
                         </Border>
+<Border Style="{StaticResource SettingsCard}">
+                            <StackPanel>
+                                <CheckBox x:Name="WindowsCaptureBox" Content="{local:Loc Settings.Pictures.Windows}"/>
+                                <TextBlock Style="{StaticResource CardHint}" Text="{local:Loc Settings.Pictures.Hint}" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Border>
 <Border x:Name="LoginShareCard" Style="{StaticResource SettingsCard}" Visibility="Collapsed">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource CardTitle}" Text="{local:Loc Settings.LoginShare.Title}"/>

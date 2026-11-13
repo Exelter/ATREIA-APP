@@ -7,7 +7,7 @@ namespace AionDPS.Ui;
 
 /// <summary>
 /// A picture of the player's own game for the look setup's preview (5 November 2026, the owner: "add a picture of their game once the app opens, not a random
-/// picture"): the game window's own picture, as the minimap reader takes it (PrintWindow, the window's client area: never the screen, so none of the meter's
+/// picture"): the game window's own picture, as the minimap reader takes it (GameCapture: the window's client area, never the screen, so none of the meter's
 /// overlays and nothing else over the game is in it), made small and kept in memory only while the setup is open; never saved, never sent. Without the game
 /// running (or minimized, or drawn black): the picture that comes with the app (assets/setup/game.jpg), else none.
 /// </summary>
@@ -24,32 +24,23 @@ internal static class GameShot
 
         try
         {
-            using var bitmap = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppRgb);
-            using (var g = Graphics.FromImage(bitmap))
+            // through GameCapture: Windows' own capture where it can, else PrintWindow
+            BitmapSource? taken = null;
+            bool drawn = GameCapture.Use(game, size, TimeSpan.Zero, bitmap =>
             {
-                IntPtr dc = g.GetHdc();
+                BitmapData data = bitmap.LockBits(new Rectangle(0, 0, size.Width, size.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppRgb);
                 try
                 {
-                    if (!GameWindow.InRealPixels(() => PrintWindow(game, dc, PwClientOnly | PwRenderFullContent)))
-                    {
-                        return null;
-                    }
+                    taken = BitmapSource.Create(size.Width, size.Height, 96, 96, System.Windows.Media.PixelFormats.Bgr32, null, data.Scan0, data.Stride * size.Height, data.Stride);
                 }
                 finally
                 {
-                    g.ReleaseHdc(dc);
+                    bitmap.UnlockBits(data);
                 }
-            }
-
-            BitmapData data = bitmap.LockBits(new Rectangle(0, 0, size.Width, size.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppRgb);
-            BitmapSource source;
-            try
+            });
+            if (!drawn || taken is not { } source)
             {
-                source = BitmapSource.Create(size.Width, size.Height, 96, 96, System.Windows.Media.PixelFormats.Bgr32, null, data.Scan0, data.Stride * size.Height, data.Stride);
-            }
-            finally
-            {
-                bitmap.UnlockBits(data);
+                return null;
             }
 
             if (Dark(source))
@@ -113,11 +104,6 @@ internal static class GameShot
 
         return n == 0 || sum / (3.0 * n) < 10;
     }
-
-    private const uint PwClientOnly = 1, PwRenderFullContent = 2;
-
-    [DllImport("user32.dll")]
-    private static extern bool PrintWindow(IntPtr hwnd, IntPtr dc, uint flags);
 
     [DllImport("user32.dll")]
     private static extern bool IsIconic(IntPtr hwnd);

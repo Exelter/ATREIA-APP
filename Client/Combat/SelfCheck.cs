@@ -86,6 +86,7 @@ public static class SelfCheck
         ok &= SelfCheckProfileStats.Run();
         ok &= SelfCheckEstimateRescale.Run();
         ok &= SelfCheckPlacement.Run();
+        ok &= SelfCheckWindowCapture.Run();
         return ok;
     }
 

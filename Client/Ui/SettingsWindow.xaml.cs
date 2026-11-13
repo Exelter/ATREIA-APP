@@ -168,6 +168,7 @@ public partial class SettingsWindow : Window
         DummyAutoStartBox.IsChecked = settings.DummyAutoStart;
         SelectNearest(DummyLengthBox, settings.DummyTestSeconds);
         HideDuringMenusBox.IsChecked = settings.HideDuringMenus;
+        WindowsCaptureBox.IsChecked = settings.GamePicturesWindowsCapture;
         StreamOverlayOnBox.IsChecked = settings.StreamOverlayOn;
         StreamShowNamesBox.IsChecked = settings.StreamShowNames;
         StreamNetworkBox.IsChecked = settings.StreamOverlayNetwork;
@@ -1155,6 +1156,7 @@ public partial class SettingsWindow : Window
         _settings.DummyAutoStart = DummyAutoStartBox.IsChecked ?? true;
         _settings.DummyTestSeconds = int.TryParse((DummyLengthBox.SelectedItem as ComboBoxItem)?.Tag as string, out int dummySeconds) ? dummySeconds : _settings.DummyTestSeconds;
         _settings.HideDuringMenus = HideDuringMenusBox.IsChecked ?? false;
+        _settings.GamePicturesWindowsCapture = WindowsCaptureBox.IsChecked ?? true;
         _settings.StreamOverlayOn = StreamOverlayOnBox.IsChecked ?? false;
         _settings.StreamShowNames = StreamShowNamesBox.IsChecked ?? false;
         _settings.StreamOverlayNetwork = StreamNetworkBox.IsChecked ?? true;

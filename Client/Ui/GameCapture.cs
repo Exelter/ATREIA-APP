@@ -8,6 +8,9 @@ namespace AionDPS.Ui;
 /// The game window's picture, taken once for everyone who needs it (6 November 2026, the lag: the HUD watcher and the minimap reader each drew the whole
 /// window with PrintWindow, up to eight times a second together at 2560x1440, and the game feels every one). A picture younger than what the asker can live
 /// with is handed out again instead of a new one; one at a time, so two never overlap. What it costs is counted for the Status page.
+/// Since 2.0.21 the picture comes from Windows' own capture where it can (<see cref="WindowCapture"/>: the frames Windows shows anyway, as Discord and OBS
+/// take a window), and from PrintWindow only where it can't or the setting says so (13 November 2026: PrintWindow's pictures paused a Discord stream of the
+/// game).
 /// </summary>
 internal static class GameCapture
 {
@@ -19,6 +22,8 @@ internal static class GameCapture
     private static bool _drawn;
     private static readonly Queue<(DateTime At, double Ms)> Taken = new();
     private static long _reused;
+    private static bool _viaWindows = true;
+    private static DateTime _settingAt = DateTime.MinValue;
     [ThreadStatic]
     private static byte[]? _rowBuffer;
 
@@ -59,18 +64,26 @@ internal static class GameCapture
             }
 
             long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            bool had = same && _drawn;
             _drawn = false;
-            using (var g = Graphics.FromImage(_whole!))
+            WindowCapture.Result windows = ViaWindows() ? WindowCapture.Draw(game, _whole!) : WindowCapture.Result.Unavailable;
+            switch (windows)
             {
-                IntPtr dc = g.GetHdc();
-                try
-                {
-                    _drawn = GameWindow.InRealPixels(() => PrintWindow(game, dc, PwClientOnly | PwRenderFullContent));
-                }
-                finally
-                {
-                    g.ReleaseHdc(dc);
-                }
+                case WindowCapture.Result.Drawn:
+                    _drawn = true;
+                    LastWay = Way.Windows;
+                    break;
+                case WindowCapture.Result.Unchanged:
+                    _drawn = had; // the window showed nothing new: the last picture still shows it
+                    LastWay = Way.Windows;
+                    break;
+                case WindowCapture.Result.NoFrame:
+                    LastWay = Way.Windows; // minimized, or not drawn yet: no picture now (PrintWindow would get none either)
+                    break;
+                default:
+                    _drawn = DrawWithPrintWindow(game, _whole!);
+                    LastWay = Way.PrintWindow;
+                    break;
             }
 
             _at = DateTime.UtcNow;
@@ -88,6 +101,44 @@ internal static class GameCapture
 
             use(_whole!);
             return true;
+        }
+    }
+
+    /// <summary>How the last picture was taken (the Status page).</summary>
+    public enum Way { None, Windows, PrintWindow }
+
+    public static Way LastWay { get; private set; }
+
+    /// <summary>Whether Windows' own capture is to be tried (the setting, read every few seconds; on by default).</summary>
+    private static bool ViaWindows()
+    {
+        if (DateTime.UtcNow - _settingAt > TimeSpan.FromSeconds(3))
+        {
+            _settingAt = DateTime.UtcNow;
+            bool on = MeterSettings.Load().GamePicturesWindowsCapture;
+            if (!on && _viaWindows)
+            {
+                WindowCapture.Close(); // switched off: its session goes at once
+            }
+
+            _viaWindows = on;
+        }
+
+        return _viaWindows;
+    }
+
+    /// <summary>The picture the old way: Windows has the game draw its window into our bitmap (client area, with the flag for a DirectX window's content).</summary>
+    private static bool DrawWithPrintWindow(IntPtr game, Bitmap target)
+    {
+        using var g = Graphics.FromImage(target);
+        IntPtr dc = g.GetHdc();
+        try
+        {
+            return GameWindow.InRealPixels(() => PrintWindow(game, dc, PwClientOnly | PwRenderFullContent));
+        }
+        finally
+        {
+            g.ReleaseHdc(dc);
         }
     }
 

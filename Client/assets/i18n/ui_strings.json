@@ -6523,6 +6523,30 @@
     "ko": "일시 중지됨: 잠금 해제된 오버레이: {0}. 다시 잠그면 메뉴가 열릴 때 오버레이가 숨겨집니다.",
     "zh-TW": "已暫停：未鎖定的浮動層：{0}。重新鎖定後，選單才會隱藏浮動層。"
   },
+  "Settings.Pictures.Windows": {
+    "en": "Take the game's pictures with Windows' own capture (keeps Discord and OBS streams of the game running)",
+    "de": "Bilder des Spiels mit der Aufnahme von Windows selbst machen (Discord- und OBS-Streams des Spiels laufen weiter)",
+    "fr": "Prendre les images du jeu avec la capture de Windows (les streams Discord et OBS du jeu continuent)",
+    "es": "Tomar las imágenes del juego con la captura propia de Windows (las transmisiones de Discord y OBS del juego siguen)",
+    "ru": "Снимать изображения игры собственным захватом Windows (трансляции игры в Discord и OBS не прерываются)",
+    "zh": "使用 Windows 自带的捕获获取游戏画面（游戏的 Discord 和 OBS 直播不会中断）",
+    "zh-TW": "使用 Windows 內建的擷取取得遊戲畫面（遊戲的 Discord 和 OBS 直播不會中斷）",
+    "pt": "Tirar as imagens do jogo com a captura do próprio Windows (as transmissões do jogo no Discord e no OBS continuam)",
+    "ja": "Windows 自身のキャプチャでゲームの画像を取得する（ゲームの Discord・OBS 配信が止まりません）",
+    "ko": "Windows 자체 캡처로 게임 화면 가져오기 (게임의 Discord·OBS 방송이 멈추지 않음)"
+  },
+  "Settings.Pictures.Hint": {
+    "en": "The app looks at pictures of the game's window to see a game window open (the overlays step aside), to read the minimap and to frame pets in the Black Cloud shop. With this on, Windows hands over the frames it shows anyway, the way Discord and OBS take a window, so the game draws nothing extra (Windows 11; older Windows keep the old way). Off: the old way (PrintWindow), which can pause a Discord stream of the game. If a yellow frame shows around the game, switch this off.",
+    "de": "Die App schaut sich Bilder des Spielfensters an, um ein offenes Spielfenster zu erkennen (die Overlays machen Platz), die Minikarte zu lesen und Haustiere im Black-Cloud-Shop zu markieren. Ist das an, gibt Windows die Bilder her, die es ohnehin zeigt – so wie Discord und OBS ein Fenster aufnehmen –, und das Spiel zeichnet nichts zusätzlich (Windows 11; ältere Windows-Versionen bleiben beim alten Weg). Aus: der alte Weg (PrintWindow), der einen Discord-Stream des Spiels pausieren kann. Erscheint ein gelber Rahmen um das Spiel, schalte das aus.",
+    "fr": "L'application regarde des images de la fenêtre du jeu pour voir qu'une fenêtre du jeu est ouverte (les overlays s'effacent), lire la mini-carte et encadrer les familiers dans la boutique Black Cloud. Activé, Windows fournit les images qu'il affiche de toute façon, comme Discord et OBS capturent une fenêtre : le jeu ne dessine rien de plus (Windows 11 ; les versions plus anciennes gardent l'ancienne méthode). Désactivé : l'ancienne méthode (PrintWindow), qui peut mettre en pause un stream Discord du jeu. Si un cadre jaune apparaît autour du jeu, désactivez ceci.",
+    "es": "La aplicación mira imágenes de la ventana del juego para ver si hay una ventana del juego abierta (los overlays se apartan), leer el minimapa y marcar mascotas en la tienda Black Cloud. Activado, Windows entrega las imágenes que muestra de todos modos, como Discord y OBS capturan una ventana, y el juego no dibuja nada extra (Windows 11; las versiones anteriores siguen con el método antiguo). Desactivado: el método antiguo (PrintWindow), que puede pausar una transmisión de Discord del juego. Si aparece un marco amarillo alrededor del juego, desactívalo.",
+    "ru": "Приложение смотрит на изображения окна игры, чтобы видеть открытое окно игры (оверлеи уходят), читать мини-карту и выделять питомцев в магазине Black Cloud. Если включено, Windows отдаёт кадры, которые и так показывает, — как Discord и OBS захватывают окно, — и игра ничего лишнего не рисует (Windows 11; более старые версии используют прежний способ). Выключено: прежний способ (PrintWindow), который может ставить трансляцию игры в Discord на паузу. Если вокруг игры появилась жёлтая рамка, выключите это.",
+    "zh": "应用会查看游戏窗口的画面，用来判断游戏窗口是否打开（悬浮窗会让开）、读取小地图，以及在黑云商店中框出宠物。开启后，Windows 会直接提供它本来就显示的画面，就像 Discord 和 OBS 捕获窗口那样，游戏不需要额外绘制（Windows 11；较旧的 Windows 仍使用旧方式）。关闭：使用旧方式（PrintWindow），可能会让游戏的 Discord 直播暂停。如果游戏周围出现黄色边框，请关闭此项。",
+    "zh-TW": "應用程式會查看遊戲視窗的畫面，用來判斷遊戲視窗是否開啟（懸浮窗會讓開）、讀取小地圖，以及在黑雲商店中框出寵物。開啟後，Windows 會直接提供它本來就顯示的畫面，就像 Discord 和 OBS 擷取視窗那樣，遊戲不需要額外繪製（Windows 11；較舊的 Windows 仍使用舊方式）。關閉：使用舊方式（PrintWindow），可能會讓遊戲的 Discord 直播暫停。如果遊戲周圍出現黃色邊框，請關閉此項。",
+    "pt": "O app olha imagens da janela do jogo para ver quando uma janela do jogo está aberta (os overlays saem do caminho), ler o minimapa e marcar mascotes na loja Black Cloud. Ligado, o Windows entrega as imagens que já mostra, do jeito que o Discord e o OBS capturam uma janela, e o jogo não desenha nada a mais (Windows 11; versões mais antigas continuam do jeito antigo). Desligado: o jeito antigo (PrintWindow), que pode pausar uma transmissão do jogo no Discord. Se aparecer uma moldura amarela em volta do jogo, desligue isto.",
+    "ja": "アプリはゲームウィンドウの画像を見て、ゲーム内のウィンドウが開いていることの判定（オーバーレイが退きます）、ミニマップの読み取り、ブラッククラウド商店のペットの枠表示に使います。オンにすると、Discord や OBS がウィンドウを取り込むのと同じように、Windows がもともと表示している画面をそのまま渡すので、ゲームは余分な描画をしません（Windows 11。古い Windows は従来の方法のまま）。オフ：従来の方法（PrintWindow）で、ゲームの Discord 配信が一時停止することがあります。ゲームの周りに黄色い枠が出る場合はオフにしてください。",
+    "ko": "앱은 게임 창의 화면을 보고 게임 창이 열렸는지 판단(오버레이가 비켜남)하고, 미니맵을 읽고, 블랙 클라우드 상점의 펫을 표시합니다. 켜면 Discord와 OBS가 창을 캡처하는 것처럼 Windows가 원래 보여 주는 화면을 그대로 넘겨 주므로 게임이 따로 그리지 않습니다(Windows 11, 이전 Windows는 기존 방식 유지). 끄면 기존 방식(PrintWindow)을 쓰며, 게임의 Discord 방송이 일시 정지될 수 있습니다. 게임 주위에 노란 테두리가 보이면 이 기능을 끄세요."
+  },
   "Settings.Menu.Name.Assist": {
     "en": "Assist",
     "de": "Assist",
@@ -22423,6 +22447,15 @@
   },
   "Status.PicturesShared": {
     "en": "{0} times a picture just taken did for another part (fewer pictures, a smoother game)"
+  },
+  "Status.PicturesWayWindows": {
+    "en": "taken with Windows' own capture, as Discord and OBS take a window"
+  },
+  "Status.PicturesWayPrint": {
+    "en": "taken with PrintWindow (the game draws its window once more for each)"
+  },
+  "Status.PicturesWayPrintWhy": {
+    "en": "taken with PrintWindow: {0}"
   },
   "Status.App": {
     "en": "The app"
