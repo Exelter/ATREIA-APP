@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using AionDPS.Linux.Meter;
 using AionDPS.Linux.Platform;
 using AionDPS.Ui;
@@ -33,8 +34,11 @@ internal static class Render
         {
             var assets = Avalonia.Platform.AssetLoader.GetAssets(new Uri("avares://AtreiaApp/"), null).Select(u => u.AbsolutePath).ToList();
             Console.WriteLine($"render: {assets.Count} resources: {string.Join(", ", assets.Take(12))}");
-            bool found = FontManager.Current.TryGetGlyphTypeface(new Typeface(Palette.UiFont), out IGlyphTypeface? face);
-            Console.WriteLine($"render: the meter's face {Palette.UiFont} -> {(found ? face!.FamilyName + " " + face.Weight : "not found")}; default {FontManager.Current.DefaultFontFamily.Name}");
+            foreach (FontWeight weight in new[] { FontWeight.Normal, FontWeight.SemiBold, FontWeight.Bold })
+            {
+                bool found = FontManager.Current.TryGetGlyphTypeface(new Typeface(Palette.UiFont, FontStyle.Normal, weight), out IGlyphTypeface? face);
+                Console.WriteLine($"render: the meter's face {Palette.UiFont} {weight} -> {(found ? face!.FamilyName + " " + face.Weight : "not found")}; default {FontManager.Current.DefaultFontFamily.Name}");
+            }
         }
         catch (Exception ex)
         {
@@ -93,6 +97,8 @@ internal static class Render
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         }
 
+        TextBlock? sample = view.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Text is { Length: > 0 });
+        Console.WriteLine($"render: a line of the meter (\"{sample?.Text}\") is drawn in {sample?.FontFamily} {sample?.FontWeight}");
         WriteableBitmap? frame = window.CaptureRenderedFrame();
         if (frame is null)
         {

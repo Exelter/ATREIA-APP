@@ -395,6 +395,7 @@ internal sealed class MeterView : Border
 
     internal static TextBlock Text(double size, FontWeight weight, IBrush brush) => new()
     {
+        FontFamily = Palette.UiFont,
         FontSize = size,
         FontWeight = weight,
         Foreground = brush,
