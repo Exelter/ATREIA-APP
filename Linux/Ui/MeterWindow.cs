@@ -119,7 +119,11 @@ internal sealed class MeterWindow : Window
                 ApplyClickThrough();
             }
         };
-        Closing += (_, _) => Remember();
+        Closing += (_, _) =>
+        {
+            Remember();
+            LinuxLog.Write($"action: quit at {Position.X},{Position.Y}");
+        };
     }
 
     /// <summary>Starts reading the game, when this app may: without the right to read the network the capture is not started, and the status line says how
@@ -273,7 +277,8 @@ internal sealed class MeterWindow : Window
         _spot.Locked = locked;
         _spot.Save();
         _view.ShowLocked(locked);
-        LinuxLog.Write(locked ? "locked in place" : "unlocked");
+        _view.Update();
+        LinuxLog.Write($"action: {(locked ? "locked in place" : "unlocked")} -> {_view.State}");
     }
 
     // ---- the size: the player's width, the lines' room, the scale (Windows: SetCompactOverlaySize, OnCompactOverlayResize) ----

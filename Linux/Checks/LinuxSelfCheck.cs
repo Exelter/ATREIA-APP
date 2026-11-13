@@ -151,14 +151,16 @@ internal static class LinuxSelfCheck
         engine.Tick();
         IReadOnlyList<PlayerRow> rows = engine.ShownRows;
         bool five = rows.Count == 5 && rows.Select(r => r.Name).SequenceEqual(new[] { "Kaivhan", "Nyxelle", "Seraphyne", "Draegor", "Lumiael" });
-        bool ranked = rows.Select(r => r.Rank).SequenceEqual(new[] { 1, 2, 3, 4, 5 }) && Math.Abs(rows.Sum(r => r.SharePercent) - 100) < 0.01 && rows[0].FillPercent == 100;
+        // every line is measured against the longest whole bar (its own part, the buffs given, the healing on the others): that one fills the line
+        bool ranked = rows.Select(r => r.Rank).SequenceEqual(new[] { 1, 2, 3, 4, 5 }) && Math.Abs(rows.Sum(r => r.SharePercent) - 100) < 0.01
+            && Math.Abs(rows.Max(r => r.HealFillPercent) - 100) < 0.001;
         bool target = engine.TargetText == SampleFight.BossName && engine.TimeText.Length > 0;
         double gladiator = rows[0].Dps ?? 0;
         bool rate = gladiator is > 7_500 and < 9_100;
         bool classes = rows[0].ClassName == "Gladiator" && rows[4].ClassName == "Cleric";
         bool boss = engine.CurrentBoss() is { Hp: 3_140_000, Max: 12_600_000 };
         Console.WriteLine($"  -> five lines, best first: {five} ({string.Join(", ", rows.Select(r => $"{r.Name} {r.DpsCompact}"))})");
-        Console.WriteLine($"  -> ranks 1-5, the shares make 100 %, the best bar is full: {ranked}");
+        Console.WriteLine($"  -> ranks 1-5, the shares make 100 %, the longest bar is full: {ranked}");
         Console.WriteLine($"  -> the meter follows the boss on its own, with the fight's time: {target} ({engine.TargetText}, {engine.TimeText})");
         Console.WriteLine($"  -> the Gladiator's DPS over the boss fight is about 8.3K: {rate} ({gladiator:0})");
         Console.WriteLine($"  -> the classes and the boss line come through: {classes && boss}");

@@ -127,6 +127,32 @@ jobs:
           # letting the clicks through: only the bar's buttons take the mouse, the rest of the clicks go to the game
           grep -q "input region: the bar's buttons alone" "$home/.config/AtreiaApp/linux.log" || { echo "::error::the meter did not let the clicks through"; exit 1; }
           echo "::group::screens/linux-x11.png (base64)"; base64 -w 0 screens/linux-x11.png; echo; echo "::endgroup::"
+      # Every button of the window clicked on an X server with a window manager (openbox: moving a window is the window manager's job), the game's
+      # made-up traffic giving it lines (Linux/packaging/ci/ui-test.py): the pill's measures and views, the scope switch, the reset, moving it by its head,
+      # the lock, the grip (wider, with Ctrl bigger, a double-click back), the menu's pause, open world, always on top, the clicks through, and quit.
+      - name: Every button of the window
+        run: |
+          set -eu
+          sudo apt-get install -y -q xdotool openbox > /dev/null
+          sudo setcap cap_net_raw,cap_net_admin=eip out/atreia-app/AtreiaApp
+          home=$(mktemp -d)
+          export XDG_CONFIG_HOME="$home/.config"
+          mkdir -p "$home/.config/AtreiaApp"
+          echo '{"X": 60, "Y": 60, "Locked": false, "Topmost": true}' > "$home/.config/AtreiaApp/linux-window.json"
+          # the fold off: the body shows the made-up traffic's lines without a boss fight
+          echo '{"MeterFoldIdle": false}' > "$home/.config/AtreiaApp/meter-settings.json"
+          code=0
+          HOME="$home" xvfb-run -a -s "-screen 0 1280x800x24" sh -c '
+            openbox > /dev/null 2>&1 &
+            sleep 1
+            python3 Linux/packaging/ci/ui-test.py out/atreia-app/AtreiaApp "$XDG_CONFIG_HOME/AtreiaApp/linux.log" screens' || code=$?
+          sudo setcap -r out/atreia-app/AtreiaApp
+          echo "::group::linux.log"; cat "$home/.config/AtreiaApp/linux.log"; echo "::endgroup::"
+          if [ -s "$home/.config/AtreiaApp/crash.log" ]; then echo "::error::crash.log was written"; cat "$home/.config/AtreiaApp/crash.log"; exit 1; fi
+          for f in screens/linux-ui-*.png; do
+            echo "::group::$f (base64)"; base64 -w 0 "$f"; echo; echo "::endgroup::"
+          done
+          [ $code -eq 0 ] || { echo "::error::a button of the window did not work (above)"; exit 1; }
       # A player's way, end to end: the download unpacked in a new home, install.sh (with its sudo setcap), then the installed command started on an X
       # server while the made-up game traffic plays. The meter must open with the right to read the network, find the game's traffic, fetch the game's
       # pictures on this first start and keep running; then uninstall.sh takes it all away again.

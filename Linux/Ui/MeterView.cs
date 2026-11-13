@@ -10,6 +10,7 @@ using Avalonia.Media.Imaging;
 using AionDPS.Combat;
 using AionDPS.History;
 using AionDPS.Linux.Meter;
+using AionDPS.Linux.Platform;
 using AionDPS.Ui;
 using AionDPS.Upload;
 using ShapePath = Avalonia.Controls.Shapes.Path;
@@ -41,6 +42,7 @@ internal sealed class MeterView : Border
     private readonly ShapePath _lockIcon = new() { Stroke = Palette.TextSubtle, StrokeThickness = 1.4, Fill = Palette.TextSubtle, Width = 11, Height = 12, Stretch = Stretch.Uniform };
     private readonly Button _menuButton;
     private readonly Button _resetButton;
+    private readonly Grid _head;
 
     // ---- the body ----
     private readonly StackPanel _body = new();
@@ -159,11 +161,16 @@ internal sealed class MeterView : Border
         ToolTip.SetTip(_modeButton, "What the meter shows: DPS, rDPS, healing, damage taken, buffs, a dummy parse, Grind");
         var modeMenu = new MenuFlyout();
         modeMenu.Opening += (_, _) => FillModeMenu(modeMenu);
+        modeMenu.Opened += (_, _) => NoteItems(modeMenu);
         _modeButton.Flyout = modeMenu;
 
         Button reset = _resetButton = IconButton(new ShapePath { Data = Geometry.Parse("M 10.2,4.2 A 4.6,4.6 0 1 0 10.9,8 M 10.6,0.9 L 10.4,4.5 L 6.9,4.2"), Stroke = Palette.TextSubtle, StrokeThickness = 1.4, Width = 11, Height = 11, Stretch = Stretch.Uniform },
             LocalizationManager.Instance["Main.Overlay.Reset"]);
-        reset.Click += (_, _) => _engine.Clear();
+        reset.Click += (_, _) =>
+        {
+            _engine.Clear();
+            Did("clear");
+        };
         _lockButton = IconButton(_lockIcon, "Lock the meter in place");
         _lockButton.Click += (_, _) => LockClicked?.Invoke();
         var dots = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2.5, VerticalAlignment = VerticalAlignment.Center };
@@ -175,6 +182,7 @@ internal sealed class MeterView : Border
         _menuButton = IconButton(dots, "More: pause, the open world, always on top, the capture check, the data folder, quit");
         var menu = new MenuFlyout();
         menu.Opening += (_, _) => FillMenu(menu);
+        menu.Opened += (_, _) => NoteItems(menu);
         _menuButton.Flyout = menu;
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
@@ -183,7 +191,7 @@ internal sealed class MeterView : Border
         buttons.Children.Add(_lockButton);
         buttons.Children.Add(_menuButton);
 
-        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,Auto,Auto,*,Auto"), Margin = new Thickness(8, 5, 6, 5), MinHeight = 30, Background = Brushes.Transparent };
+        var head = _head = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,Auto,Auto,*,Auto"), Margin = new Thickness(8, 5, 6, 5), MinHeight = 30, Background = Brushes.Transparent };
         Place(head, you, 0);
         Place(head, _divider, 1);
         Place(head, _time, 2);
@@ -229,6 +237,7 @@ internal sealed class MeterView : Border
             {
                 e.Handled = true;
                 _engine.ScopeClicked(tag);
+                Did("scope switch " + tag);
             };
             _scopes.Children.Add(segment);
         }
@@ -452,6 +461,52 @@ internal sealed class MeterView : Border
         double? ping = capturing && _engine.Source is Aion2.Aion2PacketCombatSource ? Aion2.Capture.NetworkStats.Snapshot().PingMs : null;
         _ping.Text = ping is double ms and >= 1 ? $"{ms:0} ms" : "";
         UpdateTickets(now);
+        NoteWhere();
+    }
+
+    /// <summary>What the meter shows now, in a few words (linux.log's "action" lines).</summary>
+    public string State =>
+        $"{_engine.ModeShort} · {(_engine.ShowStagger || _engine.ShowGrind || _engine.ShowBuffs ? "view" : "scope " + _engine.ShownScope)} · {_engine.ShownRows.Count} lines"
+        + $" · {(_body.IsVisible ? "open" : "folded")}{(_engine.Paused ? " · paused" : "")}{(_engine.TrackOpenWorld ? " · open world" : "")}";
+
+    /// <summary>Notes a click and what the meter shows after it.</summary>
+    private void Did(string what) => LinuxLog.Write($"action: {what} -> {State}");
+
+    /// <summary>For the workflow's test (ATREIA_UI_TEST=1): where the bar's buttons, the scope switch, the grip and a free spot of the head are.</summary>
+    private void NoteWhere()
+    {
+        if (!UiTest.Enabled)
+        {
+            return;
+        }
+
+        UiTest.Where("pill", _modeButton);
+        UiTest.Where("reset", _resetButton);
+        UiTest.Where("lock", _lockButton);
+        UiTest.Where("menu", _menuButton);
+        UiTest.Where("grip", Grip);
+        UiTest.WherePoint("head", _head, new Point(_head.Bounds.Width * 0.55, _head.Bounds.Height / 2));
+        foreach (Border segment in _scopes.Children.OfType<Border>())
+        {
+            UiTest.Where("scope:" + segment.Tag, segment);
+        }
+    }
+
+    /// <summary>For the workflow's test: where the items of the menu just opened are (once it is laid out).</summary>
+    private static void NoteItems(MenuFlyout menu)
+    {
+        if (!UiTest.Enabled)
+        {
+            return;
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            foreach (MenuItem item in menu.Items.OfType<MenuItem>())
+            {
+                UiTest.Where("item:" + item.Header, item);
+            }
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     /// <summary>A few times a second (the window's quick timer): the boss's next casts and the dummy's countdown move on their own.</summary>
@@ -833,6 +888,7 @@ internal sealed class MeterView : Border
             {
                 act();
                 Update();
+                Did("menu " + header);
             };
             menu.Items.Add(item);
         }
@@ -871,7 +927,11 @@ internal sealed class MeterView : Border
         void Add(string header, string action, bool on = false)
         {
             var item = new MenuItem { Header = header, Icon = new TextBlock { Text = on ? "✓" : "", FontSize = 12, Foreground = Palette.Accent, HorizontalAlignment = HorizontalAlignment.Center } };
-            item.Click += (_, _) => MenuChosen?.Invoke(action);
+            item.Click += (_, _) =>
+            {
+                MenuChosen?.Invoke(action);
+                Did("menu " + header);
+            };
             menu.Items.Add(item);
         }
 
