@@ -561,11 +561,11 @@ public static class CpProgression
         foreach (IGrouping<string, string> empty in Missing(pieces).GroupBy(slot => slot).Take(2))
         {
             (CpGearKind kind, string category) = SlotKind(empty.Key);
-            int count = empty.Count();
+            int empties = empty.Count();
             CpTierGear? gear = tier?.For(kind);
             CpItemData? item = gear is not null && category.Length > 0 ? TargetOf(category, gear, race, 0, 0, totals, model) : null;
-            moves.Add(new CpMove(CpMoveKind.Equip, (gear?.ItemLevel ?? 0) * count, item is null ? null : AtLevels(item, 0, 0, totals, model) * count, Slot: empty.Key,
-                Target: gear, TargetItem: item, Count: count));
+            moves.Add(new CpMove(CpMoveKind.Equip, (gear?.ItemLevel ?? 0) * empties, item is null ? null : AtLevels(item, 0, 0, totals, model) * empties, Slot: empty.Key,
+                Target: gear, TargetItem: item, Count: empties));
         }
 
         // what costs nothing: the most Combat Power of a better piece the character holds, a title, a wing
