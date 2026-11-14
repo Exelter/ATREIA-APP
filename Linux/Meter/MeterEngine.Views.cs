@@ -675,7 +675,7 @@ public sealed partial class MeterEngine
         return _grindFigures;
     }
 
-    /// <summary>"New session" on the Grind view: counting starts again from the next kill (the session goes on the Grind page).</summary>
+    /// <summary>"Reset" on the Grind view (and the meter's Clear while it is on): counting starts again from the next kill (the session goes on the Grind page).</summary>
     public void NewGrindSession()
     {
         Aion2Grind.NewSession();

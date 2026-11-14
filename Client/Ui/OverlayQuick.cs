@@ -40,6 +40,8 @@ public static class OverlayQuick
         [OverlayPlaces.Gather] = new(() => L("Settings.Nav.Gather"), s => s.GatherOverlayLocked, (s, v) => s.GatherOverlayLocked = v, s => s.ShowGatherOverlay = false, "petmap.gather"),
         [OverlayPlaces.Season] = new(() => L("Checklist.Season"), s => s.SeasonOverlayLocked, (s, v) => s.SeasonOverlayLocked = v, s => s.ShowSeasonOverlay = false, "checklist"),
         [OverlayPlaces.Craft] = new(() => L("Main.MenuTools.Craft"), s => s.CraftOverlayLocked, (s, v) => s.CraftOverlayLocked = v, s => s.ShowCraftOverlay = false, "craft"),
+        [OverlayPlaces.Progression] = new(() => L("Main.MenuTools.Progression"), s => s.ProgressionOverlayLocked, (s, v) => s.ProgressionOverlayLocked = v,
+            s => s.ShowProgressionOverlay = false, "progression"),
         [OverlayPlaces.BossCast] = new(() => L("Settings.Nav.Combat"), s => s.CombatCastOverlayLocked ?? s.CombatOverlayLocked, (s, v) => s.CombatCastOverlayLocked = v, s => s.ShowCombatOverlay = false, "combat"),
         [OverlayPlaces.BossHp] = new(() => L("Settings.Nav.Combat"), s => s.CombatHpOverlayLocked ?? s.CombatOverlayLocked, (s, v) => s.CombatHpOverlayLocked = v, s => s.ShowCombatOverlay = false, "combat"),
         [OverlayPlaces.TargetOfTarget] = new(() => L("Settings.Nav.Combat"), s => s.CombatOverlayLocked, (s, v) => s.CombatOverlayLocked = v, s => s.ShowCombatOverlay = false, "combat"),

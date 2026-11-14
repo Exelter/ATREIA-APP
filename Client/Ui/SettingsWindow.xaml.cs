@@ -103,6 +103,7 @@ public partial class SettingsWindow : Window
         SetHotkeyBox(HotkeyAssistBox, HotkeyBinding.Parse(settings.HotkeyAssist).ToString());
         SetHotkeyBox(HotkeyLootBox, HotkeyBinding.Parse(settings.HotkeyLoot).ToString());
         SetHotkeyBox(HotkeyCraftBox, HotkeyBinding.Parse(settings.HotkeyCraft).ToString());
+        SetHotkeyBox(HotkeyProgressionBox, HotkeyBinding.Parse(settings.HotkeyProgression).ToString());
         ShowLootOverlayBox.IsChecked = settings.ShowLootOverlay;
         LootOverlayLockedBox.IsChecked = !settings.LootOverlayLocked;
         LootHideCommonBox.IsChecked = settings.LootOverlayHideCommon;
@@ -570,7 +571,7 @@ public partial class SettingsWindow : Window
 
     /// <summary>The switches in front of the hotkey names: shown in the hotkey overlay or not (Tag = the hotkey's id).</summary>
     private IEnumerable<CheckBox> HotkeyOverlayRowBoxes() =>
-        new[] { OvHideUiBox, OvPauseBox, OvCopyDamageBox, OvClearBox, OvUploadBossBox, OvModeBox, OvTimetableBox, OvPetMapBox, OvHotkeyOverlayBox, OvAllOverlaysBox, OvMoveOverlaysBox, OvWorldBossBox, OvNetworkBox, OvCombatBox, OvAssistBox, OvLootBox, OvCraftBox, OvPetArrowsBox, OvPetMapZoomInBox, OvPetMapZoomOutBox, OvGatherArrowsBox };
+        new[] { OvHideUiBox, OvPauseBox, OvCopyDamageBox, OvClearBox, OvUploadBossBox, OvModeBox, OvTimetableBox, OvPetMapBox, OvHotkeyOverlayBox, OvAllOverlaysBox, OvMoveOverlaysBox, OvWorldBossBox, OvNetworkBox, OvCombatBox, OvAssistBox, OvLootBox, OvCraftBox, OvProgressionBox, OvPetArrowsBox, OvPetMapZoomInBox, OvPetMapZoomOutBox, OvGatherArrowsBox };
 
     /// <summary>The switches of the lines the network overlay shows (Tag = the line's id).</summary>
     private IEnumerable<CheckBox> NetworkRowBoxes() =>
@@ -595,7 +596,8 @@ public partial class SettingsWindow : Window
         (HotkeyHideUiBox, HotkeyAction.ToggleHideUi), (HotkeyPauseBox, HotkeyAction.TogglePause), (HotkeyCopyDamageBox, HotkeyAction.CopyDamageRanking),
         (HotkeyClearBox, HotkeyAction.ClearDamage), (HotkeyUploadBossBox, HotkeyAction.UploadBoss), (HotkeyModeBox, HotkeyAction.NextMode),
         (HotkeyAllOverlaysBox, HotkeyAction.ToggleAllOverlays), (HotkeyMoveOverlaysBox, HotkeyAction.MoveOverlays), (HotkeyHotkeyOverlayBox, HotkeyAction.ToggleHotkeyOverlay),
-        (HotkeyLootBox, HotkeyAction.ToggleLootOverlay), (HotkeyCraftBox, HotkeyAction.ToggleCraftOverlay), (HotkeyPetMapBox, HotkeyAction.TogglePetMap),
+        (HotkeyLootBox, HotkeyAction.ToggleLootOverlay), (HotkeyCraftBox, HotkeyAction.ToggleCraftOverlay), (HotkeyProgressionBox, HotkeyAction.ToggleProgressionOverlay),
+        (HotkeyPetMapBox, HotkeyAction.TogglePetMap),
         (HotkeyPetArrowsBox, HotkeyAction.TogglePetArrows), (HotkeyPetMapZoomInBox, HotkeyAction.PetMapZoomIn), (HotkeyPetMapZoomOutBox, HotkeyAction.PetMapZoomOut),
         (HotkeyGatherArrowsBox, HotkeyAction.ToggleGatherArrows), (HotkeyCombatBox, HotkeyAction.ToggleCombatOverlay), (HotkeyAssistBox, HotkeyAction.ToggleAssistOverlay),
         (HotkeyTimetableBox, HotkeyAction.ToggleTimetable), (HotkeyWorldBossBox, HotkeyAction.ToggleWorldBossOverlay), (HotkeyNetworkBox, HotkeyAction.ToggleNetworkOverlay),
@@ -953,6 +955,19 @@ public partial class SettingsWindow : Window
         _settings.ChecklistFolded = onDisk.ChecklistFolded; // the Characters page: the parts folded away and the tab of all characters
         _settings.ChecklistRosterTab = onDisk.ChecklistRosterTab;
         _settings.OverlayOpacities[OverlayPlaces.Craft] = onDisk.OverlayOpacities.GetValueOrDefault(OverlayPlaces.Craft, 0.6);
+        // the progression overlay is switched on, locked and placed outside this window (its page, the Overlays page, its hotkey, dragging it): the file's values stand
+        _settings.ShowProgressionOverlay = onDisk.ShowProgressionOverlay;
+        _settings.ProgressionOverlayLocked = onDisk.ProgressionOverlayLocked;
+        _settings.ProgressionOverlayLeft = onDisk.ProgressionOverlayLeft;
+        _settings.ProgressionOverlayTop = onDisk.ProgressionOverlayTop;
+        _settings.ProgressionOverlayScale = onDisk.ProgressionOverlayScale;
+        _settings.ProgressionOverlayWidth = onDisk.ProgressionOverlayWidth;
+        _settings.ProgressionOverlayHeight = onDisk.ProgressionOverlayHeight;
+        _settings.ProgressionOverlayHideInDungeons = onDisk.ProgressionOverlayHideInDungeons;
+        if (onDisk.OverlayOpacities.TryGetValue(OverlayPlaces.Progression, out double progressionOpacity))
+        {
+            _settings.OverlayOpacities[OverlayPlaces.Progression] = progressionOpacity;
+        }
         // the gathering overlay is switched on, locked and placed outside this window (its card, the overlays page, dragging it): the file's values stand
         _settings.ShowGatherOverlay = onDisk.ShowGatherOverlay;
         _settings.GatherOverlayLocked = onDisk.GatherOverlayLocked;
@@ -1089,6 +1104,7 @@ public partial class SettingsWindow : Window
         _settings.HotkeyNetwork = (string?)HotkeyNetworkBox.Tag ?? "";
         _settings.HotkeyLoot = (string?)HotkeyLootBox.Tag ?? "";
         _settings.HotkeyCraft = (string?)HotkeyCraftBox.Tag ?? "";
+        _settings.HotkeyProgression = (string?)HotkeyProgressionBox.Tag ?? "";
         _settings.HotkeyCombatOverlay = (string?)HotkeyCombatBox.Tag ?? "";
         _settings.HotkeyAssist = (string?)HotkeyAssistBox.Tag ?? "";
         ReadCombatPage(_settings);

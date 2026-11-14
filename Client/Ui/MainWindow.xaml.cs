@@ -133,6 +133,7 @@ public partial class MainWindow : Window
     private SeasonOverlayController? _seasonOverlay;
     private MinimapReader? _minimapReader;
     private CraftOverlayController? _craft;
+    private ProgressionOverlayController? _progressionOverlay;
     private CombatOverlayController? _combat;
     private MenuWatcher? _menuWatcher;
     private Streaming.StreamOverlayServer? _streamServer;
@@ -959,7 +960,7 @@ public partial class MainWindow : Window
                 CopyChatLineChunk(BuildDmgRankingText(), "No damage has been recorded yet.");
                 break;
             case HotkeyAction.ClearDamage:
-                ClearDamageData();
+                ClearByHand();
                 break;
             case HotkeyAction.ToggleTimetable:
                 ToggleTimetable();
@@ -998,6 +999,10 @@ public partial class MainWindow : Window
             case HotkeyAction.ToggleCraftOverlay:
                 ToggleCraftOverlay();
                 SayToggled("Main.MenuTools.Craft", MeterSettings.Load().ShowCraftOverlay);
+                break;
+            case HotkeyAction.ToggleProgressionOverlay:
+                ToggleProgressionOverlay();
+                SayToggled("Main.MenuTools.Progression", MeterSettings.Load().ShowProgressionOverlay);
                 break;
             case HotkeyAction.ToggleWorldBossOverlay:
                 ToggleWorldBossOverlay();
@@ -1282,6 +1287,7 @@ public partial class MainWindow : Window
         _gatherOverlay?.RaiseToFront();
         _seasonOverlay?.RaiseToFront();
         _craft?.RaiseToFront();
+        _progressionOverlay?.RaiseToFront();
         _combat?.RaiseToFront();
         _network?.RaiseToFront();
         _enemyCard?.RaiseToFront();
@@ -1627,6 +1633,8 @@ public partial class MainWindow : Window
             // the exact own position from the game's minimap (Tools, Cube finder): a note on the meter the first time it gives one
             _minimapReader ??= new MinimapReader(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory, text => ShowUploadStatus(text));
             _craft ??= new CraftOverlayController(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory);
+            // the progression overlay: the character's stage and what to do next, counted as the Progression page counts it
+            _progressionOverlay ??= new ProgressionOverlayController(() => _liveSource?.Entities as Aion2.Aion2EntityDirectory);
             _menuWatcher ??= new MenuWatcher();
             _streamTimer.Tick += (_, _) => StreamTick();
             _streamTimer.Start();
@@ -2453,6 +2461,7 @@ public partial class MainWindow : Window
         _seasonOverlay?.Dispose();
         _minimapReader?.Dispose();
         _craft?.Dispose();
+        _progressionOverlay?.Dispose();
         _storeFlush?.Dispose();
         _combat?.Dispose();
         _menuWatcher?.Dispose();
@@ -7098,7 +7107,7 @@ public partial class MainWindow : Window
     private void OnClearClicked(object sender, RoutedEventArgs e)
     {
         AppMenu.IsSubmenuOpen = false;
-        ClearDamageData();
+        ClearByHand();
     }
 
     /// <summary>Delegates to Combat/EngagedTargets, which is where the two failure modes this
@@ -7583,6 +7592,15 @@ public partial class MainWindow : Window
             {
                 var cpPage = new CpCalcPage(() => _liveSource?.Entities as Aion2EntityDirectory);
                 return new ToolPage { Content = cpPage, Cleanup = cpPage.Stop };
+            }
+
+            case "progression":
+            {
+                // the website's progression guides on the character (14 November 2026: a page of its own, with its overlay's switch and hotkey on top)
+                var progressionPage = new CpCalcPage(() => _liveSource?.Entities as Aion2EntityDirectory, progression: true);
+                var progressionModule = new ModulePage(loc["Main.MenuTools.Progression"], progressionPage, s => s.ShowProgressionOverlay, (s, v) => s.ShowProgressionOverlay = v,
+                    s => s.HotkeyProgression, hotkeys, null, applied) { FitWidth = true };
+                return new ToolPage { Content = progressionModule, Cleanup = () => { progressionModule.Stop(); progressionPage.Stop(); } };
             }
 
             case "journey":
@@ -8637,6 +8655,15 @@ public partial class MainWindow : Window
         _settingsWindow?.SyncOverlaySwitches(settings);
     }
 
+    /// <summary>The progression controller reads the settings every second, so the switch is all it takes.</summary>
+    private void ToggleProgressionOverlay()
+    {
+        var settings = MeterSettings.Load();
+        settings.ShowProgressionOverlay = !settings.ShowProgressionOverlay;
+        settings.Save();
+        _settingsWindow?.SyncOverlaySwitches(settings);
+    }
+
     /// <summary>The combat controller reads the settings every second, so the switch is all it takes.</summary>
     private void ToggleCombatOverlay()
     {
@@ -8663,6 +8690,7 @@ public partial class MainWindow : Window
         ("gather", s => s.ShowGatherOverlay, (s, v) => s.ShowGatherOverlay = v),
         ("season", s => s.ShowSeasonOverlay, (s, v) => s.ShowSeasonOverlay = v),
         ("craft", s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v),
+        ("progression", s => s.ShowProgressionOverlay, (s, v) => s.ShowProgressionOverlay = v),
         ("fps", s => s.ShowFpsOverlay, (s, v) => s.ShowFpsOverlay = v),
         ("enemy", s => s.ShowEnemyCard, (s, v) => s.ShowEnemyCard = v),
         ("radar", s => s.ShowEnemyRadar, (s, v) => s.ShowEnemyRadar = v),

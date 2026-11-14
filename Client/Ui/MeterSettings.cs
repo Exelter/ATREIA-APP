@@ -444,6 +444,20 @@ public sealed class MeterSettings
     /// <summary>How many materials the crafting overlay lists at most (the rest is summed up in a last line), 3 to 30.</summary>
     public int CraftOverlayLines { get; set; } = 10;
 
+    /// <summary>The progression overlay (see ProgressionOverlayWindow): the character's stage, its Combat Power against its Item Level and what to do next.
+    /// Off until switched on. Locked (default): click-through; unlocked: it can be moved and scaled.</summary>
+    public bool ShowProgressionOverlay { get; set; }
+
+    public bool ProgressionOverlayLocked { get; set; } = true;
+    public double? ProgressionOverlayLeft { get; set; }
+    public double? ProgressionOverlayTop { get; set; }
+    public double ProgressionOverlayScale { get; set; } = 1.0;
+    public double? ProgressionOverlayWidth { get; set; }
+    public double? ProgressionOverlayHeight { get; set; }
+
+    /// <summary>The progression overlay steps aside in a dungeon (on by default: it is for between the runs).</summary>
+    public bool ProgressionOverlayHideInDungeons { get; set; } = true;
+
     /// <summary>An intermediate (an ingot for a weapon) is counted as the materials it is made of. On by default.</summary>
     public bool CraftResolve { get; set; } = true;
 
@@ -985,6 +999,9 @@ public sealed class MeterSettings
 
     /// <summary>Switches the crafting overlay on and off.</summary>
     public string HotkeyCraft { get; set; } = "Ctrl+Alt+R";
+
+    /// <summary>Switches the progression overlay on and off.</summary>
+    public string HotkeyProgression { get; set; } = "Ctrl+Alt+I";
 
     /// <summary>The notice that appears when the eye (hide the window) is clicked was dismissed with "do not show again".</summary>
     public bool HideUiHintDismissed { get; set; }

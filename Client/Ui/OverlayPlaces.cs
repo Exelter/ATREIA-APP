@@ -12,13 +12,14 @@ public static class OverlayPlaces
         Timetable = "Aion DPS Timetable", PetMap = "Aion DPS Pet Map", PetList = "Aion DPS Pet List", PetInfo = "Aion DPS Pet Farming",
         Loot = "Aion DPS Loot", Gather = "Aion DPS Gathered", Season = "Aion DPS Season", Craft = "Aion DPS Crafting", BossCast = "Aion DPS Boss Cast", BossHp = "Aion DPS Target Health", TargetOfTarget = "Aion DPS Combat",
         Menu = "Aion DPS Overlay Menu", Fps = "Aion DPS FPS", EnemyCard = "Aion DPS Enemy Card",
-        EnemyRadar = "Aion DPS Enemy Radar", DeathRecap = "Aion DPS Death Recap";
+        EnemyRadar = "Aion DPS Enemy Radar", DeathRecap = "Aion DPS Death Recap", Progression = "Aion DPS Progression";
 
     private static readonly Dictionary<string, string> Prefixes = new()
     {
         [Assist] = "AssistOverlay", [Effects] = "EffectsOverlay", [Loot] = "LootOverlay", [Gather] = "GatherOverlay", [Season] = "SeasonOverlay", [Craft] = "CraftOverlay", [Network] = "NetworkOverlay", [Dummy] = "DummyOverlay", [WorldBoss] = "BossOverlay", [Hotkeys] = "HotkeyOverlay",
         [Timetable] = "Timetable", [PetMap] = "PetMap", [PetList] = "PetList", [PetInfo] = "PetFarm",
         [BossCast] = "CombatCastOverlay", [BossHp] = "CombatHpOverlay", [TargetOfTarget] = "CombatOverlay", [Menu] = "OverlayMenu", [Fps] = "FpsOverlay", [EnemyCard] = "EnemyCard", [EnemyRadar] = "EnemyRadar", [DeathRecap] = "DeathRecap",
+        [Progression] = "ProgressionOverlay",
     };
 
     private static readonly Dictionary<string, string[]> CombatElements = new()

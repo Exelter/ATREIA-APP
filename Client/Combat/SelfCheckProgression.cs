@@ -92,6 +92,33 @@ public static class SelfCheckProgression
             && you.Jewelry is { Top: 2, Count: 3, ItemLevel: 86 } && you.Arcana is double cards && Math.Abs(cards - 2.4) < 1e-9 && you.Nodes >= 0 && you.Stigmas >= 0;
         Console.WriteLine($"  -> the sample character against the band (Arcana +{you.Arcana:0.0}, {you.Nodes} Daevanion nodes, Stigma levels {you.Stigmas}): {youOk}");
 
-        return guides && bands && kinds && read && anyRace && tasks && youOk;
+        // "do this next" (the Progression page's first card and the overlay): the two empty slots first (the Guard and an earring, each the stage's crafted IL 102
+        // piece), then what costs nothing, the next enhancements or breakthroughs on the pieces worth keeping, the IL 86 earrings onto the crafted ones with a
+        // Transfer Stone (+16 IL), the four empty sockets (up to +16 IL) and the 13 Arcana levels; the kinds in that order, a slot once, three a prefix of eight
+        IReadOnlyList<CpStep> steps = r.Steps.Where(x => x.Key != CpWhole.RuneKey).ToList();
+        IReadOnlyList<CpMove> moves = CpProgression.Moves(pieces, steps, r.Arcana, 3010, race, totals, model, count: 8);
+        IReadOnlyList<CpMove> three = CpProgression.Moves(pieces, steps, r.Arcana, 3010, race, totals, model);
+        int Rank(CpMove m) => m.Kind switch
+        {
+            CpMoveKind.Equip => 0, CpMoveKind.Free => 1, CpMoveKind.Replace when m.Piece?.Optional != true => 2, CpMoveKind.Enhance or CpMoveKind.Breakthrough => 3,
+            CpMoveKind.Transfer => 4, CpMoveKind.Replace => 5, CpMoveKind.Stones => 6, _ => 7,
+        };
+        // a slot once among the better pieces, the replacements and the transfers; a step once a slot, and none on a piece a better one or a replacement is for
+        var replaced = moves.Where(m => m.Kind is CpMoveKind.Replace or CpMoveKind.Transfer || m.Step is { Kind: CpStepKind.BetterItem })
+            .Select(m => m.Piece?.Piece.Slot ?? m.Step!.Slot).ToList();
+        var raised = moves.Where(m => m.Kind is CpMoveKind.Enhance or CpMoveKind.Breakthrough).Select(m => m.Step!.Slot).ToList();
+        bool once = replaced.Distinct().Count() == replaced.Count && raised.Distinct().Count() == raised.Count
+            && !raised.Any(slot => moves.Any(m => (m.Kind == CpMoveKind.Replace && m.Piece?.Piece.Slot == slot) || m.Step is { Kind: CpStepKind.BetterItem } better && better.Slot == slot));
+        bool next = moves.Count >= 5 && moves[0] is { Kind: CpMoveKind.Equip, Slot: "SubHand", ItemLevel: 102 }
+            && moves[1] is { Kind: CpMoveKind.Equip, Slot: "Earring", ItemLevel: 102, TargetItem.Level: 102 } && moves[1].Cp > 0
+            && moves.Any(m => m is { Kind: CpMoveKind.Transfer, ItemLevel: 16, ItemLevelLater: 16, Piece.Piece.ItemId: 310230114 } && m.Cp > 0)
+            && moves.Any(m => m is { Kind: CpMoveKind.Stones, Count: 4, ItemLevel: 16 }) && moves[^1] is { Kind: CpMoveKind.Arcana, Count: 13, ItemLevel: 13 }
+            && moves.Where(m => m.Kind is CpMoveKind.Enhance or CpMoveKind.Breakthrough).All(m => m.ItemLevel == (m.Kind == CpMoveKind.Breakthrough ? 5 : 1) && m.Cp > 0 && m.Piece!.Keeper)
+            && moves.Select(Rank).Zip(moves.Select(Rank).Skip(1)).All(z => z.First <= z.Second) && once
+            && three.Count == 3 && three.Select(m => (m.Kind, m.Slot, m.ItemId)).SequenceEqual(moves.Take(3).Select(m => (m.Kind, m.Slot, m.ItemId)));
+        string listed = string.Join(", ", moves.Select(m => m.Kind + (m.Slot is null ? "" : " " + m.Slot) + (m.ItemLevel > 0 ? " +" + m.ItemLevel + " IL" : "")));
+        Console.WriteLine($"  -> do this next: {listed}: {next}");
+
+        return guides && bands && kinds && read && anyRace && tasks && youOk && next;
     }
 }

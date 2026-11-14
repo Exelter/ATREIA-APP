@@ -21,7 +21,8 @@ namespace AionDPS.Ui;
 /// next steps over every part, each with how sure its gain is (exact, a chance, an average of a roll, a range). Below a tab per part: the gear as the game's own item
 /// pictures with every line's CP, the Stigmas and skills by level, the Genus Insight boards line by line with what a new Analysis gives, the pets by genus and level,
 /// and what the calculator was checked against. Values come from the item data, CP from the website's model, fitted to the game's own number when it came.
-/// A reading page: no overlay, no hotkey.
+/// A reading page: no overlay, no hotkey. With <c>progression</c> it is the Progression page instead (Characters → Progression, CpCalcPage.Progression.cs: the
+/// website's progression guides on the character, its own tab and overlay since 14 November 2026), counted the same way.
 /// </summary>
 public sealed partial class CpCalcPage : Grid
 {
@@ -60,11 +61,10 @@ public sealed partial class CpCalcPage : Grid
     private static readonly Color Green = Color.FromRgb(0x4C, 0xC4, 0x6A);
     private static readonly Color Grey = Color.FromRgb(0x8A, 0x93, 0x9E);
 
-    /// <summary>The tabs below the steps, in their order (Progression: the website's progression guides on this character, CpCalcPage.Progression.cs).</summary>
+    /// <summary>The tabs below the steps, in their order (the Progression tab of 2.0.23 is a page of its own now: the owner, 14 November 2026).</summary>
     private enum Tab
     {
         Gear,
-        Progression,
         Stigmas,
         Skills,
         Genus,
@@ -76,6 +76,7 @@ public sealed partial class CpCalcPage : Grid
     }
 
     private readonly Func<Aion2EntityDirectory?> _directory;
+    private readonly bool _progression;
     private readonly DispatcherTimer _refresh = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly StackPanel _body = new();
     private readonly TextBlock _note = new() { FontSize = 12, Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap };
@@ -106,24 +107,34 @@ public sealed partial class CpCalcPage : Grid
         ["multi"] = "AdditionalHitRate", ["perf"] = "Perfect", ["dbl"] = "HardHit", ["pve"] = "PvEAmplifyDamage", ["hp"] = "HPMax", ["def"] = "ArmorDefense", ["block"] = "Block",
     };
 
-    public CpCalcPage(Func<Aion2EntityDirectory?> directory)
+    /// <param name="directory">The live character.</param>
+    /// <param name="progression">The Progression page (its title, overlay switch and scrolling are the page's around it, a <see cref="ModulePage"/>).</param>
+    public CpCalcPage(Func<Aion2EntityDirectory?> directory, bool progression = false)
     {
         _directory = directory;
-        Margin = new Thickness(14, 10, 14, 14);
-        RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        var head = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
-        // the page's title as the other character pages have it (6 November 2026, the owner: "fix the CP to be a nicer style")
-        var title = new TextBlock { Text = Loc("Main.MenuTools.CpCalc"), FontSize = 26, Foreground = Res("Brush.Text") };
-        ThemeManager.UseTitleFont(title);
-        head.Children.Add(title);
-        _note.Foreground = Res("Brush.TextMuted");
-        head.Children.Add(_note);
-        SetRow(head, 0);
-        Children.Add(head);
-        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = _body };
-        SetRow(scroll, 1);
-        Children.Add(scroll);
+        _progression = progression;
+        if (progression)
+        {
+            Children.Add(_body);
+        }
+        else
+        {
+            Margin = new Thickness(14, 10, 14, 14);
+            RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            var head = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
+            // the page's title as the other character pages have it (6 November 2026, the owner: "fix the CP to be a nicer style")
+            var title = new TextBlock { Text = Loc("Main.MenuTools.CpCalc"), FontSize = 26, Foreground = Res("Brush.Text") };
+            ThemeManager.UseTitleFont(title);
+            head.Children.Add(title);
+            _note.Foreground = Res("Brush.TextMuted");
+            head.Children.Add(_note);
+            SetRow(head, 0);
+            Children.Add(head);
+            var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = _body };
+            SetRow(scroll, 1);
+            Children.Add(scroll);
+        }
 
         _refresh.Tick += (_, _) => Poll();
         _refresh.Start();
@@ -146,7 +157,7 @@ public sealed partial class CpCalcPage : Grid
         Poll(force: true);
     }
 
-    /// <summary>Opens a tab by its name (gear, progression, stigmas, skills, genus, pets, daevanion, titles, arcana, check; the picture mode).</summary>
+    /// <summary>Opens a tab by its name (gear, stigmas, skills, genus, pets, daevanion, titles, arcana, check; the picture mode).</summary>
     internal void ShowTab(string name)
     {
         if (Enum.TryParse(name, ignoreCase: true, out Tab tab))
@@ -180,32 +191,38 @@ public sealed partial class CpCalcPage : Grid
 
     // ------------------------------------------------------------------ data
 
-    private CpOfficialRead? Official => _character is null ? null : CpChecks.OfficialOf(_character, _server);
+    private CpOfficialRead? Official => OfficialFor(_character, _server);
+
+    private static CpOfficialRead? OfficialFor(string? character, int server) => character is null ? null : CpChecks.OfficialOf(character, server);
 
     private IReadOnlyList<(string Stat, int Value)>? StonesOf(Aion2EquippedItem item) => CpCharacterPage.StonesFor(Official?.Pieces, item);
 
     /// <summary>The character the page counts for: its Item Level (the last check's, else the login list's, else the character page's) and what was measured on it.</summary>
-    private CpCharacter CharacterOf(Aion2EntityDirectory? directory)
+    private CpCharacter CharacterOf(Aion2EntityDirectory? directory) => CharacterFor(directory, _character, _server);
+
+    /// <summary>A character as the page counts it (<see cref="CharacterOf"/>; the progression overlay counts the same).</summary>
+    internal static CpCharacter CharacterFor(Aion2EntityDirectory? directory, string? character, int server)
     {
-        if (_character is null)
+        if (character is null)
         {
             return new CpCharacter();
         }
 
-        int? itemLevel = CpChecks.State(_character, _server)?.Points.LastOrDefault()?.ItemLevel is int il and > 0 ? il
-            : directory is not null && Aion2Moved.Find(directory.AccountCharacters(), c => c.Name, c => c.ServerId, _character, _server)?.ItemLevel is int own and > 0 ? own
-            : Official?.ItemLevel;
-        return new CpCharacter(itemLevel, CpChecks.Factors(_character, _server));
+        int? itemLevel = CpChecks.State(character, server)?.Points.LastOrDefault()?.ItemLevel is int il and > 0 ? il
+            : directory is not null && Aion2Moved.Find(directory.AccountCharacters(), c => c.Name, c => c.ServerId, character, server)?.ItemLevel is int own and > 0 ? own
+            : OfficialFor(character, server)?.ItemLevel;
+        return new CpCharacter(itemLevel, CpChecks.Factors(character, server));
     }
 
-    /// <summary>Everything of the character the calculator counts, as the game sent it.</summary>
-    private CpWholeInput InputOf(Aion2EntityDirectory? directory, IReadOnlyList<Aion2EquippedItem> gear)
+    /// <summary>Everything of a character the calculator counts, as the game sent it, its manastones from its official character page when that was read.</summary>
+    internal static CpWholeInput InputFor(Aion2EntityDirectory? directory, IReadOnlyList<Aion2EquippedItem> gear, string? character, int server)
     {
         Aion2CharacterInfo? me = directory?.LocalCharacter;
+        CpOfficialRead? official = OfficialFor(character, server);
         return new CpWholeInput(
             me is null ? null : Aion2SkillNames.ClassFromCode(me.ClassCode),
             gear,
-            StonesOf,
+            item => CpCharacterPage.StonesFor(official?.Pieces, item),
             directory?.LocalAttributes,
             directory?.LocalSkills,
             directory?.LocalDaevanion,
@@ -215,8 +232,8 @@ public sealed partial class CpCalcPage : Grid
             directory?.OwnedWingIds,
             directory?.LocalSpecies,
             directory?.LocalPetStates,
-            _character is null ? null : CpChecks.Factors(_character, _server),
-            HeldBy(_character, _server),
+            character is null ? null : CpChecks.Factors(character, server),
+            HeldBy(character, server),
             directory?.LocalStats);
     }
 
@@ -250,11 +267,23 @@ public sealed partial class CpCalcPage : Grid
         }
     }
 
-    private static string GearSignature(IReadOnlyList<Aion2EquippedItem>? gear) => gear is null ? "-" : string.Join(';', gear.Select(g =>
+    internal static string GearSignature(IReadOnlyList<Aion2EquippedItem>? gear) => gear is null ? "-" : string.Join(';', gear.Select(g =>
         $"{g.SlotIndex}:{g.ItemId}:{g.Enchant}:{string.Join(',', (g.Stats ?? Array.Empty<Aion2RolledStat>()).Select(s => s.StatId + "=" + s.Value))}:{string.Join(',', (g.Stones ?? Array.Empty<Aion2Stone>()).Select(s => s.StatId + "/" + s.Tier))}"));
 
+    /// <summary>
+    /// What the counting depends on, for noticing that it changed (the page and the progression overlay count again only then): the character, its gear, the
+    /// stats of its stat frame the model reads, the rest of it, the model, the language, the checks against the game, the market and the live Item Level.
+    /// </summary>
+    internal static string Signature(Aion2EntityDirectory? directory) =>
+        $"{directory?.LocalCharacter?.Name}|{GearSignature(directory?.LocalEquipment)}|{FrameSignature(directory?.LocalStats)}|{RestSignature(directory)}|{Aion2CpData.Model.FromWebsite}"
+        + $"|{Lang}|{CpChecks.Version}|{ExchangePrices.Version}|{directory?.OwnLiveItemLevel}";
+
+    /// <summary>The stats of the game's stat frame the model reads (the offence and guard its percentages count with), for noticing that they changed.</summary>
+    internal static string FrameSignature(IReadOnlyDictionary<int, int>? frame) =>
+        frame is null ? "-" : string.Join(',', new[] { 31, 317, 19, 128, 104, 318, 193, 52, 307, 1, 13, 5, 14, 8, 4, 10 }.Select(id => frame.GetValueOrDefault(id)));
+
     /// <summary>The rest of the character the page shows, for noticing that it changed: skills, Daevanion, Genus Insight, pets, titles, the wing, attributes.</summary>
-    private static string RestSignature(Aion2EntityDirectory? d) => d is null ? "-" : string.Join('|',
+    internal static string RestSignature(Aion2EntityDirectory? d) => d is null ? "-" : string.Join('|',
         string.Join(',', d.LocalSkills.Select(s => $"{s.SkillId}:{s.Level}:{s.Equipped}:{s.Stigma}")),
         string.Join(',', d.LocalDaevanion.Select(b => b.BoardId + ":" + b.NodeIds.Count)),
         string.Join(',', d.LocalSpecies.Select(k => $"{k.SpeciesId}:{k.Level}:{string.Join('.', k.Effects.Select(e => e.Page + "/" + e.Slot + "/" + e.StatId + "/" + e.Value))}")),
@@ -274,8 +303,7 @@ public sealed partial class CpCalcPage : Grid
         }
 
         IReadOnlyDictionary<int, int>? frame = directory?.LocalStats;
-        string frameSig = frame is null ? "-" : string.Join(',', new[] { 31, 317, 19, 128, 104, 318, 193, 52, 307, 1, 13, 5, 14, 8, 4, 10 }.Select(id => frame.GetValueOrDefault(id)));
-        string signature = $"{name}|{GearSignature(gear)}|{frameSig}|{RestSignature(directory)}|{Aion2CpData.Model.FromWebsite}|{Lang}|{CpChecks.Version}|{_selected}|{_tab}|{_pending is null}|{ExchangePrices.Version}|{directory?.OwnLiveItemLevel}";
+        string signature = $"{Signature(directory)}|{_selected}|{_tab}|{_pending is null}";
         if (!force && signature == _signature && _pending is null)
         {
             return;
@@ -372,8 +400,37 @@ public sealed partial class CpCalcPage : Grid
     // ------------------------------------------------------------------ the page
 
     /// <summary>What the page shows of one look: the whole character, the gear with what a change adds, the game's number and the fit.</summary>
-    private sealed record View(CpWholeResult Whole, IReadOnlyList<CpPiece> Pieces, IReadOnlyList<CpPiece> Marginal, CpTotals Totals, int? GameCp, DateTime? GameAt, bool FromPage,
+    internal sealed record View(CpWholeResult Whole, IReadOnlyList<CpPiece> Pieces, IReadOnlyList<CpPiece> Marginal, CpTotals Totals, int? GameCp, DateTime? GameAt, bool FromPage,
         double? Fit, double Unfitted);
+
+    /// <summary>
+    /// A character counted as the page counts it (the progression overlay counts the same): the game's own number - the legion list at the last login (the
+    /// calculator fitted to it at that login's gear), else the character page - and the whole character fitted to it. Null without the item data or the gear.
+    /// </summary>
+    internal static View? Evaluate(Aion2EntityDirectory? directory, IReadOnlyList<Aion2EquippedItem>? gear, string? character, int server, CpModel model)
+    {
+        if (!Aion2CpData.Available || gear is not { Count: > 0 } || CpCalc.Pieces(gear, new CpTotals(0, 0, 0, 0, 0)).Count == 0)
+        {
+            return null;
+        }
+
+        CpOfficialRead? official = OfficialFor(character, server);
+        CpWholeInput input = InputFor(directory, gear, character, server);
+        CpCheckPoint? last = character is null ? null : CpChecks.State(character, server)?.Points.LastOrDefault();
+        int? gameCp = last?.Cp is > 0 ? last.Cp : official?.Cp;
+        DateTime? gameAt = last?.Cp is > 0 ? last.At : official?.At;
+        bool fromPage = last?.Cp is not > 0 && official?.Cp is > 0;
+        CpWholeInput atGame = last?.Cp is > 0
+            ? input with { Gear = last.Gear.Select(g => g.ToItem()).Concat(gear.Where(g => Aion2CpData.Item(g.ItemId) is null)).ToList() }
+            : input;
+        double unfitted = CpWhole.Evaluate(atGame, model).Total;
+        double? fit = CpWhole.Fit(gameCp, atGame, model);
+        CpWholeResult whole = CpWhole.Evaluate(input, model, fit ?? 1);
+        CpTotals marginal = whole.Totals.Marginal;
+        CpCalc.StonesOf stones = item => CpCharacterPage.StonesFor(official?.Pieces, item);
+        return new View(whole, whole.Pieces.GroupBy(p => p.Slot).Select(g => g.First()).ToList(),
+            CpCalc.Pieces(gear, marginal, model, stones).GroupBy(p => p.Slot).Select(g => g.First()).ToList(), marginal, gameCp, gameAt, fromPage, fit, unfitted);
+    }
 
     private void Rebuild(IReadOnlyList<Aion2EquippedItem>? gear, Aion2EntityDirectory? directory)
     {
@@ -386,27 +443,17 @@ public sealed partial class CpCalcPage : Grid
             return;
         }
 
-        if (gear is not { Count: > 0 } || CpCalc.Pieces(gear, new CpTotals(0, 0, 0, 0, 0)).Count == 0)
+        if (gear is not { Count: > 0 } || Evaluate(directory, gear, _character, _server, model) is not { } view)
         {
             _body.Children.Add(Card(Label(Loc("CpCalc.NoGear"), brush: Res("Brush.TextMuted"))));
             return;
         }
 
-        // the game's own number: the legion list at the last login (the calculator fitted to it at that login's gear), else the character page
-        CpWholeInput input = InputOf(directory, gear);
-        CpCheckPoint? last = _character is null ? null : CpChecks.State(_character, _server)?.Points.LastOrDefault();
-        int? gameCp = last?.Cp is > 0 ? last.Cp : Official?.Cp;
-        DateTime? gameAt = last?.Cp is > 0 ? last.At : Official?.At;
-        bool fromPage = last?.Cp is not > 0 && Official?.Cp is > 0;
-        CpWholeInput atGame = last?.Cp is > 0
-            ? input with { Gear = last.Gear.Select(g => g.ToItem()).Concat(gear.Where(g => Aion2CpData.Item(g.ItemId) is null)).ToList() }
-            : input;
-        double unfitted = CpWhole.Evaluate(atGame, model).Total;
-        double? fit = CpWhole.Fit(gameCp, atGame, model);
-        CpWholeResult whole = CpWhole.Evaluate(input, model, fit ?? 1);
-        CpTotals marginal = whole.Totals.Marginal;
-        var view = new View(whole, whole.Pieces.GroupBy(p => p.Slot).Select(g => g.First()).ToList(),
-            CpCalc.Pieces(gear, marginal, model, StonesOf).GroupBy(p => p.Slot).Select(g => g.First()).ToList(), marginal, gameCp, gameAt, fromPage, fit, unfitted);
+        if (_progression)
+        {
+            _body.Children.Add(ProgressionBody(view, model, directory, gear));
+            return;
+        }
 
         _body.Children.Add(Hero(view, model));
         // a Clash Rune's steps only when the player asks for them (CpWhole.RuneKey: last of all)
@@ -422,7 +469,6 @@ public sealed partial class CpCalcPage : Grid
         UIElement content = _tab switch
         {
             Tab.Gear => GearTab(view, model),
-            Tab.Progression => ProgressionTab(view, model, directory, gear),
             Tab.Stigmas => StigmasTab(view),
             Tab.Skills => SkillsTab(view),
             Tab.Genus => GenusTab(view),
@@ -878,7 +924,7 @@ public sealed partial class CpCalcPage : Grid
         }
     }
 
-    private static string StepText(CpStep s) => s.Kind switch
+    internal static string StepText(CpStep s) => s.Kind switch
     {
         CpStepKind.Enhance => F("CpCalc.U.Enhance", SlotOf(s.ItemId), s.ToLevel),
         CpStepKind.Breakthrough => F("CpCalc.U.Breakthrough", SlotOf(s.ItemId), s.ToLevel),
@@ -918,13 +964,13 @@ public sealed partial class CpCalcPage : Grid
             {
                 Tab.Titles => v.Whole.Parts[CpSource.Titles] + v.Whole.Parts[CpSource.Wings],
                 Tab.Arcana => v.Whole.Parts[CpSource.Arcana] + v.Whole.Parts[CpSource.Attributes],
-                Tab.Check or Tab.Progression => -1,
+                Tab.Check => -1,
                 _ => v.Whole.Parts[(CpSource)Enum.Parse(typeof(CpSource), tab.ToString())],
             };
             var content = new StackPanel { Orientation = Orientation.Horizontal };
             Color color = tab switch
             {
-                Tab.Titles => SourceColors[CpSource.Titles], Tab.Arcana => SourceColors[CpSource.Arcana], Tab.Check => Grey, Tab.Progression => Gold,
+                Tab.Titles => SourceColors[CpSource.Titles], Tab.Arcana => SourceColors[CpSource.Arcana], Tab.Check => Grey,
                 _ => SourceColors[(CpSource)Enum.Parse(typeof(CpSource), tab.ToString())],
             };
             content.Children.Add(new Ellipse { Width = 8, Height = 8, Fill = Solid(color), Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center });
@@ -2239,10 +2285,10 @@ public sealed partial class CpCalcPage : Grid
 
     // ------------------------------------------------------------------ pictures
 
-    private static string LevelBadge(CpPiece piece) => piece.Exceed > 0 ? $"+{piece.Enchant} ◆{piece.Exceed}" : piece.Enchant > 0 ? "+" + piece.Enchant : "";
+    internal static string LevelBadge(CpPiece piece) => piece.Exceed > 0 ? $"+{piece.Enchant} ◆{piece.Exceed}" : piece.Enchant > 0 ? "+" + piece.Enchant : "";
 
     /// <summary>The item's picture from the game over a backdrop in its grade's colour, with the levels in the corner.</summary>
-    private static Border IconTile(int itemId, double size, string? badge)
+    internal static Border IconTile(int itemId, double size, string? badge)
     {
         Color color = LootText.GradeColor(itemId);
         var backdrop = new RadialGradientBrush { GradientOrigin = new Point(0.3, 0.25), Center = new Point(0.3, 0.25), RadiusX = 1, RadiusY = 1 };
@@ -2337,7 +2383,7 @@ public sealed partial class CpCalcPage : Grid
 
     // ------------------------------------------------------------------ text
 
-    private static string SlotOf(int itemId) => Aion2ItemCatalog.Find(itemId) is { } info ? Loc("Details.Seen.Cat." + info.Slot) : "";
+    internal static string SlotOf(int itemId) => Aion2ItemCatalog.Find(itemId) is { } info ? Loc("Details.Seen.Cat." + info.Slot) : "";
 
     private static string ChangeText(CpChange c) => c.Kind switch
     {
@@ -2354,12 +2400,12 @@ public sealed partial class CpCalcPage : Grid
         ? (v / 100).ToString("0.##", CultureInfo.CurrentCulture) + " %"
         : v.ToString("N0", CultureInfo.CurrentCulture);
 
-    private static string Number(double v) => Math.Abs(v) >= 100 ? Math.Round(v).ToString("N0", CultureInfo.CurrentCulture) : v.ToString("0.#", CultureInfo.CurrentCulture);
+    internal static string Number(double v) => Math.Abs(v) >= 100 ? Math.Round(v).ToString("N0", CultureInfo.CurrentCulture) : v.ToString("0.#", CultureInfo.CurrentCulture);
 
     /// <summary>A large number short: 86.1K, 950.</summary>
-    private static string Short(double v) => Math.Abs(v) >= 10_000 ? (v / 1000).ToString("0.#", CultureInfo.CurrentCulture) + "K" : Number(v);
+    internal static string Short(double v) => Math.Abs(v) >= 10_000 ? (v / 1000).ToString("0.#", CultureInfo.CurrentCulture) + "K" : Number(v);
 
-    private static string Signed(double v) => (v >= 0 ? "+" : "−") + Number(Math.Abs(v));
+    internal static string Signed(double v) => (v >= 0 ? "+" : "−") + Number(Math.Abs(v));
 
     private static string Range(double low, double high, bool signed)
     {

@@ -6,6 +6,31 @@
   ],
   "versions": [
     {
+      "version": "2.0.24",
+      "date": "2026-11-14",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Progression",
+          "title": "Progression is a page of its own, with an overlay that tells you what to do next",
+          "text": "Progression moved out of the CP calculator to a page of its own: Characters > Progression. At the top is your stage (your Item Level, the guide it is in and how far into it you are) beside “Do this next”: the moves that matter most now, in the guides’ order. Empty slots first, then anything free, the pieces below your stage’s tier, the upgrades with the most Combat Power on the pieces worth keeping, a Unique piece onto the next tier with a Transfer Stone, then quick Item Level from manastones and Arcana. Each move shows the Item Level and Combat Power it adds. Switch on the progression overlay on the page (or with Ctrl+Alt+I) and the same guide sits over the game: your Item Level, your Combat Power against the players at your Item Level, the next stage, the top three moves and your Road to 3,000+ so far. It steps aside in dungeons; switch that off on the Overlays page if you want it there too.",
+          "example": "At 2,734 Item Level with no Guard, the overlay’s first move is “Left Hand: empty”: your stage’s piece is the crafted IL 102 Guard, with the Item Level and Combat Power it adds."
+        },
+        {
+          "kind": "fixed",
+          "area": "Grind",
+          "title": "The Grind view counts only the Kinah and Abyss Points you farm",
+          "text": "The Grind view counted every rise of your Kinah and Abyss Points, so moving gold from your storage to your bag, and back again, added to it. Now only Kinah that comes right after a kill or a pickup counts, and Abyss Points only after a fight (a fight with a player counts too). Gold from the storage, the mail or a sale no longer counts."
+        },
+        {
+          "kind": "improved",
+          "area": "Grind",
+          "title": "Reset the grind, and the meter’s Clear resets it too",
+          "text": "The Grind view and the Grind page have a Reset button: the numbers start from zero with your next kill, and the session so far goes to the earlier ones on the Grind page. The meter’s own Clear (its button, its menu or its hotkey) now resets the grind too while the Grind view is on."
+        }
+      ]
+    },
+    {
       "version": "2.0.23",
       "date": "2026-11-14",
       "items": [

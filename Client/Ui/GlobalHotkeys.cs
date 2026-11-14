@@ -29,6 +29,7 @@ public enum HotkeyAction
     ToggleLootOverlay,
     ToggleCraftOverlay,
     MoveOverlays,
+    ToggleProgressionOverlay,
 }
 
 /// <summary>A key plus modifiers, written "Ctrl+Alt+H" in the settings file.</summary>
@@ -124,6 +125,7 @@ public static class HotkeyTable
         new(HotkeyAction.ToggleHotkeyOverlay, "HotkeyOverlay", "Settings.Hotkey.HotkeyOverlay", s => s.HotkeyHotkeyOverlay, (s, v) => s.HotkeyHotkeyOverlay = v),
         new(HotkeyAction.ToggleLootOverlay, "Loot", "Main.MenuTools.Loot", s => s.HotkeyLoot, (s, v) => s.HotkeyLoot = v),
         new(HotkeyAction.ToggleCraftOverlay, "Craft", "Main.MenuTools.Craft", s => s.HotkeyCraft, (s, v) => s.HotkeyCraft = v),
+        new(HotkeyAction.ToggleProgressionOverlay, "Progression", "Main.MenuTools.Progression", s => s.HotkeyProgression, (s, v) => s.HotkeyProgression = v),
         new(HotkeyAction.TogglePetMap, "PetMap", "Settings.Hotkey.PetMap", s => s.HotkeyPetMap, (s, v) => s.HotkeyPetMap = v),
         new(HotkeyAction.TogglePetArrows, "PetArrows", "Settings.Hotkey.PetArrows", s => s.HotkeyPetArrows, (s, v) => s.HotkeyPetArrows = v),
         new(HotkeyAction.PetMapZoomIn, "PetMapZoomIn", "Settings.Hotkey.PetMapZoomIn", s => s.HotkeyPetMapZoomIn, (s, v) => s.HotkeyPetMapZoomIn = v),

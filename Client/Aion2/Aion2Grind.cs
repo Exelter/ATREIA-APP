@@ -48,9 +48,13 @@ public sealed class MobYield
 /// you're going to get per hour - changes on average: kill a marshal and it goes off, then drops steadily"). Kinah and Abyss Points come from the inventory
 /// frames (0x1B56), which carry the new balance of each (Kinah 930100031, bound Kinah 930100001, Abyss Points 930100003; checked on the recordings of 7 to 10
 /// November 2026): what a balance rises by counts, what is spent does not. The kills and the pickups come from the loot log (<see cref="Aion2Loot"/>: a kill
-/// the player had a hand in, a drop he picked up). Kinah that comes while no kill or pickup came for ten minutes (the storage, the mail, a trade in town) starts
-/// nothing; Abyss Points come from fighting - a kill of a player too, which the loot log does not count - and always do. Per hour is the session's average over the time farmed, the time since the last kill included up to five minutes, so a big kill shows at
-/// once and the rate settles again as the minutes go by. Kept in aion2-grind.json (the last 40 sessions); nothing leaves the PC.
+/// the player had a hand in, a drop he picked up). Only what farming brings counts (14 November 2026, a tester: "it counts the gold and AP that enters your
+/// inventory rather than what you've farmed: even moving gold back and forth from storage to inventory increases the number"): Kinah that comes within half a
+/// minute of a kill or a pickup, Abyss Points within two minutes of a fight (the player hitting a monster or a player: a kill of a player pays them too, which
+/// the loot log does not count). Gold taken from the storage, the mail, a sale or a reward in town comes with no kill and no fight and counts for nothing. A
+/// rise that comes a moment before the kill it pays (the meter reads the fights at its next poll) waits a few seconds for it. Per hour is the session's average
+/// over the time farmed, the time since the last kill included up to five minutes, so a big kill shows at once and the rate settles again as the minutes go
+/// by. Kept in aion2-grind.json (the last 40 sessions); nothing leaves the PC.
 /// </summary>
 public static class Aion2Grind
 {
@@ -62,8 +66,17 @@ public static class Aion2Grind
     /// <summary>A pause this long ends the session: the next kill starts a new one.</summary>
     public static readonly TimeSpan Over = TimeSpan.FromMinutes(30);
 
-    /// <summary>Kinah counts while a kill or pickup was this recent.</summary>
-    private static readonly TimeSpan Farming = TimeSpan.FromMinutes(10);
+    /// <summary>Kinah counts this soon after a kill or a pickup: a kill's loot comes within seconds; the storage, the mail or a sale come with none.</summary>
+    private static readonly TimeSpan LootWindow = TimeSpan.FromSeconds(30);
+
+    /// <summary>Abyss Points count this soon after a fight (the player hit a monster or a player) or a kill: points moved in or a reward in town come with none.</summary>
+    private static readonly TimeSpan FightWindow = TimeSpan.FromMinutes(2);
+
+    /// <summary>A rise may come this much before the kill, pickup or hit that explains it (the frames and the fights are read apart).</summary>
+    private static readonly TimeSpan Skew = TimeSpan.FromSeconds(3);
+
+    /// <summary>A rise nothing explains yet waits this long for the kill, pickup or fight the meter notes a moment later.</summary>
+    private static readonly TimeSpan Late = TimeSpan.FromSeconds(15);
 
     private const int MaxSessions = 40;
     private static readonly object Gate = new();
@@ -72,6 +85,10 @@ public static class Aion2Grind
     // the kills of the last seconds, for the Kinah and the Abyss Points that follow them (a kill pays each once: its Kinah and its points apart)
     private static readonly List<(int Npc, DateTime At, bool PaidKinah, bool PaidAp)> RecentKills = new();
     private static readonly Dictionary<int, long> Balances = new();
+    // the rises nothing explained yet: the item, how much, when (see Late)
+    private static readonly List<(int Item, long Gain, DateTime At)> Pending = new();
+    // the latest kill or pickup (Kinah), the latest fight or kill (Abyss Points)
+    private static DateTime _lastLoot = DateTime.MinValue, _lastFight = DateTime.MinValue;
     private static GrindSession? _current;
     private static string _character = "";
     private static bool _persist, _dirty;
@@ -129,6 +146,8 @@ public static class Aion2Grind
                 // another character: its balances are its own, and so is its grind
                 _character = name;
                 Balances.Clear();
+                Pending.Clear();
+                _lastLoot = _lastFight = DateTime.MinValue;
                 EndCurrent();
             }
 
@@ -147,42 +166,21 @@ public static class Aion2Grind
                     continue;
                 }
 
-                // Kinah only while farming (not the storage, the mail or a trade in town); Abyss Points come from fighting (a kill of a player too, which the loot
-                // log does not count) and always do
-                if (item != AbyssPoints && (_current is not { } session || now - session.End > Farming))
-                {
-                    continue;
-                }
-
-                Touch(now);
+                // only what farming brings: Kinah right after a kill or a pickup, Abyss Points after a fight; anything else (the storage, the mail, a sale) waits
+                // a few seconds for a kill the meter has not read yet, then counts for nothing
                 long gain = balance - before;
-                if (item == AbyssPoints)
+                if (Farmed(item, now))
                 {
-                    _current!.AbyssPoints += gain;
+                    Count(item, gain, now);
+                    changed = true;
                 }
                 else
                 {
-                    _current!.Kinah += gain;
+                    Pending.Add((item, gain, now));
                 }
-
-                // the monster it came from: the oldest kill of the last five seconds that paid nothing yet, else the latest one (a pack killed at once pays
-                // one after the other)
-                if (PayingKill(now, item == AbyssPoints) is int npc && npc > 0)
-                {
-                    MobYield y = YieldOf(npc);
-                    if (item == AbyssPoints)
-                    {
-                        y.AbyssPoints += gain;
-                    }
-                    else
-                    {
-                        y.Kinah += gain;
-                    }
-                }
-
-                changed = true;
             }
 
+            Pending.RemoveAll(p => now - p.At > Late);
             if (changed)
             {
                 _dirty = true;
@@ -202,6 +200,8 @@ public static class Aion2Grind
         lock (Gate)
         {
             DateTime now = Local(at);
+            _lastLoot = Later(_lastLoot, now);
+            _lastFight = Later(_lastFight, now);
             Touch(now);
             _current!.Kills++;
             _current.ZoneKills[zone] = _current.ZoneKills.GetValueOrDefault(zone) + 1;
@@ -212,6 +212,7 @@ public static class Aion2Grind
                 RecentKills.RemoveAll(k => now - k.At > TimeSpan.FromSeconds(5));
             }
 
+            SettlePending();
             _dirty = true;
             Save(force: false);
         }
@@ -219,18 +220,54 @@ public static class Aion2Grind
         Changed?.Invoke();
     }
 
-    /// <summary>An item picked up (Kinah and the other currencies count through their balance, not here).</summary>
+    /// <summary>An item picked up: it counts as loot (Kinah and the other currencies count through their balance, not here), and the Kinah that comes with it is farmed.</summary>
     public static void NotePickup(int item, long count, DateTime at)
     {
-        if (Aion2Inventories.IsCurrency(item) || count <= 0)
+        if (count <= 0)
         {
             return;
         }
 
+        bool currency = Aion2Inventories.IsCurrency(item);
         lock (Gate)
         {
-            Touch(Local(at));
-            _current!.Items[item] = _current.Items.GetValueOrDefault(item) + count;
+            DateTime now = Local(at);
+            _lastLoot = Later(_lastLoot, now);
+            if (!currency)
+            {
+                Touch(now);
+                _current!.Items[item] = _current.Items.GetValueOrDefault(item) + count;
+            }
+
+            if (!SettlePending() && currency)
+            {
+                return;
+            }
+
+            _dirty = true;
+            Save(force: false);
+        }
+
+        Changed?.Invoke();
+    }
+
+    /// <summary>The player hit something, a monster or a player (the meter's fights): the Abyss Points of the next two minutes are earned.</summary>
+    public static void NoteFight(DateTime at)
+    {
+        lock (Gate)
+        {
+            DateTime now = Local(at);
+            if (now <= _lastFight)
+            {
+                return;
+            }
+
+            _lastFight = now;
+            if (!SettlePending())
+            {
+                return;
+            }
+
             _dirty = true;
             Save(force: false);
         }
@@ -281,9 +318,69 @@ public static class Aion2Grind
             Balances.Clear();
             Yields.Clear();
             RecentKills.Clear();
+            Pending.Clear();
+            _lastLoot = _lastFight = DateTime.MinValue;
             _current = null;
             _character = "";
         }
+    }
+
+    // Under the lock: whether a rise at <paramref name="at"/> is farmed - Kinah within half a minute of a kill or a pickup, Abyss Points within two minutes of a
+    // fight or a kill (a rise may come a moment before what explains it)
+    private static bool Farmed(int item, DateTime at) =>
+        item == AbyssPoints ? Near(at, _lastFight, FightWindow) : Near(at, _lastLoot, LootWindow);
+
+    private static bool Near(DateTime at, DateTime activity, TimeSpan window) => activity != DateTime.MinValue && at >= activity - Skew && at - activity <= window;
+
+    private static DateTime Later(DateTime a, DateTime b) => a > b ? a : b;
+
+    // Under the lock: a farmed rise counts in the session, and for the monster it came from (the oldest kill of the last five seconds that paid nothing yet,
+    // else the latest one: a pack killed at once pays one after the other)
+    private static void Count(int item, long gain, DateTime at)
+    {
+        Touch(at);
+        if (item == AbyssPoints)
+        {
+            _current!.AbyssPoints += gain;
+        }
+        else
+        {
+            _current!.Kinah += gain;
+        }
+
+        if (PayingKill(at, item == AbyssPoints) is int npc && npc > 0)
+        {
+            MobYield y = YieldOf(npc);
+            if (item == AbyssPoints)
+            {
+                y.AbyssPoints += gain;
+            }
+            else
+            {
+                y.Kinah += gain;
+            }
+        }
+    }
+
+    // Under the lock: the rises kept a moment that a kill, a pickup or a fight now explains count (true when one did)
+    private static bool SettlePending()
+    {
+        bool any = false;
+        for (int i = 0; i < Pending.Count; i++)
+        {
+            (int item, long gain, DateTime at) = Pending[i];
+            if (Farmed(item, at))
+            {
+                Count(item, gain, at);
+                Pending.RemoveAt(i--);
+                any = true;
+            }
+        }
+
+        // what came long before the latest kill or fight stays unexplained: the storage, the mail
+        DateTime latest = Later(_lastLoot, _lastFight);
+        Pending.RemoveAll(p => latest - p.At > Late);
+        return any;
     }
 
     // Under the lock: the session of this moment, a new one after a long pause; the time since the last kill counts as farmed when it is no pause.
