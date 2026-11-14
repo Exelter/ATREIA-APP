@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "2.0.23",
+      "date": "2026-11-14",
+      "items": [
+        {
+          "kind": "new",
+          "area": "CP calculator",
+          "title": "Progression: the website’s gear guides on your own character",
+          "text": "The CP calculator has a Progression tab next to Gear. It shows which of atreia.app’s progression guides fits your Item Level, from 0–700 up to the new Road to 3,000+, and opens it with your character so the guide follows your gear. It sets your Combat Power against the characters at your Item Level, all classes and your own class. It lists your best next steps on the pieces worth keeping and the pieces below your stage’s dungeon tier, each with the Item Level and Combat Power it adds (a Unique piece keeps its enhancement, breakthrough and soul lines with a Transfer Stone). It also shows every piece against the stage, what the players at your Item Level have in their gear, Arcana, Daevanion and Stigmas, and from 2,100 the Road to 3,000+ checklist, ticked from your character with what each task still adds.",
+          "example": "At 2,950 Item Level the tab shows the 2,100+ guide and the Road to 3,000+, your Combat Power against the 2,093 characters at 2,900–2,999, and that the crafted Splendent Wise Dragon Lord Earrings (IL 102) would add 16 Item Level to each of your IL 86 earrings with a Transfer Stone."
+        }
+      ]
+    },
+    {
       "version": "2.0.22",
       "date": "2026-11-14",
       "items": [

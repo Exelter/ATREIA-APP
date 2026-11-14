@@ -19999,6 +19999,18 @@
     "zh": "装备",
     "zh-TW": "裝備"
   },
+  "CpCalc.Tab.Progression": {
+    "en": "Progression",
+    "de": "Fortschritt",
+    "fr": "Progression",
+    "es": "Progresión",
+    "ru": "Прогресс",
+    "pt": "Progressão",
+    "ja": "育成",
+    "ko": "성장",
+    "zh": "成长",
+    "zh-TW": "成長"
+  },
   "CpCalc.Tab.Stigmas": {
     "en": "Stigmas",
     "de": "Stigmen",
@@ -20106,6 +20118,411 @@
     "ko": "{0} 전투력 · 전체의 {1} %",
     "zh": "{0} 战斗力 · 占你战斗力的 {1} %",
     "zh-TW": "{0} 戰鬥力 · 佔你戰鬥力的 {1} %"
+  },
+  "CpCalc.Prog.Stage": {
+    "en": "Your stage"
+  },
+  "CpCalc.Prog.NoItemLevel": {
+    "en": "The app hasn't read your Item Level yet: the game sends it at your login and whenever it changes."
+  },
+  "CpCalc.Prog.GuideAt": {
+    "en": "{0} IL: the guide goes from {1} to {2}, {3} to go"
+  },
+  "CpCalc.Prog.GuidePast": {
+    "en": "{0} IL: past its {1}"
+  },
+  "CpCalc.Prog.Open": {
+    "en": "Open with this character"
+  },
+  "CpCalc.Prog.OpenTip": {
+    "en": "Opens {0} on atreia.app in your browser with this character, so its steps follow your gear."
+  },
+  "CpCalc.Prog.StageNote": {
+    "en": "On atreia.app the guides read your character from the game's official character page, which can be a few minutes behind the game. This tab uses what the app reads from the game itself, right now."
+  },
+  "CpCalc.Prog.Pace": {
+    "en": "Combat Power at your Item Level"
+  },
+  "CpCalc.Prog.PaceYou": {
+    "en": "{0} CP at {1} Item Level"
+  },
+  "CpCalc.Prog.PaceGame": {
+    "en": "The game's own number, as at the top of this page."
+  },
+  "CpCalc.Prog.PaceEstimate": {
+    "en": "The calculator's estimate, as at the top of this page: the game's own number comes with the legion list at your login."
+  },
+  "CpCalc.Prog.PaceAll": {
+    "en": "All classes"
+  },
+  "CpCalc.Prog.PaceClass": {
+    "en": "{0}s only"
+  },
+  "CpCalc.Prog.PaceTypical": {
+    "en": "At {3}–{4} IL, {5} characters: the middle {0}, the middle half {1} to {2}"
+  },
+  "CpCalc.Prog.Below": {
+    "en": "below the middle half"
+  },
+  "CpCalc.Prog.Inside": {
+    "en": "inside the middle half"
+  },
+  "CpCalc.Prog.Above": {
+    "en": "above the middle half"
+  },
+  "CpCalc.Prog.PaceLow": {
+    "en": "Below the middle half for your Item Level. Item Level from armor enhancement, Arcana and stones adds little Combat Power; the weapon, Guard and jewelry breakthrough and Stigma and skill levels add the most, so look there first."
+  },
+  "CpCalc.Prog.PaceOk": {
+    "en": "At or above pace. Keep the order: weapon, Guard and jewelry first."
+  },
+  "CpCalc.Prog.PaceNone": {
+    "en": "There are too few characters at your Item Level to compare with yet (the comparison covers 2,000 to 3,699 Item Level)."
+  },
+  "CpCalc.Prog.PaceNote": {
+    "en": "From the characters atreia.app read between 14 October and 14 November 2026, per 100 Item Level (Taiwan's servers left out). The middle half is the half of them between the lower and the upper quarter."
+  },
+  "CpCalc.Prog.Next": {
+    "en": "Your best next steps"
+  },
+  "CpCalc.Prog.NextNone": {
+    "en": "Nothing left to enhance or break through on the pieces worth keeping."
+  },
+  "CpCalc.Prog.ToMax": {
+    "en": "Every piece worth keeping at its highest enhancement: +{0} IL, about {1} CP"
+  },
+  "CpCalc.Prog.AllMax": {
+    "en": "Every piece worth keeping is at its highest enhancement"
+  },
+  "CpCalc.Prog.ThenBreak": {
+    "en": "; then breakthrough to the top: +{0} IL"
+  },
+  "CpCalc.Prog.NextNote": {
+    "en": "Enhancement and breakthrough on the pieces worth keeping (at this stage's tier, or Unique), the most Combat Power first, each with the Item Level it adds. Combat Power: what the step adds on its own; a breakthrough can fail."
+  },
+  "CpCalc.Prog.Pieces": {
+    "en": "Next pieces"
+  },
+  "CpCalc.Prog.Weakest": {
+    "en": "Weakest slots first"
+  },
+  "CpCalc.Prog.PiecesNone": {
+    "en": "Every weapon, Guard, armor and jewelry piece is at this stage's tier or better."
+  },
+  "CpCalc.Prog.PiecesMore": {
+    "en": "And {0} more: every piece is under “Your gear against this stage” below."
+  },
+  "CpCalc.Prog.ReplaceHead": {
+    "en": "{0}: {1} (IL {2})"
+  },
+  "CpCalc.Prog.Optional": {
+    "en": "Optional: "
+  },
+  "CpCalc.Prog.TransferKeeps": {
+    "en": "With a Transfer Stone it keeps your +{0}, breakthrough {1} and the soul lines; the manastones and the Theostone don't move. Combat Power: the piece's own stats, the soul lines aside."
+  },
+  "CpCalc.Prog.ReplaceLater": {
+    "en": "A new piece starts at +0: {0} once it is at your +{1}. Combat Power: at your levels, the soul lines aside."
+  },
+  "CpCalc.Prog.ReplaceNew": {
+    "en": "A new piece starts at +0. Combat Power: the piece's own stats, the soul lines aside."
+  },
+  "CpCalc.Prog.ReplaceFrom": {
+    "en": "Where: {0}"
+  },
+  "CpCalc.Prog.TransferNote": {
+    "en": "A Unique piece's enhancement, breakthrough and soul lines move to the next Unique piece of the same slot with a Transfer Stone, so they are never wasted; a Legendary or lower piece's don't, so don't spend much on those."
+  },
+  "CpCalc.Prog.TierOptional": {
+    "en": "Below 1,400 these dungeons are your choice: quick Item Level now, or save the entries for 1,400 (the 700–1,400 guide)."
+  },
+  "CpCalc.Prog.Quick": {
+    "en": "Quick Item Level"
+  },
+  "CpCalc.Prog.QuickStones": {
+    "en": "{0}: {1} empty manastone socket(s), 1 to 4 IL a stone by its colour"
+  },
+  "CpCalc.Prog.QuickArcana": {
+    "en": "{0}: +{1} → +{2}, +1 IL a level"
+  },
+  "CpCalc.Prog.Missing": {
+    "en": "Empty slots: {0}. An empty slot is the cheapest Item Level there is: put anything in it first."
+  },
+  "CpCalc.Prog.Gear": {
+    "en": "Your gear against this stage"
+  },
+  "CpCalc.Prog.TierHead": {
+    "en": "From {0} Item Level the guides aim for:"
+  },
+  "CpCalc.Prog.TierGear": {
+    "en": "{0}: IL {1}, {2}"
+  },
+  "CpCalc.Prog.TierNone": {
+    "en": "Below 700 Item Level the guides name no dungeon gear yet: the 0–700 guide has the order to follow."
+  },
+  "CpCalc.Prog.TierUnknown": {
+    "en": "Without your Item Level the stage isn't known yet."
+  },
+  "CpCalc.Prog.Kind.Weapon": {
+    "en": "Weapon"
+  },
+  "CpCalc.Prog.Kind.Guard": {
+    "en": "Guard"
+  },
+  "CpCalc.Prog.Kind.Armor": {
+    "en": "Armor"
+  },
+  "CpCalc.Prog.Kind.Jewelry": {
+    "en": "Jewelry"
+  },
+  "CpCalc.Prog.Group.Weapon": {
+    "en": "Weapon and Guard"
+  },
+  "CpCalc.Prog.Group.Armor": {
+    "en": "Armor"
+  },
+  "CpCalc.Prog.Group.Jewelry": {
+    "en": "Jewelry"
+  },
+  "CpCalc.Prog.Group.Other": {
+    "en": "Bracelets, belt, amulet and runes"
+  },
+  "CpCalc.Prog.Enchant": {
+    "en": "+{0} of +{1}"
+  },
+  "CpCalc.Prog.Exceed": {
+    "en": "breakthrough {0} of {1}"
+  },
+  "CpCalc.Prog.Empty": {
+    "en": "{0} empty socket(s)"
+  },
+  "CpCalc.Prog.AtTier": {
+    "en": "At this stage's tier"
+  },
+  "CpCalc.Prog.NextTier": {
+    "en": "Next tier: IL {0}"
+  },
+  "CpCalc.Prog.NextTierTip": {
+    "en": "A Unique piece: a Transfer Stone moves its enhancement, breakthrough and soul lines to the next one, so raising it isn't wasted."
+  },
+  "CpCalc.Prog.Weak": {
+    "en": "Weak slot: below IL {0}"
+  },
+  "CpCalc.Prog.WeakTip": {
+    "en": "Below this stage's tier and not Unique: its enhancement doesn't move to a new piece, so replace it before you spend on it."
+  },
+  "CpCalc.Prog.BelowOptional": {
+    "en": "Below the IL {0} tier (your choice)"
+  },
+  "CpCalc.Prog.NotKeeper": {
+    "en": "Not worth raising: replace it first."
+  },
+  "CpCalc.Prog.Done": {
+    "en": "Done for now."
+  },
+  "CpCalc.Prog.NextEnhance": {
+    "en": "Next: +{0}, +{1} IL, {2} CP"
+  },
+  "CpCalc.Prog.NextBreak": {
+    "en": "Next: breakthrough {0}, +{1} IL, {2} CP"
+  },
+  "CpCalc.Prog.Chance": {
+    "en": "{0} % a try"
+  },
+  "CpCalc.Prog.Wear": {
+    "en": "What the players at {0} IL have"
+  },
+  "CpCalc.Prog.WearYou": {
+    "en": "You"
+  },
+  "CpCalc.Prog.WearThem": {
+    "en": "They have, on average"
+  },
+  "CpCalc.Prog.WearRow.Weapon": {
+    "en": "Weapon"
+  },
+  "CpCalc.Prog.WearRow.Guard": {
+    "en": "Guard"
+  },
+  "CpCalc.Prog.WearRow.Armor": {
+    "en": "Armor (7 pieces)"
+  },
+  "CpCalc.Prog.WearRow.Jewelry": {
+    "en": "Jewelry (5 pieces)"
+  },
+  "CpCalc.Prog.WearRow.Arcana": {
+    "en": "Arcana (average level)"
+  },
+  "CpCalc.Prog.WearRow.Nodes": {
+    "en": "Daevanion (open nodes)"
+  },
+  "CpCalc.Prog.WearRow.Stigmas": {
+    "en": "Stigma levels (four added up)"
+  },
+  "CpCalc.Prog.WearIl": {
+    "en": "IL {0}"
+  },
+  "CpCalc.Prog.WearTop": {
+    "en": "IL 102: {0} of {1}"
+  },
+  "CpCalc.Prog.WearShare": {
+    "en": "IL 102: {0} %"
+  },
+  "CpCalc.Prog.WearShareOf": {
+    "en": "IL 102: {0} % of the pieces"
+  },
+  "CpCalc.Prog.WearNone": {
+    "en": "not worn"
+  },
+  "CpCalc.Prog.WearNote": {
+    "en": "The averages of the {0} characters atreia.app tracked at this Item Level between 14 October and 14 November 2026 (level 45, Taiwan's servers left out): enhancement and breakthrough per piece. IL 102: the crafted Splendent Wise / Ebony Dragon Lord pieces and Ludra's. Green: you are as far as they are (enhancement and breakthrough together, by the Item Level they make)."
+  },
+  "CpCalc.Prog.Road": {
+    "en": "Road to 3,000+"
+  },
+  "CpCalc.Prog.RoadCount": {
+    "en": "{0} of {1} done"
+  },
+  "CpCalc.Prog.RoadGroup.Weapon": {
+    "en": "Weapon and Guard"
+  },
+  "CpCalc.Prog.RoadGroup.Jewelry": {
+    "en": "Jewelry"
+  },
+  "CpCalc.Prog.RoadGroup.Build": {
+    "en": "Build"
+  },
+  "CpCalc.Prog.RoadGroup.Armor": {
+    "en": "Armor"
+  },
+  "CpCalc.Prog.RoadNote": {
+    "en": "Ticked from what the app reads of your character. The order is the guide's: the weapon first, then the Guard and jewelry, the armor last (an armor level adds an Item Level but little Combat Power). Combat Power: what the steps add on their own with your character's numbers, before a level can fail; an IL 102 piece at your levels, as a Transfer Stone moves them."
+  },
+  "CpCalc.Prog.Left.Levels": {
+    "en": "{0} level(s) left: +{1} IL, about {2} CP"
+  },
+  "CpCalc.Prog.Left.Pieces": {
+    "en": "{0} piece(s) to go: +{1} IL, about {2} CP"
+  },
+  "CpCalc.Prog.Left.Sockets": {
+    "en": "{0} empty socket(s): up to +{1} IL"
+  },
+  "CpCalc.Prog.Left.Cards": {
+    "en": "{0} card(s) to go"
+  },
+  "CpCalc.Prog.Left.ArcanaLevels": {
+    "en": "{0} level(s) left: +{0} IL"
+  },
+  "CpCalc.Prog.Left.Stigma": {
+    "en": "{0} Stigma level(s) left"
+  },
+  "CpCalc.Prog.Left.ItemLevel": {
+    "en": "{0} Item Level to go"
+  },
+  "CpCalc.Prog.Left.Missing": {
+    "en": "{0} slot(s) empty"
+  },
+  "CpCalc.Prog.Task.wpn15": {
+    "en": "Weapon at +15"
+  },
+  "CpCalc.Prog.Task.wpn15.Note": {
+    "en": "The weapon first: it gives the most Combat Power a level."
+  },
+  "CpCalc.Prog.Task.wpnbt3": {
+    "en": "Weapon breakthrough 3"
+  },
+  "CpCalc.Prog.Task.wpnbt3.Note": {
+    "en": "What the players at 2,800–3,000 have on average."
+  },
+  "CpCalc.Prog.Task.wpnbt5": {
+    "en": "Weapon breakthrough 5"
+  },
+  "CpCalc.Prog.Task.wpnbt5.Note": {
+    "en": "Every level is +5 IL and the most Combat Power of any breakthrough."
+  },
+  "CpCalc.Prog.Task.grd15": {
+    "en": "Guard at +15"
+  },
+  "CpCalc.Prog.Task.grd15.Note": {
+    "en": "Its enhancement counts like the weapon's."
+  },
+  "CpCalc.Prog.Task.grdbt5": {
+    "en": "Guard breakthrough 5"
+  },
+  "CpCalc.Prog.Task.grdbt5.Note": {
+    "en": "A Guard breakthrough level counts like armor: +5 IL each."
+  },
+  "CpCalc.Prog.Task.wpn102": {
+    "en": "Craft the IL 102 weapon"
+  },
+  "CpCalc.Prog.Task.wpn102.Note": {
+    "en": "Crafted Splendent Wise / Ebony Dragon Lord; a Transfer Stone moves your enhancement, breakthrough and soul lines onto it."
+  },
+  "CpCalc.Prog.Task.grd102": {
+    "en": "Craft the IL 102 Guard"
+  },
+  "CpCalc.Prog.Task.grd102.Note": {
+    "en": "After the weapon. Nuakum Guard until then."
+  },
+  "CpCalc.Prog.Task.jew15": {
+    "en": "All five jewelry pieces at +15"
+  },
+  "CpCalc.Prog.Task.jew15.Note": {
+    "en": "Necklace, both earrings and both rings."
+  },
+  "CpCalc.Prog.Task.jewbt3": {
+    "en": "Jewelry breakthrough 3 on every piece"
+  },
+  "CpCalc.Prog.Task.jewbt3.Note": {
+    "en": "The players at 3,000–3,200 have 2.3 on average, at 3,200–3,400 3.9."
+  },
+  "CpCalc.Prog.Task.jew102": {
+    "en": "IL 102 jewelry"
+  },
+  "CpCalc.Prog.Task.jew102.Note": {
+    "en": "Crafted Splendent Wise / Ebony Dragon Lord necklace, earrings and rings: IL 102 jewelry can only be crafted."
+  },
+  "CpCalc.Prog.Task.stones": {
+    "en": "Every manastone socket filled"
+  },
+  "CpCalc.Prog.Task.stones.Note": {
+    "en": "Up to +4 IL a stone: the cheapest Item Level there is."
+  },
+  "CpCalc.Prog.Task.arc5": {
+    "en": "Five Unique Arcana cards"
+  },
+  "CpCalc.Prog.Task.arc5.Note": {
+    "en": "Stage 4 is the only source of the Unique Chalice."
+  },
+  "CpCalc.Prog.Task.arcmax": {
+    "en": "Every Arcana card at its highest level"
+  },
+  "CpCalc.Prog.Task.arcmax.Note": {
+    "en": "+1 IL a level; a Unique card goes to +5."
+  },
+  "CpCalc.Prog.Task.stig20": {
+    "en": "Four Stigmas at Lv. 20"
+  },
+  "CpCalc.Prog.Task.stig20.Note": {
+    "en": "Stigma levels 80 in all: what the players past 3,200 have."
+  },
+  "CpCalc.Prog.Task.arm15": {
+    "en": "All seven armor pieces at +15"
+  },
+  "CpCalc.Prog.Task.arm15.Note": {
+    "en": "Last: an armor level gives little Combat Power, but +1 IL."
+  },
+  "CpCalc.Prog.Task.armbt": {
+    "en": "Armor breakthrough 2 on every piece"
+  },
+  "CpCalc.Prog.Task.armbt.Note": {
+    "en": "The players at 3,200–3,400 have 2.5 on average."
+  },
+  "CpCalc.Prog.Task.il3000": {
+    "en": "Reach 3,000 Item Level"
+  },
+  "CpCalc.Prog.Task.il3000.Note": {
+    "en": "The gate for Hard Ludra."
   },
   "CpCalc.Gear.Head": {
     "en": "Every worn piece line by line: base stats, enhancement, breakthrough, soul binding and manastones. Click a piece to open it.",
