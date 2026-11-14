@@ -245,8 +245,8 @@ public static class LegionShare
     }
 
     /// <summary>The site's answer: {ok, kept, known, lookup} ({ok, kept: false, why} for one sent a moment ago) or {ok: false, code, error}; an answer that
-    /// isn't the site's reads as nothing.</summary>
-    private static (bool Ok, int Known, int Lookup, string? Code, string? Error, bool Kept) Read(string body)
+    /// isn't the site's reads as nothing. (A legion's own site answers the same: <see cref="OwnSiteShare"/>.)</summary>
+    internal static (bool Ok, int Known, int Lookup, string? Code, string? Error, bool Kept) Read(string body)
     {
         try
         {

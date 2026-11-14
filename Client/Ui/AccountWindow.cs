@@ -12,6 +12,8 @@ namespace AionDPS.Ui;
 /// signed in as, and signs it out. While a sign-in waits, the code is shown here and on the page the browser opened, and the window asks
 /// the site every few seconds whether it was approved; closing the window stops asking. Signed in, it also says how the meter's check of the character
 /// played went (<see cref="CharacterVerify"/>: "Quake (Nemon) verified"), or how that check works before the first one.
+/// Below, "Your legion's own site" links the app to a copy of the website that a legion runs itself (<see cref="OwnSite"/>; the address typed, approved
+/// there with Discord the same way), which then gets the character's check and the legion's member list as well (<see cref="OwnSiteShare"/>).
 /// </summary>
 public sealed class AccountWindow : Window
 {
@@ -29,6 +31,24 @@ public sealed class AccountWindow : Window
     private readonly DispatcherTimer _timer = new();
     private Account.LinkStart? _pending;
     private int _failures;
+
+    // a legion's own site (OwnSite), at the bottom: apart from the atreia.app sign-in above, with its own address, code and buttons
+    private readonly TextBlock _ownTitle = new() { Text = "Your legion's own site", FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) };
+    private readonly TextBlock _ownStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8), FontSize = 12 };
+    private readonly TextBlock _ownCode = new() { FontFamily = new FontFamily("Consolas"), FontSize = 22, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
+    private readonly TextBox _ownAddress = new() { Padding = new Thickness(8, 4, 8, 4), BorderThickness = new Thickness(1), VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13, MaxLength = 200 };
+    private readonly TextBlock _ownAddressHint = new() { Text = "Its address, like mylegion.gg", FontSize = 12, IsHitTestVisible = false, Margin = new Thickness(11, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+    private readonly Grid _ownAddressBox = new() { Margin = new Thickness(0, 0, 0, 8) };
+    private readonly TextBlock _ownHint = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10), FontSize = 12 };
+    private readonly Button _ownLink = new() { Content = "Link", Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(0, 0, 8, 0) };
+    private readonly Button _ownOpenAgain = new() { Content = "Open the page again", Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
+    private readonly Button _ownOpen = new() { Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
+    private readonly Button _ownCancel = new() { Content = "Cancel", Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
+    private readonly Button _ownUnlink = new() { Content = "Unlink", Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
+    private readonly DispatcherTimer _ownTimer = new();
+    private OwnSite.LinkStart? _ownPending;
+    private string? _ownMessage;
+    private int _ownFailures;
 
     public AccountWindow()
     {
@@ -58,8 +78,44 @@ public sealed class AccountWindow : Window
         root.Children.Add(_legion);
         root.Children.Add(_shareProfile);
         root.Children.Add(buttons);
+        var rule = new Border { Height = 1, Margin = new Thickness(0, 16, 0, 12) };
+        rule.SetResourceReference(Border.BackgroundProperty, "Brush.Border");
+        root.Children.Add(rule);
+        root.Children.Add(_ownTitle);
+        root.Children.Add(_ownStatus);
+        root.Children.Add(_ownCode);
+        _ownAddressBox.Children.Add(_ownAddress);
+        _ownAddressBox.Children.Add(_ownAddressHint);
+        root.Children.Add(_ownAddressBox);
+        root.Children.Add(_ownHint);
+        var ownButtons = new WrapPanel();
+        ownButtons.Children.Add(_ownLink);
+        ownButtons.Children.Add(_ownOpenAgain);
+        ownButtons.Children.Add(_ownOpen);
+        ownButtons.Children.Add(_ownCancel);
+        ownButtons.Children.Add(_ownUnlink);
+        root.Children.Add(ownButtons);
         Content = root;
         ThemedChrome.Apply(this);
+        _ownTitle.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Text");
+        _ownStatus.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Text");
+        _ownHint.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        _ownCode.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Accent");
+        // the address box in the theme's colours, its hint inside while empty (as the Legion page's search)
+        _ownAddress.SetResourceReference(Control.BackgroundProperty, "Brush.Control");
+        _ownAddress.SetResourceReference(Control.ForegroundProperty, "Brush.Text");
+        _ownAddress.SetResourceReference(Control.BorderBrushProperty, "Brush.Border");
+        _ownAddress.SetResourceReference(TextBox.CaretBrushProperty, "Brush.Text");
+        _ownAddressHint.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
+        _ownAddress.TextChanged += (_, _) => _ownAddressHint.Visibility = _ownAddress.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _ownAddress.KeyDown += async (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.Enter && _ownLink.IsEnabled)
+            {
+                e.Handled = true;
+                await StartOwnAsync();
+            }
+        };
 
         _signIn.Click += async (_, _) => await StartAsync();
         _openAgain.Click += (_, _) => Open(_pending?.Url);
@@ -72,6 +128,45 @@ public sealed class AccountWindow : Window
             Draw(null);
         };
         _timer.Tick += async (_, _) => await PollAsync();
+        _ownLink.Click += async (_, _) => await StartOwnAsync();
+        _ownOpenAgain.Click += (_, _) => OpenOwn(_ownPending?.Url, _ownPending?.Site);
+        _ownOpen.Click += (_, _) => OpenOwn(OwnSite.Site + "/", OwnSite.Site);
+        _ownCancel.Click += (_, _) =>
+        {
+            if (_ownPending is { } p)
+            {
+                OwnSite.Cancel(p);
+            }
+
+            _ownPending = null;
+            _ownTimer.Stop();
+            _ownMessage = null;
+            DrawOwnSite();
+        };
+        _ownUnlink.Click += async (_, _) =>
+        {
+            _ownUnlink.IsEnabled = false;
+            await OwnSite.UnlinkAsync();
+            _ownUnlink.IsEnabled = true;
+            _ownMessage = null;
+            DrawOwnSite();
+        };
+        _ownTimer.Tick += async (_, _) => await PollOwnAsync();
+        Closed += (_, _) =>
+        {
+            _ownTimer.Stop();
+            // still waiting for the approval on the legion's site: the app goes on asking without this window
+            if (_ownPending is { } waiting && !OwnSite.Linked)
+            {
+                OwnSite.WaitInBackground(waiting);
+            }
+        };
+        if (!OwnSite.Linked && OwnSite.TakeWaiting() is { } earlierOwn)
+        {
+            _ownPending = earlierOwn;
+            _ownTimer.Interval = TimeSpan.FromSeconds(earlierOwn.Interval);
+            _ownTimer.Start();
+        }
         Closed += (_, _) =>
         {
             _timer.Stop();
@@ -95,6 +190,10 @@ public sealed class AccountWindow : Window
         Closed += (_, _) => CharacterVerify.Changed -= OnAccountChanged;
         LegionShare.Changed += OnAccountChanged;
         Closed += (_, _) => LegionShare.Changed -= OnAccountChanged;
+        OwnSite.Changed += OnAccountChanged;
+        Closed += (_, _) => OwnSite.Changed -= OnAccountChanged;
+        OwnSiteShare.Changed += OnAccountChanged;
+        Closed += (_, _) => OwnSiteShare.Changed -= OnAccountChanged;
         _legion.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
         _shareLegion.Content = Wrapped(LocalizationManager.Instance["Legion.Share"]);
         _shareLegion.IsChecked = MeterSettings.Load().ShareLegionList;
@@ -124,6 +223,7 @@ public sealed class AccountWindow : Window
         Loaded += async (_, _) =>
         {
             await Account.RefreshAsync();
+            await OwnSite.RefreshAsync();
             Draw(null);
         };
     }
@@ -152,6 +252,7 @@ public sealed class AccountWindow : Window
     /// <summary>Draws the state: signed in, waiting for the approval, or signed out (with an optional message).</summary>
     private void Draw(string? message)
     {
+        DrawOwnSite();
         if (Account.SignedIn)
         {
             DrawSignedIn(Account.Name);
@@ -159,7 +260,8 @@ public sealed class AccountWindow : Window
         }
 
         _verify.Visibility = Visibility.Collapsed;
-        _shareLegion.Visibility = Visibility.Collapsed;
+        // the legion list's switch counts for the legion's own site too
+        _shareLegion.Visibility = OwnSite.Linked ? Visibility.Visible : Visibility.Collapsed;
         _shareProfile.Visibility = Visibility.Collapsed;
         _legion.Visibility = Visibility.Collapsed;
         _signOut.Visibility = Visibility.Collapsed;
@@ -234,6 +336,170 @@ public sealed class AccountWindow : Window
             { Kind: "refused" } => last.Message is { Length: > 0 } refused ? last.Legion + ": " + refused : string.Format(loc["Legion.Refused"], last.Legion),
             _ => last.Message is { Length: > 0 } later ? last.Legion + ": " + later : string.Format(loc["Legion.Later"], last.Legion),
         };
+    }
+
+    /// <summary>The legion's own site: linked (and how its checks went), waiting for the approval there, or not linked (the address to type).</summary>
+    private void DrawOwnSite()
+    {
+        if (OwnSite.Linked && OwnSite.Host is { } host)
+        {
+            _ownPending = null;
+            _ownTimer.Stop();
+            _ownStatus.Text = "Linked to " + host + (OwnSite.Name is { Length: > 0 } name ? " as " + name : "") + ".";
+            _ownHint.Text = _ownMessage ?? OwnSiteText(host);
+            _ownHint.Visibility = Visibility.Visible;
+            _ownCode.Visibility = Visibility.Collapsed;
+            _ownAddressBox.Visibility = Visibility.Collapsed;
+            _ownLink.Visibility = Visibility.Collapsed;
+            _ownOpenAgain.Visibility = Visibility.Collapsed;
+            _ownCancel.Visibility = Visibility.Collapsed;
+            _ownOpen.Content = "Open " + host;
+            _ownOpen.Visibility = Visibility.Visible;
+            _ownUnlink.Visibility = Visibility.Visible;
+            return;
+        }
+
+        _ownOpen.Visibility = Visibility.Collapsed;
+        _ownUnlink.Visibility = Visibility.Collapsed;
+        if (_ownPending is { } p)
+        {
+            _ownStatus.Text = "Approve it on " + OwnSiteAddress.HostOf(p.Site) + ", signed in there with Discord. Its page shows this code:";
+            _ownCode.Text = p.Code;
+            _ownCode.Visibility = Visibility.Visible;
+            _ownHint.Text = _ownMessage ?? "The app notices it by itself, also if you close this window.";
+            _ownHint.Visibility = Visibility.Visible;
+            _ownAddressBox.Visibility = Visibility.Collapsed;
+            _ownLink.Visibility = Visibility.Collapsed;
+            _ownOpenAgain.Visibility = Visibility.Visible;
+            _ownCancel.Visibility = Visibility.Visible;
+            return;
+        }
+
+        _ownStatus.Text = "If your legion runs its own copy of the Atreia website, with its own Discord bot, link the app to it too. The app then also sends that site the "
+            + "check of the character you play and, with the legion list on, your legion's member list, so that bot's rosters fill by themselves. That site is run "
+            + "by your legion, not by Atreia.";
+        _ownHint.Text = _ownMessage ?? "";
+        _ownHint.Visibility = _ownHint.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        _ownCode.Visibility = Visibility.Collapsed;
+        _ownAddressBox.Visibility = Visibility.Visible;
+        _ownLink.Visibility = Visibility.Visible;
+        _ownLink.IsEnabled = true;
+        _ownOpenAgain.Visibility = Visibility.Collapsed;
+        _ownCancel.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>How the app's sends to the legion's own site went in this run, in the window's words (what happens at the next login before the first one).</summary>
+    private static string OwnSiteText(string host)
+    {
+        var lines = new List<string>();
+        if (OwnSiteShare.LastVerify is { } verify)
+        {
+            lines.Add(VerifyText(verify));
+        }
+
+        if (OwnSiteShare.LastLegion is { } legion)
+        {
+            lines.Add(LegionText(legion));
+        }
+
+        return lines.Count > 0
+            ? string.Join("\n", lines)
+            : $"At your next login in the game, the app sends {host} the check of the character you play, then your legion's member list (with the legion list on).";
+    }
+
+    private async Task StartOwnAsync()
+    {
+        _ownLink.IsEnabled = false;
+        _ownMessage = null;
+        _ownHint.Text = "Looking at " + (OwnSiteAddress.Normalize(_ownAddress.Text) is { } typed ? OwnSiteAddress.HostOf(typed) : "the address") + "…";
+        _ownHint.Visibility = Visibility.Visible;
+        (OwnSite.LinkStart? start, string? error) = await OwnSite.StartAsync(_ownAddress.Text);
+        if (start is null)
+        {
+            _ownMessage = error;
+            DrawOwnSite();
+            return;
+        }
+
+        _ownPending = start;
+        OwnSite.Started(start);
+        _ownFailures = 0;
+        DrawOwnSite();
+        OpenOwn(start.Url, start.Site);
+        _ownTimer.Interval = TimeSpan.FromSeconds(start.Interval);
+        _ownTimer.Start();
+    }
+
+    private async Task PollOwnAsync()
+    {
+        if (_ownPending is not { } p)
+        {
+            _ownTimer.Stop();
+            return;
+        }
+
+        if (DateTime.UtcNow > p.ExpiresAt)
+        {
+            _ownPending = null;
+            OwnSite.Finished(p);
+            _ownMessage = "The link ran out. Press Link to try again.";
+            DrawOwnSite();
+            return;
+        }
+
+        _ownTimer.Stop();
+        Account.LinkState state = await OwnSite.PollAsync(p);
+        if (_ownPending != p)
+        {
+            return;
+        }
+
+        switch (state)
+        {
+            case Account.LinkState.Linked:
+                _ownMessage = null;
+                DrawOwnSite();
+                await OwnSite.RefreshAsync();
+                DrawOwnSite();
+                return;
+            case Account.LinkState.Expired:
+                _ownPending = null;
+                OwnSite.Finished(p);
+                _ownMessage = "The link ran out or was used already. Press Link to try again.";
+                DrawOwnSite();
+                return;
+            case Account.LinkState.Failed:
+                _ownFailures++;
+                _ownMessage = _ownFailures >= 3 ? OwnSiteAddress.HostOf(p.Site) + " can’t be reached right now. Still trying…" : null;
+                DrawOwnSite();
+                break;
+            default:
+                _ownFailures = 0;
+                break;
+        }
+
+        if (IsLoaded)
+        {
+            _ownTimer.Start();
+        }
+    }
+
+    /// <summary>A page of the legion's own site, in the browser: only that site's own pages.</summary>
+    private static void OpenOwn(string? url, string? site)
+    {
+        if (site is null || !OwnSiteAddress.IsOnSite(url, site))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception)
+        {
+            // no browser set up: the code is shown here, and the page is that site's /meter/link
+        }
     }
 
     private async Task StartAsync()

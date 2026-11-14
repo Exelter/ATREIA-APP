@@ -326,8 +326,9 @@ public static class Account
             ? e.GetString()!
             : $"{(int)r.StatusCode} {r.ReasonPhrase}";
 
-    /// <summary>Windows' own encryption for the current user (CryptProtectData), so another user of the PC can't read the token.</summary>
-    private static class Dpapi
+    /// <summary>Windows' own encryption for the current user (CryptProtectData), so another user of the PC can't read the token (the legion's own site's
+    /// too, <see cref="OwnSite"/>).</summary>
+    internal static class Dpapi
     {
         [StructLayout(LayoutKind.Sequential)]
         private struct Blob

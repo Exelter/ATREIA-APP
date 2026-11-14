@@ -6,6 +6,25 @@
   ],
   "versions": [
     {
+      "version": "2.0.22",
+      "date": "2026-11-14",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Legion",
+          "title": "Link the app to your legion’s own site",
+          "text": "If your legion runs its own copy of the Atreia website, with its own Discord bot, link the app to it: App menu > Atreia account > Your legion’s own site. Type its address, press Link and approve it on that site, signed in there with Discord. From then on the app sends that site what it sends atreia.app for your legion: the check of the character you play, so it counts as yours there too, and, with “Send my legion’s member list” on, your legion’s member list, so the rosters of that bot’s Discord servers that follow your legion fill by themselves. The Legion page’s “Send this list to the website now” sends it to both. Unlink, in the same window, ends it.",
+          "example": "Your legion runs wolfden.gg. You type wolfden.gg, press Link and approve it there; at your next login its bot’s roster has all 48 members, the same as on atreia.app."
+        },
+        {
+          "kind": "improved",
+          "area": "Privacy",
+          "title": "The privacy note says what goes where",
+          "text": "The privacy note now names the check of your character and your legion’s member list, and what goes to your legion’s own site once you link one; it also says the updates come from atreia.app. Because it changed, the app asks you once more to accept it."
+        }
+      ]
+    },
+    {
       "version": "2.0.21",
       "date": "2026-11-13",
       "items": [

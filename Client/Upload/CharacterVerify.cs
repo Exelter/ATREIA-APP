@@ -274,8 +274,9 @@ public static class CharacterVerify
         Changed?.Invoke();
     }
 
-    /// <summary>The site's answer: {ok, verified, already, name, server} or {ok: false, code, error}; an answer that isn't the site's reads as nothing.</summary>
-    private static (bool Ok, bool Already, string? Code, string? Name, string? Server) Read(string body)
+    /// <summary>The site's answer: {ok, verified, already, name, server} or {ok: false, code, error}; an answer that isn't the site's reads as nothing.
+    /// (A legion's own site answers the same: <see cref="OwnSiteShare"/>.)</summary>
+    internal static (bool Ok, bool Already, string? Code, string? Name, string? Server) Read(string body)
     {
         try
         {
@@ -299,7 +300,7 @@ public static class CharacterVerify
     }
 
     /// <summary>The server's own name for "Quake (Nemon)": the table's name without its region or number (Aion2Servers.NameOf).</summary>
-    private static string ServerName(int serverId)
+    internal static string ServerName(int serverId)
     {
         string name = Aion2Servers.NameOf(serverId);
         int dash = name.IndexOf(" - ", StringComparison.Ordinal);
