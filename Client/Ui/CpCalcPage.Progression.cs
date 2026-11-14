@@ -272,6 +272,7 @@ public sealed partial class CpCalcPage
 
         if (m is { Kind: CpMoveKind.Free, Step: { } step } && StepIcon(step) is { } own)
         {
+            own.Width = own.Height = size;
             return own;
         }
 
@@ -296,8 +297,12 @@ public sealed partial class CpCalcPage
         {
             case CpMoveKind.Equip:
             {
-                string title = F("CpCalc.Prog.Move.Equip", m.Slot is null ? "" : Loc("Details.Seen.Cat." + m.Slot));
-                string detail = m.Target is { } gear ? F("CpCalc.Prog.Move.EquipStage", gear.Source, gear.ItemLevel) : Loc("CpCalc.Prog.Move.EquipAny");
+                string slot = m.Slot is null ? "" : Loc("Details.Seen.Cat." + m.Slot);
+                int of = CpProgression.SlotsOf(m.Slot);
+                string title = of > 1 ? F("CpCalc.Prog.Move.EquipOf", slot, m.Count, of) : F("CpCalc.Prog.Move.Equip", slot);
+                string detail = m is { Target: { } gear, TargetItem: { } item } ? F("CpCalc.Prog.Move.EquipItem", LootText.ItemName(item.Id), gear.ItemLevel, WhereOf(gear))
+                    : m.Target is { } stage ? F("CpCalc.Prog.Move.EquipStage", stage.Source, stage.ItemLevel)
+                    : Loc("CpCalc.Prog.Move.EquipAny");
                 return (title, detail);
             }
 
@@ -310,7 +315,7 @@ public sealed partial class CpCalcPage
             {
                 string name = weak.TargetItem is { } item ? LootText.ItemName(item.Id) : weak.Target?.Source ?? "";
                 string title = (weak.Optional ? Loc("CpCalc.Prog.Optional") : "") + F("CpCalc.Prog.Move.Replace", SlotOf(weak.Piece.ItemId), name, weak.Target?.ItemLevel ?? 0);
-                string detail = weak.Target?.Source ?? "";
+                string detail = weak.Target is { } gear ? WhereOf(gear) : "";
                 if (weak.Piece.Enchant > 0 || weak.Piece.Exceed > 0)
                 {
                     detail += (detail.Length > 0 ? "  ·  " : "") + F("CpCalc.Prog.Move.AtYours", weak.Piece.Enchant);
@@ -333,7 +338,7 @@ public sealed partial class CpCalcPage
             case CpMoveKind.Transfer when m.Piece is { } unique:
             {
                 string name = unique.TargetItem is { } item ? LootText.ItemName(item.Id) : unique.Target?.Source ?? "";
-                string detail = F("CpCalc.Prog.Move.TransferNote", unique.Piece.Enchant, unique.Piece.Exceed) + (unique.Target is { } gear ? "  ·  " + gear.Source : "");
+                string detail = F("CpCalc.Prog.Move.TransferNote", unique.Piece.Enchant, unique.Piece.Exceed) + (unique.Target is { } gear ? "  ·  " + WhereOf(gear) : "");
                 return (F("CpCalc.Prog.Move.Transfer", SlotOf(unique.Piece.ItemId), name, unique.Target?.ItemLevel ?? 0), detail);
             }
 
@@ -352,6 +357,18 @@ public sealed partial class CpCalcPage
                 return ("", "");
             }
         }
+    }
+
+    /// <summary>Where a stage's piece comes from, short: "crafted", or the guide's words from "from" ("from Ferocious Horn Den").</summary>
+    private static string WhereOf(CpTierGear gear)
+    {
+        if (gear.Crafted)
+        {
+            return Loc("CpCalc.Prog.Move.Crafted");
+        }
+
+        int at = gear.Source.IndexOf(" from ", StringComparison.Ordinal);
+        return at >= 0 ? gear.Source[(at + 1)..] : gear.Source;
     }
 
     /// <summary>A move's figures: the Item Level it adds ("+16 IL"; a replacement's once enhanced as far as the worn piece, "up to" for the sockets; empty when
