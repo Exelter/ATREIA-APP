@@ -34,30 +34,40 @@ public sealed class DummyRunner : IDisposable
 
     public void Dispose() => _timer.Stop();
 
-    /// <summary>The meter's poll: the player's own damage starts the clock and fills the run. <paramref name="entities"/> says who the player is.</summary>
+    /// <summary>The hits on targets not known as dummies yet (see <see cref="DummyWaitingHits"/>).</summary>
+    private readonly DummyWaitingHits _waiting = new();
+
+    /// <summary>The meter's poll (everything captured, counted or not): the player's own damage starts the clock and fills the run. <paramref name="entities"/>
+    /// says who the player is. A dummy whose spawn the meter missed is known by its hit points a few seconds in; its first hits wait for that (Windows:
+    /// DummyTestController.Feed).</summary>
     public void Feed(CombatBatch batch, IEntityDirectory? entities)
     {
+        IReadOnlyList<DamageEvent> damage = batch.Damage;
         // a hit on a training dummy starts a timed run by itself (Settings: the length, and whether it does)
-        if (_settings.DummyAutoStart && batch.Damage.Count > 0 && entities is not null && _directory() is { } dir)
+        if (_settings.DummyAutoStart && damage.Count > 0 && entities is not null && _directory() is { } dir)
         {
-            var known = new Dictionary<int, bool>();
-            bool IsDummy(int id)
+            var known = new Dictionary<int, bool?>();
+            bool? Known(int id)
             {
-                if (!known.TryGetValue(id, out bool dummy))
+                if (!known.TryGetValue(id, out bool? dummy))
                 {
-                    known[id] = dummy = DummyTargets.IsDummy(dir.NameFor(id) ?? dir.MonsterNameFor(id));
+                    known[id] = dummy = dir.TrainingDummy(id);
                 }
 
                 return dummy;
             }
 
-            Model.FeedAuto(batch.Damage, entities.IsLocalPlayer, IsDummy, TimeSpan.FromSeconds(Math.Clamp(_settings.DummyTestSeconds, 10, 3600)),
+            bool canStart = Model.State == DummyState.Idle || (Model.State == DummyState.Finished && Model.Current is not { Closed: false });
+            // whose hits wait: every player's while the own character is not known yet (the meter started mid-game), then its own
+            Func<int, bool> waits = entities.LocalPlayerId >= 0 ? entities.IsLocalPlayer : dir.IsKnownPlayer;
+            damage = _waiting.Take(damage, Known, waits, entities.IsLocalPlayer, canStart);
+            Model.FeedAuto(damage, entities.IsLocalPlayer, id => Known(id) == true, TimeSpan.FromSeconds(Math.Clamp(_settings.DummyTestSeconds, 10, 3600)),
                 LocalizationManager.Instance["Dummy.AutoNote"]);
         }
 
-        if (Model.State is DummyState.Armed or DummyState.Running or DummyState.Finished && batch.Damage.Count > 0 && entities is not null)
+        if (Model.State is DummyState.Armed or DummyState.Running or DummyState.Finished && damage.Count > 0 && entities is not null)
         {
-            Model.Feed(batch.Damage, entities.IsLocalPlayer);
+            Model.Feed(damage, entities.IsLocalPlayer);
         }
     }
 

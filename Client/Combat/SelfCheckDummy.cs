@@ -224,12 +224,100 @@ public static class SelfCheckDummy
                 && DummyComparison.LevelCurves(new[] { l18, atLevel(Make(1100, 5, 14), 18) }, levelMultipliers).Count == 0; // one level only: no curve
             Console.WriteLine($"  -> levels: the differing skill is named, none differ for equal runs, unknown levels say so, 18/20/22 give +5 % a level, one level gives no curve: {levels}");
             bool auto = AutoRuns();
-            return ok && parse && clock && chains && rates && steadyRates && targets && welch && skills && noise && levels && auto;
+            bool unknown = UnknownDummies();
+            return ok && parse && clock && chains && rates && steadyRates && targets && welch && skills && noise && levels && auto && unknown;
         }
         finally
         {
             File.Delete(path);
         }
+    }
+
+    /// <summary>
+    /// A dummy whose spawn the meter missed (14 November 2026, the owner: "when attacking a dummy it does not start the meter automatically"; his recording,
+    /// the meter started at two Training Scarecrows): known by its hit points - worn down to exactly 1 and straight back to its 119,700 - not by a name; the
+    /// hits before that, and before the own character was known, wait and start the run with the first own one; the parse's result stays while the player goes
+    /// on hitting ("sometimes it keeps recording more").
+    /// </summary>
+    private static bool UnknownDummies()
+    {
+        DateTime t0 = new(2026, 11, 14, 23, 8, 36);
+
+        // the hit points: the recording's readings of the scarecrow (55,798, 39,468, 1, then 119,700); a monster that dies goes to 0; a heal from 1 is not full;
+        // a new spawn on the id forgets it
+        var hp = new Aion2.Aion2HitPoints();
+        hp.Note(17301, t0, 55_798);
+        hp.Note(17301, t0.AddSeconds(0.15), 39_468);
+        hp.Note(17301, t0.AddSeconds(0.47), 1);
+        bool notYet = !hp.RefillsFromOne(17301);
+        hp.Note(17301, t0.AddSeconds(0.55), 119_700);
+        bool refills = hp.RefillsFromOne(17301);
+        hp.Note(500, t0, 5000);
+        hp.Note(500, t0.AddSeconds(1), 1);
+        hp.Note(500, t0.AddSeconds(2), 0);
+        hp.Note(501, t0, 5000);
+        hp.Note(501, t0.AddSeconds(1), 1);
+        hp.Note(501, t0.AddSeconds(2), 300);
+        bool others = !hp.RefillsFromOne(500) && !hp.RefillsFromOne(501);
+        hp.NoteSpawn(17301, null);
+        bool forgotten = !hp.RefillsFromOne(17301);
+
+        // the directory: no name and nothing seen yet is not known; by its hit points a dummy; by its name a Punching Bag is one, a Villager is not
+        var directory = new Aion2.Aion2EntityDirectory();
+        bool? before = directory.TrainingDummy(17301);
+        directory.HitPoints.Note(17301, t0, 39_468);
+        directory.HitPoints.Note(17301, t0.AddSeconds(0.5), 1);
+        directory.HitPoints.Note(17301, t0.AddSeconds(0.6), 119_700);
+        directory.RegisterNpc(30001, 2000000);
+        directory.RegisterNpc(30002, 2950156);
+        bool known = before is null && directory.TrainingDummy(17301) == true && directory.TrainingDummy(30001) == true && directory.TrainingDummy(30002) == false;
+        Console.WriteLine($"  -> a dummy whose spawn was missed is known by its hit points (1, then full again), not a monster that dies or is healed a little; by its name the others: {notYet && refills && others && forgotten && known}");
+
+        // the recording's timeline: another player (3642) and the own character (4060) hit the scarecrow before it is known, and the own character is not known
+        // yet either; then the scarecrow is known, the own character too: the run starts with the own first hit, 23:08:41, and keeps the waiting own hits
+        const int you = 4060, other = 3642, scarecrow = 17301, mob = 900;
+        bool ownKnown = false, dummyKnown = false;
+        bool? DummyOf(int id) => id == scarecrow ? (dummyKnown ? true : (bool?)null) : id == mob ? (bool?)null : false;
+        bool IsPlayer(int id) => id is you or other;
+        bool IsOwn(int id) => ownKnown && id == you;
+        var waiting = new DummyWaitingHits();
+        var test = new DummyTest();
+        void Poll(bool canStartAnyway, params DamageEvent[] batch)
+        {
+            bool canStart = canStartAnyway && (test.State == DummyState.Idle || (test.State == DummyState.Finished && test.Current is not { Closed: false }));
+            IReadOnlyList<DamageEvent> fed = waiting.Take(batch, DummyOf, ownKnown ? IsOwn : IsPlayer, IsOwn, canStart);
+            test.FeedAuto(fed, IsOwn, id => DummyOf(id) == true, TimeSpan.FromMinutes(1), "auto");
+            if (test.State is DummyState.Armed or DummyState.Running or DummyState.Finished)
+            {
+                test.Feed(fed, IsOwn);
+            }
+        }
+
+        Poll(true, new DamageEvent(t0, other, scarecrow, 4000, false), new DamageEvent(t0.AddSeconds(5), you, scarecrow, 33_000, false),
+            new DamageEvent(t0.AddSeconds(6), you, scarecrow, 33_000, false), new DamageEvent(t0.AddSeconds(6.5), you, mob, 10, false));
+        bool waits = test.State == DummyState.Idle && waiting.Count == 4;
+        ownKnown = true;
+        dummyKnown = true;
+        Poll(true, new DamageEvent(t0.AddSeconds(9), you, scarecrow, 33_000, false));
+        bool started = test.State == DummyState.Running && test.Current is { } run && run.Start == t0.AddSeconds(5) && run.Events.Count == 3 && waiting.Count == 1;
+        // a minute later the hit on the other monster is gone; with a run going on nothing waiting is put in front again
+        Poll(true, new DamageEvent(t0.AddSeconds(70), you, mob, 10, false));
+        bool aged = waiting.Count == 1;
+        Console.WriteLine($"  -> the hits on a dummy known only by its hit points, and before the own character was known, start the run with the first own one: {waits && started && aged}");
+
+        // the result stays while the player goes on hitting: the parse is over at 1:05, he hits on to 1:40 without a pause of 5 s, it still shows; 11 s after
+        // his last hit it clears
+        for (int i = 10; i <= 100; i++)
+        {
+            Poll(true, new DamageEvent(t0.AddSeconds(i), you, scarecrow, 33_000, false));
+            test.Tick(t0.AddSeconds(i + 0.5));
+        }
+
+        bool stays = test.State == DummyState.Finished && test.Runs.Count == 1 && test.Runs[0].Length == TimeSpan.FromMinutes(1);
+        test.Tick(t0.AddSeconds(111.5));
+        bool clears = test.State == DummyState.Idle;
+        Console.WriteLine($"  -> the parse stops at its minute: its result stays while the player hits on, and goes 10 s after his last hit: {stays && clears}");
+        return notYet && refills && others && forgotten && known && waits && started && aged && stays && clears;
     }
 
     /// <summary>Automatic runs: a hit on a dummy starts one; hits on anything else or by others do not; the hits right after the time is up do not start the

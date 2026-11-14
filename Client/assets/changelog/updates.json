@@ -18,6 +18,13 @@
         },
         {
           "kind": "fixed",
+          "area": "Dummy test",
+          "title": "Hitting a training dummy starts the parse every time, and the parse stops at its time",
+          "text": "If the meter was started while you were already at the training dummies, it never saw them appear, so it didn’t know they were dummies: hitting one started no parse and the meter showed nothing. It now also recognises a dummy by its health, which drops to 1 and refills at once, and the parse still starts with your first hit. When a parse is over, its result now stays on the meter while you keep hitting, so the meter stops at the parse’s time every time. Pause for a few seconds and hit again to start the next parse.",
+          "example": "Start the meter while standing at the Training Scarecrows and attack one: a 1:00 parse starts with your first hit, and at 1:00 the result stays on the meter while you keep attacking."
+        },
+        {
+          "kind": "fixed",
           "area": "Grind",
           "title": "The Grind view counts only the Kinah and Abyss Points you farm",
           "text": "The Grind view counted every rise of your Kinah and Abyss Points, so moving gold from your storage to your bag, and back again, added to it. Now only Kinah that comes right after a kill or a pickup counts, and Abyss Points only after a fight (a fight with a player counts too). Gold from the storage, the mail or a sale no longer counts."

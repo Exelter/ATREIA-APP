@@ -89,6 +89,12 @@ public sealed class Aion2HitPoints
                 track.Resets.Add(at);
             }
 
+            // worn down to exactly 1 and straight back to full: a training dummy, which never dies (see RefillsFromOne)
+            if (track.Samples.Count > 0 && track.Samples[^1].Hp == 1 && hp > 1 && hp >= track.HighestSeen * ResetFromBelow)
+            {
+                track.RefilledFromOne = true;
+            }
+
             track.HighestSeen = Math.Max(track.HighestSeen, hp);
             if (track.Samples.Count >= MaxSamplesPerEntity)
             {
@@ -132,6 +138,11 @@ public sealed class Aion2HitPoints
     {
         lock (_gate)
         {
+            if (_tracks.TryGetValue(entityId, out Track? earlier))
+            {
+                earlier.RefilledFromOne = false; // the id is reused: what the one before did is not this one's
+            }
+
             if (hp is { } value)
             {
                 _spawns[entityId] = value;
@@ -232,6 +243,19 @@ public sealed class Aion2HitPoints
         }
     }
 
+    /// <summary>
+    /// Whether the entity's hit points fell to exactly 1 and came straight back to full: what a training dummy does when it is "killed" (14 November 2026, a
+    /// recording at two Training Scarecrows: 119,700 hit points, worn down to 1 and back to 119,700 a tenth of a second later, again and again, never 0). A
+    /// monster that dies goes to 0. Tells a dummy whose spawn the meter never saw (it was started at the dummies), so whose name it does not know.
+    /// </summary>
+    public bool RefillsFromOne(int entityId)
+    {
+        lock (_gate)
+        {
+            return _tracks.TryGetValue(entityId, out Track? track) && track.RefilledFromOne;
+        }
+    }
+
     /// <summary>When the entity came back to full health from a worn-down state, oldest first.</summary>
     public IReadOnlyList<DateTime> ResetsOf(int entityId)
     {
@@ -271,6 +295,7 @@ public sealed class Aion2HitPoints
     {
         public long HighestSeen;
         public long ReportedMax;
+        public bool RefilledFromOne;
         public readonly List<HpSample> Samples = new();
         public readonly List<DateTime> Resets = new();
     }

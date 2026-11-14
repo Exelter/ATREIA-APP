@@ -1802,6 +1802,22 @@ public sealed class Aion2EntityDirectory : IEntityDirectory
         }
     }
 
+    /// <summary>
+    /// Whether an entity is a training dummy (Training Scarecrow, Punching Bag ...): by its name when the meter knows it (<see cref="AionDPS.History.DummyTargets"/>),
+    /// else by its hit points - worn down to exactly 1 and straight back to full (<see cref="Aion2HitPoints.RefillsFromOne"/>). Null while neither tells: a
+    /// monster whose spawn the meter never saw (14 November 2026, the owner: "when attacking a dummy it does not start the meter automatically" - he had
+    /// started the meter at the dummies, so their spawn frames, the only ones that carry the monster's id and so its name, had come before it).
+    /// </summary>
+    public bool? TrainingDummy(int entityId)
+    {
+        if ((NameFor(entityId) ?? MonsterNameFor(entityId)) is { } name)
+        {
+            return AionDPS.History.DummyTargets.IsDummy(name);
+        }
+
+        return HitPoints.RefillsFromOne(entityId) ? true : null;
+    }
+
     /// <summary>The NPC id a monster was announced with, when its spawn frame was seen.</summary>
     public int? NpcIdOf(int entityId)
     {
