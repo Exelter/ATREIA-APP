@@ -341,8 +341,20 @@ public static class CpProgression
     /// <summary>The band of an Item Level (from 2,500; null below or without one).</summary>
     public static CpWearBand? WearOf(int? itemLevel) => itemLevel is int il ? Wear.FirstOrDefault(w => il >= w.From && il < w.To) : null;
 
-    /// <summary>The grade of an Arcana card: the digit before the set's four (810130001: 3). 4 is Unique.</summary>
-    public static int ArcanaGrade(int itemId) => itemId / 10_000 % 10;
+    /// <summary>
+    /// The grade of an Arcana card (1 to 4, 4 Unique): the item list's (assets/aion2/items/item_info.json, as the character window reads it), else the digit
+    /// before the set's four, which counts down (810130001 is Unique, 810160001 grade 1); 0 when neither says.
+    /// </summary>
+    public static int ArcanaGrade(int itemId)
+    {
+        if (Aion2ItemCatalog.Find(itemId) is { Grade: >= 1 and <= 4 } info)
+        {
+            return info.Grade;
+        }
+
+        int digit = itemId / 10_000 % 10;
+        return digit is >= 3 and <= 6 ? 7 - digit : 0;
+    }
 
     /// <summary>The highest level of an Arcana card of a grade: one more than the grade (the experience table, assets/aion2/items/arcana.json: grade 1 two
     /// levels ... a Unique card five).</summary>
