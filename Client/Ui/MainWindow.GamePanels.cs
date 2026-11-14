@@ -10,7 +10,7 @@ namespace AionDPS.Ui;
 /// <summary>
 /// The meter as the one place for everything (10 November 2026, the owner: "I want the meter to be an all around tool, so users don't have to go from one tab to
 /// another"): its launcher, under the bar like Find a player, opens the app's pages over the game in panels of the meter's look (GamePanelWindow): Characters,
-/// CP calculator, Journey, Legion, Items, Gathering, Season missions, Timers, Map and History. The tools with an overlay (items, gathering, season missions,
+/// CP calculator, Progression, Journey, Legion, Items, Gathering, Season missions, Timers, Map and History. The tools with an overlay (items, gathering, season missions,
 /// timers, the map) switch it on or off right on their tile; the tile itself opens their page, with the numbers behind the overlay.
 /// </summary>
 public partial class MainWindow
@@ -27,7 +27,7 @@ public partial class MainWindow
         LocalizationManager loc = LocalizationManager.Instance;
         return new PanelGroup[]
         {
-            new("characters", loc["Shell.Characters"], "", new[] { "characters", "attributes", "cpcalc", "journey" }),
+            new("characters", loc["Shell.Characters"], "", new[] { "characters", "attributes", "cpcalc", "progression", "journey" }),
             new("season", loc["Checklist.Season"], "", new[] { "season" }),
             new("legion", loc["Main.MenuTools.Legion"], "", new[] { "legion" }),
             new("items", loc["Shell.HubItems"], "", new[] { "loot", "craft" }),
@@ -45,6 +45,8 @@ public partial class MainWindow
         {
             new(loc["Shell.Characters"], "Odyle, dailies, weeklies", "", "characters", "characters"),
             new(loc["Main.MenuTools.CpCalc"], "Your CP and the cheapest upgrades", "", "characters", "cpcalc"),
+            new(loc["Main.MenuTools.Progression"], "Your stage and what to do next", "\uE74A", "characters", "progression", s => s.ShowProgressionOverlay,
+                (s, v) => s.ShowProgressionOverlay = v, "the progression overlay"),
             new(loc["Main.MenuTools.Journey"], "Your play over time", "", "characters", "journey"),
             new(loc["Main.MenuTools.Legion"], "Members, power, who's online", "", "legion", "legion"),
             new(loc["Shell.HubItems"], "Drops, rates, cubes", "", "items", "loot", s => s.ShowLootOverlay, (s, v) => s.ShowLootOverlay = v, "the loot overlay"),

@@ -13,30 +13,43 @@ using AionDPS.Upload;
 namespace AionDPS.Ui;
 
 /// <summary>
-/// The Progression tab (14 November 2026, the owner: "add to the app as another tab to the cp calc"): the website's progression guides on the character the app
-/// reads (<see cref="CpProgression"/>). The stage its Item Level is at, with the guides opened for this character on atreia.app; its Combat Power against the
-/// characters of the same Item Level, all classes and its own; the best next steps on the pieces worth keeping and the pieces below the stage's dungeon tier, each
-/// with the Item Level and Combat Power it adds; every piece against the stage; what the players of its Item Level have; and the Road to 3,000+ checklist ticked
-/// from the character. The Combat Power of a step is the calculator's (what the step adds on its own), the other characters' figures the website's.
+/// The Progression page (Characters → Progression; 14 November 2026, the owner: "add to the app as another tab to the cp calc", then "not like that, I meant
+/// its own tab for the progression, and make a sexy overlay for it that guides players"): the website's progression guides on the character the app reads
+/// (<see cref="CpProgression"/>). At the top the character's stage - its Item Level, the guides for it opened for this character on atreia.app - beside what to
+/// do next (<see cref="CpProgression.Moves"/>; the progression overlay shows the first three in the game, ProgressionOverlay.cs); then its Combat Power against
+/// the characters of the same Item Level, all classes and its own; the best next steps on the pieces worth keeping and the pieces below the stage's dungeon tier,
+/// each with the Item Level and Combat Power it adds; every piece against the stage; what the players of its Item Level have; and the Road to 3,000+ checklist
+/// ticked from the character. The Combat Power of a step is the calculator's (what the step adds on its own), the other characters' figures the website's.
 /// </summary>
 public sealed partial class CpCalcPage
 {
-    /// <summary>How many of the best next steps the tab lists, and how many of the pieces below the tier.</summary>
-    private const int ProgSteps = 8, ProgPieces = 6;
+    /// <summary>How many of the best next steps the page lists, how many of the pieces below the tier, and how many moves "do this next" has.</summary>
+    private const int ProgSteps = 8, ProgPieces = 6, PageMoves = 5;
 
     private static readonly Color ProgRed = Color.FromRgb(0xE0, 0x56, 0x6B);
 
-    private UIElement ProgressionTab(View v, CpModel model, Aion2EntityDirectory? directory, IReadOnlyList<Aion2EquippedItem> gear)
+    /// <summary>The own character's Item Level: the game's own number now (sent with every change), else the page's (the last check's, the login list's, the
+    /// character page's).</summary>
+    internal static int? ItemLevelFor(Aion2EntityDirectory? directory, string? character, int server) =>
+        (directory is not null ? MainWindow.OwnItemLevel(directory) : null) ?? CharacterFor(directory, character, server).ItemLevel;
+
+    private UIElement ProgressionBody(View v, CpModel model, Aion2EntityDirectory? directory, IReadOnlyList<Aion2EquippedItem> gear)
     {
-        // the game's own Item Level now (sent with every change), else the page's (the last check's, the login list's, the character page's)
-        int? il = (directory is not null ? MainWindow.OwnItemLevel(directory) : null) ?? CharacterOf(directory).ItemLevel;
+        int? il = ItemLevelFor(directory, _character, _server);
         char race = CpWhole.RaceOf(gear);
         IReadOnlyList<CpProgPiece> pieces = CpProgression.Read(v.Pieces, il, race, v.Totals, model);
-        // a Clash Rune's steps aside, as on the rest of the page (players don't raise them for Combat Power)
+        // a Clash Rune's steps aside, as on the CP calculator (players don't raise them for Combat Power)
         var steps = v.Whole.Steps.Where(s => s.Key != CpWhole.RuneKey).ToList();
 
         var page = new StackPanel();
-        page.Children.Add(Spaced(StageCard(il)));
+        // the character's stage on the left, what to do next on the right (the two cards as tall as each other)
+        var top = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(350) });
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        Add(top, 0, StageHero(v, il));
+        Add(top, 2, MovesCard(CpProgression.Moves(pieces, steps, v.Whole.Arcana, il, race, v.Totals, model, PageMoves)));
+        page.Children.Add(top);
         page.Children.Add(Spaced(PaceCard(v, il)));
 
         var columns = new Grid { Margin = new Thickness(0, 0, 0, 12) };
@@ -67,62 +80,290 @@ public sealed partial class CpCalcPage
 
     // ------------------------------------------------------------------ the stage and the guides
 
-    private Border StageCard(int? il)
+    /// <summary>
+    /// The character's stage, on its class colour's wash with the class emblem faint behind it (as the CP calculator's number): the name, the class, the Item
+    /// Level large, the Combat Power, and the guides written for the Item Level, each with how far into it the character is and the button that opens it.
+    /// </summary>
+    private Border StageHero(View v, int? il)
     {
-        var stack = new StackPanel();
-        stack.Children.Add(Heading(Loc("CpCalc.Prog.Stage")));
-        if (il is not int level)
+        string cls = ClassName() ?? "";
+        Color accent = cls.Length > 0 ? ClassBrushes.ClassColor(cls) : Gold;
+        var host = new Grid { ClipToBounds = true };
+        var wash = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+        wash.GradientStops.Add(new GradientStop(Color.FromArgb(0x48, accent.R, accent.G, accent.B), 0));
+        wash.GradientStops.Add(new GradientStop(Color.FromArgb(0x00, accent.R, accent.G, accent.B), 0.75));
+        host.Children.Add(new Border { Background = wash });
+        if (cls.Length > 0 && MainWindow.ClassIcon(cls) is { } emblem)
         {
-            stack.Children.Add(Label(Loc("CpCalc.Prog.NoItemLevel"), 12.5, brush: Res("Brush.TextMuted")));
-            return Card(stack);
+            host.Children.Add(new Image { Source = emblem, Width = 170, Height = 170, Opacity = 0.1, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, -24, -40, 0) });
         }
 
-        stack.Children.Add(new TextBlock { Text = F("CpCalc.Hero.ItemLevel", Thousands(level)), FontSize = 22, FontWeight = FontWeights.SemiBold, Foreground = Solid(Gold) });
+        var stack = new StackPanel { Margin = new Thickness(20, 18, 20, 18) };
+        stack.Children.Add(new TextBlock { Text = Loc("CpCalc.Prog.Stage").ToUpper(CultureInfo.CurrentCulture), FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = Solid(accent) });
+        if (_character is not null)
+        {
+            var name = new TextBlock { Text = _character, FontSize = 22, Foreground = Res("Brush.Text"), Margin = new Thickness(0, 4, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
+            ThemeManager.UseTitleFont(name);
+            stack.Children.Add(name);
+            if (cls.Length > 0)
+            {
+                stack.Children.Add(new TextBlock { Text = cls, FontSize = 12.5, Foreground = Res("Brush.TextMuted"), Margin = new Thickness(0, 1, 0, 0) });
+            }
+        }
+
+        if (il is not int level)
+        {
+            stack.Children.Add(Label(Loc("CpCalc.Prog.NoItemLevel"), 12.5, brush: Res("Brush.TextMuted"), margin: new Thickness(0, 12, 0, 0)));
+            host.Children.Add(stack);
+            return HeroCard(host, accent);
+        }
+
+        // the Item Level large, the Combat Power under it (the game's at the last login, else the calculator's)
+        var figure = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
+        figure.Children.Add(new TextBlock { Text = Thousands(level), FontSize = 40, FontWeight = FontWeights.SemiBold, Foreground = Solid(Gold) });
+        figure.Children.Add(new TextBlock { Text = " IL", FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = Tint(Gold, 0xB0), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 7) });
+        stack.Children.Add(figure);
+        double cp = v.GameCp ?? v.Whole.Total;
+        var power = new TextBlock { FontSize = 13.5, Foreground = Res("Brush.Text"), Margin = new Thickness(0, 0, 0, 0) };
+        power.Inlines.Add(new System.Windows.Documents.Run(Thousands(cp)) { FontWeight = FontWeights.SemiBold });
+        power.Inlines.Add(new System.Windows.Documents.Run(" CP") { Foreground = Res("Brush.TextMuted") });
+        if (CpProgression.BandOf(level) is { } band)
+        {
+            double share = (cp - band.Middle) / Math.Max(1, band.Middle) * 100;
+            Color tone = cp < band.Low ? ProgRed : cp > band.High ? Green : Gold;
+            power.Inlines.Add(new System.Windows.Documents.Run("   " + (share >= 0 ? "▲ " : "▼ ") + Math.Abs(share).ToString("0.#", CultureInfo.CurrentCulture) + " %")
+                { Foreground = Solid(tone), FontWeight = FontWeights.SemiBold, FontSize = 12 });
+            power.ToolTip = F("CpCalc.Prog.PaceTypical", Thousands(band.Middle), Thousands(band.Low), Thousands(band.High), Thousands(band.From), Thousands(band.From + 99), Thousands(band.Count));
+        }
+
+        stack.Children.Add(power);
         foreach (CpGuide guide in CpProgression.GuidesFor(level))
         {
             stack.Children.Add(GuideRow(guide, level));
         }
 
-        stack.Children.Add(Label(Loc("CpCalc.Prog.StageNote"), 11.5, brush: Res("Brush.TextMuted"), margin: new Thickness(0, 12, 0, 0)));
-        return Card(stack);
+        host.Children.Add(stack);
+        return HeroCard(host, accent);
+    }
+
+    /// <summary>The hero's frame: the panel with an edge of the accent, the wash clipped to the round corners.</summary>
+    private static Border HeroCard(Grid host, Color accent)
+    {
+        host.SizeChanged += (_, e) => host.Clip = new RectangleGeometry(new Rect(0, 0, e.NewSize.Width, e.NewSize.Height), 11, 11);
+        return new Border { Child = host, Background = Res("Brush.Panel"), BorderBrush = Tint(accent, 0x60), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12) };
     }
 
     /// <summary>A guide for the Item Level: how far into it the character is (the Road to 3,000+ up to 3,000), and the button that opens it on atreia.app.</summary>
     private UIElement GuideRow(CpGuide guide, int level)
     {
-        var row = new Grid { Margin = new Thickness(0, 12, 0, 0) };
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var box = new StackPanel { Margin = new Thickness(0, 14, 0, 0) };
         int goal = guide.To == int.MaxValue ? CpProgression.RoadGoal : guide.To;
-        var left = new StackPanel();
-        left.Children.Add(new TextBlock { Text = guide.Name, FontSize = 13.5, FontWeight = FontWeights.SemiBold, Foreground = Res("Brush.Text") });
+        box.Children.Add(new TextBlock { Text = guide.Name, FontSize = 13.5, FontWeight = FontWeights.SemiBold, Foreground = Res("Brush.Text") });
         string where = level >= goal
             ? F("CpCalc.Prog.GuidePast", Thousands(level), Thousands(goal))
             : F("CpCalc.Prog.GuideAt", Thousands(level), Thousands(guide.From), Thousands(goal), Thousands(goal - level));
-        left.Children.Add(ProgBar(level - guide.From, goal - guide.From, Gold, where));
-        Add(row, 0, left);
+        box.Children.Add(ProgBar(level - guide.From, goal - guide.From, Gold, where, 300));
         string url = GuideUrl(guide);
         var open = new Button
         {
-            Content = Loc("CpCalc.Prog.Open"), Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(14, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = F("CpCalc.Prog.OpenTip", guide.Name),
+            Content = Loc("CpCalc.Prog.Open"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Left,
+            ToolTip = F("CpCalc.Prog.OpenTip", guide.Name) + "\n\n" + Loc("CpCalc.Prog.StageNote"),
         };
         open.Click += (_, _) => OpenWeb(url);
-        Add(row, 1, open);
-        return row;
+        box.Children.Add(open);
+        return box;
     }
 
-    /// <summary>The guide's page with the character (region, server, name: the guide reads it from the game's official character page), at "Make this guide yours".</summary>
+    /// <summary>The guide's page with the character (region, server, name: the guide reads it from the game's official character page), at "Make this guide
+    /// yours"; without the character in the restricted mode (nothing about the player leaves the PC there).</summary>
     private string GuideUrl(CpGuide guide)
     {
         string url = Brand.Site + guide.Path;
         string region = _server > 0 ? FindPlayerClient.RegionOf(_server) : "all";
-        if (_character is { Length: > 0 } name && region != "all")
+        if (_character is { Length: > 0 } name && region != "all" && !PrivacyConsent.Restricted)
         {
             url += "?region=" + Uri.EscapeDataString(region) + "&server=" + Uri.EscapeDataString(Aion2Servers.NameOf(_server)) + "&name=" + Uri.EscapeDataString(name);
         }
 
         return url + "#your-character";
+    }
+
+    // ------------------------------------------------------------------ do this next
+
+    /// <summary>What to do next, the most important first (<see cref="CpProgression.Moves"/>): each with its number, its piece, what and where, and the Item Level
+    /// and Combat Power it adds.</summary>
+    private static Border MovesCard(IReadOnlyList<CpMove> moves)
+    {
+        var stack = new StackPanel();
+        var head = new DockPanel();
+        var hint = new TextBlock { Text = Loc("CpCalc.Prog.MovesOverlay"), FontSize = 11.5, Foreground = Res("Brush.TextMuted"), VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(12, 1, 0, 0) };
+        DockPanel.SetDock(hint, Dock.Right);
+        head.Children.Add(hint);
+        head.Children.Add(Heading(Loc("CpCalc.Prog.Moves")));
+        stack.Children.Add(head);
+        if (moves.Count == 0)
+        {
+            stack.Children.Add(Label(Loc("CpCalc.Prog.MovesNone"), 12.5, brush: Res("Brush.TextMuted")));
+        }
+
+        for (int k = 0; k < moves.Count; k++)
+        {
+            stack.Children.Add(MoveRow(moves[k], k + 1, k % 2 == 1));
+        }
+
+        stack.Children.Add(Label(Loc("CpCalc.Prog.MovesNote"), 11.5, brush: Res("Brush.TextMuted"), margin: new Thickness(0, 10, 0, 0)));
+        return Card(stack);
+    }
+
+    /// <summary>A move: its number in a gold ring, its piece, what to do and how or where, the Item Level and the Combat Power it adds on the right.</summary>
+    private static Border MoveRow(CpMove m, int number, bool band)
+    {
+        var (title, detail) = MoveText(m);
+        var (itemLevel, cp) = MoveFigures(m);
+        var row = new Grid();
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Add(row, 0, new Border
+        {
+            Width = 24, Height = 24, CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(1.5), BorderBrush = Solid(Gold), Background = Tint(Gold, number == 1 ? (byte)0x40 : (byte)0x14),
+            Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock { Text = number.ToString(CultureInfo.CurrentCulture), FontSize = 12, FontWeight = FontWeights.Bold, Foreground = Solid(Gold), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+        });
+        FrameworkElement icon = MoveIcon(m, 32);
+        icon.Margin = new Thickness(0, 0, 11, 0);
+        Add(row, 1, icon);
+        var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        words.Children.Add(new TextBlock { Text = title, FontSize = 13, FontWeight = FontWeights.SemiBold, Foreground = Res("Brush.Text"), TextWrapping = TextWrapping.Wrap });
+        if (detail.Length > 0)
+        {
+            words.Children.Add(new TextBlock { Text = detail, FontSize = 11.5, Foreground = Res("Brush.TextMuted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 1, 0, 0) });
+        }
+
+        Add(row, 2, words);
+        var figures = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+        foreach (var (text, color) in new[] { (itemLevel, Gold), (cp, Green) })
+        {
+            if (text.Length > 0)
+            {
+                Border pill = Pill(text, color);
+                pill.Margin = new Thickness(0, 1, 0, 1);
+                pill.HorizontalAlignment = HorizontalAlignment.Right;
+                figures.Children.Add(pill);
+            }
+        }
+
+        Add(row, 3, figures);
+        return new Border
+        {
+            Child = row, Padding = new Thickness(8, 7, 8, 7), Margin = new Thickness(-8, 0, -8, 0), CornerRadius = new CornerRadius(8),
+            Background = band ? Res("Brush.Control") : Brushes.Transparent,
+        };
+    }
+
+    /// <summary>A move's picture: its piece (the stage's piece for an empty slot or a replacement), a free step's own (a title, a wing), else a sign in a frame.</summary>
+    internal static FrameworkElement MoveIcon(CpMove m, double size)
+    {
+        if (m.ItemId > 0)
+        {
+            return IconTile(m.ItemId, size, null);
+        }
+
+        if (m is { Kind: CpMoveKind.Free, Step: { } step } && StepIcon(step) is { } own)
+        {
+            return own;
+        }
+
+        (string sign, Color color) = m.Kind switch
+        {
+            CpMoveKind.Stones => ("◆", TierColors[3]),
+            CpMoveKind.Arcana => ("✦", SourceColors[CpSource.Arcana]),
+            _ => ("+", Gold),
+        };
+        return new Border
+        {
+            Width = size, Height = size, CornerRadius = new CornerRadius(size >= 30 ? 7 : 6), BorderThickness = new Thickness(1.5), BorderBrush = Solid(color), Background = Tint(color, 0x22),
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock { Text = sign, FontSize = size * 0.5, FontWeight = FontWeights.SemiBold, Foreground = Solid(color), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+        };
+    }
+
+    /// <summary>A move in words (the page and the overlay): what to do, and how or where.</summary>
+    internal static (string Title, string Detail) MoveText(CpMove m)
+    {
+        switch (m.Kind)
+        {
+            case CpMoveKind.Equip:
+            {
+                string title = F("CpCalc.Prog.Move.Equip", m.Slot is null ? "" : Loc("Details.Seen.Cat." + m.Slot));
+                string detail = m.Target is { } gear ? F("CpCalc.Prog.Move.EquipStage", gear.Source, gear.ItemLevel) : Loc("CpCalc.Prog.Move.EquipAny");
+                return (title, detail);
+            }
+
+            case CpMoveKind.Free when m.Step is { } free:
+            {
+                return (StepText(free), Loc(free.Held ? "CpCalc.Cost.Held" : "CpCalc.Cost.Free"));
+            }
+
+            case CpMoveKind.Replace when m.Piece is { } weak:
+            {
+                string name = weak.TargetItem is { } item ? LootText.ItemName(item.Id) : weak.Target?.Source ?? "";
+                string title = (weak.Optional ? Loc("CpCalc.Prog.Optional") : "") + F("CpCalc.Prog.Move.Replace", SlotOf(weak.Piece.ItemId), name, weak.Target?.ItemLevel ?? 0);
+                string detail = weak.Target?.Source ?? "";
+                if (weak.Piece.Enchant > 0 || weak.Piece.Exceed > 0)
+                {
+                    detail += (detail.Length > 0 ? "  ·  " : "") + F("CpCalc.Prog.Move.AtYours", weak.Piece.Enchant);
+                }
+
+                return (title, detail);
+            }
+
+            case CpMoveKind.Enhance or CpMoveKind.Breakthrough when m.Step is { } step:
+            {
+                string detail = LootText.ItemName(step.ItemId);
+                if (step.Chance is double chance && chance < 1)
+                {
+                    detail += "  ·  " + F("CpCalc.Prog.Chance", (chance * 100).ToString("0.#", CultureInfo.CurrentCulture));
+                }
+
+                return (StepText(step), detail);
+            }
+
+            case CpMoveKind.Transfer when m.Piece is { } unique:
+            {
+                string name = unique.TargetItem is { } item ? LootText.ItemName(item.Id) : unique.Target?.Source ?? "";
+                string detail = F("CpCalc.Prog.Move.TransferNote", unique.Piece.Enchant, unique.Piece.Exceed) + (unique.Target is { } gear ? "  ·  " + gear.Source : "");
+                return (F("CpCalc.Prog.Move.Transfer", SlotOf(unique.Piece.ItemId), name, unique.Target?.ItemLevel ?? 0), detail);
+            }
+
+            case CpMoveKind.Stones:
+            {
+                return (F("CpCalc.Prog.Move.Stones", m.Count), Loc("CpCalc.Prog.Move.StonesNote"));
+            }
+
+            case CpMoveKind.Arcana:
+            {
+                return (F("CpCalc.Prog.Move.Arcana", m.Count), Loc("CpCalc.Prog.Move.ArcanaNote"));
+            }
+
+            default:
+            {
+                return ("", "");
+            }
+        }
+    }
+
+    /// <summary>A move's figures: the Item Level it adds ("+16 IL"; a replacement's once enhanced as far as the worn piece, "up to" for the sockets; empty when
+    /// not known) and the Combat Power ("+2,140 CP"; a range for a step that rolls; empty when not known).</summary>
+    internal static (string ItemLevel, string Cp) MoveFigures(CpMove m)
+    {
+        int il = m.Kind == CpMoveKind.Replace ? m.ItemLevelLater : m.ItemLevel;
+        string itemLevel = il == 0 ? "" : m.Kind == CpMoveKind.Stones ? F("CpCalc.Prog.Move.UpTo", SignedIl(il)) : SignedIl(il);
+        string cp = m.Cp is double gain && Math.Abs(gain) >= 0.5
+            ? (m.Step is { Certainty: CpCertainty.Range } ranged ? Range(ranged.Gain, ranged.GainMax, signed: true) : Signed(gain)) + " CP"
+            : "";
+        return (itemLevel, cp);
     }
 
     private static void OpenWeb(string url)
@@ -697,17 +938,17 @@ public sealed partial class CpCalcPage
     // ------------------------------------------------------------------ text
 
     /// <summary>A bar of how far along something is, from the left (the page's level bar sits in the middle of a wide card), its text under it.</summary>
-    private static UIElement ProgBar(double value, double max, Color color, string text)
+    private static UIElement ProgBar(double value, double max, Color color, string text, double width = 420)
     {
         var panel = new StackPanel { Margin = new Thickness(0, 5, 0, 0) };
         double share = max > 0 ? Math.Clamp(value / max, 0, 1) : 0;
-        var track = new Grid { Height = 6, Width = 420, HorizontalAlignment = HorizontalAlignment.Left };
+        var track = new Grid { Height = 6, Width = width, HorizontalAlignment = HorizontalAlignment.Left };
         track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.0001, share), GridUnitType.Star) });
         track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.0001, 1 - share), GridUnitType.Star) });
         Add(track, 0, new Border { CornerRadius = new CornerRadius(3, 0, 0, 3), Background = Solid(color) });
         Add(track, 1, new Border { CornerRadius = new CornerRadius(0, 3, 3, 0), Background = Res("Brush.Border") });
         panel.Children.Add(track);
-        panel.Children.Add(new TextBlock { Text = text, FontSize = 11, Foreground = Res("Brush.TextMuted"), Margin = new Thickness(0, 3, 0, 0) });
+        panel.Children.Add(new TextBlock { Text = text, FontSize = 11, Foreground = Res("Brush.TextMuted"), Margin = new Thickness(0, 3, 0, 0), TextWrapping = TextWrapping.Wrap, MaxWidth = width });
         return panel;
     }
 

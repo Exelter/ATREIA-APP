@@ -175,6 +175,12 @@ internal sealed class MeterView : Border
         reset.Click += (_, _) =>
         {
             _engine.Clear();
+            // with the Grind view on, its numbers start again too (14 November 2026, a tester: "clear session is there but it doesn't work on grind")
+            if (_engine.ShowGrind && _engine.SampleGrind is null)
+            {
+                _engine.NewGrindSession();
+            }
+
             Did("clear");
         };
         _lockButton = IconButton(_lockIcon, "Lock the meter in place");

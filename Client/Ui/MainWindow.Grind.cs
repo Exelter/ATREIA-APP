@@ -19,6 +19,21 @@ public partial class MainWindow
     private long _grindAt;
     private string _grindShown = "";
 
+    /// <summary>
+    /// The player's own Clear (the meter's button, its menu, the hotkey): the fights, and with the Grind view on the grind too - its numbers start again from the
+    /// next kill, the session going to the Grind page's earlier ones (14 November 2026, a tester: "clear session is there but it doesn't work on grind").
+    /// </summary>
+    private void ClearByHand()
+    {
+        ClearDamageData();
+        if (_overlayGrind)
+        {
+            Aion2Grind.NewSession();
+            _grindAt = 0;
+            UpdateOverlayGrind();
+        }
+    }
+
     /// <summary>The Grind switch: on, the view in place of the lines; off, the lines.</summary>
     private void SetGrindView(bool on, bool save = true)
     {

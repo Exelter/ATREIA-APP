@@ -60,8 +60,10 @@ public static class GrindView
         var foot = new DockPanel { Margin = new Thickness(2, 6, 2, 0) };
         if (newSession is not null)
         {
-            var again = new TextBlock { Text = "New session", FontSize = 10.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(OverlaySkin.Gold), Cursor = Cursors.Hand,
-                ToolTip = "Start counting again from the next kill (this session is kept on the Grind page)", VerticalAlignment = VerticalAlignment.Center };
+            // "Reset" (14 November 2026, a tester: "add reset button to grind"): the numbers start again from the next kill; the meter's Clear does the same here
+            var again = new TextBlock { Text = "↺ Reset", FontSize = 10.5, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(OverlaySkin.Gold), Cursor = Cursors.Hand,
+                ToolTip = "Start from zero: the numbers count again from the next kill (this session is kept on the Grind page). The meter's Clear does the same while the Grind view is on.",
+                VerticalAlignment = VerticalAlignment.Center };
             again.MouseLeftButtonDown += (_, e) =>
             {
                 e.Handled = true;

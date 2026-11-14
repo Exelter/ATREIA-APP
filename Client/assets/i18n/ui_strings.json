@@ -14140,6 +14140,9 @@
     "en": "Your crafting: success, costs and profit.",
     "de": "Dein Handwerk: Erfolg, Kosten und Gewinn."
   },
+  "Shell.OvProgressionWhat": {
+    "en": "Your stage in the game: your Item Level and the guide it is in, your Combat Power against the players at it, and the three moves that matter most now - empty slots, weak pieces, the best upgrades - with the Item Level and Combat Power each adds."
+  },
   "Shell.OvNetworkWhat": {
     "en": "Your ping to the game.",
     "de": "Dein Ping zum Spiel."
@@ -18659,6 +18662,18 @@
     "ko": "전투력 계산기",
     "zh-TW": "戰鬥力計算器"
   },
+  "Main.MenuTools.Progression": {
+    "en": "Progression",
+    "de": "Fortschritt",
+    "fr": "Progression",
+    "es": "Progresión",
+    "ru": "Прогресс",
+    "pt": "Progressão",
+    "ja": "育成",
+    "ko": "성장",
+    "zh": "成长",
+    "zh-TW": "成長"
+  },
   "CpCalc.Note": {
     "en": "Your whole character as the game sent it at login: what every part is worth in Combat Power and what raises it most.",
     "de": "Dein ganzer Charakter, wie das Spiel ihn beim Einloggen schickt: was jeder Teil an Kampfkraft bringt und was sie am meisten hebt."
@@ -20122,6 +20137,54 @@
   "CpCalc.Prog.Stage": {
     "en": "Your stage"
   },
+  "CpCalc.Prog.Moves": {
+    "en": "Do this next"
+  },
+  "CpCalc.Prog.MovesOverlay": {
+    "en": "The overlay shows the first three in the game"
+  },
+  "CpCalc.Prog.MovesNone": {
+    "en": "Nothing left for now: every slot is filled and every piece is at your stage's tier and at its top."
+  },
+  "CpCalc.Prog.MovesNote": {
+    "en": "In the guides' order: an empty slot first, then what costs nothing, the pieces below your stage's tier (replace them, don't raise them), the steps with the most Combat Power on the pieces worth keeping, a Unique piece onto the next tier, then the quick Item Level. Combat Power: the calculator's, what each move adds on its own."
+  },
+  "CpCalc.Prog.Move.Equip": {
+    "en": "{0}: empty"
+  },
+  "CpCalc.Prog.Move.EquipStage": {
+    "en": "Your stage's piece: {0} (IL {1}); anything beats an empty slot"
+  },
+  "CpCalc.Prog.Move.EquipAny": {
+    "en": "Wear anything: nothing adds as much as an empty slot filled"
+  },
+  "CpCalc.Prog.Move.Replace": {
+    "en": "{0}: {1} (IL {2})"
+  },
+  "CpCalc.Prog.Move.AtYours": {
+    "en": "once at your +{0}"
+  },
+  "CpCalc.Prog.Move.Transfer": {
+    "en": "{0}: onto {1} (IL {2})"
+  },
+  "CpCalc.Prog.Move.TransferNote": {
+    "en": "A Transfer Stone keeps your +{0} and breakthrough {1}"
+  },
+  "CpCalc.Prog.Move.Stones": {
+    "en": "Fill {0} empty manastone socket(s)"
+  },
+  "CpCalc.Prog.Move.StonesNote": {
+    "en": "1 to 4 Item Level a stone, by its colour"
+  },
+  "CpCalc.Prog.Move.Arcana": {
+    "en": "Arcana: {0} level(s) to go"
+  },
+  "CpCalc.Prog.Move.ArcanaNote": {
+    "en": "+1 Item Level a level"
+  },
+  "CpCalc.Prog.Move.UpTo": {
+    "en": "up to {0}"
+  },
   "CpCalc.Prog.NoItemLevel": {
     "en": "The app hasn't read your Item Level yet: the game sends it at your login and whenever it changes."
   },
@@ -20138,7 +20201,7 @@
     "en": "Opens {0} on atreia.app in your browser with this character, so its steps follow your gear."
   },
   "CpCalc.Prog.StageNote": {
-    "en": "On atreia.app the guides read your character from the game's official character page, which can be a few minutes behind the game. This tab uses what the app reads from the game itself, right now."
+    "en": "On atreia.app the guides read your character from the game's official character page, which can be a few minutes behind the game. This page uses what the app reads from the game itself, right now."
   },
   "CpCalc.Prog.Pace": {
     "en": "Combat Power at your Item Level"
@@ -23563,5 +23626,32 @@
   },
   "Checklist.Board.Legend": {
     "en": "\"~\" = worked out from the refills since the character was last seen. Red: full, so part of the next refill is lost. Amber: left this week, the weekly reset doesn't keep them. Click a character for all of its counters."
+  },
+  "Progression.Overlay.Sample": {
+    "en": "sample"
+  },
+  "Progression.Overlay.You": {
+    "en": "Your character"
+  },
+  "Progression.Overlay.None": {
+    "en": "Nothing left for now: this stage is done."
+  },
+  "Progression.Overlay.Pace": {
+    "en": "{0} vs your IL"
+  },
+  "Progression.Overlay.ToGo": {
+    "en": "{0} to go"
+  },
+  "Progression.Overlay.Reached": {
+    "en": "reached ✓"
+  },
+  "Progression.Overlay.Next": {
+    "en": "Next stage at {0} IL ({1} to go): {2}"
+  },
+  "Progression.Overlay.NextCrafted": {
+    "en": "the crafted IL {0} weapon, Guard and jewelry"
+  },
+  "Progression.Overlay.NextDungeon": {
+    "en": "IL {0} dungeon gear"
   }
 }

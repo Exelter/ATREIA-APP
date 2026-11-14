@@ -39,7 +39,8 @@ public partial class MainWindow
     private static readonly (string Hub, string[] Tabs)[] ShellHubs =
     {
         ("hub.fights", new[] { "history", "dummy", "combat", "assist" }),
-        ("hub.characters", new[] { "characters", "attributes", "cpcalc", "journey" }), // the CP calculator replaced the stat calculator (4 November 2026); Journey beside it (5 November)
+        // the CP calculator replaced the stat calculator (4 November 2026); Journey beside it (5 November); Progression after the CP calculator (14 November)
+        ("hub.characters", new[] { "characters", "attributes", "cpcalc", "progression", "journey" }),
         ("hub.map", new[] { "petmap", "petmap.pets", "petmap.gather", "cubes" }),
         ("hub.items", new[] { "loot", "craft" }),
         ("hub.timers", new[] { "timetable", "boss" }),
@@ -63,7 +64,7 @@ public partial class MainWindow
         var glyphs = new Dictionary<string, string>
         {
             ["assist"] = "\uE945", ["combat"] = "\uE7C1", ["petmap"] = "\uE707", ["petmap.pets"] = "\uE8D4", ["petmap.gather"] = "\uE8D4", ["cubes"] = "\uE721",
-            ["loot"] = "\uE7B8", ["craft"] = "\uE90F", ["timetable"] = "\uE787", ["boss"] = "\uE7BA", ["attributes"] = "\uE9F9", ["cpcalc"] = "\uE8EF",
+            ["loot"] = "\uE7B8", ["craft"] = "\uE90F", ["timetable"] = "\uE787", ["boss"] = "\uE7BA", ["attributes"] = "\uE9F9", ["cpcalc"] = "\uE8EF", ["progression"] = "\uE74A",
             ["analyzer"] = "\uE9D9", ["stream"] = "\uE714", ["network"] = "\uE701", ["theme"] = "\uE790", ["journey"] = "\uE81C", ["legion"] = "\uEA18",
         };
         pages.AddRange(ToolsWindow.Groups().SelectMany(g => g).Where(t => t.Id is not ("checklist" or "dummy" or "analyzer")) // the combat analyzer: History and the fight Report do it
@@ -583,6 +584,9 @@ public partial class MainWindow
             new(loc["Settings.Nav.Gather"], loc["Shell.OvGatherWhat"], s => s.ShowGatherOverlay, (s, v) => s.ShowGatherOverlay = v, "petmap.gather", null, null, "gather"),
             new(loc["Checklist.Season"], loc["Shell.OvSeasonWhat"], s => s.ShowSeasonOverlay, (s, v) => s.ShowSeasonOverlay = v, "checklist", null, null, "season"),
             new(loc["Main.MenuTools.Craft"], loc["Shell.OvCraftWhat"], s => s.ShowCraftOverlay, (s, v) => s.ShowCraftOverlay = v, "craft", null, s => s.HotkeyCraft, "craft"),
+            new(loc["Main.MenuTools.Progression"], loc["Shell.OvProgressionWhat"], s => s.ShowProgressionOverlay, (s, v) => s.ShowProgressionOverlay = v, "progression",
+                () => OverlayPlaces.Reset(OverlayPlaces.Progression), s => s.HotkeyProgression, "progression",
+                new OverlayOption("Hide in dungeons", s => s.ProgressionOverlayHideInDungeons, (s, v) => s.ProgressionOverlayHideInDungeons = v)),
             new(loc["Settings.Nav.Network"], loc["Shell.OvNetworkWhat"], s => s.ShowNetworkOverlay, (s, v) => s.ShowNetworkOverlay = v, "network", null, s => s.HotkeyNetwork, "network"),
             new("FPS and ping", "The game's frames per second and its 1% low (from Windows' own frame timing) and your ping to the game server (from the game's own "
                 + "traffic), side by side or either alone. Nothing touches the game.", s => s.ShowFpsOverlay,
@@ -829,6 +833,7 @@ public partial class MainWindow
             OverlayPlaces.Gather => s.ShowGatherOverlay ? loc["Settings.Nav.Gather"] : null,
             OverlayPlaces.Season => s.ShowSeasonOverlay ? loc["Checklist.Season"] : null,
             OverlayPlaces.Craft => s.ShowCraftOverlay ? loc["Main.MenuTools.Craft"] : null,
+            OverlayPlaces.Progression => s.ShowProgressionOverlay ? loc["Main.MenuTools.Progression"] : null,
             OverlayPlaces.Network => s.ShowNetworkOverlay ? loc["Settings.Nav.Network"] : null,
             OverlayPlaces.Fps => s.ShowFpsOverlay ? "FPS and ping" : null,
             OverlayPlaces.EnemyCard => s.ShowEnemyCard ? "Enemy card" : null,
@@ -849,6 +854,7 @@ public partial class MainWindow
         (s => s.TimetableLocked, (s, v) => s.TimetableLocked = v), (s => s.BossOverlayLocked, (s, v) => s.BossOverlayLocked = v),
         (s => s.PetFarmLocked, (s, v) => s.PetFarmLocked = v), (s => s.PetInfoLocked, (s, v) => s.PetInfoLocked = v), (s => s.PetListLocked ?? s.PetFarmLocked, (s, v) => s.PetListLocked = v),
         (s => s.LootOverlayLocked, (s, v) => s.LootOverlayLocked = v), (s => s.CraftOverlayLocked, (s, v) => s.CraftOverlayLocked = v),
+        (s => s.ProgressionOverlayLocked, (s, v) => s.ProgressionOverlayLocked = v),
         (s => s.GatherOverlayLocked, (s, v) => s.GatherOverlayLocked = v), (s => s.SeasonOverlayLocked, (s, v) => s.SeasonOverlayLocked = v),
         (s => s.NetworkOverlayLocked, (s, v) => s.NetworkOverlayLocked = v), (s => s.DummyOverlayLocked, (s, v) => s.DummyOverlayLocked = v),
         (s => s.HotkeyOverlayLocked ?? s.PetFarmLocked, (s, v) => s.HotkeyOverlayLocked = v), (s => s.OverlayMenuLocked, (s, v) => s.OverlayMenuLocked = v),
@@ -961,7 +967,7 @@ public partial class MainWindow
     private void ResetAllOverlayPlaces()
     {
         foreach (string title in new[] { OverlayPlaces.Assist, OverlayPlaces.Effects, OverlayPlaces.Network, OverlayPlaces.Dummy, OverlayPlaces.WorldBoss, OverlayPlaces.Hotkeys, OverlayPlaces.Timetable,
-                     OverlayPlaces.PetMap, OverlayPlaces.PetList, OverlayPlaces.PetInfo, OverlayPlaces.Loot, OverlayPlaces.Gather, OverlayPlaces.Season, OverlayPlaces.Craft, OverlayPlaces.BossCast, OverlayPlaces.BossHp, OverlayPlaces.TargetOfTarget, OverlayPlaces.Fps, OverlayPlaces.EnemyCard,
+                     OverlayPlaces.PetMap, OverlayPlaces.PetList, OverlayPlaces.PetInfo, OverlayPlaces.Loot, OverlayPlaces.Gather, OverlayPlaces.Season, OverlayPlaces.Craft, OverlayPlaces.Progression, OverlayPlaces.BossCast, OverlayPlaces.BossHp, OverlayPlaces.TargetOfTarget, OverlayPlaces.Fps, OverlayPlaces.EnemyCard,
                      OverlayPlaces.EnemyRadar, OverlayPlaces.DeathRecap })
         {
             OverlayPlaces.Reset(title);

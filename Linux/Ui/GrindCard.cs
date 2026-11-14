@@ -55,16 +55,17 @@ internal static class GrindCard
             : $"{f.Items:N0} items";
         stack.Children.Add(Line("Loot", loot, LootColour, f.LootWorth is null ? null : "What the items picked up sell for at the market of your server"));
 
-        // the foot: a new session, and when the clock stopped (the time farmed and the map are in the meter's head already)
+        // the foot: Reset, and when the clock stopped (the time farmed and the map are in the meter's head already)
         var foot = new DockPanel { Margin = new Thickness(2, 6, 2, 0) };
         if (newSession is not null)
         {
             var again = new TextBlock
             {
-                Text = "New session", FontSize = 10.5, FontWeight = FontWeight.SemiBold, Foreground = Brush(Gold), Cursor = new Cursor(StandardCursorType.Hand),
+                Text = "↺ Reset", FontSize = 10.5, FontWeight = FontWeight.SemiBold, Foreground = Brush(Gold), Cursor = new Cursor(StandardCursorType.Hand),
                 VerticalAlignment = VerticalAlignment.Center, FontFamily = Palette.UiFont,
             };
-            ToolTip.SetTip(again, "Start counting again from the next kill (this session is kept)");
+            // "Reset" (14 November 2026, a tester: "add reset button to grind"; Windows: GrindView.cs): the meter's Clear does the same here
+            ToolTip.SetTip(again, "Start from zero: the numbers count again from the next kill (this session is kept). The meter's Clear does the same while the Grind view is on.");
             again.PointerPressed += (_, e) =>
             {
                 e.Handled = true;

@@ -443,6 +443,12 @@ public static class Aion2Loot
             }
         }
 
+        // the grind tracker: the Abyss Points that come after a fight are earned (a fight with a player too, which no kill here counts)
+        if (hits.Count > 0)
+        {
+            Aion2Grind.NoteFight(hits.Max(h => h.At));
+        }
+
         var deaths = new List<(int Victim, int Npc, DateTime At)>();
         foreach (KillEvent kill in kills)
         {

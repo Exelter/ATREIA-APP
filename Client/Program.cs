@@ -2870,21 +2870,28 @@ internal static class Program
             Name = "Ashveil", ServerId = 2001, SavedAt = DateTime.UtcNow,
             Bag = new() { [930100031] = 24_500_000, [930100023] = 61_200, [516530001] = 34 },
         });
-        var page = new Ui.CpCalcPage(() => directory);
-        page.ShowTab(tab);
+        // the Progression page (14 November 2026: a page of its own) and its overlay count the same sample character
+        bool progression = tab is "progression" or "progression-overlay";
+        var page = new Ui.CpCalcPage(() => directory, progression);
+        if (!progression)
+        {
+            page.ShowTab(tab);
+        }
+
         // breakthrough 3 while the page is open, and the game's stat update with it: the change shows at the bottom, checked against the stats
         directory.SetLocalEquipment(CpSampleGear(18).Concat(CpSampleArcana()).ToList());
         directory.SetLocalStats(Shift(frame, CpSampleGear(17), CpSampleGear(18), +1));
         page.Refresh();
+        if (progression)
+        {
+            RenderProgression(path, app, directory, page, tab == "progression-overlay");
+            return;
+        }
+
         const int width = 1180;
-        int height = tab == "gear" ? 2300 : tab == "progression" ? 5200 : 1900;
+        int height = tab == "gear" ? 2300 : 1900;
         var host = new System.Windows.Controls.Border { Width = width, Height = height, Child = page, Background = (System.Windows.Media.Brush)app.Resources["Brush.Window"] ?? System.Windows.Media.Brushes.Black };
-        host.Resources[typeof(System.Windows.Controls.Button)] = System.Windows.Markup.XamlReader.Parse(
-            "<Style xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" TargetType=\"Button\">" +
-            "<Setter Property=\"Background\" Value=\"{DynamicResource Brush.Control}\"/><Setter Property=\"Foreground\" Value=\"{DynamicResource Brush.Text}\"/>" +
-            "<Setter Property=\"BorderBrush\" Value=\"{DynamicResource Brush.Border}\"/><Setter Property=\"BorderThickness\" Value=\"1\"/>" +
-            "<Setter Property=\"Template\"><Setter.Value><ControlTemplate TargetType=\"Button\"><Border x:Name=\"Bd\" Background=\"{TemplateBinding Background}\" BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\" Padding=\"{TemplateBinding Padding}\"><ContentPresenter HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\"/></Border>" +
-            "<ControlTemplate.Triggers><Trigger Property=\"IsEnabled\" Value=\"False\"><Setter TargetName=\"Bd\" Property=\"Opacity\" Value=\"0.4\"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>");
+        host.Resources[typeof(System.Windows.Controls.Button)] = PictureButtons();
         host.Measure(new System.Windows.Size(width, height));
         host.Arrange(new System.Windows.Rect(0, 0, width, height));
         host.UpdateLayout();
@@ -2899,6 +2906,65 @@ internal static class Program
 
         page.Stop();
         Console.WriteLine("render-cpcalc: wrote " + path);
+        Environment.Exit(0);
+    }
+
+    /// <summary>The buttons of a page drawn for a picture: the app's look (the window that has the real style is never made there).</summary>
+    private static object PictureButtons() => System.Windows.Markup.XamlReader.Parse(
+        "<Style xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" TargetType=\"Button\">" +
+        "<Setter Property=\"Background\" Value=\"{DynamicResource Brush.Control}\"/><Setter Property=\"Foreground\" Value=\"{DynamicResource Brush.Text}\"/>" +
+        "<Setter Property=\"BorderBrush\" Value=\"{DynamicResource Brush.Border}\"/><Setter Property=\"BorderThickness\" Value=\"1\"/>" +
+        "<Setter Property=\"Template\"><Setter.Value><ControlTemplate TargetType=\"Button\"><Border x:Name=\"Bd\" Background=\"{TemplateBinding Background}\" BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\" Padding=\"{TemplateBinding Padding}\"><ContentPresenter HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\"/></Border>" +
+        "<ControlTemplate.Triggers><Trigger Property=\"IsEnabled\" Value=\"False\"><Setter TargetName=\"Bd\" Property=\"Opacity\" Value=\"0.4\"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>");
+
+    /// <summary>
+    /// The Progression page of the sample character in its tool page (the overlay's switch and hotkey on top), as tall as it is; or the progression overlay of
+    /// the same character on a ground like the game's (<paramref name="overlay"/>).
+    /// </summary>
+    private static void RenderProgression(string path, System.Windows.Application app, Aion2.Aion2EntityDirectory directory, Ui.CpCalcPage page, bool overlay)
+    {
+        System.Windows.FrameworkElement picture;
+        int width;
+        if (overlay)
+        {
+            var window = new Ui.ProgressionOverlayWindow();
+            window.Render(Ui.ProgressionOverlayController.ViewOf(directory, sample: false));
+            var body = window.DetachBody()!;
+            width = (int)Ui.ProgressionOverlayWindow.ContentWidth + 26 + 48;
+            picture = new System.Windows.Controls.Border
+            {
+                Width = width, Padding = new System.Windows.Thickness(24),
+                Background = new System.Windows.Media.LinearGradientBrush(System.Windows.Media.Color.FromRgb(0x3a, 0x4a, 0x52), System.Windows.Media.Color.FromRgb(0x1c, 0x26, 0x2e), 60),
+                Child = new System.Windows.Controls.Border { Child = body, HorizontalAlignment = System.Windows.HorizontalAlignment.Left },
+            };
+        }
+        else
+        {
+            width = 1180;
+            var module = new Ui.ModulePage(Ui.LocalizationManager.Instance["Main.MenuTools.Progression"], page, s => true, (s, v) => { }, s => s.HotkeyProgression, () => { }, null, s => { })
+            {
+                FitWidth = true,
+            };
+            picture = new System.Windows.Controls.Border { Width = width, Child = module, Background = (System.Windows.Media.Brush)app.Resources["Brush.Window"] ?? System.Windows.Media.Brushes.Black };
+            picture.Resources[typeof(System.Windows.Controls.Button)] = PictureButtons();
+        }
+
+        picture.Measure(new System.Windows.Size(width, double.PositiveInfinity));
+        int height = Math.Max(1, (int)Math.Ceiling(picture.DesiredSize.Height));
+        picture.Measure(new System.Windows.Size(width, height));
+        picture.Arrange(new System.Windows.Rect(0, 0, width, height));
+        picture.UpdateLayout();
+        var bitmap = Shot(width, height, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+        bitmap.Render(picture);
+        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+        using (var file = File.Create(path))
+        {
+            encoder.Save(file);
+        }
+
+        page.Stop();
+        Console.WriteLine($"render-cpcalc: wrote {path} ({(overlay ? "the progression overlay" : "the Progression page")}, {width}x{height})");
         Environment.Exit(0);
     }
 

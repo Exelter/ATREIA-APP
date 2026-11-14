@@ -34,6 +34,7 @@ public partial class MainWindow
         "petmap" => HotkeyAction.TogglePetMap,
         "loot" => HotkeyAction.ToggleLootOverlay,
         "craft" => HotkeyAction.ToggleCraftOverlay,
+        "progression" => HotkeyAction.ToggleProgressionOverlay,
         "network" => HotkeyAction.ToggleNetworkOverlay,
         "hotkeys" => HotkeyAction.ToggleHotkeyOverlay,
         _ => null,

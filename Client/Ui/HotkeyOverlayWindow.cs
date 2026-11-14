@@ -62,7 +62,7 @@ public sealed class HotkeyOverlayWindow : MovableOverlay
         {
             ("Settings.Hotkeys.Group.Dps", new[] { "HideUi", "Pause", "CopyDamage", "Clear", "UploadBoss", "Mode" }),
             ("Settings.Hotkeys.Group.Overlays", new[] { "AllOverlays", "MoveOverlays", "HotkeyOverlay" }),
-            ("Settings.Hotkeys.Group.Modules", new[] { "Loot", "Craft", "PetMap", "PetArrows", "PetMapZoomIn", "PetMapZoomOut", "GatherArrows", "Combat", "Assist", "Timetable", "WorldBoss", "Network" }),
+            ("Settings.Hotkeys.Group.Modules", new[] { "Loot", "Craft", "Progression", "PetMap", "PetArrows", "PetMapZoomIn", "PetMapZoomOut", "GatherArrows", "Combat", "Assist", "Timetable", "WorldBoss", "Network" }),
         };
 
         // three alike sections, each a heading (a row without keys) and one flat row per hotkey; a section without a hotkey is left out

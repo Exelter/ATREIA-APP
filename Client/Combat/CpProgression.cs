@@ -79,6 +79,52 @@ public sealed record CpYou(CpYouGroup? Weapon, CpYouGroup? Guard, CpYouGroup? Ar
 /// </summary>
 public sealed record CpRoadTask(string Id, string Group, bool Done, int Left = 0, int ItemLevel = 0, double Cp = 0, int Missing = 0);
 
+/// <summary>What a move of the "do this next" list is (<see cref="CpProgression.Moves"/>).</summary>
+public enum CpMoveKind
+{
+    /// <summary>A slot of the weapon, the Guard, the armor or the jewelry with nothing in it.</summary>
+    Equip,
+
+    /// <summary>A step that costs nothing: a better piece the character holds, a title, a wing (the CP calculator's free steps).</summary>
+    Free,
+
+    /// <summary>A piece below the stage's tier that is not worth raising (not Unique): the stage's piece in its place.</summary>
+    Replace,
+
+    /// <summary>The next enhancement of a piece worth raising.</summary>
+    Enhance,
+
+    /// <summary>The next breakthrough of a piece worth raising.</summary>
+    Breakthrough,
+
+    /// <summary>A Unique piece below the stage's tier: its enhancement, breakthrough and soul lines onto the stage's piece with a Transfer Stone.</summary>
+    Transfer,
+
+    /// <summary>The empty manastone sockets (1 to 4 Item Level a stone, by its colour).</summary>
+    Stones,
+
+    /// <summary>The Arcana cards' levels still open (+1 Item Level each).</summary>
+    Arcana,
+}
+
+/// <summary>
+/// A move of the "do this next" list: what; the Item Level it adds now (<see cref="ItemLevel"/>; up to, for the sockets) and once a new piece is enhanced as far
+/// as the one it replaces (<see cref="ItemLevelLater"/>); the Combat Power it adds (null: not known); the piece it is about (<see cref="Piece"/>), the CP
+/// calculator's step behind it (<see cref="Step"/>: an enhancement, a breakthrough, a free step), the empty slot's name (MainHand, Earring ...), the stage's
+/// gear and the item of it for the slot, and how many (sockets, Arcana levels).
+/// </summary>
+public sealed record CpMove(CpMoveKind Kind, int ItemLevel, double? Cp, CpProgPiece? Piece = null, CpStep? Step = null, string? Slot = null, CpTierGear? Target = null,
+    CpItemData? TargetItem = null, int Count = 0, int ItemLevelLater = 0)
+{
+    /// <summary>The item the move is shown with: the stage's piece for an empty slot or a replacement, the piece itself for a step; 0 for none.</summary>
+    public int ItemId => Kind switch
+    {
+        CpMoveKind.Equip or CpMoveKind.Replace or CpMoveKind.Transfer => TargetItem?.Id ?? Piece?.Piece.ItemId ?? 0,
+        CpMoveKind.Free when Step is { Kind: CpStepKind.BetterItem } better => better.OtherId,
+        _ => Step?.ItemId ?? Piece?.Piece.ItemId ?? 0,
+    };
+}
+
 /// <summary>
 /// The website's progression guides (atreia.app/guides: 0-700, 700-1,400, 1,400-2,100, 2,100+ and the Road to 3,000+) on the character the app reads, for the CP
 /// calculator's Progression tab (14 November 2026, the owner: "add to the app as another tab to the cp calc"): the guides for its Item Level, the dungeon gear each
@@ -196,8 +242,12 @@ public static class CpProgression
     /// race is not known), the one with most Combat Power at the given levels (its own highest at most); null when the data has none.
     /// </summary>
     public static CpItemData? TargetItem(CpItemData mine, CpTierGear gear, char race, int enchant, int exceed, CpTotals totals, CpModel? model = null) =>
+        TargetOf(mine.Category, gear, race, enchant, exceed, totals, model);
+
+    /// <summary>The piece of the stage's gear of an item data kind ("Guarder", "Earring" ...), as <see cref="TargetItem"/> (an empty slot has no piece to go by).</summary>
+    public static CpItemData? TargetOf(string category, CpTierGear gear, char race, int enchant, int exceed, CpTotals totals, CpModel? model = null) =>
         Aion2CpData.Items
-            .Where(x => x.Category == mine.Category && x.Level == gear.ItemLevel && Named(x.Id, gear) && Fits(x.Id, race, gear.Crafted))
+            .Where(x => x.Category == category && x.Level == gear.ItemLevel && Named(x.Id, gear) && Fits(x.Id, race, gear.Crafted))
             .OrderByDescending(x => AtLevels(x, enchant, exceed, totals, model))
             .ThenBy(x => x.Id)
             .FirstOrDefault();
@@ -472,5 +522,108 @@ public static class CpProgression
         }
 
         return new CpRoadTask(id, group, of.Count >= slots && left == 0, left, itemLevel, cp, Math.Max(0, slots - of.Count));
+    }
+
+    // ------------------------------------------------------------------ do this next
+
+    /// <summary>A free step counts for the list from this much Combat Power (a title or a wing worth less is no move to make now).</summary>
+    public const double FreeAtLeast = 50;
+
+    /// <summary>The kind of slot and the item data's kind of an empty slot by its name (<see cref="Missing"/>): the weapon's kind is the class's own, not known here.</summary>
+    public static (CpGearKind Kind, string Category) SlotKind(string slot) => slot switch
+    {
+        "MainHand" => (CpGearKind.Weapon, ""),
+        "SubHand" => (CpGearKind.Guard, "Guarder"),
+        "Necklace" or "Earring" or "Ring" => (CpGearKind.Jewelry, slot),
+        _ => (CpGearKind.Armor, slot),
+    };
+
+    /// <summary>
+    /// The few moves that matter most now, in the guides' order (14 November 2026, the owner: an overlay "that guides players"): an empty slot first (nothing
+    /// else adds as much), then what costs nothing, the weak pieces below the stage's tier (the guides: replace them, don't raise them), the next enhancement or
+    /// breakthrough with the most Combat Power on the pieces worth keeping, a Unique piece onto the stage's tier with a Transfer Stone, an optional stage's
+    /// piece, the empty manastone sockets and the Arcana levels. At most two of a kind (one free step, one Transfer), so one kind never fills the list; no step
+    /// on a piece a better one or a replacement is listed for. <paramref name="steps"/>: the CP calculator's (a Clash Rune's left out).
+    /// </summary>
+    public static IReadOnlyList<CpMove> Moves(IReadOnlyList<CpProgPiece> pieces, IReadOnlyList<CpStep> steps, IReadOnlyList<CpArcanaRow> arcana, int? itemLevel, char race,
+        CpTotals totals, CpModel? model = null, int count = 3)
+    {
+        CpTier? tier = TierFor(itemLevel);
+        var moves = new List<CpMove>();
+        var taken = new HashSet<int>(); // the slots a better piece or a replacement is about: no step on their worn piece
+
+        // an empty slot: the stage's piece of the kind when the stage names one (its Item Level at +0, its Combat Power at +0), else anything at all
+        foreach (string slot in Missing(pieces).Take(2))
+        {
+            (CpGearKind kind, string category) = SlotKind(slot);
+            CpTierGear? gear = tier?.For(kind);
+            CpItemData? item = gear is not null && category.Length > 0 ? TargetOf(category, gear, race, 0, 0, totals, model) : null;
+            moves.Add(new CpMove(CpMoveKind.Equip, gear?.ItemLevel ?? 0, item is null ? null : AtLevels(item, 0, 0, totals, model), Slot: slot, Target: gear, TargetItem: item));
+        }
+
+        // what costs nothing: the most Combat Power of a better piece the character holds, a title, a wing
+        if (steps.Where(s => s.Group == CpStepGroup.Free && s.Key != CpWhole.RuneKey && s.Rank >= FreeAtLeast).OrderByDescending(s => s.Rank).FirstOrDefault() is { } free)
+        {
+            moves.Add(new CpMove(CpMoveKind.Free, 0, free.Gain, Step: free));
+            if (free.Kind == CpStepKind.BetterItem)
+            {
+                taken.Add(free.Slot);
+            }
+        }
+
+        // the weak pieces below the tier, the most Item Level (once enhanced as far) first
+        var weak = pieces.Where(p => !p.AtTier && !p.Unique && p.Target is not null && !taken.Contains(p.Piece.Slot)).ToList();
+        foreach (CpProgPiece p in weak.Where(p => !p.Optional).OrderByDescending(p => TargetItemLevel(p).Later).ThenByDescending(p => TargetCp(p, totals, model) ?? 0)
+                     .ThenBy(p => p.Piece.Slot).Take(2))
+        {
+            moves.Add(Replace(p, totals, model));
+            taken.Add(p.Piece.Slot);
+        }
+
+        // the next enhancement or breakthrough on the pieces worth keeping, the most Combat Power first, a slot once (a Unique piece's levels move on with it)
+        var keepers = pieces.Where(p => p.Keeper).GroupBy(p => p.Piece.Slot).ToDictionary(g => g.Key, g => g.First());
+        foreach (CpStep s in steps.Where(s => s.Kind is CpStepKind.Enhance or CpStepKind.Breakthrough && s.Key != CpWhole.RuneKey && keepers.ContainsKey(s.Slot) && !taken.Contains(s.Slot))
+                     .GroupBy(s => s.Slot).Select(g => g.OrderByDescending(x => x.Rank).First()).OrderByDescending(s => s.Rank).ThenBy(s => s.Slot).Take(2))
+        {
+            bool breakthrough = s.Kind == CpStepKind.Breakthrough;
+            moves.Add(new CpMove(breakthrough ? CpMoveKind.Breakthrough : CpMoveKind.Enhance, breakthrough ? 5 : 1, s.Gain, keepers[s.Slot], s));
+        }
+
+        // a Unique piece below the tier onto the stage's piece with a Transfer Stone, the most Combat Power first
+        if (pieces.Where(p => !p.AtTier && p.Unique && !p.Optional && p.TargetItem is not null && !taken.Contains(p.Piece.Slot))
+                .OrderByDescending(p => TargetCp(p, totals, model) ?? 0).ThenBy(p => p.Piece.Slot).FirstOrDefault() is { } unique)
+        {
+            (int now, int later) = TargetItemLevel(unique);
+            moves.Add(new CpMove(CpMoveKind.Transfer, now, TargetCp(unique, totals, model), unique, Target: unique.Target, TargetItem: unique.TargetItem, ItemLevelLater: later));
+            taken.Add(unique.Piece.Slot);
+        }
+
+        // a stage the guide leaves to the player (700 to 1,399): one of its pieces, the most Item Level first
+        if (weak.Where(p => p.Optional && !taken.Contains(p.Piece.Slot)).OrderByDescending(p => TargetItemLevel(p).Later).ThenBy(p => p.Piece.Slot).FirstOrDefault() is { } optional)
+        {
+            moves.Add(Replace(optional, totals, model));
+        }
+
+        // quick Item Level: every empty manastone socket (up to 4 a stone), every Arcana level left (+1 each)
+        int sockets = pieces.Sum(p => p.Piece.EmptyStones);
+        if (sockets > 0)
+        {
+            moves.Add(new CpMove(CpMoveKind.Stones, 4 * sockets, null, Count: sockets));
+        }
+
+        int levels = arcana.Sum(a => Math.Max(0, ArcanaTop(ArcanaGrade(a.ItemId)) - a.Level));
+        if (levels > 0)
+        {
+            moves.Add(new CpMove(CpMoveKind.Arcana, levels, null, Count: levels));
+        }
+
+        return moves.Take(Math.Max(0, count)).ToList();
+    }
+
+    // a weak piece's move: the stage's piece, the Item Level it adds at +0 and once enhanced as far, the Combat Power once enhanced as far
+    private static CpMove Replace(CpProgPiece p, CpTotals totals, CpModel? model)
+    {
+        (int now, int later) = TargetItemLevel(p);
+        return new CpMove(CpMoveKind.Replace, now, TargetCp(p, totals, model), p, Target: p.Target, TargetItem: p.TargetItem, ItemLevelLater: later);
     }
 }

@@ -283,8 +283,8 @@ public static class SelfCheckCraft
         var declined = new Ui.MeterSettings { PrivacyDecision = Ui.PrivacyConsent.Declined };
         bool consent = !Ui.PrivacyConsent.IsAccepted(fresh) && Ui.PrivacyConsent.NeedsAsking(fresh) && Ui.PrivacyConsent.IsAccepted(accepted) && !Ui.PrivacyConsent.NeedsAsking(accepted)
             && !Ui.PrivacyConsent.IsAccepted(older) && Ui.PrivacyConsent.NeedsAsking(older) && !Ui.PrivacyConsent.IsAccepted(declined) && !Ui.PrivacyConsent.NeedsAsking(declined)
-            && Ui.PrivacyConsent.RestrictedTools.SetEquals(new[] { "checklist", "attributes", "cpcalc", "loot", "craft", "timetable", "theme", "network" });
-        Console.WriteLine($"  -> the privacy answer: uploads only with the current version accepted, older or never asked is asked, declined is not asked again, eight tools stay: {consent}");
+            && Ui.PrivacyConsent.RestrictedTools.SetEquals(new[] { "checklist", "attributes", "cpcalc", "progression", "loot", "craft", "timetable", "theme", "network" });
+        Console.WriteLine($"  -> the privacy answer: uploads only with the current version accepted, older or never asked is asked, declined is not asked again, nine tools stay: {consent}");
 
         Aion2Stock.Reset();
         return workshop && consent && pointFirst && pointQuiet && pointAgain && pointCapped && ranked && points && legion && chain && login && one && gone && loot && sort && moved && unseen && gained && oreAsked && plain && used && first && faction && known;
@@ -597,10 +597,28 @@ public static class SelfCheckCraft
         Aion2Grind.NoteInventory(Balance(kina, 50_500, 0), u.AddSeconds(1.5), "Other"); // the second one's Kinah
         MobYield? first = Aion2Grind.MobYields.FirstOrDefault(y => y.NpcId == 2090666), second = Aion2Grind.MobYields.FirstOrDefault(y => y.NpcId == 2300104);
         bool perMonster = first is { Kills: 1, Kinah: 300, AbyssPoints: 40 } && second is { Kills: 1, Kinah: 200, AbyssPoints: 0 };
+
+        // only what farming brings (14 November 2026, a tester: moving gold between the storage and the bag counted): gold taken from the storage three minutes after
+        // the last kill counts for nothing, put back and taken again neither, Abyss Points moved in with no fight neither; a kill's Kinah read a moment before the
+        // meter reads the kill counts once it does; Abyss Points three minutes after the kill count once a hit on a player a second before them is read
+        DateTime v = u.AddMinutes(3);
+        long kinahBefore = Aion2Grind.Current?.Kinah ?? -1, apBefore = Aion2Grind.Current?.AbyssPoints ?? -1;
+        Aion2Grind.NoteInventory(Balance(kina, 1_050_500, 0), v, "Other");                 // +1,000,000 from the storage
+        Aion2Grind.NoteInventory(Balance(kina, 50_500, 0), v.AddSeconds(20), "Other");     // put back
+        Aion2Grind.NoteInventory(Balance(kina, 1_050_500, 0), v.AddSeconds(40), "Other");  // and taken again
+        Aion2Grind.NoteInventory(Balance(ap, 6040, 1), v.AddSeconds(50), "Other");         // Abyss Points moved in, no fight
+        bool storage = Aion2Grind.Current is { } afterStorage && afterStorage.Kinah == kinahBefore && afterStorage.AbyssPoints == apBefore;
+        DateTime w = v.AddMinutes(2);
+        Aion2Grind.NoteInventory(Balance(kina, 1_050_800, 0), w.AddSeconds(0.4), "Other");  // a kill's Kinah, read before the kill
+        Aion2Grind.NoteKill(210010000, w, 2090666);
+        Aion2Grind.NoteInventory(Balance(ap, 6100, 1), w.AddMinutes(3), "Other");           // three minutes after the kill: no fight read yet
+        Aion2Grind.NoteFight(w.AddMinutes(3).AddSeconds(-1));                               // a hit on a player a second before
+        bool late = Aion2Grind.Current is { } afterKill && afterKill.Kinah == kinahBefore + 300 && afterKill.AbyssPoints == apBefore + 60;
         Aion2Grind.ResetForCheck();
         Console.WriteLine($"  -> grind: nothing before a kill: {idle}; Kinah +600, Abyss Points +60, 2 kills, the loot without Kinah: {amounts}; 60 s farmed (the pause left out), "
-            + $"36,000 Kinah an hour, none before a minute: {time}; another character starts its own: {other}; a pack's Kinah and points each to its own monster: {perMonster}");
-        return idle && amounts && time && other && perMonster;
+            + $"36,000 Kinah an hour, none before a minute: {time}; another character starts its own: {other}; a pack's Kinah and points each to its own monster: {perMonster}; "
+            + $"gold and points moved in from the storage count for nothing: {storage}; a kill's Kinah read before the kill, points after a fight with a player: {late}");
+        return idle && amounts && time && other && perMonster && storage && late;
     }
 
     private static bool SeasonCoins()

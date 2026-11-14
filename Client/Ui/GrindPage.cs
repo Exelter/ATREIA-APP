@@ -329,7 +329,7 @@ public sealed class GrindPage : StackPanel
         GrindSession s = f.Session;
         // the head: the state and the map, who and since when under them; the buttons on the right (first, so they keep their room on a narrow page)
         var head = new DockPanel { Margin = new Thickness(0, 0, 0, 14) };
-        Border again = ActionButton("\uE72C", "New session", () =>
+        Border again = ActionButton("\uE72C", "Reset", () =>
         {
             if (Picture is not null)
             {
@@ -340,7 +340,7 @@ public sealed class GrindPage : StackPanel
             _shown = "";
             Refresh();
         });
-        again.ToolTip = "Start counting again from the next kill: this session goes to the earlier ones";
+        again.ToolTip = "Start from zero: the numbers count again from the next kill, and this session goes to the earlier ones below";
         again.VerticalAlignment = VerticalAlignment.Top;
         DockPanel.SetDock(again, Dock.Right);
         head.Children.Add(again);
