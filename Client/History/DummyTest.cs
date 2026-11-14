@@ -65,7 +65,12 @@ public sealed class DummyTest
     /// <summary>The hits of the last second still belong to a run for a moment after its time is up: they arrive with the next poll.</summary>
     public static readonly TimeSpan Grace = TimeSpan.FromSeconds(2.5);
 
-    /// <summary>How long "Finished" stays on the overlay (20 s until 5 November 2026: the owner had to wait for it, "the dummy cooldown").</summary>
+    /// <summary>
+    /// How long "Finished" stays on the overlay after the time was up, or after the player's last hit when he went on hitting (20 s after the time until 5
+    /// November 2026: the owner had to wait for it, "the dummy cooldown" - a new run may start while it shows now). The parse's result stays while the
+    /// player goes on hitting, so the meter stops at the planned time every time (14 November 2026, the owner: "when it's 1 minute it stops recording,
+    /// sometimes it keeps recording more": after the result's 10 s the meter went back to its own fight, which went on with every hit).
+    /// </summary>
     public static readonly TimeSpan FinishedShown = TimeSpan.FromSeconds(10);
 
     /// <summary>Automatic runs: after a run the player has to stop hitting the dummies this long before the next hit starts a new one, so the hits
@@ -78,6 +83,7 @@ public sealed class DummyTest
 
     private readonly List<DummyRun> _runs = new();
     private DateTime _lastDummyHit = DateTime.MinValue;
+    private DateTime _lastOwnHit = DateTime.MinValue;
     private int _nextNumber = 1;
     private TimeSpan _planned = TimeSpan.FromMinutes(2);
     private string _note = "";
@@ -232,6 +238,11 @@ public sealed class DummyTest
                 continue;
             }
 
+            if (ev.Timestamp > _lastOwnHit)
+            {
+                _lastOwnHit = ev.Timestamp;
+            }
+
             if (State == DummyState.Armed && ev.Timestamp >= _armedAt)
             {
                 Begin(ev.Timestamp, ev.SourceObjectId);
@@ -297,7 +308,9 @@ public sealed class DummyTest
             Close(open);
         }
 
-        if (State == DummyState.Finished && now - _finishedAt > FinishedShown && _current is { Closed: true })
+        // the result stays while the player goes on hitting (see FinishedShown)
+        DateTime shownFrom = _lastOwnHit > _finishedAt ? _lastOwnHit : _finishedAt;
+        if (State == DummyState.Finished && now - shownFrom > FinishedShown && _current is { Closed: true })
         {
             State = DummyState.Idle;
             Changed?.Invoke();
@@ -366,6 +379,57 @@ public sealed class DummyTest
 
     /// <summary>A run is over and complete (its skills and effects were read): the history keeps it as a fight of its own.</summary>
     public event Action<DummyRun>? Completed;
+}
+
+/// <summary>
+/// The hits on targets not known as training dummies yet (14 November 2026, the owner: "when attacking a dummy it does not start the meter automatically"): a
+/// dummy whose spawn the meter missed - it was started at the dummies - has no name for it, and is known as one only once its hit points first fall to 1, a
+/// few seconds in; the own character, the meter started mid-game, is known only a moment after its first hits. So every player's hits on a target not known
+/// yet wait here a minute; once the target is known as a dummy, the own ones go into the test in front of the poll's own, and the run starts with the first
+/// of them. Pure (the caller says what is known), so a test can run it.
+/// </summary>
+public sealed class DummyWaitingHits
+{
+    /// <summary>How long a hit waits, and how many wait at most.</summary>
+    public static readonly TimeSpan Kept = TimeSpan.FromMinutes(1);
+
+    public const int Most = 6000;
+
+    private readonly List<DamageEvent> _waiting = new();
+
+    public int Count => _waiting.Count;
+
+    /// <summary>
+    /// A poll's hits for the test: the waiting own hits on targets now known as dummies in front of them, in time order, when a run can start
+    /// (<paramref name="canStart"/>: none waits or runs, which would have taken them already). <paramref name="dummyOf"/>: true or false once a target is
+    /// known, null while it is not; the hits on such a target by <paramref name="waits"/> wait (every player's while the own character is not known yet, then
+    /// its own), the oldest going when too many wait.
+    /// </summary>
+    public IReadOnlyList<DamageEvent> Take(IReadOnlyList<DamageEvent> batch, Func<int, bool?> dummyOf, Func<int, bool> waits, Func<int, bool> isOwn, bool canStart)
+    {
+        if (batch.Count == 0)
+        {
+            return batch;
+        }
+
+        DateTime newest = batch.Max(e => e.Timestamp);
+        var ready = canStart ? _waiting.Where(e => dummyOf(e.TargetObjectId) == true && isOwn(e.SourceObjectId)).ToList() : new List<DamageEvent>();
+        _waiting.RemoveAll(e => dummyOf(e.TargetObjectId) is not null || newest - e.Timestamp > Kept);
+        foreach (DamageEvent ev in batch)
+        {
+            if (!ev.IsHeal && dummyOf(ev.TargetObjectId) is null && waits(ev.SourceObjectId))
+            {
+                _waiting.Add(ev);
+            }
+        }
+
+        if (_waiting.Count > Most)
+        {
+            _waiting.RemoveRange(0, _waiting.Count - Most);
+        }
+
+        return ready.Count == 0 ? batch : ready.Concat(batch).OrderBy(e => e.Timestamp).ToList();
+    }
 }
 
 /// <summary>The numbers of one run, the ones the player's details show: damage per second, the hits and the skills used.</summary>

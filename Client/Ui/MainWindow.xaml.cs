@@ -1157,6 +1157,13 @@ public partial class MainWindow : Window
 
         CombatBatch liveBatch = Counted(captured);
         FeedSessions(liveBatch);
+        // the dummy test takes what was captured, counted or not: the first hits on a dummy whose spawn the meter missed come before it is known as one (by its
+        // hit points, a few seconds in), and the meter counts the open world only at a known dummy (see DummyTestController.Feed)
+        if (!captured.IsEmpty)
+        {
+            _dummy?.Feed(captured, _liveSource?.Entities);
+        }
+
         NoteArenaLeft(liveBatch);
         UpdateScopeContext();
         // A new stay began (map or instance change) while an older session or the all-sessions view is on show: the view follows
@@ -1373,7 +1380,6 @@ public partial class MainWindow : Window
         if (!batch.IsEmpty)
         {
             _sessions.Feed(batch);
-            _dummy?.Feed(batch, _liveSource?.Entities);
         }
     }
 
@@ -1746,7 +1752,8 @@ public partial class MainWindow : Window
     /// <summary>How long after the own last fight the meter stays over the game's windows (the death screen, the page to commend players).</summary>
     private static readonly TimeSpan MeterStaysAfterFight = TimeSpan.FromMinutes(3);
 
-    /// <summary>A training dummy (Training Scarecrow, Punching Bag ..., by its name in any language), known per target id.</summary>
+    /// <summary>A training dummy (Training Scarecrow, Punching Bag ..., by its name in any language; by its hit points when the meter missed its spawn and so
+    /// its name: see <see cref="Aion2.Aion2EntityDirectory.TrainingDummy"/>), kept per target id once its name told.</summary>
     private bool IsDummyTarget(Aion2.Aion2EntityDirectory directory, int targetId)
     {
         if (_dummyTargets.TryGetValue(targetId, out bool known))
@@ -1760,13 +1767,14 @@ public partial class MainWindow : Window
         }
 
         string? name = directory.NameFor(targetId) ?? directory.MonsterNameFor(targetId);
-        bool dummy = DummyTargets.IsDummy(name);
         if (name is not null)
         {
+            bool dummy = DummyTargets.IsDummy(name);
             _dummyTargets[targetId] = dummy; // a target not named yet is asked again
+            return dummy;
         }
 
-        return dummy;
+        return directory.TrainingDummy(targetId) == true;
     }
 
     /// <summary>

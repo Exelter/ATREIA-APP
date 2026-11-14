@@ -299,9 +299,11 @@ public sealed partial class MeterEngine : IDisposable
         }
 
         CombatBatch batch = Counted(captured);
-        if (!batch.IsEmpty)
+        if (!captured.IsEmpty)
         {
-            _dummy?.Feed(batch, _source?.Entities); // the training dummy's parse (Windows: FeedSessions)
+            // the training dummy's parse takes what was captured, counted or not (Windows: PollTick): a dummy whose spawn the meter missed is known only a few
+            // seconds in, by its hit points, and its first hits wait for that (DummyWaitingHits)
+            _dummy?.Feed(captured, _source?.Entities);
         }
 
         UpdateScopeContext();
@@ -603,13 +605,15 @@ public sealed partial class MeterEngine : IDisposable
         }
 
         string? name = directory.NameFor(targetId) ?? directory.MonsterNameFor(targetId);
-        bool dummy = DummyTargets.IsDummy(name);
         if (name is not null)
         {
+            bool dummy = DummyTargets.IsDummy(name);
             _dummyTargets[targetId] = dummy;
+            return dummy;
         }
 
-        return dummy;
+        // no name: the meter missed its spawn; a dummy by its hit points (Aion2EntityDirectory.TrainingDummy)
+        return directory.TrainingDummy(targetId) == true;
     }
 
     // ---- the fight's start and the boss's attempts ----
