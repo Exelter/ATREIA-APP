@@ -99,7 +99,7 @@ public sealed partial class CpCalcPage
         string where = level >= goal
             ? F("CpCalc.Prog.GuidePast", Thousands(level), Thousands(goal))
             : F("CpCalc.Prog.GuideAt", Thousands(level), Thousands(guide.From), Thousands(goal), Thousands(goal - level));
-        left.Children.Add(LevelBar(level - guide.From, goal - guide.From, Gold, where));
+        left.Children.Add(ProgBar(level - guide.From, goal - guide.From, Gold, where));
         Add(row, 0, left);
         string url = GuideUrl(guide);
         var open = new Button
@@ -199,7 +199,7 @@ public sealed partial class CpCalcPage
     {
         double spread = Math.Max(1, band.High - band.Low);
         double lo = Math.Min(band.Low, cp) - spread * 0.5, hi = Math.Max(band.High, cp) + spread * 0.5;
-        var layers = new Grid { Height = 16, MaxWidth = 560, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 8, 0, 0) };
+        var layers = new Grid { Height = 16, Width = 520, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
         var track = new Grid { Height = 8, VerticalAlignment = VerticalAlignment.Center };
         track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.0001, band.Low - lo), GridUnitType.Star) });
         track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.0001, band.High - band.Low), GridUnitType.Star) });
@@ -385,8 +385,11 @@ public sealed partial class CpCalcPage
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        Add(row, 0, Pill(SignedIl(now), now >= 0 ? Gold : ProgRed));
-        Add(row, 1, Pill(cp is double c ? Signed(c) : "", Green));
+        // the figures at the top beside the piece's picture, as the lines under its name can run to three
+        Border il = Pill(SignedIl(now), now >= 0 ? Gold : ProgRed), gain = Pill(cp is double c ? Signed(c) : "", Green);
+        il.VerticalAlignment = gain.VerticalAlignment = VerticalAlignment.Top;
+        Add(row, 0, il);
+        Add(row, 1, gain);
         var icon = IconTile(p.TargetItem?.Id ?? p.Piece.ItemId, 26, null);
         icon.Margin = new Thickness(0, 0, 9, 0);
         icon.VerticalAlignment = VerticalAlignment.Top;
@@ -625,7 +628,7 @@ public sealed partial class CpCalcPage
         int done = tasks.Count(t => t.Done);
         var stack = new StackPanel();
         stack.Children.Add(Heading(Loc("CpCalc.Prog.Road")));
-        stack.Children.Add(LevelBar(done, tasks.Count, Green, F("CpCalc.Prog.RoadCount", done, tasks.Count)));
+        stack.Children.Add(ProgBar(done, tasks.Count, Green, F("CpCalc.Prog.RoadCount", done, tasks.Count)));
         foreach (var group in tasks.GroupBy(t => t.Group))
         {
             stack.Children.Add(SubHead(Loc("CpCalc.Prog.RoadGroup." + group.Key)));
@@ -692,6 +695,21 @@ public sealed partial class CpCalcPage
     }
 
     // ------------------------------------------------------------------ text
+
+    /// <summary>A bar of how far along something is, from the left (the page's level bar sits in the middle of a wide card), its text under it.</summary>
+    private static UIElement ProgBar(double value, double max, Color color, string text)
+    {
+        var panel = new StackPanel { Margin = new Thickness(0, 5, 0, 0) };
+        double share = max > 0 ? Math.Clamp(value / max, 0, 1) : 0;
+        var track = new Grid { Height = 6, Width = 420, HorizontalAlignment = HorizontalAlignment.Left };
+        track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.0001, share), GridUnitType.Star) });
+        track.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.0001, 1 - share), GridUnitType.Star) });
+        Add(track, 0, new Border { CornerRadius = new CornerRadius(3, 0, 0, 3), Background = Solid(color) });
+        Add(track, 1, new Border { CornerRadius = new CornerRadius(0, 3, 3, 0), Background = Res("Brush.Border") });
+        panel.Children.Add(track);
+        panel.Children.Add(new TextBlock { Text = text, FontSize = 11, Foreground = Res("Brush.TextMuted"), Margin = new Thickness(0, 3, 0, 0) });
+        return panel;
+    }
 
     /// <summary>A small capitalised heading inside a card.</summary>
     private static TextBlock SubHead(string text) => new()

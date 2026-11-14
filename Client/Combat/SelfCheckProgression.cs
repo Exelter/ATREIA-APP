@@ -34,11 +34,12 @@ public static class SelfCheckProgression
             && CpProgression.WearOf(3050) is { From: 3000, Weapon.Top: 44.0 } && CpProgression.WearOf(2499) is null && CpProgression.WearOf(4000) is { From: 3400 };
         Console.WriteLine($"  -> Combat Power at 3,000-3,099 (all classes and by class) and what the players there wear: {bands}");
 
-        // the kinds of slot by the item data
-        bool kinds = CpProgression.KindOf(Aion2CpData.Item(110120003)) == CpGearKind.Weapon && CpProgression.KindOf(Aion2CpData.Items.First(x => x.Category == "Guarder")) == CpGearKind.Guard
+        // the kinds of slot by the item data; an Arcana card's grade by the item list (the id's digit counts down: 810130001 Unique, 810140001 grade 3)
+        bool kinds = CpProgression.ArcanaGrade(810130001) == 4 && CpProgression.ArcanaGrade(810140001) == 3 && CpProgression.ArcanaTop(4) == 5
+            && CpProgression.KindOf(Aion2CpData.Item(110120003)) == CpGearKind.Weapon && CpProgression.KindOf(Aion2CpData.Items.First(x => x.Category == "Guarder")) == CpGearKind.Guard
             && CpProgression.KindOf(Aion2CpData.Item(210730040)) == CpGearKind.Armor && CpProgression.KindOf(Aion2CpData.Item(310230114)) == CpGearKind.Jewelry
             && CpProgression.KindOf(Aion2CpData.Items.First(x => x.Category == "Bracelet")) == CpGearKind.Other && CpProgression.KindOf(null) == CpGearKind.Other;
-        Console.WriteLine($"  -> weapon, Guard, armor (a cloak too), jewelry and the rest told apart: {kinds}");
+        Console.WriteLine($"  -> weapon, Guard, armor (a cloak too), jewelry and the rest told apart, a Unique Arcana card to +5: {kinds}");
 
         // the sample character at 3,010: Elyos by its gear; the weapon at the tier; the IL 86 earrings Unique, below the IL 102 tier, the Splendent Wise ones (the Elyos
         // name) for them, +16 IL with a Transfer Stone and more Combat Power at their +11; the IL 102 armor past Nuakum's 86; no Guard, one earring and one ring missing
@@ -71,15 +72,15 @@ public static class SelfCheckProgression
         Console.WriteLine($"  -> the Asmodian name for an Asmodian, either for a character whose race isn't known: {anyRace}");
 
         // the Road to 3,000+: the weapon at +15 and IL 102 done, breakthrough 3 one level (+5 IL) away, no Guard, the earrings the one jewelry piece below IL 102 (two
-        // slots empty), the jewelry 12 levels from +15, four empty sockets (up to +16 IL), no Unique Arcana card and 10 Arcana levels left (grade 3 goes to +4),
-        // the armor 40 levels from +15 and 14 breakthrough levels from 2, 3,000 Item Level reached
+        // slots empty), the jewelry 12 levels from +15, four empty sockets (up to +16 IL), five Unique Arcana cards with 13 levels left to +5 (two at +5, one
+        // at +2, two at +0), the armor 40 levels from +15 and 14 breakthrough levels from 2, 3,000 Item Level reached
         IReadOnlyList<CpRoadTask> road = CpProgression.Road(pieces, 3010, r.Arcana, r.Stigmas, race, totals, model);
         CpRoadTask T(string id) => road.First(t => t.Id == id);
         bool tasks = road.Count == 17 && T("wpn15").Done && T("wpn102").Done && T("il3000") is { Done: true, Left: 0 }
             && T("wpnbt3") is { Done: false, Left: 1, ItemLevel: 5 } && T("wpnbt3").Cp > 0 && T("wpnbt5") is { Left: 3, ItemLevel: 15 }
             && T("grd15") is { Done: false, Missing: 1 } && T("grd102") is { Done: false, Missing: 1 }
             && T("jew102") is { Done: false, Left: 1, ItemLevel: 16, Missing: 2 } && T("jew102").Cp > 0 && T("jew15") is { Done: false, Left: 12, ItemLevel: 12, Missing: 2 }
-            && T("stones") is { Done: false, Left: 4, ItemLevel: 16 } && T("arc5") is { Done: false, Left: 5 } && T("arcmax") is { Done: false, Left: 10 }
+            && T("stones") is { Done: false, Left: 4, ItemLevel: 16 } && T("arc5") is { Done: true, Left: 0 } && T("arcmax") is { Done: false, Left: 13, ItemLevel: 13 }
             && T("arm15") is { Done: false, Left: 40, ItemLevel: 40 } && T("arm15").Cp > 0 && T("armbt") is { Done: false, Left: 14, ItemLevel: 70 } && T("armbt").Cp > 0
             && T("stig20").Left >= 0;
         Console.WriteLine($"  -> the Road to 3,000+ from the sample character ({road.Count(t => t.Done)} of {road.Count} done, the IL 102 earrings {T("jew102").Cp:0} CP): {tasks}");
