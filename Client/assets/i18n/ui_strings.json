@@ -20152,8 +20152,14 @@
   "CpCalc.Prog.Move.Equip": {
     "en": "{0}: empty"
   },
+  "CpCalc.Prog.Move.EquipOf": {
+    "en": "{0}: {1} of {2} empty"
+  },
   "CpCalc.Prog.Move.EquipStage": {
-    "en": "Your stage's piece: {0} (IL {1}); anything beats an empty slot"
+    "en": "Your stage's piece: {0} (IL {1})"
+  },
+  "CpCalc.Prog.Move.EquipItem": {
+    "en": "Your stage's piece: {0} (IL {1}), {2}"
   },
   "CpCalc.Prog.Move.EquipAny": {
     "en": "Wear anything: nothing adds as much as an empty slot filled"
@@ -20184,6 +20190,9 @@
   },
   "CpCalc.Prog.Move.UpTo": {
     "en": "up to {0}"
+  },
+  "CpCalc.Prog.Move.Crafted": {
+    "en": "crafted"
   },
   "CpCalc.Prog.NoItemLevel": {
     "en": "The app hasn't read your Item Level yet: the game sends it at your login and whenever it changes."

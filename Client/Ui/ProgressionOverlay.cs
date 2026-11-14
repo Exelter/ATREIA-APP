@@ -258,7 +258,12 @@ public sealed class ProgressionOverlayWindow : MovableOverlay
         words.Children.Add(what);
         if (detail.Length > 0)
         {
-            words.Children.Add(new TextBlock { Text = detail, FontSize = 10, Foreground = Solid(Faint), TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 1, 0, 0) });
+            // two lines at most, the rest cut with an ellipsis (the piece's name and where it comes from matter more than a cut-off line)
+            words.Children.Add(new TextBlock
+            {
+                Text = detail, FontSize = 10, Foreground = Solid(Faint), TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis,
+                LineHeight = 13, LineStackingStrategy = LineStackingStrategy.BlockLineHeight, MaxHeight = 26, Margin = new Thickness(0, 1, 0, 0),
+            });
         }
 
         Grid.SetColumn(words, 2);

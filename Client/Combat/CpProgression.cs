@@ -116,11 +116,12 @@ public enum CpMoveKind
 public sealed record CpMove(CpMoveKind Kind, int ItemLevel, double? Cp, CpProgPiece? Piece = null, CpStep? Step = null, string? Slot = null, CpTierGear? Target = null,
     CpItemData? TargetItem = null, int Count = 0, int ItemLevelLater = 0)
 {
-    /// <summary>The item the move is shown with: the stage's piece for an empty slot or a replacement, the piece itself for a step; 0 for none.</summary>
+    /// <summary>The item the move is shown with: the stage's piece for an empty slot or a replacement, the better piece held, the piece itself for a step; 0 for
+    /// none (a free title or wing has a picture of its own).</summary>
     public int ItemId => Kind switch
     {
         CpMoveKind.Equip or CpMoveKind.Replace or CpMoveKind.Transfer => TargetItem?.Id ?? Piece?.Piece.ItemId ?? 0,
-        CpMoveKind.Free when Step is { Kind: CpStepKind.BetterItem } better => better.OtherId,
+        CpMoveKind.Free => Step is { Kind: CpStepKind.BetterItem } better ? better.OtherId : 0,
         _ => Step?.ItemId ?? Piece?.Piece.ItemId ?? 0,
     };
 }
@@ -529,6 +530,9 @@ public static class CpProgression
     /// <summary>A free step counts for the list from this much Combat Power (a title or a wing worth less is no move to make now).</summary>
     public const double FreeAtLeast = 50;
 
+    /// <summary>How many pieces a slot by its name takes (<see cref="Missing"/>: two earrings, two rings, one of the rest).</summary>
+    public static int SlotsOf(string? slot) => MainSlots.FirstOrDefault(s => s.Slot == slot).Count is int count and > 0 ? count : 1;
+
     /// <summary>The kind of slot and the item data's kind of an empty slot by its name (<see cref="Missing"/>): the weapon's kind is the class's own, not known here.</summary>
     public static (CpGearKind Kind, string Category) SlotKind(string slot) => slot switch
     {
@@ -552,13 +556,16 @@ public static class CpProgression
         var moves = new List<CpMove>();
         var taken = new HashSet<int>(); // the slots a better piece or a replacement is about: no step on their worn piece
 
-        // an empty slot: the stage's piece of the kind when the stage names one (its Item Level at +0, its Combat Power at +0), else anything at all
-        foreach (string slot in Missing(pieces).Take(2))
+        // an empty slot (the earrings and the rings once, with how many of the two are empty): the stage's piece of the kind when the stage names one (its Item
+        // Level at +0, its Combat Power at +0, for each empty one), else anything at all
+        foreach (IGrouping<string, string> empty in Missing(pieces).GroupBy(slot => slot).Take(2))
         {
-            (CpGearKind kind, string category) = SlotKind(slot);
+            (CpGearKind kind, string category) = SlotKind(empty.Key);
+            int empties = empty.Count();
             CpTierGear? gear = tier?.For(kind);
             CpItemData? item = gear is not null && category.Length > 0 ? TargetOf(category, gear, race, 0, 0, totals, model) : null;
-            moves.Add(new CpMove(CpMoveKind.Equip, gear?.ItemLevel ?? 0, item is null ? null : AtLevels(item, 0, 0, totals, model), Slot: slot, Target: gear, TargetItem: item));
+            moves.Add(new CpMove(CpMoveKind.Equip, (gear?.ItemLevel ?? 0) * empties, item is null ? null : AtLevels(item, 0, 0, totals, model) * empties, Slot: empty.Key,
+                Target: gear, TargetItem: item, Count: empties));
         }
 
         // what costs nothing: the most Combat Power of a better piece the character holds, a title, a wing
