@@ -140,6 +140,7 @@ jobs:
             @('render-details', 'details-buffs.png', 'buffs'),
             @('render-loot', 'loot.png', 'en'),
             @('render-cpcalc', 'cpcalc.png', 'en', 'gear'),
+            @('render-cpcalc', 'cpcalc-progression.png', 'en', 'progression'),
             @('render-cpcalc', 'cpcalc-stigmas.png', 'en', 'stigmas'),
             @('render-cpcalc', 'cpcalc-skills.png', 'en', 'skills'),
             @('render-cpcalc', 'cpcalc-genus.png', 'en', 'genus'),

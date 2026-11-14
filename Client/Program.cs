@@ -2877,7 +2877,7 @@ internal static class Program
         directory.SetLocalStats(Shift(frame, CpSampleGear(17), CpSampleGear(18), +1));
         page.Refresh();
         const int width = 1180;
-        int height = tab == "gear" ? 2300 : 1900;
+        int height = tab == "gear" ? 2300 : tab == "progression" ? 5200 : 1900;
         var host = new System.Windows.Controls.Border { Width = width, Height = height, Child = page, Background = (System.Windows.Media.Brush)app.Resources["Brush.Window"] ?? System.Windows.Media.Brushes.Black };
         host.Resources[typeof(System.Windows.Controls.Button)] = System.Windows.Markup.XamlReader.Parse(
             "<Style xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\" TargetType=\"Button\">" +

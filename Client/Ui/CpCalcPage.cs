@@ -60,10 +60,11 @@ public sealed partial class CpCalcPage : Grid
     private static readonly Color Green = Color.FromRgb(0x4C, 0xC4, 0x6A);
     private static readonly Color Grey = Color.FromRgb(0x8A, 0x93, 0x9E);
 
-    /// <summary>The tabs below the steps, in their order.</summary>
+    /// <summary>The tabs below the steps, in their order (Progression: the website's progression guides on this character, CpCalcPage.Progression.cs).</summary>
     private enum Tab
     {
         Gear,
+        Progression,
         Stigmas,
         Skills,
         Genus,
@@ -145,7 +146,7 @@ public sealed partial class CpCalcPage : Grid
         Poll(force: true);
     }
 
-    /// <summary>Opens a tab by its name (gear, stigmas, skills, genus, pets, daevanion, titles, arcana, check; the picture mode).</summary>
+    /// <summary>Opens a tab by its name (gear, progression, stigmas, skills, genus, pets, daevanion, titles, arcana, check; the picture mode).</summary>
     internal void ShowTab(string name)
     {
         if (Enum.TryParse(name, ignoreCase: true, out Tab tab))
@@ -274,7 +275,7 @@ public sealed partial class CpCalcPage : Grid
 
         IReadOnlyDictionary<int, int>? frame = directory?.LocalStats;
         string frameSig = frame is null ? "-" : string.Join(',', new[] { 31, 317, 19, 128, 104, 318, 193, 52, 307, 1, 13, 5, 14, 8, 4, 10 }.Select(id => frame.GetValueOrDefault(id)));
-        string signature = $"{name}|{GearSignature(gear)}|{frameSig}|{RestSignature(directory)}|{Aion2CpData.Model.FromWebsite}|{Lang}|{CpChecks.Version}|{_selected}|{_tab}|{_pending is null}|{ExchangePrices.Version}";
+        string signature = $"{name}|{GearSignature(gear)}|{frameSig}|{RestSignature(directory)}|{Aion2CpData.Model.FromWebsite}|{Lang}|{CpChecks.Version}|{_selected}|{_tab}|{_pending is null}|{ExchangePrices.Version}|{directory?.OwnLiveItemLevel}";
         if (!force && signature == _signature && _pending is null)
         {
             return;
@@ -421,6 +422,7 @@ public sealed partial class CpCalcPage : Grid
         UIElement content = _tab switch
         {
             Tab.Gear => GearTab(view, model),
+            Tab.Progression => ProgressionTab(view, model, directory, gear),
             Tab.Stigmas => StigmasTab(view),
             Tab.Skills => SkillsTab(view),
             Tab.Genus => GenusTab(view),
@@ -916,11 +918,15 @@ public sealed partial class CpCalcPage : Grid
             {
                 Tab.Titles => v.Whole.Parts[CpSource.Titles] + v.Whole.Parts[CpSource.Wings],
                 Tab.Arcana => v.Whole.Parts[CpSource.Arcana] + v.Whole.Parts[CpSource.Attributes],
-                Tab.Check => -1,
+                Tab.Check or Tab.Progression => -1,
                 _ => v.Whole.Parts[(CpSource)Enum.Parse(typeof(CpSource), tab.ToString())],
             };
             var content = new StackPanel { Orientation = Orientation.Horizontal };
-            Color color = tab switch { Tab.Titles => SourceColors[CpSource.Titles], Tab.Arcana => SourceColors[CpSource.Arcana], Tab.Check => Grey, _ => SourceColors[(CpSource)Enum.Parse(typeof(CpSource), tab.ToString())] };
+            Color color = tab switch
+            {
+                Tab.Titles => SourceColors[CpSource.Titles], Tab.Arcana => SourceColors[CpSource.Arcana], Tab.Check => Grey, Tab.Progression => Gold,
+                _ => SourceColors[(CpSource)Enum.Parse(typeof(CpSource), tab.ToString())],
+            };
             content.Children.Add(new Ellipse { Width = 8, Height = 8, Fill = Solid(color), Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center });
             content.Children.Add(new TextBlock { Text = Loc("CpCalc.Tab." + tab), FontSize = 12.5, FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal, Foreground = on ? Res("Brush.Text") : Res("Brush.TextMuted"), VerticalAlignment = VerticalAlignment.Center });
             if (cp >= 0.5)
