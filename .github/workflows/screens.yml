@@ -83,6 +83,7 @@ jobs:
             @('render-app', 'app-bosses.png', 'boss', '1400'),
             @('render-app', 'app-overlays.png', 'overlays'),
             @('render-app', 'app-characters.png', 'characters'),
+            @('render-app', 'app-characters-rosters.png', 'characters-rosters'),
             @('render-app', 'app-history.png', 'history'),
             @('render-app', 'app-meter.png', 'meter'),
             @('render-app', 'app-cubes.png', 'cubes'),

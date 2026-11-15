@@ -1239,6 +1239,34 @@ internal static class Program
             Aion2.Aion2Tickets.Reset();
             Aion2.Aion2Tickets.TryParseList(Convert.FromHexString(Combat.SelfCheckTickets.SampleLogin), out var entries);
             var t0 = DateTime.Now;
+            if (page == "characters-rosters")
+            {
+                // someone else played on this PC an hour before (15 November 2026, a player whose husband's characters showed in her app): his roster beside
+                // hers, and a roster taken out of the app before that
+                long hisSeen = DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds();
+                string? RosterOf((string Name, int Class, int ItemLevel, int Odyle)[] account, int from)
+                {
+                    Aion2.Aion2Tickets.NoteListedCharacters(null, account.Select((a, i) => new Aion2.AccountCharacter(a.Name, a.Class, 1, 45, a.ItemLevel, null, hisSeen,
+                        hisSeen - (account.Length - i) * 86_400_000L, 2302, 900 + from + i)).ToList());
+                    foreach (var a in account)
+                    {
+                        Aion2.Aion2Tickets.ReceiveList(entries, t0.AddSeconds(from - 3600));
+                        Aion2.Aion2Tickets.NoteCharacter(a.Name, 2302, t0.AddSeconds(from - 3600 + 4), level: 45);
+                        Aion2.Aion2Tickets.ReceiveUpdate(new Aion2.TicketReading(Aion2.Aion2Tickets.OdyleId, new Aion2.TicketValue(a.Odyle, 0, 0)), t0.AddSeconds(from - 3600 + 6));
+                        from += 10;
+                    }
+
+                    return Aion2.Aion2Tickets.Snapshot().FirstOrDefault(c => c.Name == account[0].Name)?.Account;
+                }
+
+                if (RosterOf(new[] { ("Lumiael", 21, 2380, 210) }, 0) is { } removedKey)
+                {
+                    Aion2.Aion2Tickets.RemoveRoster(removedKey);
+                }
+
+                RosterOf(new[] { ("Kaivhan", 9, 2840, 655), ("Vesh", 25, 2610, 120) }, 100);
+            }
+
             foreach (var (name, odyle, charged, at) in new[] { ("Seraphyne", 520, 640, 0), ("Nyxelle", 840, 0, 10), ("Draegor", 300, 120, 20) })
             {
                 Aion2.Aion2Tickets.ReceiveList(entries, t0.AddSeconds(at));
@@ -1327,7 +1355,7 @@ internal static class Program
                 return;
             }
 
-            window.ShowShellPage(page.StartsWith("updates", StringComparison.Ordinal) ? "home" : page);
+            window.ShowShellPage(page.StartsWith("updates", StringComparison.Ordinal) ? "home" : page == "characters-rosters" ? "characters" : page);
             if (page.StartsWith("updates", StringComparison.Ordinal))
             {
                 // the update question with its notes: shut (updates) or open (updates-open), the notes shipped with this build
