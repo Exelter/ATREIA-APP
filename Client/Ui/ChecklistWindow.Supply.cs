@@ -367,11 +367,12 @@ public sealed partial class ChecklistWindow
         }
     }
 
-    /// <summary>On the roster page: one inventory card per server (the characters of one account that share a server storage).</summary>
+    /// <summary>On the roster page: one inventory card per server (the characters of one account that share a server storage), of the roster shown.</summary>
     private void AddRosterInventories()
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (CharacterHoldings c in Aion2Inventories.Characters())
+        var shown = Aion2Tickets.Shown().Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
+        foreach (CharacterHoldings c in Aion2Inventories.Characters().Where(c => shown.Contains(c.Name)))
         {
             if (seen.Contains(c.Name))
             {
