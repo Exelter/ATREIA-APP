@@ -6,6 +6,26 @@
   ],
   "versions": [
     {
+      "version": "2.0.26",
+      "date": "2026-11-15",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Sounds",
+          "title": "The volume sliders of the sounds go properly quiet",
+          "text": "The volume of the cube chime and radar beeps, the timer reminders and the world boss sounds now follows the ear: half way is a quarter of full, and the lowest steps are really quiet. Before, even the lowest step played plainly loud on a headset. The app's own slider is enough now, without turning the app down in Windows' volume mixer.",
+          "example": "Mira had the cube chime at its lowest step and it still blasted her headset. Now the lowest step is a soft tick, and 50 is a comfortable chime."
+        },
+        {
+          "kind": "new",
+          "area": "Overlays",
+          "title": "World bosses and Timers overlays: show up only shortly before",
+          "text": "Both overlays can stay out of the way until something is close. In the World bosses settings, “Only show a boss shortly before it’s back” lists a boss while it’s up and from the minutes you set before it’s back (5 to 120); with none that close, the overlay is hidden. In the Timers overlay settings, “Only show the overlay then” shows it while an event runs and from its “Show event n minutes ahead” minutes before one starts.",
+          "example": "With 15 minutes set, the World bosses overlay appears at 21:45 for a boss that’s back at 22:00, and disappears again once the boss is killed."
+        }
+      ]
+    },
+    {
       "version": "2.0.25",
       "date": "2026-11-15",
       "items": [

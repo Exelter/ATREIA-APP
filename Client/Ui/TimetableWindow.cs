@@ -18,6 +18,9 @@ namespace AionDPS.Ui;
 public sealed class TimetableWindow : Window, IOverlayQuick
 {
     private TimeSpan _lookahead = TimeSpan.FromMinutes(60);
+
+    /// <summary>Only while an event runs or starts within the lookahead (<see cref="MeterSettings.TimetableOnlySoon"/>): otherwise the panel is not drawn.</summary>
+    private bool _onlySoon;
     private const double PanelWidth = 260;
     private const double MinScale = 0.7, MaxScale = 2.0;
 
@@ -57,6 +60,7 @@ public sealed class TimetableWindow : Window, IOverlayQuick
         var settings = MeterSettings.Load();
         ApplyOpacity(settings.TimetableOpacity ?? settings.OverlayOpacity);
         ApplyLookahead(settings.TimetableLookaheadMinutes);
+        _onlySoon = settings.TimetableOnlySoon;
         SetScale(settings.TimetableScale);
 
         var header = new DockPanel { Margin = new Thickness(2, 0, 0, 4), Background = Brushes.Transparent, Cursor = Cursors.SizeAll };
@@ -152,6 +156,7 @@ public sealed class TimetableWindow : Window, IOverlayQuick
     /// <summary>Locked: click-through, no close button, no handles. Unlocked: clickable and outlined, so it can be found, moved and scaled.</summary>
     public void ApplyLocked(bool locked)
     {
+        _dirty |= locked != _locked; // only shortly before: an empty overlay is drawn while it is placed
         _locked = locked;
         _close.Visibility = Visibility.Collapsed; // the gear's panel turns it off now (its own close sat under the gear)
         _chrome.ShowLocked(locked);
@@ -264,6 +269,16 @@ public sealed class TimetableWindow : Window, IOverlayQuick
         }
     }
 
+    /// <summary>Shown only while an event runs or starts within the lookahead (Settings), or always.</summary>
+    public void ApplyOnlySoon(bool onlySoon)
+    {
+        if (onlySoon != _onlySoon)
+        {
+            _onlySoon = onlySoon;
+            _dirty = true;
+        }
+    }
+
     /// <summary>An event was switched on or off for the overlay (the Timers page): read the settings again and lay the rows out now.</summary>
     public void Reload()
     {
@@ -367,6 +382,22 @@ public sealed class TimetableWindow : Window, IOverlayQuick
             }
         }
 
+        _rebuildAt = rebuildAt;
+        if (_onlySoon)
+        {
+            // only shortly before (15 November 2026, a player: "show it n minutes before"): nothing runs or comes within the lookahead, nothing is drawn - but
+            // while it is being placed, and in a tool's live view, a line says when it shows
+            bool any = _body.Children.Count > 0;
+            if (!any && (!_locked || _isView))
+            {
+                AddNote(string.Format(CultureInfo.CurrentCulture, loc["Timetable.OnlySoonEmpty"], (int)_lookahead.TotalMinutes));
+            }
+
+            _panel.Visibility = any || !_locked || _isView ? Visibility.Visible : Visibility.Collapsed;
+            return;
+        }
+
+        _panel.Visibility = Visibility.Visible;
         if (soon == 0 && waiting.Count > 0)
         {
             // nothing within the lookahead: the next one all the same, a little quieter
@@ -384,8 +415,6 @@ public sealed class TimetableWindow : Window, IOverlayQuick
         {
             AddNote(loc["Home.NoEvents"]);
         }
-
-        _rebuildAt = rebuildAt;
     }
 
     /// <summary>Hides the content (the window stays, so the hotkey and the settings still see it as on) while the game is not in front or a game menu is open.</summary>

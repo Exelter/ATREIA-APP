@@ -155,6 +155,8 @@ jobs:
             @('render-gather', 'gather-overlay.png', 'en'),
             @('render-season', 'season-overlay.png', 'en'),
             @('render-settings', 'settings.png', 'Interface'),
+            @('render-settings', 'settings-boss.png', 'boss'),
+            @('render-settings', 'settings-timers.png', 'timetable'),
             @('render-report', 'report-damage.png', 'Damage'),
             @('render-report', 'report-healing.png', 'Healing'),
             @('render-report', 'report-taken.png', 'Damage-taken'),

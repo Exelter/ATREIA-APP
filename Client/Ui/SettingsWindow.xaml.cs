@@ -90,6 +90,7 @@ public partial class SettingsWindow : Window
         PetFarmHideMaxedBox.IsChecked = settings.PetFarmHideMaxed;
         TimetableLockedBox.IsChecked = !settings.TimetableLocked;
         TimetableHideInDungeonsBox.IsChecked = settings.TimetableHideInDungeons;
+        TimetableOnlySoonBox.IsChecked = settings.TimetableOnlySoon;
         InitPetMap(settings);
         InitBossPage(settings);
         SetHotkeyBox(HotkeyTimetableBox, HotkeyBinding.Parse(settings.HotkeyTimetable).ToString());
@@ -557,6 +558,23 @@ public partial class SettingsWindow : Window
     }
 
     private void OnTimetableLookaheadChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => ShowTimetableLookahead();
+
+    /// <summary>World bosses, "only shortly before": the minutes, dimmed while it is off.</summary>
+    private void OnBossSoonChanged(object sender, RoutedEventArgs e) => ShowBossSoon();
+
+    private void OnBossSoonMinutesChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => ShowBossSoon();
+
+    private void ShowBossSoon()
+    {
+        // the controls raise their events while the XAML is still being read, before the others exist
+        if (BossSoonValue is null || BossSoonRow is null || BossSoonSlider is null || BossSoonBox is null)
+        {
+            return;
+        }
+
+        BossSoonValue.Text = string.Format(LocalizationManager.Instance["Settings.Timetable.LookaheadValue"], (int)BossSoonSlider.Value);
+        BossSoonRow.Opacity = BossSoonBox.IsChecked == true ? 1.0 : 0.45;
+    }
 
     private void ShowTimetableLookahead()
     {
@@ -1085,6 +1103,7 @@ public partial class SettingsWindow : Window
         _settings.PetFarmHideMaxed = PetFarmHideMaxedBox.IsChecked ?? false;
         _settings.TimetableLocked = !(TimetableLockedBox.IsChecked ?? false);
         _settings.TimetableHideInDungeons = TimetableHideInDungeonsBox.IsChecked ?? false;
+        _settings.TimetableOnlySoon = TimetableOnlySoonBox.IsChecked ?? false;
         _settings.ShowPetMap = ShowPetMapBox.IsChecked ?? false;
         _settings.PetMapRadius = (int)PetMapRadiusSlider.Value;
         _settings.PetMapOpacity = PetMapOpacity.Fraction;
@@ -1150,6 +1169,8 @@ public partial class SettingsWindow : Window
         _settings.ShowBossOverlay = ShowBossOverlayBox.IsChecked ?? false;
         _settings.BossOverlayLocked = !(BossOverlayLockedBox.IsChecked ?? false);
         _settings.BossOverlayHideInDungeons = BossHideInDungeonsBox.IsChecked ?? false;
+        _settings.BossOverlaySoon = BossSoonBox.IsChecked ?? false;
+        _settings.BossOverlaySoonMinutes = (int)BossSoonSlider.Value;
         _settings.BossNotify = BossNotifyBox.IsChecked ?? false;
         _settings.BossAlerts = _bossAlerts.ToDictionary(kv => kv.Key, kv => kv.Value);
         _settings.TimetableSoundMinutes = (int)TimetableSoundSlider.Value;
@@ -1291,6 +1312,9 @@ public partial class SettingsWindow : Window
         ShowBossOverlayBox.IsChecked = settings.ShowBossOverlay;
         BossOverlayLockedBox.IsChecked = !settings.BossOverlayLocked;
         BossHideInDungeonsBox.IsChecked = settings.BossOverlayHideInDungeons;
+        BossSoonBox.IsChecked = settings.BossOverlaySoon;
+        BossSoonSlider.Value = Math.Clamp(settings.BossOverlaySoonMinutes, 5, 120);
+        ShowBossSoon(); // the handlers do not fire when the values equal the controls' defaults
         BossNotifyBox.IsChecked = settings.BossNotify;
         BuildBossPage();
         _bossTimer.Tick += (_, _) => RefreshBossTimes();

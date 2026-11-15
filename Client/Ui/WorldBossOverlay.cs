@@ -191,7 +191,10 @@ public sealed class WorldBossController : IDisposable
             }
         }
 
-        if (watched.Count == 0 && !settings.BossOverlayLocked)
+        // asked to (15 November 2026): a boss only while it is there and from the minutes set before it is back
+        bool anyWatched = watched.Count > 0;
+        watched.RemoveAll(w => !Listed(w.Status, now, settings));
+        if (watched.Count == 0 && !anyWatched && !settings.BossOverlayLocked)
         {
             // none chosen yet: the first bosses of the game, with the times the meter knows
             foreach (var map in Aion2FieldBosses.Maps)
@@ -215,11 +218,19 @@ public sealed class WorldBossController : IDisposable
             .ToList();
         if (rows.Count == 0)
         {
-            rows.Add((LocalizationManager.Instance["Boss.OverlayEmpty"], "", false, null, null));
+            rows.Add((anyWatched
+                ? string.Format(System.Globalization.CultureInfo.CurrentCulture, LocalizationManager.Instance["Boss.OverlaySoonEmpty"], Math.Clamp(settings.BossOverlaySoonMinutes, 0, 120))
+                : LocalizationManager.Instance["Boss.OverlayEmpty"], "", false, null, null));
         }
 
         return rows;
     }
+
+    /// <summary>Whether the overlay lists a watched boss now: always, or with "only shortly before" on, while it is there and from the minutes set before it is back
+    /// (a boss whose time is not known yet is left out then).</summary>
+    internal static bool Listed(BossStatus status, DateTime now, MeterSettings settings) =>
+        !settings.BossOverlaySoon || status.Phase == BossPhase.Now
+        || (status.Phase is BossPhase.Respawn or BossPhase.Fixed && status.At is { } at && at - now <= TimeSpan.FromMinutes(Math.Clamp(settings.BossOverlaySoonMinutes, 0, 120)));
 
     private MeterSettings _settings = MeterSettings.Load();
     private DateTime _settingsAt = DateTime.UtcNow;
@@ -297,8 +308,8 @@ public sealed class WorldBossController : IDisposable
         bool inGame = GameWindow.OverlayMayShow();
         _overlay ??= new WorldBossOverlayWindow();
         _overlay.ApplyLockedIfChanged(locked);
-        // asked to, it steps aside in dungeons and raids (11 November 2026, satahn)
-        if (!inGame || (locked && watched.Count == 0) || (settings.BossOverlayHideInDungeons && MainWindow.InDungeonNow))
+        // asked to, it steps aside in dungeons and raids (11 November 2026, satahn), and while no boss is back soon (15 November 2026)
+        if (!inGame || (locked && !watched.Any(w => Listed(w.Status, now, settings))) || (settings.BossOverlayHideInDungeons && MainWindow.InDungeonNow))
         {
             _overlay.ShowOverlay(false);
             return;
