@@ -200,10 +200,10 @@ internal static class Program
 
         if (args.Length > 1 && args[0] == "render-checklist")
         {
-            // render-checklist <out.png> [language | roster | character | character-season | character-supply | character-inventory]: the page of all characters
+            // render-checklist <out.png> [language | roster | roster8 | rosters | character | character-season | character-supply | character-inventory]: the page of all characters
             // (roster) or of one (character: its counters; or one other part of its page)
             string third = args.Length > 2 ? args[2] : "";
-            bool page = third is "roster" or "roster8" || third.StartsWith("character", StringComparison.Ordinal);
+            bool page = third is "roster" or "roster8" or "rosters" || third.StartsWith("character", StringComparison.Ordinal);
             RunRenderChecklistMode(args[1], page ? "" : third, page ? third : "");
             return;
         }
@@ -2076,12 +2076,51 @@ internal static class Program
             Aion2.Aion2Tickets.NoteListedCharacters(null, roster.Select(r => new Aion2.AccountCharacter(r.Name, r.Class, 1, 45, 2700, "Dawnbreakers", seen8, seen8, 2302, 100 + r.Class)).ToList());
         }
 
+        if (page == "rosters")
+        {
+            // two players on one PC (15 November 2026: a player's husband's characters showed in her app): two rosters on one server, hers shown (she logged in
+            // last), and one roster taken out of the app before
+            Aion2.Aion2Tickets.Reset();
+            Aion2.Aion2Tickets.TryParseList(Convert.FromHexString(Combat.SelfCheckTickets.SampleLogin), out var login);
+            var r0 = DateTime.Now;
+            long seen = DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeMilliseconds();
+            int at = 0;
+            string? Play((string Name, int Class, int ItemLevel, int Odyle, int Charged, int Nightmare, int Tasks)[] account)
+            {
+                Aion2.Aion2Tickets.NoteListedCharacters(null, account.Select((a, i) => new Aion2.AccountCharacter(a.Name, a.Class, 1, 45, a.ItemLevel, "Dawnbreakers", seen,
+                    seen - (account.Length - i) * 86_400_000L, 2302, 700 + at + i)).ToList());
+                foreach (var a in account)
+                {
+                    Aion2.Aion2Tickets.ReceiveList(login, r0.AddSeconds(at));
+                    Aion2.Aion2Tickets.NoteCharacter(a.Name, 2302, r0.AddSeconds(at + 4), level: 45);
+                    foreach ((int id, int value, int bonus) in new[] { (Aion2.Aion2Tickets.OdyleId, a.Odyle, a.Charged), (4, a.Nightmare, 0), (Aion2.Aion2Tickets.MissionsId, a.Tasks, a.Tasks) })
+                    {
+                        Aion2.Aion2Tickets.ReceiveUpdate(new Aion2.TicketReading(id, new Aion2.TicketValue(value, bonus, 0)), r0.AddSeconds(at + 6));
+                    }
+
+                    Aion2.Aion2Tickets.ReceiveUpdate(new Aion2.TicketReading(Aion2.Aion2Tickets.PremiumId, new Aion2.TicketValue(0, 0, DateTimeOffset.UtcNow.AddDays(20).ToUnixTimeMilliseconds())),
+                        r0.AddSeconds(at + 6));
+                    at += 10;
+                }
+
+                return Aion2.Aion2Tickets.Snapshot().FirstOrDefault(c => c.Name == account[0].Name)?.Account;
+            }
+
+            if (Play(new[] { ("Lumiael", 21, 2380, 210, 0, 9, 2) }) is { } old)
+            {
+                Aion2.Aion2Tickets.RemoveRoster(old);
+            }
+
+            Play(new[] { ("Kaivhan", 5, 2840, 655, 120, 13, 5), ("Vesh", 17, 2610, 120, 600, 2, 0) });
+            Play(new[] { ("Seraphyne", 25, 2890, 520, 640, 2, 5), ("Nyxelle", 13, 2760, 840, 0, 14, 3), ("Draegor", 29, 2655, 300, 120, 8, 5) });
+        }
+
         int scale = int.TryParse(Environment.GetEnvironmentVariable("AIONDPS_RENDER_SCALE"), out int sc) && sc is >= 1 and <= 4 ? sc : 1; // 2 = a sharp picture for the website
         var window = new Ui.ChecklistWindow();
-        if (page is "roster" or "roster8")
+        if (page is "roster" or "roster8" or "rosters")
         {
             window.ShowRoster();
-            if (page == "roster8")
+            if (page is "roster8" or "rosters")
             {
                 window.Width = 960; // about the app's width for the page: eight columns have to fit there
             }

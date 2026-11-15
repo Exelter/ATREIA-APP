@@ -41,7 +41,7 @@ public sealed record TicketCharacter(
 /// are the table's caps (28 keys, 35 boss kills, 14 and 7 reward counts, 540 of 560 Odyle energy).
 /// The last list of every character is kept in %AppData%\Aion DPS Meter\aion2-tickets.json.
 /// </summary>
-public static class Aion2Tickets
+public static partial class Aion2Tickets
 {
     public const int OdyleId = 60000001;
 
@@ -190,6 +190,20 @@ public static class Aion2Tickets
     private sealed class Saved
     {
         public List<SavedCharacter> Characters { get; set; } = new();
+
+        /// <summary>The roster the app shows (<see cref="ShownRoster"/>); null in files from before 2.0.25.</summary>
+        public string? Shown { get; set; }
+
+        /// <summary>The rosters taken out of the app (<see cref="RemoveRoster"/>).</summary>
+        public List<SavedRemoved>? Removed { get; set; }
+    }
+
+    private sealed class SavedRemoved
+    {
+        public string? Key { get; set; }
+        public int ServerId { get; set; }
+        public List<string> Names { get; set; } = new();
+        public long RemovedMs { get; set; }
     }
 
     private sealed class SavedCharacter
@@ -245,6 +259,7 @@ public static class Aion2Tickets
         {
             _persist = true;
             Load();
+            SeedRosters(Aion2RememberedCharacters.Load());
         }
     }
 
@@ -317,8 +332,12 @@ public static class Aion2Tickets
         {
             Characters.Clear();
             _current = null;
+            _currentServerId = 0;
             _likely = null;
             _lastListed = null;
+            _shown = null;
+            _removed.Clear();
+            _ignoredLogin = false;
             _awaitingName = false;
             _pending = null;
             _pendingAt = default;
@@ -786,6 +805,11 @@ public static class Aion2Tickets
             }
             else if ((_current ?? _likely) is { } name)
             {
+                if (IsRemovedLocked(name, _current is not null ? _currentServerId : _likelyServerId))
+                {
+                    return; // a character of a roster taken out of the app
+                }
+
                 if (Characters.TryGetValue(name, out TicketCharacter? known))
                 {
                     if (reading.Id == MissionsId && at - _pendingAt >= TimeSpan.Zero && at - _pendingAt < LoginHeadWindow && FirstLoginOfDay(known, at))
@@ -866,10 +890,24 @@ public static class Aion2Tickets
         lock (Gate)
         {
             bool named = !_awaitingName || receivedAt >= _pendingAt;
+            string? wasPlaying = _current;
             if (named)
             {
                 _current = name;
+                _currentServerId = serverId;
                 _likely = null;
+            }
+
+            // a character of a roster taken out of the app (or the login that followed its list): nothing of it is kept
+            if (named && (IsRemovedLocked(name, serverId) || (_ignoredLogin && _awaitingName)))
+            {
+                if (_awaitingName)
+                {
+                    _pending = null;
+                    _awaitingName = false;
+                }
+
+                return;
             }
 
             if (_awaitingName && _pending is not null && receivedAt >= _pendingAt)
@@ -936,6 +974,14 @@ public static class Aion2Tickets
                     }
                 }
             }
+
+            // another character in game (the meter started while it was, or another login): the app shows its roster
+            if (named && wasPlaying != name && Characters.TryGetValue(name, out TicketCharacter? playing) && KeyOf(playing) != _shown)
+            {
+                _shown = KeyOf(playing);
+                _dirty = true;
+                changed = true;
+            }
         }
 
         if (changed)
@@ -954,6 +1000,18 @@ public static class Aion2Tickets
         {
             var names = new HashSet<string>(listed.Select(c => c.Name), StringComparer.Ordinal);
             _lastListed = names;
+            // the selection of a roster taken out of the app: none of its characters is counted (one made on the account since is one of them too)
+            if (listed.Count > 0 && RemovedListLocked(account, listed) is { } removed)
+            {
+                removed.Names.UnionWith(names);
+                _ignoredLogin = true;
+                _dirty = true;
+                return;
+            }
+
+            _ignoredLogin = false;
+            // the roster: the account key where the list has one (it had until November 2026), else the roster its characters were (or a new one)
+            string? roster = account ?? (listed.Count > 0 ? ListedRosterKey(listed) : null);
             foreach (AccountCharacter c in listed)
             {
                 if (Characters.TryGetValue(c.Name, out TicketCharacter? known))
@@ -962,7 +1020,7 @@ public static class Aion2Tickets
                     {
                         ServerId = known.ServerId > 0 ? known.ServerId : c.ServerId, // the list's is the server it was made on: the login's stays (see NoteCharacter)
                         Level = c.Level > 0 ? c.Level : known.Level,
-                        Account = account ?? known.Account,
+                        Account = roster ?? known.Account,
                         ClassCode = c.ClassCode,
                         ItemLevel = c.ItemLevel,
                         LastOnlineMs = c.LastOnlineMs,
@@ -976,16 +1034,23 @@ public static class Aion2Tickets
                 }
                 else
                 {
-                    Characters[c.Name] = new TicketCharacter(c.Name, c.ServerId, DateTime.UtcNow, new Dictionary<int, TicketValue>(), c.Level, account, c.ClassCode, c.ItemLevel, c.LastOnlineMs, c.Legion);
+                    Characters[c.Name] = new TicketCharacter(c.Name, c.ServerId, DateTime.UtcNow, new Dictionary<int, TicketValue>(), c.Level, roster, c.ClassCode, c.ItemLevel, c.LastOnlineMs, c.Legion);
                     changed = true;
                 }
             }
 
-            if (account is not null)
+            if (roster is not null)
             {
-                foreach (TicketCharacter gone in Characters.Values.Where(c => c.Account == account && c.Tickets.Count == 0 && !names.Contains(c.Name)).ToList())
+                foreach (TicketCharacter gone in Characters.Values.Where(c => c.Account == roster && c.Tickets.Count == 0 && !names.Contains(c.Name)).ToList())
                 {
                     Characters.Remove(gone.Name);
+                    changed = true;
+                }
+
+                // the app shows the roster logged in with
+                if (_shown != roster)
+                {
+                    _shown = roster;
                     changed = true;
                 }
             }
@@ -1177,6 +1242,16 @@ public static class Aion2Tickets
                 }
                 Characters[c.Name] = new TicketCharacter(c.Name, c.ServerId, DateTime.SpecifyKind(DateTimeOffset.FromUnixTimeMilliseconds(c.SavedMs).DateTime, DateTimeKind.Utc), tickets, c.Level, c.Account, c.ClassCode, c.ItemLevel != 0 ? c.ItemLevel : c.CombatPower, c.LastOnlineMs, c.Legion);
             }
+
+            _shown = saved.Shown;
+            foreach (SavedRemoved r in saved.Removed ?? new())
+            {
+                _removed.Add(new RemovedEntry
+                {
+                    Key = r.Key, ServerId = r.ServerId, Names = new HashSet<string>(r.Names, StringComparer.Ordinal),
+                    RemovedAt = DateTime.SpecifyKind(DateTimeOffset.FromUnixTimeMilliseconds(r.RemovedMs).DateTime, DateTimeKind.Utc),
+                });
+            }
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
@@ -1214,6 +1289,11 @@ public static class Aion2Tickets
                     ItemLevel = c.ItemLevel,
                     LastOnlineMs = c.LastOnlineMs,
                     Legion = c.Legion,
+                }).ToList(),
+                Shown = _shown,
+                Removed = _removed.Count == 0 ? null : _removed.Select(r => new SavedRemoved
+                {
+                    Key = r.Key, ServerId = r.ServerId, Names = r.Names.ToList(), RemovedMs = new DateTimeOffset(r.RemovedAt, TimeSpan.Zero).ToUnixTimeMilliseconds(),
                 }).ToList(),
             };
             _dirty = false;

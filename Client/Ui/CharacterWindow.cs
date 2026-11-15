@@ -269,8 +269,9 @@ public sealed class CharacterWindow : Window
     {
         Aion2CharacterInfo? character = _directory.LocalCharacter;
         // another character of the account: its basics come from the character list, the rest from the server
-        if ((_viewing is not null && (character is null || _viewing != character.Name) && AccountCharacterNames().Contains(_viewing))
-            || (character is null && AccountCharacterNames().Count > 0 && (_viewing ??= AccountCharacterNames()[0]) is not null))
+        List<string> account = AccountCharacterNames(character?.Name ?? Aion2Tickets.PlayingName);
+        if ((_viewing is not null && (character is null || _viewing != character.Name) && account.Contains(_viewing))
+            || (character is null && account.Count > 0 && (_viewing ??= account[0]) is not null))
         {
             RenderOther(_viewing!, character?.Name);
             return;
@@ -524,17 +525,19 @@ public sealed class CharacterWindow : Window
 
     // ---------------------------------------------------------------- the other characters of the account
 
-    /// <summary>The characters of the logged-in character's account that the character list of the login named (all of them, also those the meter never saw log in).</summary>
-    private List<string> AccountCharacterNames()
+    /// <summary>The characters of the logged-in character's account that the character list of the login named (all of them, also those the meter never saw log in):
+    /// its roster (the game's account key is no longer in the list, November 2026), all of them while the character is not known.</summary>
+    private List<string> AccountCharacterNames(string? localName)
     {
-        string? account = _directory.AccountKeyHash();
-        return Aion2Tickets.Snapshot().Where(c => c.ClassCode > 0 && (account is null || c.Account == account)).Select(c => c.Name).ToList();
+        IReadOnlyList<TicketCharacter> all = Aion2Tickets.Snapshot();
+        string? account = _directory.AccountKeyHash() ?? all.FirstOrDefault(c => c.Name == localName)?.Account;
+        return all.Where(c => c.ClassCode > 0 && (account is null || c.Account == account)).Select(c => c.Name).ToList();
     }
 
     /// <summary>The row of characters to switch between (the logged-in one first); null when the account has only one.</summary>
     private UIElement? BuildSwitcher(string? localName)
     {
-        List<string> names = AccountCharacterNames();
+        List<string> names = AccountCharacterNames(localName);
         if (localName is not null)
         {
             names.Remove(localName);

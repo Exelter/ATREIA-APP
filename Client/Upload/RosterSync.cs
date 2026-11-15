@@ -20,7 +20,10 @@ public sealed record RosterCharacterUpload(
     string Name, int ServerId, string? Server, string? Cls, int Level, int ItemLevel, string? Legion, long SeenMs, bool Online, bool? Premium,
     RosterOdyleUpload? Odyle, RosterCountUpload? Missions, RosterCountUpload? Points, IReadOnlyList<RosterTicketUpload> Tickets);
 
-public sealed record RosterUpload(int V, IReadOnlyList<RosterCharacterUpload> Characters);
+/// <summary>A character of a roster taken out of the app (the Characters page): the site's roster drops it too.</summary>
+public sealed record RosterGoneUpload(string Name, int ServerId);
+
+public sealed record RosterUpload(int V, IReadOnlyList<RosterCharacterUpload> Characters, IReadOnlyList<RosterGoneUpload>? Removed = null);
 
 /// <summary>
 /// The roster on the phone: while the meter is signed in to Atreia (and Settings' <see cref="MeterSettings.SyncRoster"/> is on), the characters'
@@ -45,6 +48,9 @@ public static class RosterSync
     private static bool _pending = true; // the first send after the start carries everything
     private static int _busy;
 
+    /// <summary>The removed rosters' characters the site was last told of (null: not since the start, or since another sign-in).</summary>
+    private static string? _goneSent;
+
     /// <summary>The meter's start: listen to the counters and check every 15 seconds whether a send is due.</summary>
     public static void Start()
     {
@@ -63,6 +69,7 @@ public static class RosterSync
             lock (Sent)
             {
                 Sent.Clear(); // another account: everything again
+                _goneSent = null;
             }
 
             _pending = true;
@@ -107,14 +114,24 @@ public static class RosterSync
                 changed.Add((key, body, c));
             }
 
-            if (changed.Count == 0 || Account.Token is not { } token)
+            // the characters of the rosters taken out of the app: the site forgets them as well (told again after each start, and when another roster goes)
+            List<RosterGoneUpload> gone = Aion2Tickets.RemovedRosters().SelectMany(r => r.Names.Select(n => new RosterGoneUpload(n, r.ServerId)))
+                .Take(Aion2Tickets.MaxCharacters).ToList();
+            string goneKey = string.Join(",", gone.Select(g => g.Name + "|" + g.ServerId));
+            bool tellGone;
+            lock (Sent)
+            {
+                tellGone = gone.Count > 0 && goneKey != _goneSent;
+            }
+
+            if ((changed.Count == 0 && !tellGone) || Account.Token is not { } token)
             {
                 return;
             }
 
             using var request = new HttpRequestMessage(HttpMethod.Post, $"{UploadClient.ApiBaseUrl}/api/roster")
             {
-                Content = JsonContent.Create(new RosterUpload(1, changed.Select(x => x.Character).ToList()), options: Json),
+                Content = JsonContent.Create(new RosterUpload(1, changed.Select(x => x.Character).ToList(), tellGone ? gone : null), options: Json),
             };
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             using HttpResponseMessage response = await Http.SendAsync(request);
@@ -125,6 +142,11 @@ public static class RosterSync
                     foreach (var (key, body, _) in changed)
                     {
                         Sent[key] = body;
+                    }
+
+                    if (tellGone)
+                    {
+                        _goneSent = goneKey;
                     }
                 }
             }

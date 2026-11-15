@@ -201,10 +201,10 @@ public static class Aion2Inventories
                 }
             }
 
-            if (_owner is not null && _stockChanged)
+            if (_owner is not null && _stockChanged && Whereabouts(_owner) is var (server, account) && !Aion2Tickets.IsRemoved(_owner, server))
             {
+                // (a character of a roster taken out of the app is not kept: Aion2Tickets.RemoveRoster)
                 _stockChanged = false;
-                (int server, string? account) = Whereabouts(_owner);
                 var held = new CharacterHoldings
                 {
                     Name = _owner, ServerId = server, Account = account, SavedAt = now,
@@ -317,6 +317,45 @@ public static class Aion2Inventories
 
         return places.Select(kv => (kv.Key, kv.Value.Sum(p => p.Count), (IReadOnlyList<HoldingPlace>)kv.Value.OrderByDescending(p => p.Count).ToList()))
             .OrderByDescending(x => x.Item2).ToList();
+    }
+
+    /// <summary>Forgets the holdings of characters taken out of the app (a roster removed on the Characters page), and a server storage only they used.</summary>
+    public static void Forget(IReadOnlyCollection<string> names)
+    {
+        bool changed = false;
+        lock (Gate)
+        {
+            var gone = new List<CharacterHoldings>();
+            foreach (string name in names)
+            {
+                if (_characters.Remove(name, out CharacterHoldings? held))
+                {
+                    gone.Add(held);
+                }
+            }
+
+            if (gone.Count > 0)
+            {
+                var used = _characters.Values.Select(c => AccountKey(c.Account, c.ServerId)).ToHashSet(StringComparer.Ordinal);
+                foreach (string key in gone.Select(h => AccountKey(h.Account, h.ServerId)).Distinct(StringComparer.Ordinal).Where(k => !used.Contains(k)))
+                {
+                    _accounts.Remove(key);
+                }
+
+                if (_owner is not null && names.Contains(_owner))
+                {
+                    _owner = null;
+                }
+
+                _dirty = true;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            Changed?.Invoke();
+        }
     }
 
     /// <summary>Forgets everything (tests, the pictures).</summary>
