@@ -402,12 +402,87 @@ public static class SelfCheckTickets
         Console.WriteLine($"  -> the roster for the site: readings as seen, clock and caps={rosterBuilt}");
         bool odyleOk = tickLearnt && projected && liveExact && withoutClock && capped && lockedOdyle && rosterBuilt;
         bool corridorsOk = Corridors(entries);
+        bool rostersOk = Rosters(entries);
 
         Aion2Tickets.Reset();
-        bool ok = corridorsOk && odyleOk && missionsReset && missionsStale && stamped && firstLogin && sameDay && newcomer && maskBit2 && startedInGame && relogKeeps && remoteRead && listRead && listedEntries && deletedGone && listKept && membership && premiumKnown && plainCaps && ticketFrame && noTicket && ticketAlone && passFrame && passLevels && lostTomorrow && rules && dungeonRefill && korean && locks && missionsRead && ticks && keptUntilReset && dailyCleared && weeklyCleared && resetTimes && cooldownOk && shortKeeps && everyFrame && clockOk && jumpOk && restartOk && listOk && truncated && gain && used && refill && notYet && bound && changed && refills && Aion2Tickets.Catalog.Count == 70;
+        bool ok = rostersOk && corridorsOk && odyleOk && missionsReset && missionsStale && stamped && firstLogin && sameDay && newcomer && maskBit2 && startedInGame && relogKeeps && remoteRead && listRead && listedEntries && deletedGone && listKept && membership && premiumKnown && plainCaps && ticketFrame && noTicket && ticketAlone && passFrame && passLevels && lostTomorrow && rules && dungeonRefill && korean && locks && missionsRead && ticks && keptUntilReset && dailyCleared && weeklyCleared && resetTimes && cooldownOk && shortKeeps && everyFrame && clockOk && jumpOk && restartOk && listOk && truncated && gain && used && refill && notYet && bound && changed && refills && Aion2Tickets.Catalog.Count == 70;
         Console.WriteLine(ok ? "  -> OK" : "  -> FAILED");
         ServerTime.Reset();
         return ok;
+    }
+
+    /// <summary>
+    /// The rosters (15 November 2026: a player's husband's characters showed in her app after he played on her PC). The character lists of November 2026 carry
+    /// no account key (the owner's of 12 November: Dead, rammusOK, YIELD, Fighter, no key): the characters a list holds together are one roster. Two accounts on one
+    /// server are two rosters; the one logged in with is shown, another can be picked until the next login; a removed roster's characters go, and its next login
+    /// (with a character made since) is not counted while hers still are; brought back, it is counted again as the same roster. Characters saved before rosters get
+    /// theirs from the remembered character lists.
+    /// </summary>
+    private static bool Rosters(List<TicketReading> entries)
+    {
+        Aion2Tickets.Reset();
+        var at = new DateTime(2026, 11, 15, 10, 0, 0);
+        static AccountCharacter Listed(string name, int cls, int itemLevel, long created, int id) => new(name, cls, 2, 45, itemLevel, null, 0, created, 2302, id);
+        AccountCharacter[] hers = { Listed("Koori", 13, 2800, 1_790_000_000_000, 501), Listed("Kooriel", 25, 2600, 1_791_000_000_000, 502) };
+        AccountCharacter[] his = { Listed("Brann", 5, 2750, 1_789_000_000_000, 601), Listed("Brannix", 9, 2910, 1_790_500_000_000, 602), Listed("Bramble", 29, 2400, 1_792_000_000_000, 603) };
+        void Login(AccountCharacter[] list, string name, DateTime when)
+        {
+            Aion2Tickets.NoteListedCharacters(null, list); // the character selection: no account key in the list
+            Aion2Tickets.ReceiveList(entries, when);
+            Aion2Tickets.NoteCharacter(name, 2302, when.AddSeconds(4), 45);
+        }
+
+        string? KeyOf(string name) => Aion2Tickets.Snapshot().FirstOrDefault(c => c.Name == name)?.Account;
+        Login(hers, "Koori", at);
+        Login(his, "Brann", at.AddHours(1)); // he played on her PC
+        Login(his, "Brannix", at.AddHours(1.5));
+        IReadOnlyList<TicketRoster> rosters = Aion2Tickets.Rosters();
+        string? herKey = KeyOf("Koori"), hisKey = KeyOf("Brann");
+        bool two = rosters.Count == 2 && herKey is not null && hisKey is not null && herKey != hisKey && KeyOf("Kooriel") == herKey && KeyOf("Bramble") == hisKey
+            && rosters.Single(r => r.Key == hisKey) is { ServerId: 2302, Characters.Count: 3, Lead.Name: "Brannix" } && rosters.Single(r => r.Key == herKey).Characters.Count == 2;
+        bool followsLogin = Aion2Tickets.ShownRoster()?.Key == hisKey && Aion2Tickets.Shown().All(c => c.Account == hisKey);
+        Login(hers, "Kooriel", at.AddHours(2));
+        bool backToHers = Aion2Tickets.ShownRoster()?.Key == herKey && Aion2Tickets.Shown().Select(c => c.Name).OrderBy(n => n, StringComparer.Ordinal).SequenceEqual(new[] { "Koori", "Kooriel" });
+        Aion2Tickets.ShowRoster(hisKey!);
+        Aion2Tickets.ReceiveUpdate(new TicketReading(Aion2Tickets.OdyleId, new TicketValue(300, 0, 0)), at.AddHours(2.1));
+        bool picked = Aion2Tickets.ShownRoster()?.Key == hisKey && Aion2Tickets.Snapshot().First(c => c.Name == "Kooriel").Tickets[Aion2Tickets.OdyleId].Count == 300;
+        Aion2Tickets.ShowRoster(herKey!);
+        Console.WriteLine($"  -> rosters: two accounts on one server are two (no account key in the lists)={two}, the one logged in with is shown={followsLogin && backToHers}, another picked by hand={picked}");
+
+        bool removedOne = Aion2Tickets.RemoveRoster(hisKey!);
+        RemovedRoster? gone = Aion2Tickets.RemovedRosters().FirstOrDefault();
+        bool removed = removedOne && Aion2Tickets.Snapshot().All(c => c.Account == herKey) && Aion2Tickets.Rosters().Count == 1 && Aion2Tickets.RemovedRosters().Count == 1
+            && gone is { ServerId: 2302 } && gone.Names.SequenceEqual(new[] { "Bramble", "Brann", "Brannix" }) && Aion2Tickets.IsRemoved("Brann", 2302)
+            && !Aion2Tickets.IsRemoved("Brann", 2309) && !Aion2Tickets.RemoveRoster(hisKey!);
+        Login(his.Append(Listed("Bramblet", 33, 1000, 1_794_000_000_000, 604)).ToArray(), "Brann", at.AddHours(3)); // with a character made since
+        Aion2Tickets.ReceiveUpdate(new TicketReading(Aion2Tickets.OdyleId, new TicketValue(500, 0, 0)), at.AddHours(3.1));
+        bool notAgain = Aion2Tickets.Snapshot().Select(c => c.Name).OrderBy(n => n, StringComparer.Ordinal).SequenceEqual(new[] { "Koori", "Kooriel" })
+            && Aion2Tickets.IsRemoved("Bramblet", 2302) && Aion2Tickets.CurrentName == "Brann" && Aion2Tickets.ShownRoster()?.Key == herKey;
+        Login(hers, "Koori", at.AddHours(4));
+        bool hersCounted = Aion2Tickets.CurrentName == "Koori" && Aion2Tickets.ShownRoster()?.Key == herKey && Aion2Tickets.Snapshot().Count == 2;
+        Aion2Tickets.BringBackRoster(gone?.Id ?? "");
+        Login(his, "Brann", at.AddHours(5));
+        bool back = Aion2Tickets.RemovedRosters().Count == 0 && Aion2Tickets.Rosters().Count == 2 && KeyOf("Brann") == hisKey && Aion2Tickets.ShownRoster()?.Key == hisKey;
+        Console.WriteLine($"  -> a removed roster's characters go={removed}, its next login (a character made since too) is not counted={notAgain}, hers still are={hersCounted}, brought back it is counted again as the same roster={back}");
+
+        // saved before rosters (no account): one roster of the server until the remembered character lists tell the two accounts apart (a list of no time is not one)
+        Aion2Tickets.Reset();
+        foreach (string name in new[] { "Koori", "Kooriel", "Brann" })
+        {
+            Aion2Tickets.ReceiveList(entries, at);
+            Aion2Tickets.NoteCharacter(name, 2302, at.AddSeconds(4), 45);
+            at = at.AddMinutes(10);
+        }
+
+        bool oneBefore = Aion2Tickets.Rosters() is [{ Key: "?2302", Characters.Count: 3 }];
+        Aion2Tickets.SeedRosters(new Aion2RememberedCharacters.Entry[]
+        {
+            new("Koori", 13, 2, 45, 2302, 1_794_700_000_000), new("Kooriel", 25, 2, 45, 2309, 1_794_700_000_000), new("Brann", 5, 2, 45, 2302, 0),
+        });
+        bool seeded = Aion2Tickets.Rosters().Count == 2 && KeyOf("Koori") is { } seededKey && KeyOf("Kooriel") == seededKey && KeyOf("Brann") is null;
+        Console.WriteLine($"  -> characters saved before rosters: one roster of the server={oneBefore}, the remembered list tells the accounts apart={seeded}");
+        Aion2Tickets.Reset();
+        return two && followsLogin && backToHers && picked && removed && notAgain && hersCounted && back && oneBefore && seeded;
     }
 
     /// <summary>

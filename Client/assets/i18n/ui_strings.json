@@ -13823,6 +13823,54 @@
     "en": "{0} characters at once",
     "de": "{0} Charaktere auf einen Blick"
   },
+  "Checklist.Rosters": {
+    "en": "Rosters",
+    "de": "Roster"
+  },
+  "Checklist.RostersTip": {
+    "en": "A roster is the characters of one game account on one server: the game lists them together at the character selection. The page shows one roster, the one you logged in with last; click another one to see it. The cross takes a roster that isn't yours out of the app.",
+    "de": "Ein Roster sind die Charaktere eines Spielkontos auf einem Server: Das Spiel listet sie bei der Charakterauswahl zusammen. Die Seite zeigt ein Roster, das, mit dem du dich zuletzt eingeloggt hast; klicke ein anderes an, um es zu sehen. Das Kreuz nimmt ein Roster, das nicht deins ist, aus der App."
+  },
+  "Checklist.RosterOne": {
+    "en": "1 character",
+    "de": "1 Charakter"
+  },
+  "Checklist.RosterMany": {
+    "en": "{0} characters",
+    "de": "{0} Charaktere"
+  },
+  "Checklist.RosterRemove": {
+    "en": "Remove this roster from the app",
+    "de": "Dieses Roster aus der App entfernen"
+  },
+  "Checklist.RosterRemoveTitle": {
+    "en": "Remove roster",
+    "de": "Roster entfernen"
+  },
+  "Checklist.RosterRemoveAsk": {
+    "en": "Remove {0}'s roster from the app?\n\n{1}\n\nThese characters and their counters leave this app, and they aren't added again when they log in on this PC. They leave your roster on atreia.app too. You can bring the roster back under the list of characters.",
+    "de": "Das Roster von {0} aus der App entfernen?\n\n{1}\n\nDiese Charaktere und ihre Zähler verschwinden aus der App und kommen nicht wieder dazu, wenn sie sich an diesem PC einloggen. Auch aus deinem Roster auf atreia.app verschwinden sie. Unter der Liste der Charaktere kannst du das Roster zurückholen."
+  },
+  "Checklist.RostersRemovedOne": {
+    "en": "1 removed roster",
+    "de": "1 entferntes Roster"
+  },
+  "Checklist.RostersRemovedMany": {
+    "en": "{0} removed rosters",
+    "de": "{0} entfernte Roster"
+  },
+  "Checklist.RostersRemovedTip": {
+    "en": "Click to bring one back",
+    "de": "Klicken, um eines zurückzuholen"
+  },
+  "Checklist.RosterBringBack": {
+    "en": "Bring back: {0}",
+    "de": "Zurückholen: {0}"
+  },
+  "Checklist.RosterBroughtBack": {
+    "en": "{0}: back in the app. These characters show up again the next time they log in while the app runs.",
+    "de": "{0}: wieder in der App. Diese Charaktere erscheinen wieder, sobald sie sich einloggen, während die App läuft."
+  },
   "Checklist.HoursMinutes": {
     "en": "{0} h {1} m",
     "de": "{0} Std {1} Min"

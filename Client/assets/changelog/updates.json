@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "2.0.25",
+      "date": "2026-11-15",
+      "items": [
+        {
+          "kind": "new",
+          "area": "Characters",
+          "title": "Two players on one PC: pick whose roster the app shows, or remove a roster that isn’t yours",
+          "text": "A roster is the characters of one game account on one server, the ones the game lists together at the character selection. When the app has seen more than one (someone else played on your PC, or you play on two servers), the Characters page lists the rosters above the characters. It shows the roster you logged in with, and a click shows another one; the home page and the season missions follow it. The cross removes a roster: its characters and their counters leave the app and your roster on atreia.app, and they aren’t counted when they log in on this PC again. A removed roster can be brought back under the list of characters. If two players’ characters still show as one roster, log in once while the app runs: it sorts them then.",
+          "example": "Mira’s partner played a few evenings on her PC, so her Characters page had his three characters among hers. Now it shows two rosters; she clicks the cross on his, and only her characters are left."
+        }
+      ]
+    },
+    {
       "version": "2.0.24",
       "date": "2026-11-15",
       "items": [

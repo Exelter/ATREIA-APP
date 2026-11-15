@@ -187,7 +187,11 @@ public sealed partial class ChecklistWindow : Window
     /// <summary>Rebuilds the character list (the one logged in now is chosen first) and the page.</summary>
     private void Refresh()
     {
-        IReadOnlyList<TicketCharacter> all = Aion2Tickets.OnHomeServer(); // the server played on now only
+        // one roster: the one logged in with last, or the one picked above the characters (15 November 2026, the owner: "if people have multiple rosters
+        // allow for them to select a roster or remove a roster")
+        IReadOnlyList<TicketRoster> rosters = Aion2Tickets.Rosters();
+        TicketRoster? shown = Aion2Tickets.ShownRoster();
+        IReadOnlyList<TicketCharacter> all = shown?.Characters ?? Array.Empty<TicketCharacter>();
         string? current = Aion2Tickets.CurrentName;
         // the roster of all characters first when there are two or more; a character the user picked stays picked
         bool roster = all.Count(c => c.Tickets.Count > 0) >= 2;
@@ -196,6 +200,11 @@ public sealed partial class ChecklistWindow : Window
             : roster ? RosterKey
             : current is not null && all.Any(c => c.Name == current) ? current : all.FirstOrDefault()?.Name;
         _characters.Children.Clear();
+        if (rosters.Count >= 2)
+        {
+            _characters.Children.Add(RosterSwitch(rosters, shown));
+        }
+
         if (roster)
         {
             _characters.Children.Add(RosterCard(wanted == RosterKey, all.Count(c => c.Tickets.Count > 0), () =>
@@ -213,6 +222,11 @@ public sealed partial class ChecklistWindow : Window
                 _selected = name;
                 Refresh();
             }));
+        }
+
+        if (Aion2Tickets.RemovedRosters() is { Count: > 0 } removed)
+        {
+            _characters.Children.Add(RemovedRostersLine(removed));
         }
 
         _selected = wanted;
@@ -697,6 +711,171 @@ public sealed partial class ChecklistWindow : Window
         return card;
     }
 
+    // ---- the rosters: the characters of one game account on one server each ----
+
+    /// <summary>
+    /// The rosters above the characters when there are two or more (two game accounts played on one PC, or one account on two servers): each by the character
+    /// it goes by, its server and how many characters it has. A click shows it; the cross takes a roster that is not the player's out of the app (asked first).
+    /// </summary>
+    private UIElement RosterSwitch(IReadOnlyList<TicketRoster> rosters, TicketRoster? shown)
+    {
+        LocalizationManager loc = LocalizationManager.Instance;
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 10), ToolTip = loc["Checklist.RostersTip"] };
+        TextBlock head = Label(loc["Checklist.Rosters"].ToUpper(CultureInfo.CurrentCulture), "Brush.TextSubtle", 10, bold: true);
+        head.Margin = new Thickness(4, 0, 0, 6);
+        panel.Children.Add(head);
+        foreach (TicketRoster r in rosters)
+        {
+            panel.Children.Add(RosterRow(r, r.Key == shown?.Key));
+        }
+
+        var rule = new Border { Height = 1, Margin = new Thickness(4, 6, 4, 0) };
+        rule.SetResourceReference(Border.BackgroundProperty, "Brush.Border");
+        panel.Children.Add(rule);
+        return panel;
+    }
+
+    private UIElement RosterRow(TicketRoster r, bool active)
+    {
+        LocalizationManager loc = LocalizationManager.Instance;
+        TicketCharacter lead = r.Lead;
+        string? className = lead.ClassCode > 0 ? Aion2.Protocol.Aion2SkillNames.ClassFromCode(lead.ClassCode) : null;
+        var row = new DockPanel();
+
+        // the cross: out of the app
+        TextBlock cross = Label("\uE711", "Brush.TextSubtle", 9.5);
+        cross.FontFamily = new FontFamily("Segoe MDL2 Assets");
+        cross.HorizontalAlignment = HorizontalAlignment.Center;
+        var remove = new Border
+        {
+            Child = cross, Width = 22, Height = 22, CornerRadius = new CornerRadius(6), Background = Brushes.Transparent, Cursor = Cursors.Hand,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0), ToolTip = loc["Checklist.RosterRemove"],
+        };
+        remove.MouseEnter += (_, _) =>
+        {
+            remove.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+            cross.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Danger");
+        };
+        remove.MouseLeave += (_, _) =>
+        {
+            remove.Background = Brushes.Transparent;
+            cross.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
+        };
+        remove.MouseLeftButtonDown += (_, e) => e.Handled = true; // not a click on the roster
+        remove.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            AskRemoveRoster(r);
+        };
+        DockPanel.SetDock(remove, Dock.Right);
+        row.Children.Add(remove);
+
+        if (className is not null && new ClassIconConverter().Convert(className, typeof(ImageSource), null, CultureInfo.CurrentCulture) is ImageSource icon)
+        {
+            var image = new Image { Source = icon, Width = 20, Height = 20, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+            DockPanel.SetDock(image, Dock.Left);
+            row.Children.Add(image);
+        }
+
+        var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        TextBlock name = Label(lead.Name, "Brush.Text", 12.5, bold: true);
+        name.TextTrimming = TextTrimming.CharacterEllipsis;
+        if (className is not null)
+        {
+            name.Foreground = ClassBrushes.Text(className);
+        }
+
+        words.Children.Add(name);
+        string server = r.ServerId > 0 ? Aion2.Protocol.Aion2Servers.NameOf(r.ServerId).Replace("Europe - ", "", StringComparison.Ordinal) : "";
+        string count = string.Format(CultureInfo.CurrentCulture, loc[r.Characters.Count == 1 ? "Checklist.RosterOne" : "Checklist.RosterMany"], r.Characters.Count);
+        TextBlock info = Label(server.Length > 0 ? server + " \u00b7 " + count : count, "Brush.TextSubtle", 10.5);
+        info.TextTrimming = TextTrimming.CharacterEllipsis;
+        words.Children.Add(info);
+        row.Children.Add(words);
+
+        var card = new Border
+        {
+            CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 6, 6, 6), Margin = new Thickness(0, 0, 0, 4), BorderThickness = new Thickness(1),
+            Child = row, Cursor = Cursors.Hand, Background = Brushes.Transparent, ToolTip = string.Join(", ", r.Characters.Select(c => c.Name)),
+        };
+        if (active)
+        {
+            card.SetResourceReference(Border.BorderBrushProperty, "Brush.Accent");
+            card.SetResourceReference(Border.BackgroundProperty, "Brush.ControlRaised");
+        }
+        else
+        {
+            card.BorderBrush = Brushes.Transparent;
+            card.MouseEnter += (_, _) => card.SetResourceReference(Border.BackgroundProperty, "Brush.Control");
+            card.MouseLeave += (_, _) => card.Background = Brushes.Transparent;
+            card.MouseLeftButtonDown += (_, _) => Aion2Tickets.ShowRoster(r.Key); // the page is drawn again with the change
+        }
+
+        return card;
+    }
+
+    /// <summary>Asks before a roster goes: its characters, what goes with them, and that it can come back.</summary>
+    private void AskRemoveRoster(TicketRoster r)
+    {
+        LocalizationManager loc = LocalizationManager.Instance;
+        string text = string.Format(CultureInfo.CurrentCulture, loc["Checklist.RosterRemoveAsk"], r.Lead.Name, string.Join(", ", r.Characters.Select(c => c.Name)));
+        if (ThemedMessageBox.Show(Window.GetWindow(_characters), text, loc["Checklist.RosterRemoveTitle"], MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes
+            && Aion2Tickets.RemoveRoster(r.Key))
+        {
+            Aion2Tickets.Flush(force: true); // kept even if the app is closed right away
+        }
+    }
+
+    /// <summary>"1 removed roster" under the characters: a click lists them to bring one back.</summary>
+    private UIElement RemovedRostersLine(IReadOnlyList<RemovedRoster> removed)
+    {
+        LocalizationManager loc = LocalizationManager.Instance;
+        var words = new StackPanel { Orientation = Orientation.Horizontal };
+        TextBlock glyph = Label("\uE72C", "Brush.TextSubtle", 10);
+        glyph.FontFamily = new FontFamily("Segoe MDL2 Assets");
+        glyph.Margin = new Thickness(0, 1, 6, 0);
+        words.Children.Add(glyph);
+        TextBlock text = Label(string.Format(CultureInfo.CurrentCulture, loc[removed.Count == 1 ? "Checklist.RostersRemovedOne" : "Checklist.RostersRemovedMany"], removed.Count),
+            "Brush.TextSubtle", 10.5);
+        words.Children.Add(text);
+        var line = new Border
+        {
+            Child = words, Margin = new Thickness(4, 12, 0, 0), Padding = new Thickness(0, 2, 0, 2), Cursor = Cursors.Hand, Background = Brushes.Transparent,
+            HorizontalAlignment = HorizontalAlignment.Left, ToolTip = loc["Checklist.RostersRemovedTip"],
+        };
+        line.MouseEnter += (_, _) =>
+        {
+            text.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Accent");
+            glyph.SetResourceReference(TextBlock.ForegroundProperty, "Brush.Accent");
+        };
+        line.MouseLeave += (_, _) =>
+        {
+            text.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
+            glyph.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextSubtle");
+        };
+        line.MouseLeftButtonUp += (_, _) =>
+        {
+            var menu = new ContextMenu { PlacementTarget = line, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+            foreach (RemovedRoster r in removed)
+            {
+                string names = string.Join(", ", r.Names.Take(4)) + (r.Names.Count > 4 ? ", \u2026" : "");
+                var item = new MenuItem { Header = string.Format(CultureInfo.CurrentCulture, loc["Checklist.RosterBringBack"], names) };
+                string id = r.Id;
+                item.Click += (_, _) =>
+                {
+                    Aion2Tickets.BringBackRoster(id);
+                    Aion2Tickets.Flush(force: true);
+                    ThemedMessageBox.Show(Window.GetWindow(_characters), string.Format(CultureInfo.CurrentCulture, loc["Checklist.RosterBroughtBack"], names),
+                        loc["Checklist.Rosters"], MessageBoxButton.OK, MessageBoxImage.Information);
+                };
+                menu.Items.Add(item);
+            }
+
+            menu.IsOpen = true;
+        };
+        return line;
+    }
+
     /// <summary>"in 5 h 20 m", "in 2 d 4 h", "in 12 m".</summary>
     private static string InText(TimeSpan left)
     {
@@ -758,7 +937,7 @@ public sealed partial class ChecklistWindow : Window
         LocalizationManager loc = LocalizationManager.Instance;
         DateTime now = DateTime.Now, utcNow = DateTime.UtcNow;
         string? online = Aion2Tickets.CurrentName;
-        List<TicketCharacter> all = Aion2Tickets.OnHomeServer().Where(c => c.Tickets.Count > 0).ToList();
+        List<TicketCharacter> all = Aion2Tickets.Shown().Where(c => c.Tickets.Count > 0).ToList();
         var odyle = all.ToDictionary(c => c.Name, c => Aion2Tickets.OdyleNow(c, utcNow, c.Name == online));
 
         // the board: the resets, the energy of every character together, the claims it makes, whom to play next, the daily tasks done

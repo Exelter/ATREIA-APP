@@ -70,6 +70,7 @@ jobs:
             @('render-overlay', 'look-oldschool.png', 'look-oldschool'),
             @('render-checklist', 'roster.png', 'roster'),
             @('render-checklist', 'roster8.png', 'roster8'),
+            @('render-checklist', 'rosters.png', 'rosters'),
             @('render-app', 'app-home.png', 'home'),
             @('render-app', 'app-home-full.png', 'home', '1300'),
             @('render-app', 'app-news.png', 'news', '1250'),

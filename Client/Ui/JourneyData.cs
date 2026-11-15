@@ -115,6 +115,12 @@ internal static class JourneyData
             }
         }
 
+        // not the characters of a roster taken out of the app (the Characters page; their fights stay in the history)
+        foreach (string key in seen.Where(kv => Aion2Tickets.IsRemoved(kv.Value.Who.Name, kv.Value.Who.ServerId)).Select(kv => kv.Key).ToList())
+        {
+            seen.Remove(key);
+        }
+
         var list = seen.Values.OrderByDescending(v => v.Last).Select(v => v.Who).ToList();
         if (dir?.LocalCharacter is { Name.Length: > 0 } me && me.ServerId > 0)
         {
