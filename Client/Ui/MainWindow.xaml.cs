@@ -8504,6 +8504,7 @@ public partial class MainWindow : Window
         _timetable ??= new TimetableWindow();
         _timetable.ApplyOpacity(settings.TimetableOpacity ?? settings.OverlayOpacity);
         _timetable.ApplyLookahead(settings.TimetableLookaheadMinutes);
+        _timetable.ApplyOnlySoon(settings.TimetableOnlySoon);
         _timetable.ApplyLockedIfChanged(settings.TimetableLocked);
         if (!_timetable.IsVisible)
         {

@@ -56,7 +56,28 @@ public static class SelfCheckSettings
         bool popUp = fresh.MeterPopUpForBoss
             && System.Text.Json.JsonSerializer.Deserialize<MeterSettings>(System.Text.Json.JsonSerializer.Serialize(new MeterSettings { MeterPopUpForBoss = false }))?.MeterPopUpForBoss == false;
         Console.WriteLine($"  -> the meter pops up for a boss fight by default, and the choice is kept: {popUp}");
-        return ok && distinct && popUp && OverlayRule();
+        return ok && distinct && popUp && OverlayRule() && BossSoon();
+    }
+
+    /// <summary>
+    /// The overlays' "only shortly before" (15 November 2026, a player: "show it n minutes before"): the world boss overlay lists a boss while it is there and
+    /// from the minutes set before it is back (not one whose time is not known); off, every boss always. Both switches are kept.
+    /// </summary>
+    private static bool BossSoon()
+    {
+        var now = new DateTime(2026, 11, 15, 21, 0, 0);
+        var on = new MeterSettings { BossOverlaySoon = true, BossOverlaySoonMinutes = 15 };
+        var off = new MeterSettings();
+        bool Listed(MeterSettings s, Aion2.BossPhase phase, double minutes) =>
+            WorldBossController.Listed(new Aion2.BossStatus(phase, phase == Aion2.BossPhase.Unknown ? null : now.AddMinutes(minutes), now), now, s);
+        bool soon = Listed(on, Aion2.BossPhase.Respawn, 14) && Listed(on, Aion2.BossPhase.Fixed, 15) && !Listed(on, Aion2.BossPhase.Respawn, 16)
+            && Listed(on, Aion2.BossPhase.Now, -5) && !Listed(on, Aion2.BossPhase.Unknown, 0);
+        bool always = !off.BossOverlaySoon && !off.TimetableOnlySoon && Listed(off, Aion2.BossPhase.Respawn, 600) && Listed(off, Aion2.BossPhase.Unknown, 0);
+        MeterSettings? back = System.Text.Json.JsonSerializer.Deserialize<MeterSettings>(System.Text.Json.JsonSerializer.Serialize(
+            new MeterSettings { BossOverlaySoon = true, BossOverlaySoonMinutes = 30, TimetableOnlySoon = true }));
+        bool kept = back is { BossOverlaySoon: true, BossOverlaySoonMinutes: 30, TimetableOnlySoon: true };
+        Console.WriteLine($"  -> world bosses only shortly before: 14 and 15 min listed, 16 not, up now listed, not known not={soon}; off by default, then always={always}; kept={kept}");
+        return soon && always && kept;
     }
 
     /// <summary>When the meter is on screen by itself (MeterOverlayRule): only for the own boss fights, never for a dungeon or a dummy alone.</summary>

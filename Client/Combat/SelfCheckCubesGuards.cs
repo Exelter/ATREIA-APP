@@ -60,7 +60,33 @@ public static class SelfCheckCubesGuards
             && unknown is null && AionDPS.Ui.CubeRange.Text(m) == "~32 m";
         Console.WriteLine($"  -> cube metres: {(reported is { } a1 ? AionDPS.Ui.CubeRange.Text(a1) : "none")} after the game's report, "
             + $"{(read is { } a2 ? AionDPS.Ui.CubeRange.Text(a2) : "none")} from the minimap 2 s later, {(unknown is null ? "none" : "some")} 4 s after that: {metres}");
-        bool ok = arrivals && left && live && gone && ids && hostile && metres;
+
+        // the volume follows the ear (15 November 2026, a player: the lowest step of the cube chime "still super loud"): the samples are turned down by the
+        // square of the setting, so the lowest step (5) is some 52 dB under the sound as made; a file that is not 16-bit PCM is left to the player's volume
+        bool curve = Math.Abs(AionDPS.Ui.NotifySounds.Gain(5) - 0.0025) < 1e-9 && Math.Abs(AionDPS.Ui.NotifySounds.Gain(70) - 0.49) < 1e-9
+            && AionDPS.Ui.NotifySounds.Gain(100) == 1 && AionDPS.Ui.NotifySounds.Gain(0) == 0;
+        byte[] chime = System.IO.File.ReadAllBytes(System.IO.Path.Combine(AppContext.BaseDirectory, "assets", "sounds", "cube-arrival.wav"));
+        int Peak(byte[] wav)
+        {
+            int data = wav.AsSpan().IndexOf("data"u8);
+            int peak = 0;
+            for (int i = data + 8; data >= 0 && i + 1 < Math.Min(wav.Length, data + 8 + BitConverter.ToInt32(wav, data + 4)); i += 2)
+            {
+                peak = Math.Max(peak, Math.Abs((int)BitConverter.ToInt16(wav, i)));
+            }
+
+            return peak;
+        }
+
+        int loud = Peak(chime);
+        bool scaled = AionDPS.Ui.NotifySounds.Scale(chime, AionDPS.Ui.NotifySounds.Gain(5));
+        int quiet = Peak(chime);
+        byte[] notPcm = (byte[])chime.Clone();
+        notPcm[20] = 3; // a float WAV
+        bool refuses = !AionDPS.Ui.NotifySounds.Scale(notPcm, 0.5) && !AionDPS.Ui.NotifySounds.Scale(new byte[64], 0.5);
+        bool sound = curve && scaled && loud > 10_000 && quiet <= loud * 0.0025 + 1 && quiet > 0 && refuses;
+        Console.WriteLine($"  -> the sound volume follows the ear={curve}, the cube chime at the lowest step peaks at {quiet} of {loud} ({20 * Math.Log10(Math.Max(1, quiet) / (double)loud):0} dB)={sound}");
+        bool ok = arrivals && left && live && gone && ids && hostile && metres && sound;
         Console.WriteLine(ok ? "  -> OK" : "  -> FAILED");
         return ok;
     }

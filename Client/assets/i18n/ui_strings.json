@@ -2467,6 +2467,18 @@
     "ja": "いつでも",
     "ko": "상시"
   },
+  "Timetable.OnlySoonEmpty": {
+    "en": "Nothing within {0} min: it shows up then",
+    "de": "Nichts innerhalb von {0} Min.: es erscheint dann",
+    "fr": "Rien d'ici {0} min : il s'affichera à ce moment-là",
+    "es": "Nada en {0} min: aparecerá entonces",
+    "ru": "Ничего в ближайшие {0} мин: появится позже",
+    "zh": "{0} 分钟内无活动：届时显示",
+    "zh-TW": "{0} 分鐘內無活動：屆時顯示",
+    "pt": "Nada em {0} min: aparece nessa altura",
+    "ja": "{0} 分以内のイベントなし：その時に表示",
+    "ko": "{0}분 안에 없음: 그때 표시"
+  },
   "Main.Scope.All": {
     "en": "All",
     "de": "Alle",
@@ -2706,6 +2718,18 @@
     "pt": "{0} min",
     "ja": "{0} 分",
     "ko": "{0}분"
+  },
+  "Settings.Timetable.OnlySoon": {
+    "en": "Only show the overlay then, and while an event runs",
+    "de": "Overlay nur dann zeigen und solange ein Event läuft",
+    "fr": "N'afficher l'overlay qu'à ce moment-là et pendant un événement",
+    "es": "Mostrar el overlay solo entonces y mientras dura un evento",
+    "ru": "Показывать оверлей только в это время и пока идёт событие",
+    "zh": "仅在此时及活动进行中显示悬浮窗",
+    "zh-TW": "僅在此時及活動進行中顯示浮動層",
+    "pt": "Mostrar o overlay só nesse momento e enquanto um evento decorre",
+    "ja": "その時とイベント開催中だけオーバーレイを表示",
+    "ko": "그때와 이벤트 진행 중에만 오버레이 표시"
   },
   "Main.MenuSettings.Feedback": {
     "en": "Report problem / suggestion…",
@@ -3713,6 +3737,30 @@
     "ja": "通知を有効化",
     "ko": "알림 켜기"
   },
+  "Settings.Boss.Soon": {
+    "en": "Only show a boss shortly before it's back, and while it's up",
+    "de": "Boss nur kurz vor seiner Rückkehr zeigen und solange er da ist",
+    "fr": "N'afficher un boss que peu avant son retour et tant qu'il est là",
+    "es": "Mostrar un jefe solo poco antes de que vuelva y mientras esté",
+    "ru": "Показывать босса только незадолго до появления и пока он есть",
+    "zh": "仅在首领即将重生前及其存在时显示",
+    "zh-TW": "僅在首領即將重生前及其存在時顯示",
+    "pt": "Mostrar um chefe só pouco antes de voltar e enquanto estiver lá",
+    "ja": "ボスの復活直前と出現中だけ表示",
+    "ko": "보스가 다시 나타나기 직전과 있는 동안에만 표시"
+  },
+  "Settings.Boss.SoonMinutes": {
+    "en": "Show a boss n minutes before:",
+    "de": "Boss n Minuten vorher zeigen:",
+    "fr": "Afficher un boss n minutes avant :",
+    "es": "Mostrar un jefe n minutos antes:",
+    "ru": "Показывать босса за n минут:",
+    "zh": "提前 n 分钟显示首领：",
+    "zh-TW": "提前 n 分鐘顯示首領：",
+    "pt": "Mostrar um chefe n minutos antes:",
+    "ja": "ボスを n 分前に表示：",
+    "ko": "보스를 n분 전에 표시:"
+  },
   "Settings.Boss.Hint": {
     "en": "The server sends the times by itself, but only for the map you are on; the other maps show theirs once you have been there.\nSwitch a boss on to see it on the overlay and to hear its sound when it is back.",
     "de": "Der Server schickt die Zeiten von selbst, aber nur für die Karte, auf der du bist; die anderen Karten zeigen ihre Zeiten, sobald du dort warst.\nSchalte einen Boss ein, um ihn auf dem Overlay zu sehen und seinen Ton zu hören, wenn er wieder da ist.",
@@ -3784,6 +3832,18 @@
     "pt": "Chefe mundial: ative chefes nas configurações",
     "ja": "ワールドボス：設定でボスをオンにしてください",
     "ko": "월드 보스: 설정에서 보스를 켜세요"
+  },
+  "Boss.OverlaySoonEmpty": {
+    "en": "None back within {0} min",
+    "de": "Keiner zurück innerhalb von {0} Min.",
+    "fr": "Aucun de retour d'ici {0} min",
+    "es": "Ninguno vuelve en {0} min",
+    "ru": "Никто не появится в ближайшие {0} мин",
+    "zh": "{0} 分钟内没有首领重生",
+    "zh-TW": "{0} 分鐘內沒有首領重生",
+    "pt": "Nenhum volta em {0} min",
+    "ja": "{0} 分以内に復活するボスはいません",
+    "ko": "{0}분 안에 돌아오는 보스 없음"
   },
   "Boss.Seen": {
     "en": "Last list from the game: {0}",

@@ -218,6 +218,10 @@ public sealed class MeterSettings
     /// <summary>How many minutes ahead the timetable overlay lists events that are about to start, 0 to 60 (0 = none).</summary>
     public int TimetableLookaheadMinutes { get; set; } = 60;
 
+    /// <summary>The timers overlay shows up only while an event runs or starts within <see cref="TimetableLookaheadMinutes"/> (not the next one further off,
+    /// nor the events open all day); off: always (15 November 2026, a player: "show it n minutes before").</summary>
+    public bool TimetableOnlySoon { get; set; }
+
     /// <summary>The world boss overlay (see WorldBossOverlayWindow): the bosses switched on in the World boss settings with the time until they are there.
     /// Off until switched on.</summary>
     public bool ShowBossOverlay { get; set; }
@@ -1029,6 +1033,12 @@ public sealed class MeterSettings
     public bool TimetableHideInDungeons { get; set; }
 
     public bool BossOverlayHideInDungeons { get; set; }
+
+    /// <summary>The world boss overlay lists a boss only while it is there and from <see cref="BossOverlaySoonMinutes"/> before it is back, and steps aside when
+    /// none is; off: every boss switched on, always (15 November 2026, a player: "show it n minutes before").</summary>
+    public bool BossOverlaySoon { get; set; }
+
+    public int BossOverlaySoonMinutes { get; set; } = 15;
 
     /// <summary>Locked (default): the pet farming overlay is click-through. Unlocked: it can be clicked, moved and scaled.</summary>
     public bool PetFarmLocked { get; set; } = true;
