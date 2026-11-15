@@ -447,13 +447,22 @@ public static class SelfCheckTickets
         Aion2Tickets.ReceiveUpdate(new TicketReading(Aion2Tickets.OdyleId, new TicketValue(300, 0, 0)), at.AddHours(2.1));
         bool picked = Aion2Tickets.ShownRoster()?.Key == hisKey && Aion2Tickets.Snapshot().First(c => c.Name == "Kooriel").Tickets[Aion2Tickets.OdyleId].Count == 300;
         Aion2Tickets.ShowRoster(herKey!);
-        Console.WriteLine($"  -> rosters: two accounts on one server are two (no account key in the lists)={two}, the one logged in with is shown={followsLogin && backToHers}, another picked by hand={picked}");
+        // holdings taken before rosters (no account on them): a character's alts on the server are its roster's only
+        Aion2Inventories.Reset();
+        foreach (string name in new[] { "Koori", "Kooriel", "Brann" })
+        {
+            Aion2Inventories.Put(new CharacterHoldings { Name = name, ServerId = 2302, Account = null, SavedAt = at, Bag = new() { [1] = 1 } });
+        }
+
+        bool mates = Aion2Inventories.Mates("Koori").Select(c => c.Name).SequenceEqual(new[] { "Kooriel" }) && Aion2Inventories.Mates("Brann").Count == 0;
+        Console.WriteLine($"  -> rosters: two accounts on one server are two (no account key in the lists)={two}, the one logged in with is shown={followsLogin && backToHers}, another picked by hand={picked}, alts are the roster's={mates}");
 
         bool removedOne = Aion2Tickets.RemoveRoster(hisKey!);
         RemovedRoster? gone = Aion2Tickets.RemovedRosters().FirstOrDefault();
         bool removed = removedOne && Aion2Tickets.Snapshot().All(c => c.Account == herKey) && Aion2Tickets.Rosters().Count == 1 && Aion2Tickets.RemovedRosters().Count == 1
             && gone is { ServerId: 2302 } && gone.Names.SequenceEqual(new[] { "Bramble", "Brann", "Brannix" }) && Aion2Tickets.IsRemoved("Brann", 2302)
-            && !Aion2Tickets.IsRemoved("Brann", 2309) && !Aion2Tickets.RemoveRoster(hisKey!);
+            && !Aion2Tickets.IsRemoved("Brann", 2309) && !Aion2Tickets.RemoveRoster(hisKey!)
+            && Aion2Inventories.Characters().Select(c => c.Name).OrderBy(n => n, StringComparer.Ordinal).SequenceEqual(new[] { "Koori", "Kooriel" }); // his holdings went with him
         Login(his.Append(Listed("Bramblet", 33, 1000, 1_794_000_000_000, 604)).ToArray(), "Brann", at.AddHours(3)); // with a character made since
         Aion2Tickets.ReceiveUpdate(new TicketReading(Aion2Tickets.OdyleId, new TicketValue(500, 0, 0)), at.AddHours(3.1));
         bool notAgain = Aion2Tickets.Snapshot().Select(c => c.Name).OrderBy(n => n, StringComparer.Ordinal).SequenceEqual(new[] { "Koori", "Kooriel" })
@@ -463,6 +472,7 @@ public static class SelfCheckTickets
         Aion2Tickets.BringBackRoster(gone?.Id ?? "");
         Login(his, "Brann", at.AddHours(5));
         bool back = Aion2Tickets.RemovedRosters().Count == 0 && Aion2Tickets.Rosters().Count == 2 && KeyOf("Brann") == hisKey && Aion2Tickets.ShownRoster()?.Key == hisKey;
+        Aion2Inventories.Reset();
         Console.WriteLine($"  -> a removed roster's characters go={removed}, its next login (a character made since too) is not counted={notAgain}, hers still are={hersCounted}, brought back it is counted again as the same roster={back}");
 
         // saved before rosters (no account): one roster of the server until the remembered character lists tell the two accounts apart (a list of no time is not one)
@@ -482,7 +492,7 @@ public static class SelfCheckTickets
         bool seeded = Aion2Tickets.Rosters().Count == 2 && KeyOf("Koori") is { } seededKey && KeyOf("Kooriel") == seededKey && KeyOf("Brann") is null;
         Console.WriteLine($"  -> characters saved before rosters: one roster of the server={oneBefore}, the remembered list tells the accounts apart={seeded}");
         Aion2Tickets.Reset();
-        return two && followsLogin && backToHers && picked && removed && notAgain && hersCounted && back && oneBefore && seeded;
+        return two && followsLogin && backToHers && picked && mates && removed && notAgain && hersCounted && back && oneBefore && seeded;
     }
 
     /// <summary>

@@ -234,7 +234,8 @@ public static class Aion2Inventories
         }
     }
 
-    /// <summary>The characters that share an account storage with this one: the same server and, where known, the same account.</summary>
+    /// <summary>The characters that share an account storage with this one: the same server and, where known, the same account (the roster the characters
+    /// are in now, else the one their holdings were taken with: those taken before rosters have none).</summary>
     public static IReadOnlyList<CharacterHoldings> Mates(string name)
     {
         lock (Gate)
@@ -244,7 +245,9 @@ public static class Aion2Inventories
                 return Array.Empty<CharacterHoldings>();
             }
 
-            return _characters.Values.Where(c => c.Name != name && c.ServerId == me.ServerId && (me.Account is null || c.Account is null || c.Account == me.Account))
+            string? AccountNow(CharacterHoldings c) => Whereabouts(c.Name).Account ?? c.Account;
+            string? mine = AccountNow(me);
+            return _characters.Values.Where(c => c.Name != name && c.ServerId == me.ServerId && (mine is null || AccountNow(c) is not { } theirs || theirs == mine))
                 .OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         }
     }
