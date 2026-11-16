@@ -469,8 +469,8 @@ public sealed class AssistController : IDisposable
         var fresh = new List<int>();
         foreach (var group in dir.Combat.BuffsOn(self, DateTime.Now).GroupBy(b => AssistPanel.EffectKey(b.SkillId)))
         {
-            int id = group.First().SkillId;
-            if (seen?.Contains(group.Key) != true && !Aion2.Protocol.Aion2Artwork.IsDebuffEffect(id) && AssistPanel.ListedEffect(id, group.All(b => b.DurationMs < 0)))
+            // the effect its row would show: a passive's standing effect under the same key does not hide the timed one it brings on (Fury)
+            if (seen?.Contains(group.Key) != true && AssistPanel.RowEffect(group) is { } shown && !Aion2.Protocol.Aion2Artwork.IsDebuffEffect(shown.SkillId))
             {
                 fresh.Add(group.Key);
             }

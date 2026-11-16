@@ -67,6 +67,29 @@ public sealed class AssistPanel : StackPanel
     }
 
     /// <summary>
+    /// The effect a row shows of the effects under one key (<see cref="EffectKey"/>): of those worth a row (<see cref="ListedEffect"/>) the one that runs
+    /// longest, one with no end last; null when none is worth a row. A passive's standing effect is left out before the choice, so the timed effect the
+    /// passive brings on shows (16 November 2026, a player: "i have fury active but not showing from the app. Is it because its a passive?" - a Templar's
+    /// Fury stays on as 12780000 with no end and comes for 20 s as 12780001 when it procs, both under 12780000; the standing one, having no end, was
+    /// chosen and then left out as a passive, and the proc with it).
+    /// </summary>
+    public static BuffNotice? RowEffect(IEnumerable<BuffNotice> effects)
+    {
+        List<BuffNotice> all = effects.ToList();
+        bool endless = all.All(b => b.DurationMs < 0);
+        BuffNotice? best = null;
+        foreach (BuffNotice b in all)
+        {
+            if (ListedEffect(b.SkillId, endless) && (best is not { } was || (b.Ends ?? DateTime.MaxValue) >= (was.Ends ?? DateTime.MaxValue)))
+            {
+                best = b;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
     /// Whether an effect shows in the effects overlay: with "only the buffs I tick" (<paramref name="pickedOnly"/>) when its key is ticked; else unless its
     /// key was unticked, or one of its own ids before 13 November 2026 (<paramref name="hiddenBefore"/>, the list the cooldowns' unticked skills are in).
     /// </summary>
@@ -545,8 +568,7 @@ public sealed class AssistPanel : StackPanel
             // skill's effects by the skill (EffectKey: Sprint Mantra 18160032 and 18160002 are one)
             foreach (var group in dir.Combat.BuffsOn(self, now).GroupBy(b => EffectKey(b.SkillId)))
             {
-                BuffNotice best = group.OrderBy(b => b.Ends is null ? DateTime.MaxValue : b.Ends.Value).Last();
-                if (!ListedEffect(best.SkillId, group.All(b => b.DurationMs < 0)))
+                if (RowEffect(group) is not { } best)
                 {
                     continue;
                 }

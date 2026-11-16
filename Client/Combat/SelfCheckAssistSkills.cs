@@ -138,6 +138,22 @@ public static class SelfCheckAssistSkills
         Check("the Buffs tab: an effect's key, the buffs a Templar can get, unticked and ticked buffs", keys && classBuffs && picks,
             $"keys {keys}, {templarBuffs.Count} Templar buffs ({string.Join(", ", templarBuffs.Select(id => Aion2.Protocol.Aion2SkillNames.NameOf(id)))}) {classBuffs}, choices {picks}");
 
+        // a passive's proc (16 November 2026, a player: "i have fury active but not showing from the app. Is it because its a passive?"): a Templar's Fury
+        // stays on as the passive's standing effect (127800001, no end) and comes for 20 s when it procs (127800011; both on the owner's recording of
+        // 11 November), one key; the row is the proc's, the standing effect alone is no row, and a mantra's two effects still give the longer one
+        DateTime furyAt = DateTime.Now;
+        var standing = new BuffNotice(furyAt, 1, 13, 127800001, 12780000, -1, 1);
+        var proc = new BuffNotice(furyAt, 1, 260, 127800011, 12780001, 20_000, 1);
+        BuffNotice? furyRow = Ui.AssistPanel.RowEffect(new[] { standing, proc });
+        BuffNotice? standingRow = Ui.AssistPanel.RowEffect(new[] { standing });
+        var mantraShort = new BuffNotice(furyAt, 1, 30, 181600321, 18160032, 2_400, 1);
+        var mantraLong = new BuffNotice(furyAt, 1, 31, 181600021, 18160002, 9_000, 1);
+        BuffNotice? mantraRow = Ui.AssistPanel.RowEffect(new[] { mantraLong, mantraShort });
+        bool furyShows = furyRow is { SkillId: 12780001 } && standingRow is null && mantraRow is { SkillId: 18160002 }
+            && Ui.AssistPanel.EffectKey(12780000) == Ui.AssistPanel.EffectKey(12780001) && Ui.AssistPanel.ListedEffect(12780001, false);
+        Check("a passive's proc shows (Fury 20 s), not hidden by the passive's standing effect under the same key", furyShows,
+            $"row {furyRow?.SkillId}, standing alone {standingRow?.SkillId}, mantra {mantraRow?.SkillId}, Fury proc listed {Ui.AssistPanel.ListedEffect(12780001, false)}");
+
         // the class's other skills offered to tick onto the screen (5 November 2026): a Templar's Doom Shield and Shield of Protection are both there,
         // a basic attack (Vicious Strike) and a filler (Pummel) are not; no class known, none
         var templar = Aion2Cooldowns.ClassSkills(12);
