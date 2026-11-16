@@ -6,6 +6,19 @@
   ],
   "versions": [
     {
+      "version": "2.0.27",
+      "date": "2026-11-16",
+      "items": [
+        {
+          "kind": "fixed",
+          "area": "Skill Assist",
+          "title": "Buffs that passive skills bring on show in the effects overlay (a Templar's Fury)",
+          "text": "When a passive skill gives you a buff for a while, like a Templar's Fury for 20 seconds, the effects overlay and the Buffs tab now show it with its time left. Before, the passive's own lasting effect, which has the same name, hid it, even with the buff ticked in the Buffs tab. The passive itself, which is always on, still stays off the list.",
+          "example": "Kael ticked Fury in the Buffs tab, but the overlay stayed empty while the game showed Fury with 6 seconds left. Now Fury shows with its 20 seconds counting down each time it procs."
+        }
+      ]
+    },
+    {
       "version": "2.0.26",
       "date": "2026-11-15",
       "items": [
