@@ -122,6 +122,9 @@ the unpacked folder. See [Linux/README.md](Linux/README.md).
 
 ## License
 
-Copyright (c) 2026 Atreia. All rights reserved: you may install and use the app, but the source code may not be copied,
-changed or reused without permission. See [LICENSE](LICENSE). Parts that come from other projects keep their own licenses:
-see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Atreia App is open source under the [MIT License](LICENSE): anyone may use, copy, change and share it, build their own
+version on it and publish it, for free or not, as long as the copyright and license notice stay with the code. Parts that come
+from other projects keep their own licenses: see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+AION 2 and all related names, texts and artwork belong to NCSOFT; the license covers this project's own code, not those.
+Atreia App is not affiliated with or endorsed by NCSOFT.

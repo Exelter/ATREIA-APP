@@ -1,7 +1,7 @@
 # Contributing
 
-Atreia App is made by Atreia and is not open source (see [LICENSE](LICENSE)), so it does not take code or pull requests.
-Everything else helps a lot:
+Atreia App is open source under the MIT License (see [LICENSE](LICENSE)): fork it, change it and make your own version.
+Pull requests are welcome too. Other ways to help:
 
 - **Report a bug**: use the bug report form. A debug recording or the network log makes most problems much easier to solve.
 - **Suggest something**: open a feature request and say what you were trying to do.
