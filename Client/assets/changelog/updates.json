@@ -7,8 +7,15 @@
   "versions": [
     {
       "version": "2.0.27",
-      "date": "2026-11-16",
+      "date": "2026-11-20",
       "items": [
+        {
+          "kind": "new",
+          "area": "App",
+          "title": "The Atreia App is open source",
+          "text": "The app's code on GitHub is now under the MIT License: anyone may use it, change it and make their own version of it, as long as the copyright notice stays with the code. AION 2's names, texts and artwork still belong to NCSOFT.",
+          "example": "Kael wants a meter view only his legion uses: he can take the code from GitHub, add it and share his own version."
+        },
         {
           "kind": "fixed",
           "area": "Skill Assist",
